@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- item android:id="@+id/reset"
+          android:icon="@android:drawable/ic_menu_revert"
+          android:title="@string/new_game"
+          android:showAsAction="ifRoom"/ -->
+    <item android:id="@+id/save"
+          android:icon="@android:drawable/ic_menu_save"
+          android:title="@string/save"
+          android:showAsAction="ifRoom"/>
+    <item android:id="@+id/load"
+          android:icon="@android:drawable/ic_menu_set_as"
+          android:title="@string/load"
+          android:showAsAction="ifRoom">
+      <menu>
+        <item android:id="@+id/saved_game_1"
+          android:title="@string/savedGame1"
+          android:showAsAction="ifRoom"/>
+	    <item android:id="@+id/saved_game_2"
+	      android:title="@string/savedGame2"
+          android:showAsAction="ifRoom"/>
+	    <item android:id="@+id/saved_game_3"
+          android:title="@string/savedGame3"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_4"
+          android:title="@string/savedGame4"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_5"
+          android:title="@string/savedGame5"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_6"
+          android:title="@string/savedGame6"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_7"
+          android:title="@string/savedGame7"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_8"
+          android:title="@string/savedGame8"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/saved_game_9"
+          android:title="@string/savedGame9"
+          android:showAsAction="ifRoom"/>
+        </menu>
+    </item>
+    <item android:id="@+id/reset"
+          android:icon="@android:drawable/ic_menu_delete"
+          android:title="@string/reset"
+          android:showAsAction="ifRoom"/>
+    
+    
+</menu>

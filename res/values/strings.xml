@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">King Pong</string>
+    <string name="dummy">dummy</string>
+    <string name="title_activity_game_designer">King Pong designer</string>
+    <string name="design_rule">Rule editor</string>
+    <string name="select_event">Select cause</string>
+    <string name="existing_rule">Existing rule…</string>
+    <string name="existing_rule_dialog_title">Choose a rule to edit</string>
+    <string name="select_event_toast">Select the causal event, or click the rule button to dissmiss.</string>
+    <string name="select_effects">Confirm behavior</string>
+    <string name="select_effects_toast">Select the effects of this cause.</string>
+    <string name="rule_canceled">Rule design canceled.</string>
+    <string name="modify_state">Modify global state</string>
+    <string name="rule_created_toast">Rule created</string>
+    <string name="save">Save</string>
+    <string name="load">Load</string>
+    <string name="reset">Reset</string>
+    <string name="choose_rule">Choose a rule</string>
+    <string name="rename_title">Rename %1$s</string>
+    <string name="delete_title">Delete %1$s</string>
+    <string name="confirm_delete">Really send to trash?</string>
+    <string name="modify_text_title">Modify text %1$s</string>
+    
+    <string name="confirm_reset_title">Reset game</string>
+    <string name="confirm_reset_message">Create an empty game?</string>
+    
+    <string name="choose_trigger">%1$s value changed. Choose an trigger event:</string>
+    <string name="trigger_integer_1">Whenever %1$s changes</string>
+    <string name="trigger_integer_2">When %1$s == %2$d</string>
+    <string name="trigger_integer_3">When %1$s >= %2$d</string>
+    <string name="trigger_integer_4">When %1$s &lt;= %2$d</string>
+    <string name="trigger_integer_5">When %1$s > 0</string>
+    <string name="trigger_integer_6">When %1$s &lt; 0</string>
+    
+    <string name="choose_trigger_outofscreen">Choose an trigger event for %1$s:</string>
+    <string name="trigger_outscreen_1">When %1$s lefts the game</string>
+    <string name="trigger_outscreen_2">When %1$s cross this border</string>
+    
+    <string name="choose_collision">When %1$s hits %2$s</string>
+    <string name="trigger_collision_1">Let me edit the effects of the collision.</string>
+    <string name="trigger_collision_2">Cancel any collision. %1$s and %2$s do not collide at all.</string>
+    <string name="trigger_collision_3">%1$s and %2$s should go through each other but the collision is recorded.</string>
+    
+    <string name="savedGame1">Fibonacci</string>
+    <string name="savedGame2">Syracuse</string>
+    <string name="savedGame3">King pong</string>
+    <string name="savedGame4">Pong Maze</string>    
+    <string name="savedGame5">Pong Escape</string>    
+    <string name="savedGame6">PongMan</string>
+    <string name="savedGame7">GCD canvas</string>
+    <string name="savedGame8">Pong Balloon</string>
+    <string name="savedGame9">Brick breaker 3 players</string>
+</resources>
