@@ -68,6 +68,12 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
     vibratorInstance.vibrate(50)
   }
   
+  def set2DAcceleration(x: Float, y: Float) = {
+    if(game != null) {
+      game.set2DAcceleration(x, y)
+    }
+  }
+  
   var ghostModeActivated = false
   def isInGhostMode() = ghostModeActivated
   def activateGhostMode() = ghostModeActivated = true

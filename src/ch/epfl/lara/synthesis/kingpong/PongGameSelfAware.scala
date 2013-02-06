@@ -118,5 +118,8 @@ class PongGameSelfAware extends Game {
   WhenEver(paddle2.x + paddle2.width > screenWidth) {
     paddle2.x = screenWidth - paddle2.width
   }
-
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

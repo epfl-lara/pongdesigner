@@ -27,4 +27,20 @@ class Category extends Traversable[GameShapes.Shape] {
     name = s
     this
   }
+   def turnOnOff(s: GameShapes.Shape) = {
+    if(content contains s) {
+      remove(s)
+    } else {
+      add(s)
+    }
+  }
+   def remove(s: GameShapes.Shape): Unit = {
+     content -= s
+   }
+   def add(s: GameShapes.Shape): Unit = {
+     content += s
+   }
+   def reset(): Unit = {
+     content = Set[GameShapes.Shape]()
+   }
 }

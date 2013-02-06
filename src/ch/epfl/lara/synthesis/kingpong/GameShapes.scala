@@ -4,7 +4,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.Traversable
 import scala.collection.mutable.HashMap
 import android.graphics.RectF
-
 /**
  * GameShapes
  * Describes shapes that can be used by a game.
@@ -17,13 +16,92 @@ object GameShapes {
   import TriggerEvent._
   
   /** Gravity in the game */
-  var gravity_x = 0.00f
-  var gravity_y = 0.00f
+  trait ForceField {
+    def force_x: Float
+    def force_y: Float
+  }
+  
+  object ZeroGravity extends ForceField {
+    def force_x = 0
+    def force_y = 0
+  }
+  
+  class CustomGravity extends Shape with ForceField {
+    override def moveDuring(deltaTime: Long, timestamp: Long) = { }
+    def force_x = velocity_x
+    def force_y = velocity_y
+    def selectableBy(xCursor: Float, yCursor: Float): Boolean = {
+      x > xCursor - selectableAreaRadius && x < xCursor - selectableAreaRadius &&
+      y > yCursor - selectableAreaRadius && y < yCursor - selectableAreaRadius
+    }
+    def isOutsideRectangle(xMin: Float, yMin: Float, xMax: Float, yMax: Float): Boolean = {
+      x < xMin || x > xMax || y < yMin || y > yMax
+    }
+    def distanceSelection(xCursor: Float, yCursor: Float): Float = {
+      val dx = xCursor-x
+      val dy = yCursor-y
+      val res = Math.sqrt(dx*dx + dy*dy).toFloat
+      res
+    }
+    def getBoundingBox(r: RectF) = {
+      r.set(x - selectableAreaRadius, y - selectableAreaRadius, x + selectableAreaRadius, y + selectableAreaRadius)
+    }
+    def mass = 0
+  }
+  
+  object AccelerometerGravity extends Category with ForceField {
+    var force_x: Float = 0
+    var force_y: Float = 0
+    
+    override def remove(s: GameShapes.Shape) = {
+      super.remove(s)
+      s.gravity = ZeroGravity
+      s.friction = ElasticFriction
+    }
+    
+    override def add(s: GameShapes.Shape) = {
+      super.add(s)
+      s.gravity = this
+      s.friction = new CustomFriction(0.9f)
+    }
+  }
+  
+  object Gravity2D extends Category with ForceField {
+    var force_x: Float = 0
+    var force_y: Float = 0.001f
+    
+    override def remove(s: GameShapes.Shape) = {
+      super.remove(s)
+      s.gravity = Gravity2D
+      s.friction = ElasticFriction
+    }
+    
+    override def add(s: GameShapes.Shape) = {
+      super.add(s)
+      s.gravity = this
+      s.friction = new CustomFriction(0.9f)
+    }
+  }
+  
+  trait BouncingFriction {
+    def friction: Float
+    def apply(s: GameShapes.Shape) = { s.velocity *= friction }
+  }
+  
+  object ElasticFriction extends BouncingFriction {
+    override def friction = 1.0f
+  }
+  
+  class CustomFriction(var friction: Float = 0.9f) extends BouncingFriction {
+  }
+  
   /** Maximal distance to which an object can be selected */
   var selectableAreaRadius = 30.0f
   
-  var DEFAULT_COLOR = 0xFF00FFFF
-  var DEFAULT_NAME = "shape"
+  final val DEFAULT_COLOR = 0xFF00FFFF
+  final val DEFAULT_NAME = "shape"
+  final val DEFAULT_GRAVITY = ZeroGravity
+  final val DEFAULT_FRICTION = ElasticFriction
   
   /**
    * Computes a new name based on the context and the given baseName
@@ -66,7 +144,6 @@ object GameShapes {
   
   /** General shape */
   abstract class Shape {
-    
     /** The name of the shape and methods to modify it */
     var mName: String = DEFAULT_NAME
     def named(n: String): this.type = {
@@ -83,6 +160,12 @@ object GameShapes {
 
     /** noVelocity = true means that the object will not be moved by its intrinsic velocity */
     var noVelocity = false
+    
+    /** Gravity */
+    var gravity: ForceField = DEFAULT_GRAVITY
+    
+    /** Bouncing friction */
+    var friction: BouncingFriction = DEFAULT_FRICTION
     
     /** Color expressions */
     var color:Int = DEFAULT_COLOR
@@ -106,7 +189,7 @@ object GameShapes {
         val a = Math.toRadians(90-mAngle)
         velocity_x = v*Math.cos(a).toFloat
         velocity_y = v*Math.sin(a).toFloat
-      }      
+      }
     }
     var prev_velocity_x = 0f
     var prev_velocity_y = 0f
@@ -166,8 +249,8 @@ object GameShapes {
     /** Moves this shape for a small amount of time */
     def moveDuring(deltaTime: Long, timestamp: Long) = {
       if(!noVelocity) {
-        velocity_x += gravity_x * deltaTime
-        velocity_y += gravity_y * deltaTime
+        velocity_x += gravity.force_x * deltaTime
+        velocity_y += gravity.force_y * deltaTime
         mX += velocity_x * deltaTime
         mY += velocity_y * deltaTime
       } else {
@@ -196,6 +279,8 @@ object GameShapes {
     def isOutsideRectangle(xMin: Float, yMin: Float, xMax: Float, yMax: Float): Boolean
     def distanceSelection(x: Float, y: Float): Float
     def getBoundingBox(r: RectF)
+    def prevCenterX: Float = x
+    def prevCenterY: Float = y
     def centerX: Float = x
     def centerY: Float = y
     
@@ -341,7 +426,6 @@ object GameShapes {
       f("visible")
     }
     
-    
   }
   
   /**
@@ -349,7 +433,7 @@ object GameShapes {
    */
   object Rectangle {
     /** Creates a rectangle from position and size */
-    def build(x: Float, y: Float, width: Int, height:Int):Rectangle = {
+    def build(x: Float, y: Float, width: Int, height:Int): Rectangle = {
       val result = new Rectangle()
       result.width = width
       result.height = height
@@ -358,7 +442,7 @@ object GameShapes {
       result
     }
     /** Creates a rectangle from its four coordinates*/
-    def buildFromBounds(x: Float, y: Float, x2: Float, y2:Float):Rectangle = {
+    def buildFromBounds(x: Float, y: Float, x2: Float, y2:Float): Rectangle = {
       val result = new Rectangle()
       result.width = (x2-x).toInt + 1
       result.height = (y2-y).toInt + 1
@@ -411,6 +495,8 @@ object GameShapes {
     
     override def centerX = x + width / 2
     override def centerY = y + height / 2
+    override def prevCenterX = prev_x + prev_width / 2
+    override def prevCenterY = prev_y + prev_height / 2
     var initializedFromBounds: Boolean = false
     
     var start_x2: Expression = Expression.NONE
@@ -500,6 +586,25 @@ object GameShapes {
     }
   }
   class Rectangle extends Rectangular {
+  }
+  object Camera {
+    def build(x: Float, y: Float, width: Int, height:Int): Camera= {
+      val result = new Camera()
+      result.width = width
+      result.height = height
+      result.x = x
+      result.y = y
+      result
+    }
+  }
+  class Camera extends Rectangular {
+    mName = "Camera"
+    override def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
+    override def distanceSelection(xCursor: Float, yCursor: Float):Float = 0
+    override def getBoundingBox(r: RectF) = {
+      r.set(x, y, x+width, y+height)
+    }
+    override def mass = 0
   }
   
   /**
@@ -949,7 +1054,7 @@ object GameShapes {
       val dy = y2 - y1
       val distsquare = dx*dx + dy*dy
       val r1pr2 = r1+r2
-      if(distsquare <= r1pr2 * r1pr2) {
+      if(distsquare <= r1pr2 * r1pr2) { // There is a static collision.
         val length = Math.sqrt(distsquare).toFloat
         val nx = dx / length
         val ny=  dy / length
@@ -959,7 +1064,19 @@ object GameShapes {
         val vx2 = if(c2.noVelocity) c2.velocity_x - c1.velocity_x else c2.velocity_x
         val vy2 = if(c2.noVelocity) c2.velocity_y - c1.velocity_y else c2.velocity_y
         // Collision condition.
-        if(vx1*nx + vy1*ny >= vx2*nx + vy2*ny) {
+        val vx = vx2 - vx1
+        val vy = vy2 - vy1
+        if((vx1*nx + vy1*ny >= vx2*nx + vy2*ny)) { // The collision is increasing
+          // Go back in time to see when this collision occured, and make it occured at this time.
+          val delta = (r1pr2 * r1pr2) * (vx * vx + vy * vy) - (vx * dy + vy * dx) * (vx * dy + vy * dx)
+          val a =  (vx * vx + vy * vy)
+          val b =  (vx * dx + vy * dy)
+          val t1 = if(a != 0 && delta > 0) {
+            (- b - Math.sqrt(delta).toFloat)/a
+            // The collision occured at time currentTime + t1
+          } else {
+            0f
+          }
           val dm = (m1 - m2) / (m1 + m2)
           val rm2 = 2*m2 / (m1+m2)
           val rm1 = 2*m1 / (m1+m2)
@@ -972,7 +1089,11 @@ object GameShapes {
           val nvx2 = if(c2.noVelocity) c2.velocity_x else -dm*nx2*vx2 - dm*nxy*vy2 + nx2*rm1*vx1 + nxy*rm1*vy1 - nxy*vy2 + ny2*vx2
           val nvy2 = if(c2.noVelocity) c2.velocity_y else -dm*nxy*vx2 - dm*ny2*vy2 + nx2*vy2 + nxy*rm1*vx1 - nxy*vx2 + ny2*rm1*vy1
           
-          game.onCollisionEvent(c1, c2, nvx1, nvy1, nvx2, nvy2, x1 + nx * r1, y1 + ny * r1)
+          // Sets the new speeds to correct the collision, as well as the time at which the collision really occured.
+          game.onCollisionEvent(c1, c2,
+              nvx1, nvy1, nvx2, nvy2,
+              t1,
+              x1 + nx * r1, y1 + ny * r1) // Position of the collision
           result = true
         }
       }

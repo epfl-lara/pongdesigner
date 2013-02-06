@@ -37,7 +37,11 @@ object Expression {
   
   /** Executes a list of Expressions in a given context */
   def execute(code: List[Expression], context: HashMap[String, Expression]) = {
-    code foreach { expr => Expression.evaluateExpression(context, expr) }
+    code foreach {
+      expr =>
+        
+        Expression.evaluateExpression(context, expr)
+    }
   }
   
   /** Evaluates / Executes an expression and store its result inside itself */
@@ -149,28 +153,18 @@ object Expression {
                     b
                 }
                 expression match {
-                  case ESelect(subexpr, "x") =>
-                    subexpr.shape_value.x = result
-                  case ESelect(subexpr, "y") =>
-                    subexpr.shape_value.y = result
-                  case ESelect(subexpr, "color") =>
-                    subexpr.shape_value.color = result.toInt
-                  case ESelect(subexpr, "velocity") =>
-                    subexpr.shape_value.velocity = result
-                  case ESelect(subexpr, "velocity_x") =>
-                    subexpr.shape_value.velocity_x = result
-                  case ESelect(subexpr, "velocity_y") =>
-                    subexpr.shape_value.velocity_y = result
-                  case ESelect(subexpr, "angle") =>
-                    subexpr.shape_value.angle = result
-                  case ESelect(subexpr, "width") =>
-                    subexpr.shape_value.asInstanceOf[Rectangular].width = result.toInt
-                  case ESelect(subexpr, "height") =>
-                    subexpr.shape_value.asInstanceOf[Rectangular].height = result.toInt
-                  case ESelect(subexpr, "radius") =>
-                    subexpr.shape_value.asInstanceOf[Circle].radius = result
-                  case ESelect(subexpr, "value") =>
-                    subexpr.shape_value.asInstanceOf[IntegerBox].value = result.toInt
+                  case ESelect(subexpr, "x") => subexpr.shape_value.x = result
+                  case ESelect(subexpr, "y") => subexpr.shape_value.y = result
+                  case ESelect(subexpr, "color") => subexpr.shape_value.color = result.toInt
+                  case ESelect(subexpr, "velocity") => subexpr.shape_value.velocity = result
+                  case ESelect(subexpr, "velocity_x") =>subexpr.shape_value.velocity_x = result
+                  case ESelect(subexpr, "velocity_y") => subexpr.shape_value.velocity_y = result
+                  case ESelect(subexpr, "angle") => subexpr.shape_value.angle = result
+                  case ESelect(subexpr, "width") => subexpr.shape_value.asInstanceOf[Rectangular].width = result.toInt
+                  case ESelect(subexpr, "height") => subexpr.shape_value.asInstanceOf[Rectangular].height = result.toInt
+                  case ESelect(subexpr, "radius") => subexpr.shape_value.asInstanceOf[Circle].radius = result
+                  case ESelect(subexpr, "value") => subexpr.shape_value.asInstanceOf[IntegerBox].value = result.toInt
+                  // You don't assign to prev_* elements
                   case _ => 
                 }
               case _ => throw new Exception("unrecognized number operator : '" + op + "'")
@@ -200,6 +194,8 @@ object Expression {
                 expression match {
                   case ESelect(subexpr, "text") =>
                     subexpr.shape_value.asInstanceOf[TextBox].text = result
+                  case ESelect(subexpr, "prev_text") =>
+                    subexpr.shape_value.asInstanceOf[TextBox].prev_text = result
                   case _ => 
                 }
               case _ => throw new Exception("unrecognized number operator : '" + op + "'")
@@ -214,6 +210,8 @@ object Expression {
               case "$eq" =>
                 expression match {
                   case ESelect(subexpr, "visible") =>
+                    subexpr.shape_value.visible = b
+                  case ESelect(subexpr, "prev_visible") =>
                     subexpr.shape_value.visible = b
                   case _ => 
                 }
@@ -245,6 +243,19 @@ object Expression {
               case "height" => t store expression.shape_value.asInstanceOf[Rectangular].height
               case "value" => t store expression.shape_value.asInstanceOf[IntegerBox].value
               case "text" => t store expression.shape_value.asInstanceOf[TextBox].text
+              case "prev_x" => t store expression.shape_value.prev_x
+              case "prev_y" => t store expression.shape_value.prev_y              
+              case "prev_velocity" => t store expression.shape_value.prev_velocity
+              case "prev_velocity_x" => t store expression.shape_value.prev_velocity_x
+              case "prev_velocity_y" => t store expression.shape_value.prev_velocity_y
+              case "prev_visible" => t store expression.shape_value.prev_visible
+              case "prev_color" => t store expression.shape_value.prev_color
+              case "prev_angle" => t store expression.shape_value.prev_angle
+              case "prev_radius" => t store expression.shape_value.asInstanceOf[Circle].prev_radius
+              case "prev_width" => t store expression.shape_value.asInstanceOf[Rectangular].prev_width
+              case "prev_height" => t store expression.shape_value.asInstanceOf[Rectangular].prev_height
+              case "prev_value" => t store expression.shape_value.asInstanceOf[IntegerBox].prev_value
+              case "prev_text" => t store expression.shape_value.asInstanceOf[TextBox].prev_text
             }
           case _ => ()
         }
@@ -606,32 +617,50 @@ case class EIdentShape(shape: Shape) extends Expression with NamedObject {
   store(shape) ; def name = shape.mName
   def x: Expression = ESelect(this, "x")
   def x_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "x"), "$eq"), List(e))
+  def prev_x: Expression = ESelect(this, "prev_x")
   def y: Expression = ESelect(this, "y")
   def y_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "y"), "$eq"), List(e))
+  def prev_y: Expression = ESelect(this, "prev_y")
   def angle: Expression = ESelect(this, "angle")
   def angle_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "angle"), "$eq"), List(e))
+  def prev_angle: Expression = ESelect(this, "prev_angle")
   def velocity: Expression = ESelect(this, "velocity")
   def velocity_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "velocity"), "$eq"), List(e))
+  def prev_velocity: Expression = ESelect(this, "prev_velocity")
   def velocity_x: Expression = ESelect(this, "velocity_x")
   def velocity_x_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "velocity_x"), "$eq"), List(e))
+  def prev_velocity_x: Expression = ESelect(this, "prev_velocity_x")
   def velocity_y: Expression = ESelect(this, "velocity_y")
   def velocity_y_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "velocity_y"), "$eq"), List(e))
+  def prev_velocity_y: Expression = ESelect(this, "prev_velocity_y")
   def width: Expression = ESelect(this, "width")
   def width_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "width"), "$eq"), List(e))
+  def prev_width: Expression = ESelect(this, "prev_width")
   def height: Expression = ESelect(this, "height")
   def height_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "height"), "$eq"), List(e))
+  def prev_height: Expression = ESelect(this, "prev_height")
   def radius: Expression = ESelect(this, "radius")
   def radius_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "radius"), "$eq"), List(e))
+  def prev_radius: Expression = ESelect(this, "prev_radius")
   def color: Expression = ESelect(this, "color")
   def color_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "color"), "$eq"), List(e))
+  def prev_color: Expression = ESelect(this, "prev_color")
   def value: Expression = ESelect(this, "value")
   def value_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "value"), "$eq"), List(e))
+  def prev_value: Expression = ESelect(this, "prev_value")
+  //def prev_value_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "prev_value"), "$eq"), List(e))
   def visible: Expression = ESelect(this, "visible")
   def visible_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "visible"), "$eq"), List(e))
+  def prev_visible: Expression = ESelect(this, "prev_visible")
   def text: Expression = ESelect(this, "text")
   def text_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "text"), "$eq"), List(e))
+  def prev_text: Expression = ESelect(this, "prev_text")
+  //def prev_texttext_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "prev_text"), "$eq"), List(e))
+  
 }
-
+case class EIdent(mName: String) extends Expression with NamedObject { def name = mName;
+  override def toString = "EIdent(\"" + mName + "\")"
+} //override def toString = toScalaString("", null) }
 
 object EConstantNumber {
   def apply(d: Double):EConstantNumber = EConstantNumber(d.toFloat)
@@ -643,9 +672,6 @@ case class ERandomInterval(minValue: Float, maxValue: Float) extends Expression 
 case class ERandomNumber(values: List[Float]) extends Expression { store(0); } //override def toString = toScalaString("", null)  }
 case class EConstantString(value: String) extends Expression { store(value);
   override def toString = "EConstantString(\"" + value + "\")"
-} //override def toString = toScalaString("", null) }
-case class EIdent(mName: String) extends Expression with NamedObject { def name = mName;
-  override def toString = "EIdent(\"" + mName + "\")"
 } //override def toString = toScalaString("", null) }
 case class ESelect(obj: Expression, property: String) extends Expression { 
   override def toString = "ESelect(" + obj.toString + ", \"" + property + "\")"

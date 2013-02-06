@@ -12,8 +12,13 @@ import android.widget.SeekBar
 import android.view.View
 import android.view.Menu
 import android.view.MenuItem
+import android.hardware.SensorEventListener
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.content.Context
+import android.content.pm.ActivityInfo
 
-class GameDesignerActivity extends Activity {
+class GameDesignerActivity extends Activity with SensorEventListener {
     
     lazy private val mGameView = findViewById(R.id.gameview).asInstanceOf[GameEngine2DView]
     lazy private val mTimeButton = findViewById(R.id.time_button).asInstanceOf[ImageButton]
@@ -25,15 +30,19 @@ class GameDesignerActivity extends Activity {
     lazy private val mTimeButtonDrawable = getResources().getDrawable(R.drawable.timebutton)
     lazy private val mGhostDrawable1 = getResources().getDrawable(R.drawable.ghost)
     lazy private val mGhostDrawable2 = getResources().getDrawable(R.drawable.ghostred)
-    
+    private var mSensorManager: SensorManager = null
+    private var mAccelerometer: Sensor = null
+
     implicit def toOnclickListener(f: ()=>Unit):View.OnClickListener = {
       new View.OnClickListener{ override def onClick(v: View) = f() }
     }
-   
+
     override def onCreate(savedInstanceState: Bundle) {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.game_with_menu)
-
+      mSensorManager = getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager]
+      mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+      
       attachGame()
       mGameView.enterEditMode()
       mGameView.setKeepScreenOn(true)
@@ -47,10 +56,12 @@ class GameDesignerActivity extends Activity {
         if(!mGameView.isInEditMode()) {
           mGameView.enterEditMode()
           mTimeButton.setImageDrawable(mTimeButtonDrawable2)
+          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
         } else {
           mGameView.exitEditMode()
           switchGhostMode()
           mTimeButton.setImageDrawable(mTimeButtonDrawable)
+          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR)
         }
       }
       mBackButton.setOnClickListener { () =>
@@ -138,12 +149,14 @@ class GameDesignerActivity extends Activity {
   override def onPause() = {
     super.onPause();
     if(mGameView != null) mGameView.onPause()
+    mSensorManager.unregisterListener(this)
   }
     
   override def onResume() = {
     super.onResume();
     if(mGameView != null && !mFirstLaunch) mGameView.onResume()
     mFirstLaunch = false
+    mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
   }
    
   def attachGame() = {
@@ -156,5 +169,27 @@ class GameDesignerActivity extends Activity {
   
   override def onRetainNonConfigurationInstance(): Object = {
     mGameView.getGame()
+  }
+  
+  val gravity = new Array[Float](3)
+  
+  /**
+   * Sensor events
+   */
+  def onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+    
+  }
+  
+  /**
+   * Sensor events
+   */
+  def onSensorChanged(event: SensorEvent) = {
+    val alpha = 0.8f
+    
+    gravity(0) = alpha * gravity(0) + (1 - alpha) * event.values(0)
+    gravity(1) = alpha * gravity(1) + (1 - alpha) * event.values(1)
+    gravity(2) = alpha * gravity(2) + (1 - alpha) * event.values(2)
+    
+    mGameView.set2DAcceleration(gravity(0), gravity(1))
   }
 }

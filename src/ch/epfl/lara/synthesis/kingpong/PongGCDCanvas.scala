@@ -80,4 +80,8 @@ class PongGCDCanvas extends Game {
   WhenFingerDownOn(wall4) {
     goal.value += 1 // 1 more
   }.represents(List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(goal), "value"), "$plus$eq"),List(EConstantNumber(1.0))), EApply(ESelect(ESelect(EIdentShape(goal), "value"), "$eq"),List(EConstantNumber(16.0)))))))
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

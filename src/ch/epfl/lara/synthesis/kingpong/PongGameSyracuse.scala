@@ -158,4 +158,8 @@ class PongGameSyracuse extends Game {
   WhenIntegerChanges(isOdd) { (oldValue, newValue) =>
     isEven.value = One.value - isOdd.value
   }
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

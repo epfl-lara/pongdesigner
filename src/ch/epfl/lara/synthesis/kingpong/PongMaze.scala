@@ -127,4 +127,8 @@ class PongMaze extends Game {
     textBox.y = 495 // 1 more
     textBox.text = "You won !"
   }
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

@@ -35,9 +35,13 @@ class PongGameEmpty extends Game {
   arena1 += wall3
   /*val ball1 = Circle(204.63803f, 242.68817f, 50) named "ball1"
   arena1 += ball1*/
-  
+
   /**
    * Rules to be guessed.
    */
-  
+
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

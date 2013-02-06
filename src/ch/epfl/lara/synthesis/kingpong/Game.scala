@@ -36,6 +36,7 @@ import java.io.BufferedWriter
 import java.io.FileWriter
 import scala.util.Random
 
+
 object Game {
   var randomgenerator = new Random()
 }
@@ -109,6 +110,8 @@ abstract class Game /*extends scala.Serializable*/ {
   var added_whenCollisionRules = HashMap[GameShapes.ShapePair, WhenCollisionBetweenRule]()
   var added_noCollisionBetweenRules = HashMap[GameShapes.ShapePair, Boolean]()
   var added_noCollisionEffectBetweenRules = HashMap[GameShapes.ShapePair, Boolean]()
+  
+  object Camera extends GameShapes.Camera
   
   /** Arena setting and getting*/
   private var currentArena: GameShapes.Arena = null
@@ -214,10 +217,14 @@ abstract class Game /*extends scala.Serializable*/ {
 
   /** Compute regular bounds */
   def computeRegularBounds() = {
-    mMinX = 0f
+    /*mMinX = 0f
     mMinY = 0f
     mMaxX = screenWidth.toFloat
-    mMaxY = screenHeight.toFloat
+    mMaxY = screenHeight.toFloat*/
+    mMinX = Camera.x
+    mMinY = Camera.y
+    mMaxX = Camera.x+Camera.width.toFloat
+    mMaxY = Camera.y+Camera.height.toFloat
   }
 
   /** Pseudo-macro to add a WhenEver rule into the game */
@@ -373,8 +380,14 @@ abstract class Game /*extends scala.Serializable*/ {
     history_timestamp.removeTooOldValues(currentTime - lengthStoredEvent-1000)
     triggerEvents.removeTooOldValues(currentTime - lengthStoredEvent)
     continue = storeState(newTime, continue, ruleToStopBefore)
-    if(replayMode) {
-      shapes foreach { s => s.storePrevValues() }
+    //if(replayMode) {
+    shapes foreach { s => s.storePrevValues() }
+    // We keep a copy of all the values at the current point.
+    // All rules
+    //}
+    GameShapes.AccelerometerGravity.foreach {
+      shape =>
+        shape.velocity *= 0.98f
     }
     continue
   }
@@ -495,16 +508,39 @@ abstract class Game /*extends scala.Serializable*/ {
    */
   def onCollisionEvent(s1: GameShapes.Shape, s2: GameShapes.Shape,
       new_velocityXs1: Float, new_velocityYs1: Float, new_velocityXs2: Float, new_velocityYs2:Float,
+      time_collision_relative: Float,
       x: Float, y: Float, ruleToStopBefore: ReactiveRule = null): Boolean = {
     triggerEvents.addEvent(currentTime, COLLISION_EVENT, s1, s2, x, y, s1.x, s1.y)
     if(!isNoCollisionEffectBetween(s1, s2)) {
       if(s1.velocity_x != new_velocityXs1 || s1.velocity_y != new_velocityYs1) {
+        if(time_collision_relative != 0) {
+          s1.x = s1.x + time_collision_relative * s1.velocity_x
+          s1.y = s1.y + time_collision_relative * s1.velocity_y
+        }
         s1.velocity_x = new_velocityXs1
         s1.velocity_y = new_velocityYs1
+        if(s1.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+          s1.friction(s1) 
+        }
+        if(time_collision_relative != 0) {
+          s1.x = s1.x - time_collision_relative * s1.velocity_x
+          s1.y = s1.y - time_collision_relative * s1.velocity_y
+        }
       }
       if(s2.velocity_x != new_velocityXs2 || s2.velocity_y != new_velocityYs2) {
+        if(time_collision_relative != 0) {
+          s2.x = s2.x + time_collision_relative * s2.velocity_x
+          s2.y = s2.y + time_collision_relative * s2.velocity_y
+        }
         s2.velocity_x = new_velocityXs2
         s2.velocity_y = new_velocityYs2
+        if(s2.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+          s2.friction(s2) 
+        }
+        if(time_collision_relative != 0) {
+          s2.x = s2.x - time_collision_relative * s2.velocity_x
+          s2.y = s2.y - time_collision_relative * s2.velocity_y
+        }
       }
     } else {
       s1.velocity_x *= 1
@@ -886,6 +922,11 @@ abstract class Game /*extends scala.Serializable*/ {
         }
       })
     }
+  }
+  
+  def set2DAcceleration(x: Float, y: Float): Unit = {
+    GameShapes.AccelerometerGravity.force_x = -x/1000
+    GameShapes.AccelerometerGravity.force_y = y/1000
   }
 }
 

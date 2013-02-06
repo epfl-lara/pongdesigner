@@ -2,6 +2,7 @@ package ch.epfl.lara.synthesis.kingpong
 
 import android.content.Context
 import android.util.Log
+import scala.collection.mutable.HashMap
 
 /**
  * CodeGenerator contains methods used to generate code given a set of shapes that has been modified.
@@ -492,6 +493,22 @@ object CodeGenerator {
     val movementIsHorizontal = Math.abs(xTo - xFrom) > 10 * Math.abs(yTo - yFrom)
     val movementIsVertical = Math.abs(yTo - yFrom) > 10 * Math.abs(xTo - xFrom)
 
+    var variablesToStore = new HashMap[Expression, Int]()
+    var currentVariableCounter:Int = 1
+    
+    def variableName(counter: Int) = "$" + counter
+    def getVariableFor(e: Expression): String = {
+      val res = variablesToStore.getOrElse(e, currentVariableCounter)
+      if(res == currentVariableCounter) {
+        currentVariableCounter = currentVariableCounter + 1
+        variablesToStore(e) = res
+      }
+      variableName(res)
+    }
+    def getAssignmentFor(e: Expression) = {
+      
+    }
+    
     // Goes through each shape and each attribute to check for potential change.
     game.getArena foreach { shape: GameShapes.Shape =>
       val shape_ident = EIdentShape(shape)
@@ -604,42 +621,42 @@ object CodeGenerator {
                 if(dNewValue == dOldValue / 2) {
                    possibleExpressions = (shape_ident.value /= 2)::possibleExpressions
                 }
-                var d_encountered = false
+                //var d_encountered = false
                 game.getArena foreach {
                   case (d2:IntegerBox) =>
                     if(d2 != d) {
-                      var dValue = if(d_encountered) d2.prev_value else d2.value
+                      var dValue = d2.prev_value //if(d_encountered) d2.prev_value else d2.value
                       if(dNewValue == dValue) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == dOldValue + dValue) {
-                        possibleExpressions = (shape_ident.value += EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value += EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == dOldValue - dValue) {
-                        possibleExpressions = (shape_ident.value -= EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value -= EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == dOldValue * dValue) {
-                        possibleExpressions = (shape_ident.value *= EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value *= EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dValue != 0 && dNewValue == dOldValue / dValue) {
-                        possibleExpressions = (shape_ident.value /= EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value /= EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == 2*dValue) {
-                        possibleExpressions = (shape_ident.value = (EIdentShape(d2).value * 2))::possibleExpressions
+                        possibleExpressions = (shape_ident.value = (EIdentShape(d2).prev_value * 2))::possibleExpressions
                       }
-                    } else {
+                    }/* else {
                       d_encountered = true
-                    }
+                    }*/
                   case _ =>
                 }
-                var d1_before_d = true
-                var d2_before_d = true
-                var previous_d1:IntegerBox = null
+                //var d1_before_d = true
+                //var d2_before_d = true
+                //var previous_d1:IntegerBox = null
                 game.getArena foreachPair {
                   case (d1:IntegerBox, d2:IntegerBox) =>
                     var d1Value = d1.prev_value
                     var d2Value = d2.prev_value
-                    if(previous_d1 != d1) {
+                    /*if(previous_d1 != d1) {
                       d2_before_d = true
                       if(d1 == d) {
                         d1_before_d = false
@@ -651,24 +668,24 @@ object CodeGenerator {
                     if(d1 == d) d1_before_d = false
                     if(d2 == d) d2_before_d = false
                     if(d1_before_d) d1Value = d1.value
-                    if(d2_before_d) d2Value = d2.value
+                    if(d2_before_d) d2Value = d2.value*/
                     // d1Value contains the value of d1 at the current state of the program.
                     // d2Value contains the value of d2 at the current state of the program.
                     if(d1 != d || d2 != d) {
                       if(dNewValue == d1Value + d2Value) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d1).value + EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d1).prev_value + EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == d1Value - d2Value) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d1).value - EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d1).prev_value - EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == d2Value - d1Value) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d2).value - EIdentShape(d1).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d2).prev_value - EIdentShape(d1).prev_value)::possibleExpressions
                       }
                       if(dNewValue == d1Value * d2Value) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d1).value * EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d1).prev_value * EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(d2Value != 0 && dNewValue == d1Value / d2Value) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d1).value / EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d1).prev_value / EIdentShape(d2).prev_value)::possibleExpressions
                       }
                     }
                   case _ =>
@@ -677,27 +694,27 @@ object CodeGenerator {
                   possibleExpressions = (shape_ident.value += (d.value - d.prev_value))::possibleExpressions
                 }
                 causeEventCode match { case INTEGER_CHANGE_EVENT | INTEGER_EQUAL_EVENT | INTEGER_GREATER_EQUAL_EVENT | INTEGER_LESS_EQUAL_EVENT | INTEGER_POSITIVE_EVENT | INTEGER_NEGATIVE_EVENT =>
-                  var d_encountered = false
+                  //var d_encountered = false
                   game.getArena foreach {
                   case (d2:IntegerBox) =>
                     if(d2 != d) {
-                      var dValue = if(d_encountered) d2.prev_value else d2.value
+                      var dValue = d2.prev_value // if(d_encountered) d2.prev_value else d2.value
                       if(dNewValue == dValue - eventNewValue) {
-                        possibleExpressions = (shape_ident.value = EIdentShape(d2).value - newValue_ident)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = EIdentShape(d2).prev_value - newValue_ident)::possibleExpressions
                       }
                       if(dNewValue == eventNewValue - dValue) {
-                        possibleExpressions = (shape_ident.value = newValue_ident - EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = newValue_ident - EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == eventNewValue + dValue) {
-                        possibleExpressions = (shape_ident.value = newValue_ident + EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = newValue_ident + EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dNewValue == eventNewValue * dValue) {
-                        possibleExpressions = (shape_ident.value = newValue_ident * EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = newValue_ident * EIdentShape(d2).prev_value)::possibleExpressions
                       }
                       if(dValue != 0 && dNewValue == eventNewValue / dValue) {
-                        possibleExpressions = (shape_ident.value = newValue_ident / EIdentShape(d2).value)::possibleExpressions
+                        possibleExpressions = (shape_ident.value = newValue_ident / EIdentShape(d2).prev_value)::possibleExpressions
                       }
-                    } else d_encountered = true
+                    }// else d_encountered = true
                     
                   case _ =>
                   }
@@ -748,17 +765,17 @@ object CodeGenerator {
                 var possibleExpressions:List[Expression] = Nil
                 game.getArena foreach {
                   case (d2:TextBox) if d2.prev_text == d.text =>
-                    possibleExpressions = (shape_ident.text = EIdentShape(d2).text)::possibleExpressions
+                    possibleExpressions = (shape_ident.text = EIdentShape(d2).prev_text)::possibleExpressions
                   case _ =>
                 }
-                var d1_before_d = true
-                var d2_before_d = true
-                var previous_d1:TextBox = null
+                //var d1_before_d = true
+                //var d2_before_d = true
+                //var previous_d1:TextBox = null
                 game.getArena foreachPair {
                   case (d1:TextBox, d2:TextBox) =>
                     var d1Value = d1.prev_text
                     var d2Value = d2.prev_text
-                    if(previous_d1 != d1) {
+                    /*if(previous_d1 != d1) {
                       d2_before_d = true
                       if(d1 == d) {
                         d1_before_d = false
@@ -770,14 +787,14 @@ object CodeGenerator {
                     if(d1 == d) d1_before_d = false
                     if(d2 == d) d2_before_d = false
                     if(d1_before_d) d1Value = d1.text
-                    if(d2_before_d) d2Value = d2.text
+                    if(d2_before_d) d2Value = d2.text*/
                     // d1Value contains the value of d1 at the current state of the program.
                     // d2Value contains the value of d2 at the current state of the program.
                     if(dNewText == d1Value + d2Value) {
-                      possibleExpressions = (shape_ident.text = EIdentShape(d1).text + EIdentShape(d2).text)::possibleExpressions
+                      possibleExpressions = (shape_ident.text = EIdentShape(d1).prev_text + EIdentShape(d2).prev_text)::possibleExpressions
                     }
                     if(dNewText == d2Value + d1Value) {
-                      possibleExpressions = (shape_ident.text = EIdentShape(d2).text + EIdentShape(d1).text)::possibleExpressions
+                      possibleExpressions = (shape_ident.text = EIdentShape(d2).prev_text + EIdentShape(d1).prev_text)::possibleExpressions
                     }
                   case _ =>
                 }
