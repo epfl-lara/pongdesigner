@@ -62,7 +62,7 @@ object GameShapes {
     override def add(s: GameShapes.Shape) = {
       super.add(s)
       s.gravity = this
-      s.friction = new CustomFriction(0.1f, 0.95f)
+      s.friction = BasicFriction
     }
   }
   
@@ -72,14 +72,14 @@ object GameShapes {
     
     override def remove(s: GameShapes.Shape) = {
       super.remove(s)
-      s.gravity = Gravity2D
+      s.gravity = ZeroGravity
       s.friction = ElasticFriction
     }
     
     override def add(s: GameShapes.Shape) = {
       super.add(s)
       s.gravity = this
-      s.friction = new CustomFriction(0.1f, 0.95f)
+      s.friction = BasicFriction
     }
   }
   
@@ -95,6 +95,11 @@ object GameShapes {
       s.velocity_x = vCollision * xUnit + vTangent * -yUnit
       s.velocity_y = vCollision * yUnit + vTangent * xUnit
     }
+  }
+  
+  object BasicFriction extends BouncingFriction {
+    def frictionCollision = 0.1f
+    def frictionTangent = 0.95f
   }
   
   object ElasticFriction extends BouncingFriction {
