@@ -159,7 +159,7 @@ abstract class Game /*extends scala.Serializable*/ {
     verified
   }
   
-  /** Coordinates of the game */
+  /** Boundaries of the game */
   def maxX = mMaxX
   def maxY = mMaxY
   def minX = mMinX
@@ -509,7 +509,9 @@ abstract class Game /*extends scala.Serializable*/ {
   def onCollisionEvent(s1: GameShapes.Shape, s2: GameShapes.Shape,
       new_velocityXs1: Float, new_velocityYs1: Float, new_velocityXs2: Float, new_velocityYs2:Float,
       time_collision_relative: Float,
-      x: Float, y: Float, ruleToStopBefore: ReactiveRule = null): Boolean = {
+      x: Float, y: Float, 
+      xUnit: Float, yUnit: Float,
+      ruleToStopBefore: ReactiveRule = null): Boolean = {
     triggerEvents.addEvent(currentTime, COLLISION_EVENT, s1, s2, x, y, s1.x, s1.y)
     if(!isNoCollisionEffectBetween(s1, s2)) {
       if(s1.velocity_x != new_velocityXs1 || s1.velocity_y != new_velocityYs1) {
@@ -519,12 +521,12 @@ abstract class Game /*extends scala.Serializable*/ {
         }
         s1.velocity_x = new_velocityXs1
         s1.velocity_y = new_velocityYs1
-        if(s1.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
-          s1.friction(s1) 
-        }
         if(time_collision_relative != 0) {
           s1.x = s1.x - time_collision_relative * s1.velocity_x
           s1.y = s1.y - time_collision_relative * s1.velocity_y
+        }
+        if(s1.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+          s1.friction(s1, xUnit, yUnit) 
         }
       }
       if(s2.velocity_x != new_velocityXs2 || s2.velocity_y != new_velocityYs2) {
@@ -534,12 +536,12 @@ abstract class Game /*extends scala.Serializable*/ {
         }
         s2.velocity_x = new_velocityXs2
         s2.velocity_y = new_velocityYs2
-        if(s2.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
-          s2.friction(s2) 
-        }
         if(time_collision_relative != 0) {
           s2.x = s2.x - time_collision_relative * s2.velocity_x
           s2.y = s2.y - time_collision_relative * s2.velocity_y
+        }
+        if(s2.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+          s2.friction(s2, -xUnit, -yUnit) 
         }
       }
     } else {

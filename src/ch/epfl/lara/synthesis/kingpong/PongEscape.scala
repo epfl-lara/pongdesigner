@@ -110,4 +110,8 @@ class PongEscape extends Game {
     ball1.x = 425 // 1 more
     ball1.y = 685 // 1 more
   }
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

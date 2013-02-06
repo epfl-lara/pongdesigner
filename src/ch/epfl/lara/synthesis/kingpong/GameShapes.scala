@@ -62,7 +62,7 @@ object GameShapes {
     override def add(s: GameShapes.Shape) = {
       super.add(s)
       s.gravity = this
-      s.friction = new CustomFriction(0.9f)
+      s.friction = new CustomFriction(0.1f, 0.95f)
     }
   }
   
@@ -79,20 +79,30 @@ object GameShapes {
     override def add(s: GameShapes.Shape) = {
       super.add(s)
       s.gravity = this
-      s.friction = new CustomFriction(0.9f)
+      s.friction = new CustomFriction(0.1f, 0.95f)
     }
   }
   
   trait BouncingFriction {
-    def friction: Float
-    def apply(s: GameShapes.Shape) = { s.velocity *= friction }
+    def frictionCollision: Float
+    def frictionTangent: Float
+    def apply(s: GameShapes.Shape) = { s.velocity_x *= frictionCollision }
+    def apply(s: GameShapes.Shape, xUnit: Float, yUnit: Float) = {
+      var vCollision = s.velocity_x * xUnit + s.velocity_y * yUnit
+      var vTangent = s.velocity_x * -yUnit + s.velocity_y * xUnit
+      vCollision *= frictionCollision
+      vTangent *= frictionTangent
+      s.velocity_x = vCollision * xUnit + vTangent * -yUnit
+      s.velocity_y = vCollision * yUnit + vTangent * xUnit
+    }
   }
   
   object ElasticFriction extends BouncingFriction {
-    override def friction = 1.0f
+    override def frictionCollision = 1.0f
+    override def frictionTangent = 1.0f
   }
   
-  class CustomFriction(var friction: Float = 0.9f) extends BouncingFriction {
+  class CustomFriction(var frictionCollision: Float = 0.9f, var frictionTangent: Float = 0.95f) extends BouncingFriction {
   }
   
   /** Maximal distance to which an object can be selected */
@@ -142,8 +152,7 @@ object GameShapes {
     resultingName
   }
   
-  /** General shape */
-  abstract class Shape {
+  trait NamedObject {
     /** The name of the shape and methods to modify it */
     var mName: String = DEFAULT_NAME
     def named(n: String): this.type = {
@@ -152,6 +161,10 @@ object GameShapes {
     }
     def name_=(n: String) = this named n
     def name: String = mName
+  }
+  
+  /** General shape */
+  abstract class Shape extends NamedObject {
     override def toString() = mName
 
     /** Gameflow-independent parameters */
@@ -597,7 +610,7 @@ object GameShapes {
       result
     }
   }
-  class Camera extends Rectangular {
+  class Camera extends Rectangular with Category {
     mName = "Camera"
     override def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
     override def distanceSelection(xCursor: Float, yCursor: Float):Float = 0
@@ -605,6 +618,31 @@ object GameShapes {
       r.set(x, y, x+width, y+height)
     }
     override def mass = 0
+    
+    var target: GameShapes.Shape = null
+    override def x = {
+      if(target != null) target.centerX - (width/2) else super.x
+    }
+    override def y = {
+      if(target != null) target.centerY - (height/2) else super.y
+    }
+    
+    override def remove(s: GameShapes.Shape) = {
+      super.remove(s)
+      if(content.size == 0) {
+        target = null
+      }
+    }
+    
+    override def add(s: GameShapes.Shape) = {
+      
+      if(content.size == 0) {
+        super.add(s)
+        target = s
+      } else if(content.size == 1) {
+        // Skip the added element
+      }
+    }
   }
   
   /**
@@ -1068,15 +1106,16 @@ object GameShapes {
         val vy = vy2 - vy1
         if((vx1*nx + vy1*ny >= vx2*nx + vy2*ny)) { // The collision is increasing
           // Go back in time to see when this collision occured, and make it occured at this time.
-          val delta = (r1pr2 * r1pr2) * (vx * vx + vy * vy) - (vx * dy + vy * dx) * (vx * dy + vy * dx)
+          val delta = (r1pr2 * r1pr2) * (vx * vx + vy * vy) - (vx * dy - vy * dx) * (vx * dy - vy * dx)
           val a =  (vx * vx + vy * vy)
           val b =  (vx * dx + vy * dy)
-          val t1 = if(a != 0 && delta > 0) {
+          var t1 = if(a != 0 && delta > 0) {
             (- b - Math.sqrt(delta).toFloat)/a
             // The collision occured at time currentTime + t1
           } else {
             0f
           }
+
           val dm = (m1 - m2) / (m1 + m2)
           val rm2 = 2*m2 / (m1+m2)
           val rm1 = 2*m1 / (m1+m2)
@@ -1088,12 +1127,15 @@ object GameShapes {
           val nvy1 = if(c1.noVelocity) c1.velocity_y else dm*nxy*vx1 + dm*ny2*vy1 + nx2*vy1 + nxy*rm2*vx2 - nxy*vx1 + ny2*rm2*vy2
           val nvx2 = if(c2.noVelocity) c2.velocity_x else -dm*nx2*vx2 - dm*nxy*vy2 + nx2*rm1*vx1 + nxy*rm1*vy1 - nxy*vy2 + ny2*vx2
           val nvy2 = if(c2.noVelocity) c2.velocity_y else -dm*nxy*vx2 - dm*ny2*vy2 + nx2*vy2 + nxy*rm1*vx1 - nxy*vx2 + ny2*rm1*vy1
-          
+          if(t1 > 0) {
+            t1 = -t1
+          }
           // Sets the new speeds to correct the collision, as well as the time at which the collision really occured.
           game.onCollisionEvent(c1, c2,
               nvx1, nvy1, nvx2, nvy2,
               t1,
-              x1 + nx * r1, y1 + ny * r1) // Position of the collision
+              x1 + nx * r1, y1 + ny * r1,
+              nx, ny) // Position of the collision, and unit vector of it.
           result = true
         }
       }

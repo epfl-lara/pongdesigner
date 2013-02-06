@@ -46,4 +46,8 @@ class PongFibonacci extends Game {
   WhenIntegerChanges(score) { (oldValue, newValue) =>
     score1.value = score2.value
   }.represents(List(EApply(ESelect(ESelect(EIdentShape(score1), "value"), "$eq"), List(ESelect(EIdentShape(score2), "value")))))
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

@@ -150,4 +150,8 @@ class PongGameComplete extends Game {
   WhenFingerDownOn(ball2) {
     ball2.velocity *= 1.3f
   }
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = screenWidth
+  Camera.height = screenHeight
 }

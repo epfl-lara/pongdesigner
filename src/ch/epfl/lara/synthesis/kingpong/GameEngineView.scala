@@ -126,6 +126,10 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
     if(game != null)  {
       c.drawBitmap(backGroundImage, 0, 0, null)
       c.save()
+      if(!editMode) {
+        game.computeRegularBounds()
+        computeMatrix()
+      } 
       c.setMatrix(mMatrix)
       drawGameOn(c)
       c.restore()
@@ -137,10 +141,16 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
   var mMatrix: Matrix = new Matrix
   var mIMatrix: Matrix = new Matrix
   
+  var positionBefore: RectF = new RectF(0, 0, 0, 0)
+  var positionAfter: RectF = new RectF(0, 0, 0, 0)
+  
+  
   /** Compute matrices to fit the canvas to the screen */
   def computeMatrix() = {
     if(game != null) {
-      mMatrix.setRectToRect (new RectF(game.minX, game.minY, game.maxX, game.maxY), new RectF(0, 0, mWidth, mHeight), Matrix.ScaleToFit.CENTER)
+      positionBefore.set(game.minX, game.minY, game.maxX, game.maxY)
+      positionAfter.set(0, 0, mWidth, mHeight)
+      mMatrix.setRectToRect (positionBefore, positionAfter, Matrix.ScaleToFit.CENTER)
       mMatrix.invert(mIMatrix)
     }
   }

@@ -17,6 +17,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.view.Surface
+import android.content.res.Configuration
 
 class GameDesignerActivity extends Activity with SensorEventListener {
     
@@ -56,12 +58,12 @@ class GameDesignerActivity extends Activity with SensorEventListener {
         if(!mGameView.isInEditMode()) {
           mGameView.enterEditMode()
           mTimeButton.setImageDrawable(mTimeButtonDrawable2)
-          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+          unlockScreenOrientation()
         } else {
           mGameView.exitEditMode()
           switchGhostMode()
           mTimeButton.setImageDrawable(mTimeButtonDrawable)
-          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR)
+          lockScreenOrientation()          
         }
       }
       mBackButton.setOnClickListener { () =>
@@ -71,6 +73,40 @@ class GameDesignerActivity extends Activity with SensorEventListener {
       }
       mGhostButton.setOnClickListener { () => switchGhostMode() }
   }
+    
+  var mScreenOrientationLocked = false
+    
+  def lockScreenOrientation() {
+    if (!mScreenOrientationLocked) {
+        val orientation = getResources().getConfiguration().orientation
+        val rotation = getWindowManager().getDefaultDisplay().getOrientation()
+
+        if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90) {
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+            }
+            else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
+        }
+        else if (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270) {
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            }
+            else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+            }
+        }
+
+        mScreenOrientationLocked = true;
+    }
+  }
+  
+  def unlockScreenOrientation() {
+      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+      mScreenOrientationLocked = false;
+  }
+    
   def switchGhostMode() {
     if(!mGameView.isInGhostMode() && mGameView.isInEditMode()) {
         mGameView.activateGhostMode()
@@ -190,6 +226,20 @@ class GameDesignerActivity extends Activity with SensorEventListener {
     gravity(1) = alpha * gravity(1) + (1 - alpha) * event.values(1)
     gravity(2) = alpha * gravity(2) + (1 - alpha) * event.values(2)
     
-    mGameView.set2DAcceleration(gravity(0), gravity(1))
+    val rotation = getWindowManager().getDefaultDisplay().getOrientation()
+
+    rotation match {
+      case Surface.ROTATION_0 =>
+        mGameView.set2DAcceleration(gravity(0), gravity(1))
+      case Surface.ROTATION_90 =>
+        mGameView.set2DAcceleration(-gravity(1), gravity(0))
+      case Surface.ROTATION_180 =>
+        mGameView.set2DAcceleration(-gravity(0), -gravity(1))
+      case Surface.ROTATION_270 =>
+        mGameView.set2DAcceleration(gravity(1), -gravity(0))
+      case _ =>
+        
+    }
+    
   }
 }

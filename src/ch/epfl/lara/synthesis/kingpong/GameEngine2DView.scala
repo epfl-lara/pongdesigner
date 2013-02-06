@@ -109,6 +109,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     startTime = System.currentTimeMillis()
     selectShape(null)
     selectEvent(null)
+    modifyPreviousValues = false
     mRuleState = STATE_MODIFYING_GAME
     GameShapes.AccelerometerGravity.reset()
     GameShapes.Gravity2D.reset()
@@ -145,6 +146,11 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
 
       selectShape(null)
       selectEvent(null)
+      isForceFieldSelected = false
+      isGravity2DSelected = false
+      isCameraSelected = false
+      selectedCategory = null
+      modifyPreviousValues = false
       mRuleState = STATE_MODIFYING_GAME
       //mAddRuleButton.text = res.getString(R.string.design_rule)
       mAddRuleButton.hovered = false
@@ -1196,8 +1202,11 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         isCameraSelected = !isCameraSelected
         if(isCameraSelected) {
           selectShape(game.Camera)
+          selectedCategory = game.Camera
         } else {
           selectShape(null)
+          selectedCategory = null
+          mRuleState = STATE_MODIFYING_GAME
         }
       }
     }
@@ -1389,6 +1398,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /** Switches the current mode to the global modification of the game */
   def modifyingGameStateMode() {
     mRuleState = STATE_MODIFYING_GAME
+    modifyPreviousValues = false
     enterEditMode()
     mAddRuleButton.hovered = false
     selectEvent(null)
@@ -1413,6 +1423,9 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     if(selectedShape == null) {
       mMenuPositionX = 0
       mMenuPositionY = 0
+      if(isCameraSelected) {
+        mRuleState = STATE_MODIFYING_CATEGORY
+      }
     }
   }
   
@@ -1422,7 +1435,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       game.getArena foreach { shape =>
         val x = xTouch - shape.x + shape.prev_x
         val y = yTouch - shape.y + shape.prev_y
-        if(shape.selectableBy(x, y)) {
+        if(shape.selectableBy(x, y) && shape.distanceSelection(x, y) == 0) {
           selectedCategory.turnOnOff(shape)
         }
       }

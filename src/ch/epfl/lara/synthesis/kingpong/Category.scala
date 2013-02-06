@@ -8,7 +8,7 @@ import scala.collection.Traversable
  */
 object Category {
   def apply(vargs : GameShapes.Shape*): Category = {
-    val res = new Category
+    val res = new BasicCategory
     res.content.++=(vargs)
     res
   }
@@ -17,15 +17,10 @@ object Category {
 /**
  * Describes a traversable and named set of shapes.
  */
-class Category extends Traversable[GameShapes.Shape] {
+trait Category extends Traversable[GameShapes.Shape] with GameShapes.NamedObject {
   var content = Set[GameShapes.Shape]()
-  var name: String = null
   def foreach[U](f: GameShapes.Shape => U) = {
     content foreach f
-  }
-  def named(s: String): Category = {
-    name = s
-    this
   }
    def turnOnOff(s: GameShapes.Shape) = {
     if(content contains s) {
@@ -44,3 +39,5 @@ class Category extends Traversable[GameShapes.Shape] {
      content = Set[GameShapes.Shape]()
    }
 }
+
+class BasicCategory extends Category

@@ -567,7 +567,7 @@ object CodeGenerator {
         new_code = ParallelExpressions(possibilities)::new_code
       }
       // Change in velocity recorded only if the angle did not change or the initial velocity was null
-      if(shape.prev_velocity != shape.velocity && (Math.round(Math.abs(shape.angle - shape.prev_angle)/15)*15 == 0 || shape.prev_velocity == 0 || shape.velocity == 0)) {
+      if(shape.prev_velocity != shape.velocity && (Math.round(Math.abs(shape.angle - shape.prev_angle)/15)*15 == 0 || shape.prev_velocity == 0 || shape.velocity == 0 || shape.velocity / shape.prev_velocity > 2 || shape.prev_velocity / shape.velocity > 2)) {
         var possibilities:List[Expression] = Nil
         possibilities = (shape_ident.velocity = shape.velocity)::possibilities
         if(shape.prev_velocity != 0 && shape.velocity != 0) {
