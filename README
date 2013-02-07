@@ -1,1 +1,28 @@
 This is KingPong project.
+
+
+
+With SBT:
+=========
+
+Make sure that the Android SDK is present and export its location:
+
+    export ANDROID_SDK_ROOT=/usr/local/Cellar/android-sdk/r21.0.1
+
+Compile and package:
+
+    sbt
+    > compile
+    > android:package-debug
+
+Launch the emulator, use TAB to see available avd:
+
+    > android:emulator-start TAB
+
+Install KingPong on the device:
+
+    > android:start-emulator
+
+Stop the emulator:
+
+    > android:emulator-stop
