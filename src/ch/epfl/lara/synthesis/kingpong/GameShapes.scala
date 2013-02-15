@@ -4,6 +4,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.Traversable
 import scala.collection.mutable.HashMap
 import android.graphics.RectF
+import ch.epfl.lara.synthesis.kingpong.ast._
+
 /**
  * GameShapes
  * Describes shapes that can be used by a game.
@@ -49,7 +51,7 @@ object GameShapes {
     def mass = 0
   }
   
-  object AccelerometerGravity extends Category with ForceField {
+  object AccelerometerGravity extends ForceField with Category[Shape] {
     var force_x: Float = 0
     var force_y: Float = 0
     
@@ -66,7 +68,7 @@ object GameShapes {
     }
   }
   
-  object Gravity2D extends Category with ForceField {
+  object Gravity2D extends Category[Shape]  with ForceField {
     var force_x: Float = 0
     var force_y: Float = 0.001f
     
@@ -166,6 +168,9 @@ object GameShapes {
     }
     def name_=(n: String) = this named n
     def name: String = mName
+    
+    /** Cloning method */
+    //def clone() //TODO: to implement
   }
   
   /** General shape */
@@ -175,6 +180,7 @@ object GameShapes {
     /** Gameflow-independent parameters */
     protected var attachedGame: Game = null
     def attach(game: Game) = attachedGame = game
+    def delete() = attachedGame.deleteShape(this)
 
     /** noVelocity = true means that the object will not be moved by its intrinsic velocity */
     var noVelocity = false
@@ -186,10 +192,10 @@ object GameShapes {
     var friction: BouncingFriction = DEFAULT_FRICTION
     
     /** Color expressions */
-    var color:Int = DEFAULT_COLOR
-    var prev_color:Int = color
+    var color: Int = DEFAULT_COLOR
+    var prev_color: Int = color
     var start_color: Expression = Expression.NONE
-    var copy_color: Int= color
+    var copy_color: Int = color
 
     /** Physical attributes */
     def mass: Float
@@ -615,7 +621,7 @@ object GameShapes {
       result
     }
   }
-  class Camera extends Rectangular with Category {
+  class Camera extends Rectangular with Category[Shape] {
     mName = "Camera"
     override def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
     override def distanceSelection(xCursor: Float, yCursor: Float):Float = 0
@@ -640,13 +646,18 @@ object GameShapes {
     }
     
     override def add(s: GameShapes.Shape) = {
-      
       if(content.size == 0) {
         super.add(s)
         target = s
-      } else if(content.size == 1) {
-        // Skip the added element
+      } else {
+        reset()
+        target = s
       }
+    }
+    
+    override def reset() = {
+      super.reset()
+      target = null
     }
   }
   
@@ -863,7 +874,7 @@ object GameShapes {
       if(attachedGame != null) {
         val oldValue = history_value(timestamp-1, value)
         val newValue = history_value(timestamp, value)
-        if(oldValue != newValue) attachedGame.onIntegerChangeEvent(this, oldValue, newValue, ruleToStopBefore) else true
+        if(oldValue != newValue) attachedGame.onIntegerChangeEvent(this, newValue, ruleToStopBefore) else true
       } else {
         true
       }

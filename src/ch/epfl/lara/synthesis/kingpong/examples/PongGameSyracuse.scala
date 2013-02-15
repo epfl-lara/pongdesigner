@@ -1,11 +1,14 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 class PongGameSyracuse extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /**
    * Game Layouts
@@ -97,65 +100,65 @@ class PongGameSyracuse extends Game {
     triggerthreeplusone.value += -1
     triggerhalf.value += -1
   }
-  WhenIntegerChanges(score) { (oldValue, newValue) =>
+  WhenIntegerChanges(score) { (newValue) =>
     copy.value = newValue
     copy1.value = score.value + copy.value
     copy2.value = copy.value + copy1.value
     threeplusone.value = One.value + copy2.value
   }
-  WhenIntegerChanges(triggerthreeplusone) { (oldValue, newValue) =>
+  WhenIntegerChanges(triggerthreeplusone) { (newValue) =>
     if(newValue == 0) {
       score.value = threeplusone.value
     }
   }
-  WhenIntegerChanges(copy) { (oldValue, newValue) =>
+  WhenIntegerChanges(copy) { (newValue) =>
     half.value = newValue / 2
     otherhalf.value = newValue / 2
   }
-  WhenIntegerChanges(half) { (oldValue, newValue) =>
+  WhenIntegerChanges(half) { (newValue) =>
     basetwo.value = half.value + otherhalf.value
   }
-  WhenIntegerChanges(triggerhalf) { (oldValue, newValue) =>
+  WhenIntegerChanges(triggerhalf) { (newValue) =>
     if(newValue == 0) {
       score.value = half.value
     }
   }
-  WhenIntegerChanges(basetwo) { (oldValue, newValue) =>
+  WhenIntegerChanges(basetwo) { (newValue) =>
     isOdd.value = copy.value - basetwo.value
   }
-  WhenIntegerChanges(otherhalf) { (oldValue, newValue) =>
+  WhenIntegerChanges(otherhalf) { (newValue) =>
     basetwo.value = half.value + otherhalf.value
   }
-  WhenIntegerChanges(basetwo) { (oldValue, newValue) =>
+  WhenIntegerChanges(basetwo) { (newValue) =>
     isOdd.value = copy.value - basetwo.value
     isAlsoOdd.value = copy.value - basetwo.value
   }
-  WhenIntegerChanges(triggerhalf) { (oldValue, newValue) =>
+  WhenIntegerChanges(triggerhalf) { (newValue) =>
     if(newValue == 0) {
       score.value = otherhalf.value
       triggerthreeplusone.value += 1
       triggerhalf.value += 1
     }
   }
-  WhenIntegerChanges(isEven) { (oldValue, newValue) =>
+  WhenIntegerChanges(isEven) { (newValue) =>
     if(newValue == 0) {
       triggerthreeplusone.value = 1
       triggerhalf.value = 2
     }
   }
-  WhenIntegerChanges(triggerthreeplusone) { (oldValue, newValue) =>
+  WhenIntegerChanges(triggerthreeplusone) { (newValue) =>
     if(newValue == 0) {
       score.value = threeplusone.value
       triggerthreeplusone.value += 2
     }
   }
-  WhenIntegerChanges(isAlsoOdd) { (oldValue, newValue) =>
+  WhenIntegerChanges(isAlsoOdd) { (newValue) =>
     if(newValue == 0) {
       triggerthreeplusone.value = 2
       triggerhalf.value = 1
     }
   }
-  WhenIntegerChanges(isOdd) { (oldValue, newValue) =>
+  WhenIntegerChanges(isOdd) { (newValue) =>
     isEven.value = One.value - isOdd.value
   }
   Camera.x = 0

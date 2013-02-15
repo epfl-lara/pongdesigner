@@ -23,7 +23,6 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuff.Mode
 import android.graphics.DashPathEffect
 import android.util.DisplayMetrics
-import scala.collection.mutable.HashMap
 import android.view.WindowManager
 import android.graphics.Color
 import android.widget.Toast
@@ -31,6 +30,10 @@ import android.graphics.Typeface
 import android.text.DynamicLayout
 import android.text.Layout.Alignment
 import android.content.res.Configuration
+import ch.epfl.lara.synthesis.kingpong.ast.CodeGenerator
+import ch.epfl.lara.synthesis.kingpong.ast.Category
+import ch.epfl.lara.synthesis.kingpong.ast._
+import ch.epfl.lara.synthesis.kingpong.menus._
 
 /**
  * Implements a game engine view
@@ -54,11 +57,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   //selectedRuleConstants += ((2, 13, 1, Expression.NONE))
   var selectedRuleString: String = null // "testRuleDisplay() {\n  constant = 1\n}"
   var selectedRuleStringSplit: Array[String] = null //selectedRuleString.split("\n")
-  var selectedCategory: Category = null
-  
-  var isForceFieldSelected: Boolean = false
-  var isGravity2DSelected: Boolean = false
-  var isCameraSelected: Boolean = false
+  var selectedCategory: Category[Shape] = null
   
   /** If the user is modifying an Integerbox, the selected rule is normally automatically reapplied. */
   var integerBoxWatched: IntegerBox = null // TODO : check the behavior
@@ -109,8 +108,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     startTime = System.currentTimeMillis()
     selectShape(null)
     selectEvent(null)
-    modifyPreviousValues = false
-    mRuleState = STATE_MODIFYING_GAME
+    setModeModifyGame()
     GameShapes.AccelerometerGravity.reset()
     GameShapes.Gravity2D.reset()
     enterEditMode()
@@ -146,14 +144,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
 
       selectShape(null)
       selectEvent(null)
-      isForceFieldSelected = false
-      isGravity2DSelected = false
-      isCameraSelected = false
       selectedCategory = null
-      modifyPreviousValues = false
-      mRuleState = STATE_MODIFYING_GAME
+      CameraButton.selected = false
+      AccelerometerButton.selected = false
+      Gravity2DButton.selected = false
+      setModeModifyGame()
       //mAddRuleButton.text = res.getString(R.string.design_rule)
-      mAddRuleButton.hovered = false
+      MovingMenu.menus foreach { _.hovered = false}
+      StaticMenu.menus foreach { _.hovered = false}
       mMenuPositionX = 0
       mMenuPositionY = 0
       if(enteredEditTime != 0) {
@@ -207,268 +205,65 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   private val useBitmaps = true
   
   private val allColors = res.getStringArray(R.array.colors)
+  MenuOptions.allColors = allColors
+  MenuOptions.context = context
   
   /** Menu drawing */
-  private val flatButton : Drawable = res.getDrawable(R.drawable.flat_button)
-  private val flatButtonH : Drawable = res.getDrawable(R.drawable.flat_button_highlighted)
-  private val flatButtonS : Drawable = res.getDrawable(R.drawable.flat_button_selected)
-  private val flatButtonSH : Drawable = res.getDrawable(R.drawable.flat_button_selected_highlighted)
-  private val flatButtonM1 : Drawable = res.getDrawable(R.drawable.flat_button_m1)
-  private val flatButtonP1 : Drawable = res.getDrawable(R.drawable.flat_button_p1)
-  private val overlayMove: Drawable = res.getDrawable(R.drawable.cross_move)
-  private val overlaySpeed: Drawable = res.getDrawable(R.drawable.move_velocity)
-  private val overlaySize : Drawable = res.getDrawable(R.drawable.move_size)
-  private val overlayNail : Drawable = res.getDrawable(R.drawable.nail)
+  val bitmaps = new HashMap[Int, Drawable]()
+  val drawables_to_load:List[Int] =
+    List(R.drawable.flat_button,
+        R.drawable.flat_button_highlighted,
+        R.drawable.flat_button_selected,
+        R.drawable.flat_button_selected_highlighted,
+        R.drawable.flat_button_m1,
+        R.drawable.flat_button_p1,
+        R.drawable.cross_move,
+        R.drawable.move_velocity,
+        R.drawable.move_size,
+        R.drawable.nail,
+        R.drawable.nail_big,
+        R.drawable.trashcan,
+        R.drawable.eye,
+        R.drawable.menu_paint,
+        R.drawable.none,
+        R.drawable.menu_add_rect,
+        R.drawable.menu_add_circle,
+        R.drawable.menu_add_digit,
+        R.drawable.menu_add_text,
+        R.drawable.modify_text,
+        R.drawable.plus,
+        R.drawable.menu_add_accelerometer,
+        R.drawable.menu_add_force_field,
+        R.drawable.menu_rule_editor,
+        R.drawable.menu_rule_maker,
+        R.drawable.prev_effects,
+        R.drawable.next_effects,
+        R.drawable.menu_camera,
+        R.drawable.existing_rules,
+        R.drawable.flat_button_resizable,
+        R.drawable.flat_button_resizable_highlighted
+        )
+  drawables_to_load.foreach { id =>
+    bitmaps(id) = res.getDrawable(id)
+  }
+
   private val overlayNailBig : Drawable = res.getDrawable(R.drawable.nail_big)
-  private val overlayTrashcan : Drawable = res.getDrawable(R.drawable.trashcan)
-  private val overlayEye : Drawable = res.getDrawable(R.drawable.eye)
-  private val overlayPaint : Drawable = res.getDrawable(R.drawable.menu_paint)
-  private val overlayNone: Drawable = res.getDrawable(R.drawable.none)
-  private val flatButtonResizable: NinePatchDrawable = res.getDrawable(R.drawable.flat_button_resizable).asInstanceOf[NinePatchDrawable]
-  private val flatButtonResizableH: NinePatchDrawable = res.getDrawable(R.drawable.flat_button_resizable_highlighted).asInstanceOf[NinePatchDrawable]
-  private val overlayAddRectangle: Drawable = res.getDrawable(R.drawable.menu_add_rect)
-  private val overlayAddCircle: Drawable = res.getDrawable(R.drawable.menu_add_circle)
-  private val overlayAddDigit: Drawable = res.getDrawable(R.drawable.menu_add_digit)
-  private val overlayAddText: Drawable = res.getDrawable(R.drawable.menu_add_text)
-  private val overlayModifyText: Drawable = res.getDrawable(R.drawable.modify_text)
-  private val overlayPlus: Drawable = res.getDrawable(R.drawable.plus)
-  private val overlayForceField: Drawable = res.getDrawable(R.drawable.menu_add_accelerometer)
-  private val overlayGravity2D: Drawable = res.getDrawable(R.drawable.menu_add_force_field)
-  private val overlayAddRule: Drawable = res.getDrawable(R.drawable.menu_rule_editor)
-  private val overlayCreateRule: Drawable = res.getDrawable(R.drawable.menu_rule_maker)
-  private val overlayPrevEffects: Drawable = res.getDrawable(R.drawable.prev_effects)
-  private val overlayNextEffects: Drawable = res.getDrawable(R.drawable.next_effects)
   private val overlayCamera: Drawable = res.getDrawable(R.drawable.menu_camera)
-  
-  /**
-   * Menus and their effects
+  /** Menus and their effects
    */
   var mMenuPositionX: Float = 0
   var mMenuPositionY: Float = 0
   var mDisplacementX: Float = 0
   var mDisplacementY: Float = 0
-  var modifyPreviousValues: Boolean = false
-  /** The move button */
-  var mMoveButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      if(selectedShape.noVelocity) {
-        if(modifyPreviousValues) {
-          if(Math.abs(selectedShape.prev_x - selectedShapeGameCoords(0)) >= 10) selectedShape.prev_x = Math.floor((selectedShape.prev_x+2.5f)/5).toFloat * 5
-          if(Math.abs(selectedShape.prev_y - selectedShapeGameCoords(1)) >= 10) selectedShape.prev_y = Math.floor((selectedShape.prev_y+2.5f)/5).toFloat * 5   
-        } else {
-          if(Math.abs(selectedShape.x - selectedShapeGameCoords(0)) >= 10) selectedShape.x = Math.floor((selectedShape.x+2.5f)/5).toFloat * 5
-          if(Math.abs(selectedShape.y - selectedShapeGameCoords(1)) >= 10) selectedShape.y = Math.floor((selectedShape.y+2.5f)/5).toFloat * 5          
-        }
-        if(mRuleState == STATE_MODIFYING_GAME) {
-          selectedShape.prev_x = selectedShape.x
-          selectedShape.prev_y = selectedShape.y
-        }
-      }
-      hovered = false
-    }
-  }
-  /** The speed button */
-  var mSpeedButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-    if(selectedShape.noVelocity) selectedShape.noVelocity = false
-      hovered = false
-    }
-  }
-  /** The size button */
-  var mSizeButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      selectedShape match {
-        case c:GameShapes.Circle =>
-          if(modifyPreviousValues) {
-            c.prev_radius = Math.floor((c.prev_radius + 2.5f)/5).toFloat * 5
-          } else {
-            c.radius = Math.floor((c.radius+2.5f)/5).toFloat * 5
-          }
-          if(mRuleState == STATE_MODIFYING_GAME) {
-            c.prev_radius = c.radius
-          }
-        case r:GameShapes.Rectangular =>
-          if(modifyPreviousValues) {
-            r.prev_width = (Math.floor((r.prev_width + 2.5f)/5) * 5).toInt
-            r.prev_height = (Math.floor((r.prev_height + 2.5f)/5) * 5).toInt
-          } else {
-            r.width = (Math.floor((r.width + 2.5f)/5) * 5).toInt
-            r.height = (Math.floor((r.height + 2.5f)/5) * 5).toInt
-          }
-          if(mRuleState == STATE_MODIFYING_GAME) {
-            r.prev_width = r.width
-            r.prev_height = r.height
-          }
-        case _ =>
-      }
-      hovered = false
-    }
-  }
-  /** The button to change between noVelocity and velocity available */
-  var mPinButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      selectedShape.noVelocity = !selectedShape.noVelocity
-      if(selectedShape.noVelocity) {
-        if(modifyPreviousValues) {
-          selectedShape.prev_velocity_x = 0
-          selectedShape.prev_velocity_y = 0
-        } else {
-          selectedShape.velocity_x = 0
-          selectedShape.velocity_y = 0
-        }
-        if(mRuleState == STATE_MODIFYING_GAME) {
-          selectedShape.prev_velocity_x = selectedShape.velocity_x
-          selectedShape.prev_velocity_y = selectedShape.velocity_y
-        }
-      }
-      hovered = false
-    }
-  }
-  /** The visibility button */
-  var mVisibilityButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      if(modifyPreviousValues) {
-        selectedShape.prev_visible = !selectedShape.prev_visible
-      } else {
-        selectedShape.visible = !selectedShape.visible
-      }
-      if(mRuleState == STATE_MODIFYING_GAME) {
-        selectedShape.prev_visible = selectedShape.visible
-      }
-      hovered = false
-    }
-  }
-  /** The send to trash button */
-  var mTrashButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-    CustomDialogs.launchOKCancelDialog(context,
-        String.format(res.getString(R.string.delete_title), selectedShape.mName),
-        res.getString(R.string.confirm_delete), false, { _ => game.deleteShape(selectedShape); selectShape(null)}, {_ => ()})
-    hovered = false
-  }}
-  /** The button to change the color */
-  var mPaintButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      val selectedColor:Int = ((mDisplacementX / (button_size/3)).toInt % 6 + 6) % 6
-      var color = Color.parseColor(allColors(selectedColor))
-      if(selectedColor == 0 && selectedShape.color == color) {
-        color = Color.parseColor(allColors(1))
-      }
-      if(modifyPreviousValues) {
-        selectedShape.prev_color = color
-      } else {
-        selectedShape.color = color
-      }
-      if(mRuleState == STATE_MODIFYING_GAME) {
-        selectedShape.prev_color = color
-      }
-      hovered = false
-    }
-  }
-  /** The button to increment the displayed integer */
-  var mIncrementButton = new MenuButton(0, 0) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      selectedShape match {
-        case d:IntegerBox =>
-          if(modifyPreviousValues) {
-            d.prev_value = d.prev_value + 1
-          } else {
-            d.value = d.value + 1
-          }
-          if(mRuleState == STATE_MODIFYING_GAME) {
-            d.prev_value = d.value
-          } else {
-            if(integerBoxWatched != null && integerBoxWatched == d) {
-              game.restorePrev(integerBoxWatched)
-              integerEvent.x2 = d.prev_value
-              integerEvent.y2 = d.value
-              triggerRule(selectedRule, integerEvent)
-            }
-          }
-        case _ =>
-      }
-      hovered = false
-    }
-  }
-  /** The button to decrement the displayed integer */
-  var mDecrementButton = new MenuButton(0, 0) {
-    override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      selectedShape match {
-        case d:IntegerBox =>
-          if(modifyPreviousValues) {
-            d.prev_value = d.prev_value - 1
-          } else {
-            d.value = d.value - 1
-          }
-          if(mRuleState == STATE_MODIFYING_GAME)  {
-            d.prev_value = d.value
-          } else {
-            if(integerBoxWatched != null && integerBoxWatched == d) {
-              game.restorePrev(integerBoxWatched)
-              integerEvent.x2 = d.prev_value
-              integerEvent.y2 = d.value
-              triggerRule(selectedRule, integerEvent)
-            }
-          }
-        case _ =>
-      }
-      hovered = false
-    }
-  }
-  /** The button to modify the text */
-  var mModifyTextButton = new MenuButton(0, 0) {
-    override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      selectedShape match {
-        case d:TextBox =>
-          def updateText(s: String): Unit = {
-            if(modifyPreviousValues) {
-              d.prev_text = s
-            } else {
-              d.text = s
-            }
-            if(mRuleState == STATE_MODIFYING_GAME) {
-              d.prev_text = d.text
-            }
-          }
-          CustomDialogs.launchChoiceDialog(context,
-              String.format(res.getString(R.string.modify_text_title), d.text), R.array.text_possibilities,
-              updateText(_), {() => })
-        case _ => 
-      }
-      hovered = false
-    }
-  }
-  /** The button to modify the name */
-  var mNameButton = new MenuTextButton(null) { override def onFingerUp(selectedShape: Shape, x: Float, y: Float) = {
-      var array = selectedShape match {
-        case r:Rectangle => R.array.rename_rectangles
-        case r:TextBox => R.array.rename_textbox
-        case r:IntegerBox => R.array.rename_integerbox
-        case r:Circle => R.array.rename_circles
-        case _ => R.array.rename_circles
-      }
-      CustomDialogs.launchChoiceDialog(context, String.format(res.getString(R.string.rename_title), selectedShape.mName), array, renameSelectedShape(_), {() => })
-      hovered = false
-    }
-  }
-  lazy val listMovingMenus = List(mNameButton, mIncrementButton, mDecrementButton, mModifyTextButton, mTrashButton, mPinButton, mVisibilityButton, mPaintButton, mMoveButton, mSpeedButton, mSizeButton)
   
-  
-  /** The button to choose an existing rule */
-  var mChooseExistingRuleButton = new MenuTextButton(res.getString(R.string.existing_rule))
-
-  /** The buttons to create custom shapes */
-  lazy val mAddRectangleButton = new MenuButton(button_size*0.5f, button_size*0.5f)
-  lazy val mAddCircleButton = new MenuButton(button_size*1.5f, button_size*0.5f)
-  lazy val mAddDigitButton = new MenuButton(button_size*2.5f, button_size*0.5f)
-  lazy val mAddTextButton = new MenuButton(button_size*3.5f, button_size*0.5f)
-  /** The button to access the rule editor */
-  lazy val mAddForceFieldButton = new MenuButton(button_size*0.5f, button_size*1.5f)
-  lazy val mAddGravity2DButton = new MenuButton(button_size*1.5f, button_size*1.5f)
-  lazy val mCameraButton = new MenuButton(button_size*2.5f, button_size*1.5f)
-  lazy val mAddRuleButton = new MenuButton(button_size*0.5f, button_size*2.5f)
-  lazy val mSelectPrevNextButton = new MenuButton(button_size*1.5f, button_size*2.5f)
-  
-  lazy val listStaticMenus = List(mAddRectangleButton, mAddCircleButton, mAddDigitButton, mAddTextButton, mAddForceFieldButton, mAddGravity2DButton, mCameraButton, mAddRuleButton, mChooseExistingRuleButton, mSelectPrevNextButton)
-  
+ 
   /** The possible states of the game */
   final val STATE_MODIFYING_GAME = 0 // All effects are applied immediately
   final val STATE_SELECTING_EVENTS = 1 // Only events can be selected 
   final val STATE_SELECTING_EFFECTS = 2 // Effects are applied only on the future state, the previous state remains the same.
   final val STATE_MODIFYING_CATEGORY = 3 // Objects are selected to be included to a given category
   var mRuleState = STATE_MODIFYING_GAME
+  MenuOptions.copy_to_prev = true
   
   /**
    * Paints to use for drawing
@@ -538,6 +333,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   mCodeConstantPaint.setStyle(Paint.Style.STROKE)
   mCodeConstantPaint.setAntiAlias(true)
   mCodeConstantPaint.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
+  
   /** Custom color filters */
   private var filters = HashMap[Int, PorterDuffColorFilter]()
   private def getFilter(color: Int) = filters.getOrElseUpdate(color, { new PorterDuffColorFilter(color, Mode.MULTIPLY)} )
@@ -548,12 +344,6 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /** Draws the game on the given canvas */
   def drawGameOn(canvas: Canvas): Unit = {
     if(game == null) return
-    /*if(editMode) { // TODO : Soon to be replaced by the camera size.
-      canvas.drawLine(0, 0, game.screenWidth, 0, distancePaint)
-      canvas.drawLine(game.screenWidth, 0, game.screenWidth, game.screenHeight, distancePaint)
-      canvas.drawLine(game.screenWidth, game.screenHeight, 0, game.screenHeight, distancePaint)
-      canvas.drawLine(0, game.screenHeight, 0, 0, distancePaint)
-    }*/
     val shapes = game.getArena
     shapes foreach { s =>
       s match {
@@ -696,7 +486,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       }
     }
     
-    if(isCameraSelected) {
+    if(CameraButton.selected) {
       var x = game.Camera.x
       var y = game.Camera.y
       var height = game.Camera.height
@@ -864,6 +654,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   
   /** Draws the menu on the canvas */
   def drawMenuOn(canvas: Canvas) = {
+    MenuOptions.button_size = button_size
     if(editMode) {
       if(selectedEvent != null) {
         drawInputEventOn(selectedEvent, canvas)
@@ -878,71 +669,10 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       }
     }
     if(editMode) {
-      /*rectBitmapVert.setAlpha(180)
-      rectBitmapVert.setColorFilter(getFilter(0xFFFFFFFF))
-      circBitmap.setAlpha(180)
-      rectBitmapVert.setColorFilter(getFilter(0xFFFFFFFF))*/
-      displayButtonCenteredOn(canvas, mAddRectangleButton, mAddRectangleButton.x, mAddRectangleButton.y, if(mAddRectangleButton.hovered) flatButtonH else flatButton, overlayAddRectangle)
-      displayButtonCenteredOn(canvas, mAddCircleButton, mAddCircleButton.x, mAddCircleButton.y, if(mAddCircleButton.hovered) flatButtonH else flatButton, overlayAddCircle)
-      displayButtonCenteredOn(canvas, mAddDigitButton, mAddDigitButton.x, mAddDigitButton.y, if(mAddDigitButton.hovered) flatButtonH else flatButton, overlayAddDigit)
-      displayButtonCenteredOn(canvas, mAddTextButton, mAddTextButton.x, mAddTextButton.y, if(mAddTextButton.hovered) flatButtonH else flatButton, overlayAddText)
-      displayButtonCenteredOn(canvas, mAddForceFieldButton, mAddForceFieldButton.x, mAddForceFieldButton.y, if(mAddForceFieldButton.hovered) (if(isForceFieldSelected) flatButtonSH else flatButtonH) else (if(isForceFieldSelected) flatButtonS else flatButton), overlayForceField)
-      displayButtonCenteredOn(canvas, mAddGravity2DButton, mAddGravity2DButton.x, mAddGravity2DButton.y, if(mAddGravity2DButton.hovered) (if(isGravity2DSelected) flatButtonSH else flatButtonH) else (if(isGravity2DSelected) flatButtonS else flatButton), overlayGravity2D)
-      displayButtonCenteredOn(canvas, mCameraButton, mCameraButton.x, mCameraButton.y, if(mCameraButton.hovered) (if(isCameraSelected) flatButtonSH else flatButtonH) else (if(isCameraSelected) flatButtonS else flatButton), overlayCamera)
-
-      /*rectBitmapVert.setAlpha(255)
-      circBitmap.setAlpha(255)*/
-      
-      //mAddRuleButton.setTextAndTopLeft(null, whitePaint, 33*button_size/49, 0, button_size)
-      displayButtonCenteredOn(canvas, mAddRuleButton, mAddRuleButton.x, mAddRuleButton.y,
-        if(mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS) (if(mAddRuleButton.hovered) flatButtonSH else flatButtonS) else (if(mAddRuleButton.hovered) flatButtonH else flatButton),
-        if(mRuleState == STATE_SELECTING_EFFECTS) overlayCreateRule else overlayAddRule 
-      )
-      if(mRuleState == STATE_SELECTING_EFFECTS) {
-        mSelectPrevNextButton.visible = true
-        displayButtonCenteredOn(canvas, mSelectPrevNextButton, mSelectPrevNextButton.x, mSelectPrevNextButton.y,
-          (if(mAddRuleButton.hovered) flatButtonH else flatButton),
-          if(modifyPreviousValues) overlayPrevEffects else overlayNextEffects 
-        )
-      } else {
-        mSelectPrevNextButton.visible = false
-      }
-      
-      //displayResizableButtonOn(canvas, mAddRuleButton.mRectDataButton, if(mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS || mAddRuleButton.hovered) flatButtonResizableH else flatButtonResizable)
-      //canvas.drawText(mAddRuleButton.text, mAddRuleButton.mTextX,  mAddRuleButton.mTextY, whitePaint)
-      mChooseExistingRuleButton.setTextAndTopLeft(null, whitePaint, 33*button_size/49, 0, button_size*3)
-      mChooseExistingRuleButton.visible = mRuleState == STATE_SELECTING_EVENTS
-      if(mChooseExistingRuleButton.visible) {
-        displayResizableButtonOn(canvas, mChooseExistingRuleButton.mRectDataButton, if(mChooseExistingRuleButton.hovered) flatButtonResizableH else flatButtonResizable)
-        canvas.drawText(mChooseExistingRuleButton.text, mChooseExistingRuleButton.mTextX,  mChooseExistingRuleButton.mTextY, whitePaint)
-      }
-      
-      /*if(selectedRuleString != null) {
-        var x = 0
-        var ystart = (3*button_size + 30)
-        var y = ystart
-        val ascent = mCodePaint.ascent()
-        val descent = mCodePaint.descent()
-        var height = descent - ascent
-        var textSize = button_size/3
-        mCodePaint.setTextSize(textSize)
-        for(line <- selectedRuleStringSplit) {
-          canvas.drawText(line, x, y, mCodePaint)
-          y += height
-        }
-        selectedRuleConstants foreach {
-          case (line, col, size, expr) =>
-            val y1 = ystart + (line - 1)*height + mCodePaint.ascent()
-            val y2 = y1 + height
-            val x1 = x + col*textSize *0.605f
-            val x2 = x + (col + size)*textSize *0.605f
-            canvas.drawRect(x1, y1, x2, y2, mCodeConstantPaint)
-        }
-      }*/
+      StaticMenu.draw(canvas, this, selectedShape, bitmaps, button_size/2, button_size/2)
     }
     if(selectedShape != null) {
-      // TODO : Synchronize with selectedShape because it can become null ?
-      if(modifyPreviousValues) {
+      if(MenuOptions.modify_prev) {
         coords(0) = selectedShape.prevCenterX
         coords(1) = selectedShape.prevCenterY
       } else {
@@ -950,57 +680,15 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         coords(1) = selectedShape.centerY
       }
       mMatrix.mapPoints(coords)
-      val selectionx = Math.min(Math.max(coords(0), button_size), mWidth - button_size*2.5f)
+      val selectionx = Math.min(Math.max(coords(0), button_size), mWidth - button_size*3.5f)
       val selectiony = Math.min(Math.max(coords(1), button_size*1.5f), mHeight-button_size*1.5f)
       
       val cx = selectionx + mMenuPositionX
       val cy = selectiony + mMenuPositionY
-      // Display the shape's menu.
-      displayButtonCenteredOn(canvas, mMoveButton, cx, cy, overlayMove)
-      displayButtonCenteredOn(canvas, mSizeButton, cx + button_size, cy + button_size, if(mSizeButton.hovered) flatButtonH else flatButton, overlaySize)
-      displayButtonCenteredOn(canvas, mTrashButton, cx + button_size*2, cy + button_size, if(mTrashButton.hovered) flatButtonH else flatButton, overlayTrashcan)
-      displayButtonCenteredOn(canvas, mPaintButton, cx + button_size*3, cy + button_size, if(mPaintButton.hovered) flatButtonH else flatButton, overlayPaint)
       
-      val top_shift = selectedShape match {
-        case d: IntegerBox =>
-          displayButtonCenteredOn(canvas, mIncrementButton, cx, cy - button_size, if(mIncrementButton.hovered) flatButtonH else flatButton, flatButtonP1)
-          displayButtonCenteredOn(canvas, mDecrementButton, cx, cy + button_size, if(mDecrementButton.hovered) flatButtonH else flatButton, flatButtonM1)
-          button_size
-        case d: TextBox =>
-          displayButtonCenteredOn(canvas, mModifyTextButton, cx, cy - button_size, if(mModifyTextButton.hovered) flatButtonH else flatButton, overlayModifyText)
-          button_size
-        case _ =>
-          0
-      }
-      displayButtonCenteredOn(canvas, mSpeedButton, cx + button_size, cy - top_shift, if(mSpeedButton.hovered) flatButtonH else flatButton, overlaySpeed, if(selectedShape.noVelocity) overlayNone else null)
-      displayButtonCenteredOn(canvas, mPinButton, cx + button_size*2, cy - top_shift, if(mPinButton.hovered) flatButtonH else flatButton, overlayNail, if(!selectedShape.noVelocity) overlayNone else null)
-      displayButtonCenteredOn(canvas, mVisibilityButton, cx + button_size*3, cy-top_shift, if(mVisibilityButton.hovered) flatButtonH else flatButton, overlayEye, if(!selectedShape.visible) overlayNone else null)
-      if(selectedShape.mName != null) {
-        mNameButton.setTextAndCenter(selectedShape.mName, whitePaint, 33*button_size/49, cx, cy - top_shift - button_size / 2)
-        displayResizableButtonOn(canvas, mNameButton.mRectDataButton, if(mNameButton.hovered) flatButtonResizableH else flatButtonResizable)
-        canvas.drawText(selectedShape.mName, mNameButton.mTextX,  mNameButton.mTextY, whitePaint)
-      }
+      // Display the shape's menu.
+      MovingMenu.draw(canvas, this, selectedShape, bitmaps, cx, cy) * button_size
     }
-  }
-  
-  /** Displays a list of drawable representing buttons at the given point */
-  def displayButtonCenteredOn(canvas: Canvas, button: MenuButton, x: Float, y: Float, list_drawable: Drawable*) = {
-    button.x = x
-    button.y = y
-    list_drawable foreach {
-      d => if(d!= null) {
-        rectFData.set(x - button_size/2, y - button_size/2, x + button_size/2, y + button_size/2)
-        rectFData.round(rectData)
-        d.setBounds(rectData)
-        d.draw(canvas)
-      }
-    }
-  }
-  
-  /** Displays a resizable drawable */
-  def displayResizableButtonOn(canvas: Canvas, rect: Rect, d: Drawable) = {
-    d.setBounds(rect)
-    d.draw(canvas)
   }
   
   /** Conversion coordinates */
@@ -1019,23 +707,90 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     touchCoordsDownOriginal(0) = x
     touchCoordsDownOriginal(1) = y
     if(selectedShape != null) {
-      if(modifyPreviousValues) {
+      if(MenuOptions.modify_prev) {
         selectedShapeGameCoords(0) = selectedShape.prev_x
         selectedShapeGameCoords(1) = selectedShape.prev_y
       } else {
         selectedShapeGameCoords(0) = selectedShape.x
         selectedShapeGameCoords(1) = selectedShape.y
       }
+      MenuOptions.selected_shape_first_x = selectedShapeGameCoords(0)
+      MenuOptions.selected_shape_first_y = selectedShapeGameCoords(1)
     }
-    if(mPaintButton.hovered) {
+    if(PaintButton.hovered) {
       mDisplacementX = 0
       mDisplacementY = 0
     }
-    if(mMoveButton.hovered) {
+    if(MoveButton.hovered) {
       mDisplacementX = 0
       mDisplacementY = 0
     }
     return_value
+  }
+  
+  /** Selects a given rule. Adds a watcher on the integer if the rule selected depends on an integer. */
+  def selectRule(rule: ReactiveRule, event: TriggerEvent = null) = {
+    selectedRule = rule
+    selectedRuleConstants.clear()
+    selectedRuleString = rule.toScalaString("", game.context, selectedRuleConstants, Some(1), Some(1))
+    selectedRuleStringSplit = selectedRuleString.split("\n")
+    integerBoxWatched = null
+    if(event != null) {
+      if(event.code == INTEGER_CHANGE_EVENT) {
+        integerBoxWatched = event.shape1.asInstanceOf[IntegerBox]
+        integerEvent = event
+      }
+    } else {
+      integerBoxWatched = null
+      integerEvent = null
+    }
+  }
+  
+  /** Finds or creates an event for a given rule. */
+  def findEventForRule(rule: ReactiveRule): TriggerEvent = {
+    rule match {
+      case d@WhenEverRule(condition, code) =>
+        null
+      case d@WhenFingerMovesOnRule(obj, coords, code) =>
+        null
+      case d@WhenFingerDownOnRule(EIdentShape(shape1), code) =>
+        val c = new TriggerEvent
+        c.code = TOUCHDOWN_EVENT
+        c.shape1 = shape1
+        c.shape2 = null
+        c.x1 = c.shape1.centerX
+        c.y1 = c.shape1.centerY
+        c
+      case d@WhenFingerUpOnRule(EIdentShape(shape1), code) =>
+        val c = new TriggerEvent
+        c.code = TOUCHUP_EVENT
+        c.shape1 = shape1
+        c.shape2 = null
+        c.x1 = c.shape1.centerX
+        c.y1 = c.shape1.centerY
+        c
+      case d@WhenCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2), code) =>
+        val c = new TriggerEvent
+        c.code = COLLISION_EVENT
+        c.shape1 = shape1
+        c.shape2 = shape2
+        c.x1 = (shape1.x + shape2.x)/2
+        c.y1 = (shape1.y + shape2.y)/2
+        c
+      case d@WhenIntegerChangesRule(EIdentShape(shape1), coords, code) =>
+        val c = new TriggerEvent
+        c.code = INTEGER_CHANGE_EVENT
+        c.shape1 = shape1
+        c.shape2 = null
+        c.x1 = shape1.x
+        c.y1 = shape1.y
+        c
+      case d@NoCollisionBetweenRule(obj1, obj2) => 
+        null
+      case d@NoCollisionEffectBetweenRule(obj1, obj2) =>
+        null
+      case _ => null
+    }
   }
   
   /**
@@ -1046,240 +801,19 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     //Log.d("GameEngine2DView", "Menu Selected at " + x + ", " + y)
     var menuSelected:Boolean = false
     if(selectedShape != null) {
-      menuSelected = listMovingMenus.foldLeft(false) { // Priority to the flying menus first
-        (hovered, menu) => if(!hovered) {
-          if(menu.hovered) {
-            menu.onFingerUp(selectedShape, x, y)
-            true
-          } else false           
-        } else true
-      }
+      menuSelected = MovingMenu.onFingerUp(this, selectedShape, x, y)
     }
     if(!menuSelected) { // Test is top left menu activated
       mMenuPositionX = 0
       mMenuPositionY = 0
-      // If a shape is created
-      if(mAddRectangleButton.hovered || mAddDigitButton.hovered || mAddCircleButton.hovered || mAddTextButton.hovered) {
-        var r: Shape = null
-        var sameTypeAsSelected = false
-        selectedShape match {
-          case model:Rectangle if mAddRectangleButton.hovered => 
-            r = game.Rectangle(game.screenWidth / 2, game.screenHeight / 2, model.width, model.height)
-            sameTypeAsSelected = true
-          case model:IntegerBox if mAddDigitButton.hovered => 
-            r = game.IntegerBox(game.screenWidth / 2, game.screenHeight / 2, model.width.toInt, model.height.toInt, 0)
-            sameTypeAsSelected = true
-          case model:Circle if mAddCircleButton.hovered => 
-            r = game.Circle(game.screenWidth / 2, game.screenHeight / 2, model.radius)
-            sameTypeAsSelected = true
-          case model:TextBox if mAddTextButton.hovered =>
-            r = game.TextBox(game.screenWidth / 2, game.screenHeight / 2, model.width, model.height, model.text)
-            sameTypeAsSelected = true
-          /*case model:ForceField if mForceFieldButton.hovered =>
-            r = game.ForceField(game.screenWidth / 2, game.screenHeight / 2, model.width, model.height, model.text)
-            sameTypeAsSelected = true*/
-          case _ =>
-            if(mAddRectangleButton.hovered) {
-              r = game.Rectangle(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt, button_size.toInt)
-            } else if(mAddDigitButton.hovered) {
-              r = game.IntegerBox(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt/2, button_size.toInt/2, 0)
-            } else if(mAddCircleButton.hovered) {
-              r = game.Circle(game.screenWidth / 2, game.screenHeight / 2, 50)
-            } else /**if(mAddTextButton.hovered) */{
-              r = game.TextBox(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt*2, button_size.toInt/2, "Custom text")
-            }/* else {
-              r = game.ForceField(game.screenWidth / 2, game.screenHeight / 2)
-            }*/
-        }
-        if(selectedShape != null) {
-          r.velocity_x = selectedShape.velocity_x
-          r.velocity_y = selectedShape.velocity_y
-          r.noVelocity = selectedShape.noVelocity
-          r.color = selectedShape.color
-        }
-        r.storePrevValues()
-        game.getArena += r
-        
-        val oldSelectedShape = selectedShape
-        val oldName = if(selectedShape != null) selectedShape.mName else null
-        selectShape(r)
-        renameSelectedShape(
-            if(oldName != null && sameTypeAsSelected) oldSelectedShape.mName
-            else if(mAddRectangleButton.hovered) "wall"
-            else if(mAddDigitButton.hovered) "score"
-            else if(mAddTextButton.hovered) "textBox"
-            else if(mAddCircleButton.hovered) "ball"
-            else GameShapes.DEFAULT_NAME)
-        if(oldName != null && sameTypeAsSelected) CodeGenerator.duplicateRuleContaining(game, oldSelectedShape, r)
-        val ident = EIdentShape(r)
-        game.context(r.mName) = ident
-        
-
-        mAddRectangleButton.hovered = false
-        mAddDigitButton.hovered = false
-        mAddTextButton.hovered = false
-        mAddCircleButton.hovered = false
-        
-        menuSelected = true
-      } else if(mAddRuleButton.hovered) { // The user selected the "Rule editor button"
-        mRuleState match {
-          case STATE_MODIFYING_GAME => 
-            mRuleState = STATE_SELECTING_EVENTS
-            modifyPreviousValues = false
-            mAddRuleButton.hovered = true
-            menuSelected = true
-            selectEvent(null)
-            selectShape(null)
-            //mAddRuleButton.text = res.getString(R.string.select_event)
-            Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
-          case STATE_SELECTING_EVENTS =>
-            Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
-            mRuleState = STATE_MODIFYING_GAME
-            //mAddRuleButton.text = res.getString(R.string.design_rule)
-            mAddRuleButton.hovered = false
-            selectEvent(null)
-          case STATE_SELECTING_EFFECTS =>
-            if(selectedEvent != null) { // Means that the rule has been confirmed.
-              CodeGenerator.createRule(context, game, selectedEvent.value, selectedEvent.timestamp, {
-                rule =>
-                  // Here if the rule changes some number, add the corresponding effects.
-                  game.storeState(game.currentTime, true, null)
-                  selectRule(rule)
-              })
-            }
-            modifyingGameStateMode()
-        }
-        true
-      } else if(mChooseExistingRuleButton.hovered) {
-        // Display the list of existing rules
-        val many_rules = game.init_rules.toList
-        CustomDialogs.launchRuleChooserDialog(context, res.getString(R.string existing_rule_dialog_title),
-            many_rules map (_.toScalaString("", game.context)),
-            many_rules,
-            { rule => 
-              // Let the code apply to the game, and the user edit the output. 
-              CodeGenerator.modifyAndInsertRule(context, game, rule, game.currentTime, {rule =>
-                //Replay the rule and select its effects.
-                // Need to select an event corresponding to the rule.
-                val event = findEventForRule(rule)
-                if(event != null) {
-                  selectEffectsMode()
-                  game.storePrevValues()
-                  selectRule(rule, event)
-                  triggerRule(rule, event)
-                } else {
-                  modifyingGameStateMode()
-                }
-              })
-            },
-            { () => })
-      } else if(mAddForceFieldButton.hovered) {
-        isForceFieldSelected = !isForceFieldSelected
-        if(isForceFieldSelected) {
-          selectedCategory = GameShapes.AccelerometerGravity
-          mRuleState = STATE_MODIFYING_CATEGORY
-        } else {
-          selectedCategory = null
-          mRuleState = STATE_MODIFYING_GAME
-        }
-        mAddForceFieldButton.hovered = false
-      } else if(mAddGravity2DButton.hovered) {
-        isGravity2DSelected = !isGravity2DSelected
-        if(isGravity2DSelected) {
-          selectedCategory = GameShapes.Gravity2D
-          mRuleState = STATE_MODIFYING_CATEGORY
-        } else {
-          selectedCategory = null
-          mRuleState = STATE_MODIFYING_GAME
-        }
-        mAddGravity2DButton.hovered = false
-      } else if(mSelectPrevNextButton.hovered) {
-        modifyPreviousValues = !modifyPreviousValues
-        mSelectPrevNextButton.hovered = false
-      } else if(mCameraButton.hovered) {
-        mCameraButton.hovered = false
-        menuSelected = true
-        isCameraSelected = !isCameraSelected
-        if(isCameraSelected) {
-          selectShape(game.Camera)
-          selectedCategory = game.Camera
-        } else {
-          selectShape(null)
-          selectedCategory = null
-          mRuleState = STATE_MODIFYING_GAME
-        }
-      }
-    }
-    
-    /** Finds or creates an event for a given rule. */
-    def findEventForRule(rule: ReactiveRule): TriggerEvent = {
-      rule match {
-        case d@WhenEverRule(condition, code) =>
-          null
-        case d@WhenFingerMovesOnRule(obj, coords, code) =>
-          null
-        case d@WhenFingerDownOnRule(EIdentShape(shape1), code) =>
-          val c = new TriggerEvent
-          c.code = TOUCHDOWN_EVENT
-          c.shape1 = shape1
-          c.shape2 = null
-          c.x1 = c.shape1.centerX
-          c.y1 = c.shape1.centerY
-          c
-        case d@WhenFingerUpOnRule(EIdentShape(shape1), code) =>
-          val c = new TriggerEvent
-          c.code = TOUCHUP_EVENT
-          c.shape1 = shape1
-          c.shape2 = null
-          c.x1 = c.shape1.centerX
-          c.y1 = c.shape1.centerY
-          c
-        case d@WhenCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2), code) =>
-          val c = new TriggerEvent
-          c.code = COLLISION_EVENT
-          c.shape1 = shape1
-          c.shape2 = shape2
-          c.x1 = (shape1.x + shape2.x)/2
-          c.y1 = (shape1.y + shape2.y)/2
-          c
-        case d@WhenIntegerChangesRule(EIdentShape(shape1), coords, code) =>
-          val c = new TriggerEvent
-          c.code = INTEGER_CHANGE_EVENT
-          c.shape1 = shape1
-          c.shape2 = null
-          c.x1 = shape1.x
-          c.y1 = shape1.y
-          c
-        case d@NoCollisionBetweenRule(obj1, obj2) => 
-          null
-        case d@NoCollisionEffectBetweenRule(obj1, obj2) =>
-          null
-        case _ => null
-      }
-    }
-    
-    /** Selects a given rule. Adds a watcher on the integer if the rule selected depends on an integer. */
-    def selectRule(rule: ReactiveRule, event: TriggerEvent = null) = {
-      selectedRule = rule
-      selectedRuleConstants.clear()
-      selectedRuleString = rule.toScalaString("", game.context, selectedRuleConstants, Some(1), Some(1))
-      selectedRuleStringSplit = selectedRuleString.split("\n")
-      integerBoxWatched = null
-      if(event != null) {
-        if(event.code == INTEGER_CHANGE_EVENT) {
-          integerBoxWatched = event.shape1.asInstanceOf[IntegerBox]
-          integerEvent = event
-        }
-      } else {
-        integerBoxWatched = null
-        integerEvent = null
-      }
+      
+      menuSelected = StaticMenu.onFingerUp(this, selectedShape, x, y)
     }
 
     if(!menuSelected) {
-      // If the previous attemps to select a menu failed,
+      // If the previous attempts to select a menu failed,
       // We dissmiss all selection and we select something else depending on the game editor type.
-      listMovingMenus foreach {
+      MovingMenu.menus foreach {
         _.hovered = false
       }
       
@@ -1341,7 +875,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
                      {i:Int =>
                        closestEvent.value.code = INTEGER_CHANGE_EVENT + i
                        if(i == 4 && newValue < 0) closestEvent.value.code = INTEGER_NEGATIVE_EVENT
-                       selectEffectsMode()
+                       setModeSelect()
                      },
                      {() =>})
           } else if(closestEvent.value.code == BEYOND_SCREEN_EVENT ||
@@ -1354,7 +888,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
                   String.format(res.getString(R.string.trigger_outscreen_2), name)),
                      {i:Int =>
                        closestEvent.value.code = BEYOND_SCREEN_EVENT + i
-                       selectEffectsMode()},
+                       setModeSelect()},
                      {() =>})
           } else if(closestEvent.value.code == COLLISION_EVENT) {
             val d1 = closestEvent.value.shape1
@@ -1366,19 +900,19 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
                   String.format(res.getString(R.string.trigger_collision_3), d1.mName, d2.mName)),
                   {i: Int =>
                     if(i == 0) {
-                      selectEffectsMode()
+                      setModeSelect()
                     } else if(i == 1) {
                       game.insertRule(NoCollisionBetweenRule(EIdentShape(d1), EIdentShape(d2)), game.currentTime)
-                      modifyingGameStateMode()
+                      setModeModifyGame()
                     } else {
                       game.insertRule(NoCollisionEffectBetweenRule(EIdentShape(d1), EIdentShape(d2)), game.currentTime)
-                      selectEffectsMode()
+                      setModeSelect()
                     }
                   },
                   {() =>}
                 )
           } else {
-            selectEffectsMode()
+            setModeSelect()
           }
         }
       } else if(mRuleState == STATE_MODIFYING_CATEGORY) {
@@ -1389,18 +923,33 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     }
   }
   
+  def setModeSelectCategory() = {
+    mRuleState = STATE_MODIFYING_CATEGORY
+    MenuOptions.copy_to_prev = true
+    MenuOptions.modify_prev = false
+  }
+  
   /** Switches the current mode to selecting effects */
-  def selectEffectsMode(): Unit = {
+  def setModeSelect(): Unit = {
     mRuleState = STATE_SELECTING_EFFECTS
+    MenuOptions.copy_to_prev = false
+    MenuOptions.modify_prev = false
     Toast.makeText(context, res.getString(R.string.select_effects_toast), 2000).show()
   }
   
+  /** Switches the current mode to selecting events. */
+  def setModeSelectingEffects() = {
+    mRuleState = STATE_SELECTING_EVENTS
+    MenuOptions.modify_prev = false // irrelevant
+    MenuOptions.copy_to_prev = true // irrelevant
+  }
+  
   /** Switches the current mode to the global modification of the game */
-  def modifyingGameStateMode() {
+  def setModeModifyGame() {
     mRuleState = STATE_MODIFYING_GAME
-    modifyPreviousValues = false
+    MenuOptions.modify_prev = false
     enterEditMode()
-    mAddRuleButton.hovered = false
+    AddRuleButton.hovered = false
     selectEvent(null)
   }
 
@@ -1410,8 +959,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     selectShape(null)
     
     game.getArena foreach { shape =>
-      val x = xTouch + (if(modifyPreviousValues) shape.x - shape.prev_x else 0)
-      val y = yTouch + (if(modifyPreviousValues) shape.y - shape.prev_y else 0)// - shape.y + shape.prev_y
+      val x = xTouch + (if(MenuOptions.modify_prev) shape.x - shape.prev_x else 0)
+      val y = yTouch + (if(MenuOptions.modify_prev) shape.y - shape.prev_y else 0)// - shape.y + shape.prev_y
       if(shape.selectableBy(x, y)) {
         val dist = shape.distanceSelection(x, y)
         if(dist < minDistance || minDistance == -1) {
@@ -1423,8 +972,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     if(selectedShape == null) {
       mMenuPositionX = 0
       mMenuPositionY = 0
-      if(isCameraSelected) {
-        mRuleState = STATE_MODIFYING_CATEGORY
+      if(CameraButton.selected) {
+        game.Camera.reset()
       }
     }
   }
@@ -1464,100 +1013,29 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     if(Math.abs(relativeY) < 10) {
       relativeY = 0
     }
-    if(mMoveButton.hovered) {
+    MovingMenu.onFingerMove(selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    if(MoveButton.hovered) {
       mMenuPositionX = 0
       mMenuPositionY = 0
-      if(selectedShape != null) {
-        if(modifyPreviousValues) {
-          selectedShape.prev_x = selectedShapeGameCoords(0) + relativeX
-          selectedShape.prev_y = selectedShapeGameCoords(1) + relativeY
-        } else {
-          selectedShape.x = selectedShapeGameCoords(0) + relativeX
-          selectedShape.y = selectedShapeGameCoords(1) + relativeY
-        }
-        if(mRuleState == STATE_MODIFYING_GAME) {
-          selectedShape.prev_x = selectedShape.x
-          selectedShape.prev_y = selectedShape.y
-        }
-      }
-    }
-    if(mSpeedButton.hovered) {
-      if(selectedShape != null && !selectedShape.noVelocity) {
-        if(modifyPreviousValues) {
-          selectedShape.prev_velocity_x += shiftX.toFloat / 1000f
-          selectedShape.prev_velocity_y += shiftY.toFloat / 1000f
-        } else {
-          selectedShape.velocity_x += shiftX.toFloat / 1000f
-          selectedShape.velocity_y += shiftY.toFloat / 1000f
-        }
-        if(mRuleState == STATE_MODIFYING_GAME) {
-          selectedShape.prev_velocity_x = selectedShape.velocity_x
-          selectedShape.prev_velocity_y = selectedShape.velocity_y
-        }
-      }
-    }
-    if(mSizeButton.hovered) {
-      if(selectedShape != null) {
-        selectedShape match {
-          case c:GameShapes.Circle =>
-            if(modifyPreviousValues) {
-              c.prev_radius = Math.max(10, c.prev_radius + shiftX)
-            } else {
-              c.radius = Math.max(10, c.radius + shiftX)
-            }
-            if(mRuleState == STATE_MODIFYING_GAME) {
-              c.prev_radius = c.radius
-            }
-          case r:GameShapes.Rectangular =>
-            if(modifyPreviousValues) {
-              r.prev_width = Math.max(10, r.prev_width + shiftX.toInt)
-              r.prev_height = Math.max(10, r.prev_height + shiftY.toInt)
-            } else {
-              r.width = Math.max(10, r.width + shiftX.toInt)
-              r.height = Math.max(10, r.height + shiftY.toInt)
-            }
-            if(mRuleState == STATE_MODIFYING_GAME) {
-              r.prev_width = r.width
-              r.prev_height = r.height
-            }
-          case _ =>
-        }
-      }
-    }
-    if(mPaintButton.hovered) {
-      if(selectedShape != null) {
-        val selectedColor:Int = ((mDisplacementX / (button_size/3)).toInt % 6 + 6) % 6
-        if(modifyPreviousValues) {
-          selectedShape.prev_color = Color.parseColor(allColors(selectedColor))
-        } else {
-          selectedShape.color = Color.parseColor(allColors(selectedColor))
-        }
-        if(mRuleState == STATE_MODIFYING_GAME) {
-          selectedShape.prev_color = selectedShape.color
-        }
-      }
-    }
-    if(!mMoveButton.hovered && !mSpeedButton.hovered && !mSizeButton.hovered && !mPaintButton.hovered) {
-      highLightMenu(xTo, yTo)
     }
   }
   
   /** Highlights the corresponding menu under the finger*/
   def highLightMenu(x: Float, y: Float): Boolean = {
     if(selectedShape != null) {
-      listMovingMenus foreach (_.testHovering(x, y, button_size))
+      MovingMenu.testHovering(x, y, button_size)
     }
-    val menu_not_hovered = listMovingMenus.foldLeft(true) { (notHovered, menu ) => notHovered && !menu.hovered }
+    val menu_not_hovered = MovingMenu.menus.foldLeft(true) { (notHovered, menu ) => notHovered && !menu.hovered }
     if(menu_not_hovered) {
-      listStaticMenus foreach (_.testHovering(x, y, button_size))
+      StaticMenu.menus foreach (_.testHovering(x, y, button_size))
     }
     var something_highlighted = false
-    listMovingMenus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
-    listStaticMenus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    MovingMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    StaticMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
     something_highlighted
   }
 
-  /** Renames the selected shape and tries to find an unexisting name*
+  /** Renames the selected shape and tries to find an unexisting name
    *  Removes the trailing numbers at the end
    **/
   def renameSelectedShape(baseName: String): Unit = {
@@ -1575,12 +1053,10 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def selectShape(shape: GameShapes.Shape) = {
     selectedShape = shape
     if(selectedShape != null) {
-      /*touchCoordsDownOriginal(0) = selectedShape.prev_x
-      touchCoordsDownOriginal(1) = selectedShape.prev_y
-      mMatrix.mapPoints(touchCoordsDownOriginal)
-      touchCoords(0) = selectedShape.x
-      touchCoords(1) = selectedShape.y
-      mMatrix.mapPoints(touchCoords)*/
+      if(CameraButton.selected && selectedCategory != null) {
+        selectedCategory.add(shape)
+        selectedShape = game.Camera
+      }
 
       mMenuPositionX = 0 //touchCoords(0) - touchCoordsDownOriginal(0)
       mMenuPositionY = 0 //touchCoords(1) - touchCoordsDownOriginal(1)
@@ -1612,7 +1088,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       case TOUCHMOVE_EVENT =>
         game.updateContextMoveCoordinates(i.x1, i.y1, i.x2, i.y2)
       case INTEGER_CHANGE_EVENT | INTEGER_EQUAL_EVENT | INTEGER_GREATER_EQUAL_EVENT | INTEGER_LESS_EQUAL_EVENT | INTEGER_POSITIVE_EVENT | INTEGER_NEGATIVE_EVENT =>
-        game.updateContextValueChanged(i.x2.toInt, i.y2.toInt)
+        game.updateContextValueChanged(i.y2.toInt)
         i.shape1.asInstanceOf[IntegerBox].prev_value = i.x2.toInt
         i.shape1.asInstanceOf[IntegerBox].value = i.y2.toInt
       case _ =>

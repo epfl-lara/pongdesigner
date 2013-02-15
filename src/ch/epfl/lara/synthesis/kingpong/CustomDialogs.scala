@@ -10,7 +10,7 @@ import android.view.View
 import android.view.View.MeasureSpec
 import android.widget.TextView
 import android.content.DialogInterface
-
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 object CustomDialogs {
   /**

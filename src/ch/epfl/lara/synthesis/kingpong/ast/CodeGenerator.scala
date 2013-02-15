@@ -1,8 +1,8 @@
-package ch.epfl.lara.synthesis.kingpong
+package ch.epfl.lara.synthesis.kingpong.ast
 
 import android.content.Context
-import android.util.Log
 import scala.collection.mutable.HashMap
+import ch.epfl.lara.synthesis.kingpong._
 
 /**
  * CodeGenerator contains methods used to generate code given a set of shapes that has been modified.
@@ -70,7 +70,6 @@ object CodeGenerator {
                   var merged = a merge b
                   //Log.d("CodeGenerator.scala", "Result = " + merged)
                   if(merged == Expression.NONE) {
-                    // TODO : Let the user choose between the two expressions.
                     merged = ParallelExpressions(a::b::Nil)
                     //throw new Exception("Unmergeable expressions:" + a + ", " + b)
                   }
@@ -488,7 +487,6 @@ object CodeGenerator {
     val xTo = causeEvent.x2
     val yTo = causeEvent.y2
     val shapeEvent = causeEvent.shape1
-    val eventOldValue = xTo.toInt
     val eventNewValue = yTo.toInt
     val movementIsHorizontal = Math.abs(xTo - xFrom) > 10 * Math.abs(yTo - yFrom)
     val movementIsVertical = Math.abs(yTo - yFrom) > 10 * Math.abs(xTo - xFrom)
@@ -719,16 +717,16 @@ object CodeGenerator {
                   case _ =>
                   }
                   
-                  if(dNewValue == eventOldValue) {
+                  /*if(dNewValue == eventOldValue) {
                      possibleExpressions = (shape_ident.value = oldValue_ident)::possibleExpressions
-                  }
-                  if(dNewValue == eventOldValue - eventNewValue) {
+                  }*/
+                  /*if(dNewValue == eventOldValue - eventNewValue) {
                      possibleExpressions = (shape_ident.value = (oldValue_ident - newValue_ident))::possibleExpressions
                   }
                   if(dNewValue == eventNewValue - eventOldValue) {
                      possibleExpressions = (shape_ident.value = (newValue_ident - oldValue_ident))::possibleExpressions
                   }
-                  
+                  */
                   if(dNewValue == eventNewValue * 2) {
                      possibleExpressions = (shape_ident.value = (newValue_ident * 2))::possibleExpressions
                   }
@@ -736,12 +734,12 @@ object CodeGenerator {
                      possibleExpressions = (shape_ident.value = (newValue_ident / 2))::possibleExpressions
                   }
                   
-                  if(dNewValue == dOldValue + eventOldValue - eventNewValue) {
+                  /*if(dNewValue == dOldValue + eventOldValue - eventNewValue) {
                      possibleExpressions = (shape_ident.value += (oldValue_ident - newValue_ident))::possibleExpressions
                   }
                   if(dNewValue == dOldValue + eventNewValue - eventOldValue) {
                      possibleExpressions = (shape_ident.value += (newValue_ident - oldValue_ident))::possibleExpressions
-                  }
+                  }*/
                   if(dNewValue == eventNewValue) {
                      possibleExpressions = (shape_ident.value = newValue_ident)::possibleExpressions
                   }

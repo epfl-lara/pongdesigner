@@ -19,9 +19,17 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.view.Surface
 import android.content.res.Configuration
+import ch.epfl.lara.synthesis.kingpong.examples.PongGCDCanvas
+import ch.epfl.lara.synthesis.kingpong.examples.PongGameComplete
+import ch.epfl.lara.synthesis.kingpong.examples.PongFibonacci
+import ch.epfl.lara.synthesis.kingpong.examples.PongMaze
+import ch.epfl.lara.synthesis.kingpong.examples.PongGameSyracuse
+import ch.epfl.lara.synthesis.kingpong.examples.PongGamePacman
+import ch.epfl.lara.synthesis.kingpong.examples.PongEscape
+import ch.epfl.lara.synthesis.kingpong.examples.PongBalloon
+import ch.epfl.lara.synthesis.kingpong.examples.PongBrickBreaker3Players
 
 class GameDesignerActivity extends Activity with SensorEventListener {
-    
     lazy private val mGameView = findViewById(R.id.gameview).asInstanceOf[GameEngine2DView]
     lazy private val mTimeButton = findViewById(R.id.time_button).asInstanceOf[ImageButton]
     lazy private val mBackButton = findViewById(R.id.back_button).asInstanceOf[ImageButton]
@@ -72,6 +80,7 @@ class GameDesignerActivity extends Activity with SensorEventListener {
         }
       }
       mGhostButton.setOnClickListener { () => switchGhostMode() }
+      //ObjLayout.initialize(this)
   }
     
   var mScreenOrientationLocked = false

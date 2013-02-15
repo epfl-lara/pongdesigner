@@ -1,13 +1,14 @@
-package ch.epfl.lara.synthesis.kingpong;
-import scala.collection.mutable.Set
+package ch.epfl.lara.synthesis.kingpong.examples
 import scala.collection.mutable.HashMap
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 class PongGamePacman extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /**
    * Game Layouts
@@ -314,12 +315,12 @@ class PongGamePacman extends Game {
     wall21.y = 125 // more: ,wall21.y += 3
   }.represents(List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(wall20), "x"), "$eq"),List(EConstantNumber(656.0))), EApply(ESelect(ESelect(EIdentShape(wall20), "x"), "$plus$eq"),List(EConstantNumber(484.0))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(wall21), "x"), "$eq"),List(EConstantNumber(660.0))), EApply(ESelect(ESelect(EIdentShape(wall21), "x"), "$plus$eq"),List(EConstantNumber(387.0))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(wall21), "y"), "$eq"),List(EConstantNumber(125.0))), EApply(ESelect(ESelect(EIdentShape(wall21), "y"), "$plus$eq"),List(EConstantNumber(3.0)))))))
   
-  var rulesSet = new HashMap[(ReactiveRule, Int), Category]
+  /*var rulesSet = new HashMap[(ReactiveRule, Int), Category[Shape]]
   val foodEnnemyRule1 = NoCollisionBetweenRule(EIdent(""), EIdent(""))
   rulesSet((foodEnnemyRule1, 1)) = ennemies
   rulesSet((foodEnnemyRule1, 2)) = foods
   val foodPlayerRule2 = WhenCollisionBetweenRule(EIdent(""), EIdent(""), List())
-  val players = Category(player)
+  val players = Category(player)*/
   /*val playerFoodRule = WhenCollisionBetweenRule() { (player, food)
     
   }*/
@@ -350,13 +351,13 @@ class PongGamePacman extends Game {
     NoCollisionBetween(ennemy, wall21)
   }
   
-  WhenIntegerChanges(foodeaten) { (oldValue, newValue) =>
+  WhenIntegerChanges(foodeaten) { (newValue) =>
     if(newValue == 41) {
       player.angle += 90 // more: ,player.angle = 0
       goal.y = 300 // more: ,goal.y += 528
     }
   }.represents(List(IfCode(EApply(ESelect(EIdent("newValue"), "$eq$eq"),List(EConstantNumber(41.0))),List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(player), "angle"), "$plus$eq"),List(EConstantNumber(90.0))), EApply(ESelect(ESelect(EIdentShape(player), "angle"), "$eq"),List(EConstantNumber(0.0))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(goal), "y"), "$eq"),List(EConstantNumber(300.0))), EApply(ESelect(ESelect(EIdentShape(goal), "y"), "$plus$eq"),List(EConstantNumber(528.0)))))),List())))
-  WhenIntegerChanges(lives) { (oldValue, newValue) =>
+  WhenIntegerChanges(lives) { (newValue) =>
     if(newValue == 0) {
       player.x = 666 // more: ,player.x += 599
       player.y = 761 // more: ,player.y += 707

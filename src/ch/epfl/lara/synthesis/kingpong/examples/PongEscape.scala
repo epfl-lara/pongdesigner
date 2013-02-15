@@ -1,11 +1,13 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
+
+import ch.epfl.lara.synthesis.kingpong.Game
 
 class PongEscape extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /**
    * Game Layouts

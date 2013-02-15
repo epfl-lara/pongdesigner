@@ -1,5 +1,7 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
 
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 /**
  * The pong game
@@ -11,8 +13,8 @@ class PongGameComplete extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
   
   /**
    * Arenas
@@ -109,10 +111,10 @@ class PongGameComplete extends Game {
     gameWonForPlayer2Text.visible = true
     setCurrentArena(arena2)
   }
-  WhenIntegerChanges(displayedScoreForPlayer1) { (oldValue, newValue) =>
+  WhenIntegerChanges(displayedScoreForPlayer1) { (newValue) =>
     ball.velocity *= 1.05f
   }
-  WhenIntegerChanges(displayedScoreForPlayer2) { (oldValue, newValue) =>
+  WhenIntegerChanges(displayedScoreForPlayer2) { (newValue) =>
     ball.velocity *= 1.05f
   }
   WhenCollisionBetween(ball, paddle1) {

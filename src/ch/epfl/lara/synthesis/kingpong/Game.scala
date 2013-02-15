@@ -1,5 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong;
 
+import ch.epfl.lara.synthesis.kingpong.ast._
 import scala.util.Marshal
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -47,6 +48,9 @@ object Game {
 abstract class Game /*extends scala.Serializable*/ {
   import TriggerEvent._
   import Game._
+  
+  var screenWidth = 480
+  var screenHeight = 750
   //import GameShapes._
     
   /** Content of the game */
@@ -69,8 +73,6 @@ abstract class Game /*extends scala.Serializable*/ {
   var beginning: Boolean = true
   
   /** Arena coordinates */
-  def screenWidth: Int
-  def screenHeight: Int
   
   /** Arena bounding box */
   private var mMaxX = this.screenWidth.toFloat
@@ -293,20 +295,18 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   
   /** Pseudo-macro to add a WhenIntegerChanges rule into the game */
-  def WhenIntegerChanges(f1: GameShapes.IntegerBox)(f2: (Int, Int)=> Unit):ReactiveRule = {
+  def WhenIntegerChanges(f1: GameShapes.IntegerBox)(f2: Int => Unit):ReactiveRule = {
     added_whenIntegerChangesRules.getOrElse(f1, null) match {
-      case w@WhenIntegerChangesRule(_, List(a, b), code) => 
+      case w@WhenIntegerChangesRule(_, List(a), code) => 
         w.code = w.code ++ List(CompiledBlock(() =>
-          f2(a.evaluate(context).number_value.toInt,
-             b.evaluate(context).number_value.toInt)))
+          f2(a.evaluate(context).number_value.toInt)))
         w
       case _ =>
-        val a = EIdent("oldValue")
+        //val a = EIdent("oldValue")
         val b = EIdent("newValue")
-        val new_rule = WhenIntegerChangesRule(EIdentShape(f1), List(a, b),
+        val new_rule = WhenIntegerChangesRule(EIdentShape(f1), List(b),
             List(CompiledBlock(() =>
-            f2(a.evaluate(context).number_value.toInt,
-               b.evaluate(context).number_value.toInt)))
+            f2(b.evaluate(context).number_value.toInt)))
         )
         added_whenIntegerChangesRules(f1) = new_rule
         init_rules += new_rule
@@ -556,16 +556,15 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   
   /** Update values stored in context concerning value changes */
-  def updateContextValueChanged(oldValue: Int, newValue: Int) = {
-    context.getOrElseUpdate("oldValue", EConstant(0)).asInstanceOf[ModifiableValue].setValue(oldValue)
+  def updateContextValueChanged(newValue: Int) = {
     context.getOrElseUpdate("newValue", EConstant(0)).asInstanceOf[ModifiableValue].setValue(newValue)
   }
   
   /**
    * Returns true if the ruleToStopBefore has not been encountered
    */
-  def onIntegerChangeEvent(s1: GameShapes.IntegerBox, from: Int, to: Int, ruleToStopBefore: ReactiveRule = null): Boolean = {
-    triggerEvents.addEvent(currentTime, INTEGER_CHANGE_EVENT, s1, null, s1.x, s1.y, from, to)
+  def onIntegerChangeEvent(s1: GameShapes.IntegerBox, to: Int, ruleToStopBefore: ReactiveRule = null): Boolean = {
+    triggerEvents.addEvent(currentTime, INTEGER_CHANGE_EVENT, s1, null, s1.x, s1.y, 0, to)
     added_whenIntegerChangesRules.getOrElse(s1, null) match {
       case null =>
         true
@@ -574,7 +573,7 @@ abstract class Game /*extends scala.Serializable*/ {
           false
         } else {
           //Log.d("IntegerChange", "Event activated : changed from " + from + " to " + to)
-          updateContextValueChanged(from, to)
+          updateContextValueChanged(to)
           Expression.execute(rule.code, context)
           true
         }
@@ -838,12 +837,12 @@ abstract class Game /*extends scala.Serializable*/ {
           }
           added_whenFingerMovesOnRules(shape1) = w
         case w@WhenEverRule(condition, code) => 
-          added_whenEverRules += w
-          // TODO : index by condition
-          added_whenEverRules foreach {
-            condition =>
+          
+          //added_whenEverRules foreach {
+          //  whenEverRule =>
               init_rules += waiting_rule
-          }
+          //}
+          added_whenEverRules += w
         case w@WhenFingerDownOnRule(EIdentShape(shape), code) =>
           if(!added_whenFingerDownOnRules.contains(shape)) {
             init_rules += waiting_rule
@@ -929,6 +928,10 @@ abstract class Game /*extends scala.Serializable*/ {
   def set2DAcceleration(x: Float, y: Float): Unit = {
     GameShapes.AccelerometerGravity.force_x = -x/1000
     GameShapes.AccelerometerGravity.force_y = y/1000
+  }
+  
+  def everyFrame() = {
+    
   }
 }
 

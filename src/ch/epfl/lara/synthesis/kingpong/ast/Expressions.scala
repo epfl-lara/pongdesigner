@@ -1,15 +1,11 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.ast;
 
 import scala.collection.immutable.List
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
-import GameShapes.Arena
-import GameShapes.Circle
-import GameShapes.IntegerBox
-import GameShapes.Rectangular
-import GameShapes.Shape
-import GameShapes.TextBox
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.GameShapes._
 import android.util.Log
 
 object EScreenHeight {
@@ -530,7 +526,7 @@ sealed trait Expression extends NotNull {
     case EIdent(mName) if(mName == oldShape.mName) => EIdent(newShape.mName)
     case ESelect(obj, property) => ESelect(obj.replaceShape(oldShape, newShape), property)
     case EApply(obj, args) => EApply(obj.replaceShape(oldShape, newShape), args.map{ e => e.replaceShape(oldShape, newShape) })
-    case ValDefCode(variable, content) => ValDefCode(variable.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], content.replaceShape(oldShape, newShape))
+    case ValDefCode(variable, content) => ValDefCode(variable.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], content.replaceShape(oldShape, newShape))
     case IfCode(condition, codeIfTrue, codeIfFalse) =>
       IfCode(condition.replaceShape(oldShape, newShape), codeIfTrue.map{ e => e.replaceShape(oldShape, newShape) },
           codeIfFalse.map{ e => e.replaceShape(oldShape, newShape) })
@@ -587,7 +583,7 @@ sealed trait Expression extends NotNull {
         } else {
           EApply(e_merge, f_merge)
         }
-      case (EConstantNumber(value1), EConstantNumber(value2)) =>  ERandomNumber(List(value1, value2)) // TODO: Ask for clarification.
+      case (EConstantNumber(value1), EConstantNumber(value2)) =>  ERandomNumber(List(value1, value2))
       case (ERandomNumber(l), EConstantNumber(value)) => ERandomNumber(value :: l)
       case (EConstantNumber(value), ERandomNumber(l)) => ERandomNumber(value :: l)
       case (ERandomNumber(l1), ERandomNumber(l2)) => ERandomNumber(l1 ++ l2)
@@ -605,15 +601,15 @@ object EConstant {
   def apply(b: Int) = EConstantNumber(b.toFloat)
   def apply(b: String) = EConstantString(b)
 }
-trait NamedObject extends Expression {
+trait NamedExpression extends Expression {
   def name: String
 }
 trait ModifiableValue extends Expression {
   def setValue(value: Float)
 }
 case class ETop extends Expression
-case class EIdentArena(value: Arena) extends Expression with NamedObject { store(value) ; def name = value.mName }//; override def toString = super.toString}
-case class EIdentShape(shape: Shape) extends Expression with NamedObject {
+case class EIdentArena(value: Arena) extends Expression with NamedExpression { store(value) ; def name = value.mName }//; override def toString = super.toString}
+case class EIdentShape(shape: Shape) extends Expression with NamedExpression {
   store(shape) ; def name = shape.mName
   def x: Expression = ESelect(this, "x")
   def x_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "x"), "$eq"), List(e))
@@ -658,14 +654,13 @@ case class EIdentShape(shape: Shape) extends Expression with NamedObject {
   //def prev_texttext_=(e: Expression): Expression = EApply(ESelect(ESelect(this, "prev_text"), "$eq"), List(e))
   
 }
-case class EIdent(mName: String) extends Expression with NamedObject { def name = mName;
+case class EIdent(mName: String) extends Expression with NamedExpression { def name = mName;
   override def toString = "EIdent(\"" + mName + "\")"
 } //override def toString = toScalaString("", null) }
 
 object EConstantNumber {
   def apply(d: Double):EConstantNumber = EConstantNumber(d.toFloat)
 }
-// TODO : remove toScalaString which is used only for debugging purposes.
 case class EConstantBoolean(value: Boolean) extends Expression { store(value) } //; override def toString = toScalaString("", null) }
 case class EConstantNumber(var value: Float) extends ModifiableValue    { store(value) ; def setValue(v: Float) = { value = v; store(v)}; } //override def toString = toScalaString("", null) }
 case class ERandomInterval(minValue: Float, maxValue: Float) extends Expression { store(minValue); } //override def toString = toScalaString("", null)  }
@@ -678,7 +673,7 @@ case class ESelect(obj: Expression, property: String) extends Expression {
   
 } //override def toString = toScalaString("", null) }
 case class EApply(obj: Expression, arguments: List[Expression]) extends Expression { } //override def toString = toScalaString("", null) }
-case class ValDefCode(variable: NamedObject, content: Expression) extends Expression { } //override def toString = toScalaString("", null) }
+case class ValDefCode(variable: NamedExpression, content: Expression) extends Expression { } //override def toString = toScalaString("", null) }
 case class IfCode(condition: Expression, codeIfTrue: List[Expression], codeIfFalse: List[Expression]) extends Expression {
   //override def toString = toScalaString("", null)
   def headerToScalaString(indent: String, context: HashMap[String, Expression], modifiableConstants: ArrayBuffer[(Int, Int, Int, Expression)] = null, currentLine: Option[Int] = None, currentCol: Option[Int] = None) = {
@@ -759,19 +754,19 @@ sealed trait ReactiveRule {
       case WhenEverRule(condition, code) =>
         WhenEverRule(condition.replaceShape(oldShape, newShape), code.map{ e => e.replaceShape(oldShape, newShape) })
       case WhenFingerMovesOnRule(obj, coords, code) =>
-        WhenFingerMovesOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], coords, code.map{ e => e.replaceShape(oldShape, newShape) })
+        WhenFingerMovesOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], coords, code.map{ e => e.replaceShape(oldShape, newShape) })
       case WhenFingerDownOnRule(obj, code) =>
-        WhenFingerDownOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], code.map{ e => e.replaceShape(oldShape, newShape) })
+        WhenFingerDownOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], code.map{ e => e.replaceShape(oldShape, newShape) })
       case WhenFingerUpOnRule(obj, code) =>
-        WhenFingerUpOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], code.map{ e => e.replaceShape(oldShape, newShape) })
+        WhenFingerUpOnRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], code.map{ e => e.replaceShape(oldShape, newShape) })
       case WhenCollisionBetweenRule(obj1, obj2, code) =>
-        WhenCollisionBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], code.map{ e => e.replaceShape(oldShape, newShape) })
+        WhenCollisionBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], code.map{ e => e.replaceShape(oldShape, newShape) })
       case WhenIntegerChangesRule(obj, coords, code) =>
-        WhenIntegerChangesRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], coords, code.map{ e => e.replaceShape(oldShape, newShape) })
+        WhenIntegerChangesRule(obj.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], coords, code.map{ e => e.replaceShape(oldShape, newShape) })
       case NoCollisionBetweenRule(obj1, obj2) =>
-        NoCollisionBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedObject])
+        NoCollisionBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression])
       case NoCollisionEffectBetweenRule(obj1, obj2) =>
-        NoCollisionEffectBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedObject], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedObject])
+        NoCollisionEffectBetweenRule(obj1.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression], obj2.replaceShape(oldShape, newShape).asInstanceOf[NamedExpression])
   }
   
   /** Remove the parts of the code where a shape appears. */
@@ -887,12 +882,12 @@ sealed trait ReactiveRule {
 
 /** Rules that handle events */
 case class WhenEverRule(condition: Expression, var code: List[Expression]) extends ReactiveRule
-case class WhenFingerMovesOnRule(obj: NamedObject, coords: List[EIdent], var code: List[Expression]) extends ReactiveRule
-case class WhenFingerDownOnRule(obj: NamedObject, var code: List[Expression]) extends ReactiveRule
-case class WhenFingerUpOnRule(obj: NamedObject, var code: List[Expression]) extends ReactiveRule
-case class WhenCollisionBetweenRule(obj1: NamedObject, obj2: NamedObject, var code: List[Expression]) extends ReactiveRule
-case class WhenIntegerChangesRule(obj: NamedObject, coords: List[EIdent], var code: List[Expression]) extends ReactiveRule
-case class NoCollisionBetweenRule(obj1: NamedObject, obj2: NamedObject) extends ReactiveRule { var code:List[Expression] = Nil }
-case class NoCollisionEffectBetweenRule(obj1: NamedObject, obj2: NamedObject) extends ReactiveRule { var code:List[Expression] = Nil }
+case class WhenFingerMovesOnRule(obj: NamedExpression, coords: List[EIdent], var code: List[Expression]) extends ReactiveRule
+case class WhenFingerDownOnRule(obj: NamedExpression, var code: List[Expression]) extends ReactiveRule
+case class WhenFingerUpOnRule(obj: NamedExpression, var code: List[Expression]) extends ReactiveRule
+case class WhenCollisionBetweenRule(obj1: NamedExpression, obj2: NamedExpression, var code: List[Expression]) extends ReactiveRule
+case class WhenIntegerChangesRule(obj: NamedExpression, coords: List[EIdent], var code: List[Expression]) extends ReactiveRule
+case class NoCollisionBetweenRule(obj1: NamedExpression, obj2: NamedExpression) extends ReactiveRule { var code:List[Expression] = Nil }
+case class NoCollisionEffectBetweenRule(obj1: NamedExpression, obj2: NamedExpression) extends ReactiveRule { var code:List[Expression] = Nil }
 
 

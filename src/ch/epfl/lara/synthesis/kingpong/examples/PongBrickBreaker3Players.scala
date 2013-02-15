@@ -1,11 +1,14 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 class PongBrickBreaker3Players extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /**
    * Game Layouts
@@ -194,7 +197,7 @@ class PongBrickBreaker3Players extends Game {
     total1.value += -1 // 9 more
     score.value += 1 // 1 more
   }.represents(List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$plus$eq"),List(EConstantNumber(-1.0f))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$eq"),List(EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$div"),List(ESelect(EIdentShape(score), "value"))))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$eq"),List(EApply(ESelect(ESelect(EIdentShape(total2), "value"), "$div"),List(ESelect(EIdentShape(score), "value"))))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$eq"),List(EApply(ESelect(ESelect(EIdentShape(total2), "value"), "$plus"),List(ESelect(EIdentShape(total1), "value"))))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$eq"),List(EApply(ESelect(ESelect(EIdentShape(total), "value"), "$div"),List(ESelect(EIdentShape(score), "value"))))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$div$eq"),List(ESelect(EIdentShape(score), "value"))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$plus$eq"),List(ESelect(EIdentShape(total2), "value"))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$div$eq"),List(ESelect(EIdentShape(total), "value"))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$div$eq"),List(EConstantNumber(2.0f))), EApply(ESelect(ESelect(EIdentShape(total1), "value"), "$eq"),List(EConstantNumber(0.0f))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(score), "value"), "$plus$eq"),List(EConstantNumber(1.0f))), EApply(ESelect(ESelect(EIdentShape(score), "value"), "$eq"),List(ERandomNumber(List(3.0f, 6.0f))))))))
-  WhenIntegerChanges(score) { (oldValue, newValue) =>
+  WhenIntegerChanges(score) { (newValue) =>
     ennemy.x = random(280.0f, 90.0f, 180.0f) // 1 more
     ennemy.y = random(485.0f, 240.0f, 355.0f) // 1 more
   }.represents(List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(ennemy), "x"), "$eq"),List(ERandomNumber(List(280.0f, 90.0f, 180.0f)))), EApply(ESelect(ESelect(EIdentShape(ennemy), "x"), "$plus$eq"),List(ERandomNumber(List(100.0f, -22.0f, 90.0f)))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(ennemy), "y"), "$eq"),List(ERandomNumber(List(485.0f, 240.0f, 355.0f)))), EApply(ESelect(ESelect(EIdentShape(ennemy), "y"), "$plus$eq"),List(ERandomNumber(List(130.0f, -83.0f, 115.0f))))))))

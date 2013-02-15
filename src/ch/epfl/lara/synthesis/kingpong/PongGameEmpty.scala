@@ -10,8 +10,8 @@ class PongGameEmpty extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /** Game Layouts */
   var arena1 = Arena() named "arena1"

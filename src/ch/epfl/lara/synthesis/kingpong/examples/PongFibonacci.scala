@@ -1,11 +1,14 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 class PongFibonacci extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /**
    * Game Layouts
@@ -43,7 +46,7 @@ class PongFibonacci extends Game {
   WhenCollisionBetween(ball, wall) {
     score.value = score1.value
   }.represents(List(EApply(ESelect(ESelect(EIdentShape(score), "value"), "$eq"), List(ESelect(EIdentShape(score1), "value")))))
-  WhenIntegerChanges(score) { (oldValue, newValue) =>
+  WhenIntegerChanges(score) { (newValue) =>
     score1.value = score2.value
   }.represents(List(EApply(ESelect(ESelect(EIdentShape(score1), "value"), "$eq"), List(ESelect(EIdentShape(score2), "value")))))
   Camera.x = 0

@@ -1,5 +1,7 @@
-package ch.epfl.lara.synthesis.kingpong;
+package ch.epfl.lara.synthesis.kingpong.examples
 
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.ast._
 /**
  * Simplest version of Pong game - where the score is to be added.
  */
@@ -10,8 +12,8 @@ class PongGameSelfAware extends Game {
   /**
    * Game static values
    */
-  var screenWidth = 480
-  var screenHeight = 750
+  screenWidth = 480
+  screenHeight = 750
 
   /** Game Layouts */
   var arena1 = Arena() named "arena1"
