@@ -51,6 +51,8 @@ abstract class Game /*extends scala.Serializable*/ {
   
   var screenWidth = 480
   var screenHeight = 750
+  var layoutWidth = 480
+  var layoutHeight = 750
   //import GameShapes._
     
   /** Content of the game */
@@ -348,6 +350,49 @@ abstract class Game /*extends scala.Serializable*/ {
     //Game.randomgenerator.setSeed(currentTime)
   }
   
+
+  /**
+   * A gravity object for tilt games
+   */
+  object AccelerometerGravity extends GameShapes.ForceField with Category[GameShapes.Shape] {
+    var force_x: Float = 0
+    var force_y: Float = 0
+    
+    override def remove(s: GameShapes.Shape) = {
+      super.remove(s)
+      s.gravity = GameShapes.ZeroGravity
+      s.friction = GameShapes.ElasticFriction
+    }
+    
+    override def add(s: GameShapes.Shape) = {
+      super.add(s)
+      s.gravity = this
+      s.friction = GameShapes.BasicFriction
+    }
+  }
+
+  /**
+   * For platform games
+   */
+  object Gravity2D extends Category[GameShapes.Shape]  with GameShapes.ForceField {
+    var force_x: Float = 0
+    var force_y: Float = 0.001f
+    
+    override def remove(s: GameShapes.Shape) = {
+      super.remove(s)
+      s.gravity = GameShapes.ZeroGravity
+      s.friction = GameShapes.ElasticFriction
+    }
+    
+    override def add(s: GameShapes.Shape) = {
+      super.add(s)
+      s.gravity = this
+      s.friction = GameShapes.BasicFriction
+    }
+  }
+  var history_force_x = new ParameterHistoryCollection[Float]()
+  var history_force_y = new ParameterHistoryCollection[Float]()
+  
   /** Moves the simulation time to the new time */
   def advanceTimeTo(newTime: Long, ruleToStopBefore: ReactiveRule = null): Boolean = {
     initializePhase = false
@@ -358,8 +403,19 @@ abstract class Game /*extends scala.Serializable*/ {
       history_timestamp.addOrReplaceValue(newTime, newTime)
       inputEvents.addEvent(newTime, NEW_TIMESTAMP_EVENT, null, null, 0, 0, 0, 0)
     }
-    val shapes = getArena
     
+    if(!replayMode) {
+      AccelerometerGravity.force_x = currentAccelerationX
+      AccelerometerGravity.force_y = currentAccelerationY
+      history_force_x.addOrReplaceValue(newTime, AccelerometerGravity.force_x)
+      history_force_y.addOrReplaceValue(newTime, AccelerometerGravity.force_y)
+    } else {
+      AccelerometerGravity.force_x = history_force_x(newTime, currentAccelerationX)
+      AccelerometerGravity.force_y = history_force_x(newTime, currentAccelerationY)
+    }
+  
+    
+    val shapes = getArena    
     shapes foreach { s =>
       s.moveDuring(deltaTime, currentTime)
       //if(s.noVelocity) s.resetVelocityIfOutdated(currentTime)
@@ -376,6 +432,8 @@ abstract class Game /*extends scala.Serializable*/ {
           Expression.execute(codeList, context)
         }
     }
+    history_force_x.removeTooOldValues(currentTime - lengthStoredEvent)
+    history_force_y.removeTooOldValues(currentTime - lengthStoredEvent)
     inputEvents.removeTooOldValues(currentTime - lengthStoredEvent)
     history_timestamp.removeTooOldValues(currentTime - lengthStoredEvent-1000)
     triggerEvents.removeTooOldValues(currentTime - lengthStoredEvent)
@@ -385,7 +443,7 @@ abstract class Game /*extends scala.Serializable*/ {
     // We keep a copy of all the values at the current point.
     // All rules
     //}
-    GameShapes.AccelerometerGravity.foreach {
+    AccelerometerGravity.foreach {
       shape =>
         shape.velocity *= 0.98f
     }
@@ -525,7 +583,7 @@ abstract class Game /*extends scala.Serializable*/ {
           s1.x = s1.x - time_collision_relative * s1.velocity_x
           s1.y = s1.y - time_collision_relative * s1.velocity_y
         }
-        if(s1.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+        if(s1.gravity == AccelerometerGravity || s1.gravity == Gravity2D) {
           s1.friction(s1, xUnit, yUnit) 
         }
       }
@@ -540,7 +598,7 @@ abstract class Game /*extends scala.Serializable*/ {
           s2.x = s2.x - time_collision_relative * s2.velocity_x
           s2.y = s2.y - time_collision_relative * s2.velocity_y
         }
-        if(s2.gravity == GameShapes.AccelerometerGravity || s1.gravity == GameShapes.Gravity2D) {
+        if(s2.gravity == AccelerometerGravity || s1.gravity == Gravity2D) {
           s2.friction(s2, -xUnit, -yUnit) 
         }
       }
@@ -925,9 +983,12 @@ abstract class Game /*extends scala.Serializable*/ {
     }
   }
   
+  var currentAccelerationX = 0f
+  var currentAccelerationY = 0f
+  
   def set2DAcceleration(x: Float, y: Float): Unit = {
-    GameShapes.AccelerometerGravity.force_x = -x/1000
-    GameShapes.AccelerometerGravity.force_y = y/1000
+    currentAccelerationX =  -x/1000
+    currentAccelerationY = -y/1000
   }
   
   def everyFrame() = {

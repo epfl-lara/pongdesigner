@@ -10,8 +10,13 @@ class PongGameEmpty extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 1500
+  layoutHeight = 750
+  
+  Camera.x = 0
+  Camera.y = 0
+  Camera.width = 1500
+  Camera.height = 750
 
   /** Game Layouts */
   var arena1 = Arena() named "arena1"
@@ -24,13 +29,13 @@ class PongGameEmpty extends Game {
   val wall = Rectangle(0, 0, 25, 750) named "wall"
   wall.noVelocity = true
   arena1 += wall
-  val wall1 = Rectangle(455, 0, 25, 750) named "wall1"
+  val wall1 = Rectangle(1475, 0, 25, 750) named "wall1"
   wall1.noVelocity = true
   arena1 += wall1
-  val wall2 = Rectangle(25, 0, 430, 25) named "wall2"
+  val wall2 = Rectangle(25, 0, 1475, 25) named "wall2"
   wall2.noVelocity = true
   arena1 += wall2
-  val wall3 = Rectangle(25, 725, 430, 25) named "wall3"
+  val wall3 = Rectangle(25, 725, 1475, 25) named "wall3"
   wall3.noVelocity = true
   arena1 += wall3
   /*val ball1 = Circle(204.63803f, 242.68817f, 50) named "ball1"
@@ -40,8 +45,5 @@ class PongGameEmpty extends Game {
    * Rules to be guessed.
    */
 
-  Camera.x = 0
-  Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  
 }

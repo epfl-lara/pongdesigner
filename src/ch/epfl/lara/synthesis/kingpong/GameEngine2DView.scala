@@ -109,8 +109,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     selectShape(null)
     selectEvent(null)
     setModeModifyGame()
-    GameShapes.AccelerometerGravity.reset()
-    GameShapes.Gravity2D.reset()
+    game.AccelerometerGravity.reset()
+    game.Gravity2D.reset()
     enterEditMode()
   }
   
@@ -280,6 +280,11 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   whitePaint.setStyle(Paint.Style.FILL_AND_STROKE)
   whitePaint.setStrokeWidth(1)
   whitePaint.setAntiAlias(true)
+  var blackPaint = new Paint()
+  blackPaint.setColor(0xFF000000)
+  blackPaint.setStyle(Paint.Style.FILL_AND_STROKE)
+  blackPaint.setStrokeWidth(1)
+  blackPaint.setAntiAlias(true)
   var shadedPaint = new Paint()
   shadedPaint.setColor(0x8800FFFF)
   shadedPaint.setStyle(Paint.Style.STROKE)
@@ -341,147 +346,168 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   context.getSystemService(Context.WINDOW_SERVICE).asInstanceOf[WindowManager].getDefaultDisplay().getMetrics(metrics);    
   lazy val button_size:Float = 80 * metrics.density
   
+  /** Temporary coordinates for mapping */
+  var drawcoords1 = Array(0.0f, 0.0f)
+  var drawcoords2 = Array(0.0f, 0.0f)
+  
   /** Draws the game on the given canvas */
   def drawGameOn(canvas: Canvas): Unit = {
     if(game == null) return
+    drawcoords1(0) = 0
+    drawcoords1(1) = 0
+    drawcoords2(0) = mWidth
+    drawcoords2(1) = mHeight
+    mIMatrix.mapPoints(drawcoords1)
+    mIMatrix.mapPoints(drawcoords2)
+
+    // Display a dark box outside the active layout
+    if(editMode) {
+      canvas.drawRect(drawcoords1(0), drawcoords1(1), 0, drawcoords2(1), blackPaint)
+      canvas.drawRect(drawcoords1(0), drawcoords1(1), drawcoords2(0), 0, blackPaint)
+      canvas.drawRect(game.layoutWidth, drawcoords1(1), drawcoords2(0), drawcoords2(1), blackPaint)
+      canvas.drawRect(drawcoords1(0), game.layoutHeight, drawcoords2(0), drawcoords2(1), blackPaint)
+    }
+        
     val shapes = game.getArena
     shapes foreach { s =>
-      s match {
-        case r:GameShapes.Rectangle =>
-          var rx = r.x
-          var ry = r.y
-          var width = r.width
-          var height = r.height
-          var color = r.color
-          if(!r.visible) {
-            color = (color & 0x00FFFFFF) | 0x80000000
-          }
-          rectFData.set(rx, ry, rx + width, ry + height)
-          rectFData.round(rectData)
-          if(r.visible || editMode) {
-            if(rectBitmapVert != null && height >= width && useBitmaps) {
-              rectBitmapVert.setColorFilter(getFilter(color))
-              rectBitmapVert.setBounds(rectData)
-              rectBitmapVert.draw(canvas)
-            } else if(rectBitmapHorz != null && height <= width && useBitmaps) {
-              rectBitmapHorz.setColorFilter(getFilter(color))
-              rectBitmapHorz.setBounds(rectData)
-              rectBitmapHorz.draw(canvas)
-            } else {
-              defaultPaint.setColor(color)
-              if(!r.visible) defaultPaint.setAlpha(0x80)
-              canvas.drawRect(rectFData, defaultPaint)
+      if(editMode || !s.isOutsideRectangle(game.Camera.x, game.Camera.y, game.Camera.x + game.Camera.width, game.Camera.y + game.Camera.height)) {
+        s match {
+          case r:GameShapes.Rectangle =>
+            var rx = r.x
+            var ry = r.y
+            var width = r.width
+            var height = r.height
+            var color = r.color
+            if(!r.visible) {
+              color = (color & 0x00FFFFFF) | 0x80000000
             }
-          }
-          if(editMode) {
-            val middleX = rx + width / 2
-            val middleY = ry + height / 2
-            if(r.x != r.prev_x || r.y != r.prev_y || r.width != r.prev_width || r.height != r.prev_height) {
-              rectFData.set(r.prev_x, r.prev_y, r.prev_x + r.prev_width, r.prev_y + r.prev_height)
-              canvas.drawRect(rectFData, shadedPaint)
-              canvas.drawLine(r.prev_x + r.prev_width / 2, r.prev_y + r.prev_height / 2, middleX, middleY, distancePaint)
-            }
-          }
-        case c:GameShapes.Circle =>
-          var cx = c.x
-          var cy = c.y
-          var radius = c.radius
-          var color = c.color
-          if(!c.visible) {
-            color = (color & 0x00FFFFFF) | 0x80000000
-          }
-          if(editMode) {
-            if(ghostModeActivated) {
-              c.history_x.foreachWithUntil(c.history_y, c.history_radius, game.currentTime){
-                (i1, i2, i3) =>
-                 canvas.drawCircle(i1.value, i2.value, i3.value, shadedPaint)
+            rectFData.set(rx, ry, rx + width, ry + height)
+            rectFData.round(rectData)
+            if(r.visible || editMode) {
+              if(rectBitmapVert != null && height >= width && useBitmaps) {
+                rectBitmapVert.setColorFilter(getFilter(color))
+                rectBitmapVert.setBounds(rectData)
+                rectBitmapVert.draw(canvas)
+              } else if(rectBitmapHorz != null && height <= width && useBitmaps) {
+                rectBitmapHorz.setColorFilter(getFilter(color))
+                rectBitmapHorz.setBounds(rectData)
+                rectBitmapHorz.draw(canvas)
+              } else {
+                defaultPaint.setColor(color)
+                if(!r.visible) defaultPaint.setAlpha(0x80)
+                canvas.drawRect(rectFData, defaultPaint)
               }
             }
-          }
-          if(c.visible || editMode) {
-            if(circBitmap != null && useBitmaps) {
-              rectFData.set(cx - radius+2, cy - radius+2, cx + radius-2, cy + radius-2)
-              rectFData.round(rectData)
-              circBitmap.setBounds(rectData)
-              circBitmap.setColorFilter(getFilter(color))
-              circBitmap.draw(canvas)
-            } else {
-              defaultPaint.setColor(color)
-              if(!c.visible) defaultPaint.setAlpha(0x80)
-              canvas.drawCircle(cx, cy, radius, defaultPaint)
+            if(editMode) {
+              val middleX = rx + width / 2
+              val middleY = ry + height / 2
+              if(r.x != r.prev_x || r.y != r.prev_y || r.width != r.prev_width || r.height != r.prev_height) {
+                rectFData.set(r.prev_x, r.prev_y, r.prev_x + r.prev_width, r.prev_y + r.prev_height)
+                canvas.drawRect(rectFData, shadedPaint)
+                canvas.drawLine(r.prev_x + r.prev_width / 2, r.prev_y + r.prev_height / 2, middleX, middleY, distancePaint)
+              }
             }
-          }
-          if(editMode && (c.x != c.prev_x || c.y != c.prev_y)) {
-            canvas.drawCircle(c.prev_x, c.prev_y, radius, shadedPaint)
-            canvas.drawLine(c.x, c.y, c.prev_x, c.prev_y, distancePaint)
-          }
-        case d:GameShapes.IntegerBox =>
-          var x = d.x
-          var y = d.y
-          var height = d.height
-          var color = d.color
-          defaultPaint.setColor(color)
-          if(!d.visible) defaultPaint.setAlpha(0x80)
-          defaultPaint.setTextSize(height)
-          val text = if(editMode) d.getStringModify else d.getString
-          defaultPaint.getTextBounds(text, 0, text.length(), rectData)
-          val shift = (rectData.bottom - rectData.top)/2 + d.height/2
-          if(d.visible || editMode) canvas.drawText(text, x, y + shift, defaultPaint)          
-          if(editMode) {
-            //rectFData.set(x, y, x + d.width, y + d.height)
-            //canvas.drawRect(rectFData, distancePaint)
-            if(d.x != d.prev_x || d.y != d.prev_y) {
-              shadedPaint.setTextSize(height);
-              canvas.drawText(text, d.prev_x, d.prev_y + shift, shadedPaint)
-              canvas.drawLine(d.prev_x, d.prev_y, d.x, d.y, distancePaint)
+          case c:GameShapes.Circle =>
+            var cx = c.x
+            var cy = c.y
+            var radius = c.radius
+            var color = c.color
+            if(!c.visible) {
+              color = (color & 0x00FFFFFF) | 0x80000000
             }
-          }
-        case d:GameShapes.TextBox =>
-          var x = d.x
-          var y = d.y
-          var height = d.height
-          var width = d.width
-          var color = d.color
-          defaultPaint.setColor(color)
-          if(!d.visible) defaultPaint.setAlpha(0x80)
-          defaultPaint.setTextSize(height)
-          val text = if(editMode) d.getStringModify else d.getString
-          if(text != null) {
+            if(editMode) {
+              if(ghostModeActivated) {
+                c.history_x.foreachWithUntil(c.history_y, c.history_radius, game.currentTime){
+                  (i1, i2, i3) =>
+                   canvas.drawCircle(i1.value, i2.value, i3.value, shadedPaint)
+                }
+              }
+            }
+            if(c.visible || editMode) {
+              if(circBitmap != null && useBitmaps) {
+                rectFData.set(cx - radius+2, cy - radius+2, cx + radius-2, cy + radius-2)
+                rectFData.round(rectData)
+                circBitmap.setBounds(rectData)
+                circBitmap.setColorFilter(getFilter(color))
+                circBitmap.draw(canvas)
+              } else {
+                defaultPaint.setColor(color)
+                if(!c.visible) defaultPaint.setAlpha(0x80)
+                canvas.drawCircle(cx, cy, radius, defaultPaint)
+              }
+            }
+            if(editMode && (c.x != c.prev_x || c.y != c.prev_y)) {
+              canvas.drawCircle(c.prev_x, c.prev_y, radius, shadedPaint)
+              canvas.drawLine(c.x, c.y, c.prev_x, c.prev_y, distancePaint)
+            }
+          case d:GameShapes.IntegerBox =>
+            var x = d.x
+            var y = d.y
+            var height = d.height
+            var color = d.color
+            defaultPaint.setColor(color)
+            if(!d.visible) defaultPaint.setAlpha(0x80)
+            defaultPaint.setTextSize(height)
+            val text = if(editMode) d.getStringModify else d.getString
             defaultPaint.getTextBounds(text, 0, text.length(), rectData)
             val shift = (rectData.bottom - rectData.top)/2 + d.height/2
-            if(d.visible || editMode) canvas.drawText(text, x, y + shift, defaultPaint)
-            if(editMode && (d.x != d.prev_x || d.y != d.prev_y)) {
-              shadedPaint.setTextSize(d.height);
-              canvas.drawText(text, d.prev_x, d.prev_y, shadedPaint)
-              canvas.drawLine(d.prev_x, d.prev_y + shift, d.x, d.y + shift, distancePaint)
+            if(d.visible || editMode) canvas.drawText(text, x, y + shift, defaultPaint)          
+            if(editMode) {
+              //rectFData.set(x, y, x + d.width, y + d.height)
+              //canvas.drawRect(rectFData, distancePaint)
+              if(d.x != d.prev_x || d.y != d.prev_y) {
+                shadedPaint.setTextSize(height);
+                canvas.drawText(text, d.prev_x, d.prev_y + shift, shadedPaint)
+                canvas.drawLine(d.prev_x, d.prev_y, d.x, d.y, distancePaint)
+              }
             }
-            if(selectedShape == d) {
-              canvas.drawLine(x, y, x, y + height, distancePaint)
-              canvas.drawLine(x, y + height, x + width, y + height, distancePaint)
-              canvas.drawLine(x + width, y + height, x + width, y, distancePaint)
-              canvas.drawLine(x + width, y, x, y, distancePaint)
+          case d:GameShapes.TextBox =>
+            var x = d.x
+            var y = d.y
+            var height = d.height
+            var width = d.width
+            var color = d.color
+            defaultPaint.setColor(color)
+            if(!d.visible) defaultPaint.setAlpha(0x80)
+            defaultPaint.setTextSize(height)
+            val text = if(editMode) d.getStringModify else d.getString
+            if(text != null) {
+              defaultPaint.getTextBounds(text, 0, text.length(), rectData)
+              val shift = (rectData.bottom - rectData.top)/2 + d.height/2
+              if(d.visible || editMode) canvas.drawText(text, x, y + shift, defaultPaint)
+              if(editMode && (d.x != d.prev_x || d.y != d.prev_y)) {
+                shadedPaint.setTextSize(d.height);
+                canvas.drawText(text, d.prev_x, d.prev_y, shadedPaint)
+                canvas.drawLine(d.prev_x, d.prev_y + shift, d.x, d.y + shift, distancePaint)
+              }
+              if(selectedShape == d) {
+                canvas.drawLine(x, y, x, y + height, distancePaint)
+                canvas.drawLine(x, y + height, x + width, y + height, distancePaint)
+                canvas.drawLine(x + width, y + height, x + width, y, distancePaint)
+                canvas.drawLine(x + width, y, x, y, distancePaint)
+              }
             }
+          case _ =>
+        }
+        // Draws the arrow
+        if(editMode) {
+          //if(!s.noVelocity) {
+            val v = s.velocity
+            if(v != 0) {
+              drawVelocity(canvas, s.velocity, s.x, s.y, s.velocity_x, s.velocity_y, velocityPaint)
+              if(s.velocity_x != s.prev_velocity_x || s.velocity_y != s.prev_velocity_y) {
+                drawVelocity(canvas, s.prev_velocity, s.prev_x, s.prev_y, s.prev_velocity_x, s.prev_velocity_y, velocityPaintShaded)
+              }
+            }
+          //}
+          if(s.noVelocity ){
+            val sx = s.centerX
+            val sy = s.centerY
+            rectFData.set(sx+1, sy-50, sx+41, sy+1)
+            rectFData.round(rectData)
+            overlayNailBig.setBounds(rectData)
+            overlayNailBig.draw(canvas)
           }
-        case _ =>
-      }
-      // Draws the arrow
-      if(editMode) {
-        //if(!s.noVelocity) {
-          val v = s.velocity
-          if(v != 0) {
-            drawVelocity(canvas, s.velocity, s.x, s.y, s.velocity_x, s.velocity_y, velocityPaint)
-            if(s.velocity_x != s.prev_velocity_x || s.velocity_y != s.prev_velocity_y) {
-              drawVelocity(canvas, s.prev_velocity, s.prev_x, s.prev_y, s.prev_velocity_x, s.prev_velocity_y, velocityPaintShaded)
-            }
-          }
-        //}
-        if(s.noVelocity ){
-          val sx = s.centerX
-          val sy = s.centerY
-          rectFData.set(sx+1, sy-50, sx+41, sy+1)
-          rectFData.round(rectData)
-          overlayNailBig.setBounds(rectData)
-          overlayNailBig.draw(canvas)
         }
       }
     }
@@ -526,6 +552,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         case _ =>
         }
       }
+    }
+    
+    // Display a dark box around the visible zone.
+    if(!editMode) {
+      canvas.drawRect(drawcoords1(0), drawcoords1(1), game.Camera.x, drawcoords2(1), blackPaint)
+      canvas.drawRect(drawcoords1(0), drawcoords1(1), drawcoords2(0), game.Camera.y, blackPaint)
+      canvas.drawRect(game.Camera.x + game.Camera.width, drawcoords1(1), drawcoords2(0), drawcoords2(1), blackPaint)
+      canvas.drawRect(drawcoords1(0), game.Camera.y + game.Camera.height, drawcoords2(0), drawcoords2(1), blackPaint)
     }
   }
   

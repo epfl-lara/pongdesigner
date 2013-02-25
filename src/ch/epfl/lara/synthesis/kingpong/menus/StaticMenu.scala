@@ -221,9 +221,13 @@ object AccelerometerButton extends MenuButton {
   var selected = false
   override def onFingerUp(gameEngine: GameEngine2DView, selectedShape: Shape, x: Float, y: Float) = {
     selected = !selected
+    val game = gameEngine.getGame()
     if(selected) {
-      gameEngine.selectedCategory = GameShapes.AccelerometerGravity
+      gameEngine.selectedCategory = game.AccelerometerGravity
       gameEngine.setModeSelectCategory()
+      if(gameEngine.selectedShape != null) {
+        gameEngine.selectedCategory.add(selectedShape)
+      }
     } else {
       gameEngine.selectedCategory = null
       gameEngine.setModeModifyGame()
@@ -243,9 +247,13 @@ object Gravity2DButton extends MenuButton {
   var selected = false
   override def onFingerUp(gameEngine: GameEngine2DView, selectedShape: Shape, x: Float, y: Float) = {
     selected = !selected
+    val game = gameEngine.getGame()
     if(selected) {
-      gameEngine.selectedCategory = GameShapes.Gravity2D
+      gameEngine.selectedCategory = game.Gravity2D
       gameEngine.setModeSelectCategory()
+      if(gameEngine.selectedShape != null) {
+        gameEngine.selectedCategory.add(selectedShape)
+      }
     } else {
       gameEngine.selectedCategory = null
       gameEngine.setModeModifyGame()

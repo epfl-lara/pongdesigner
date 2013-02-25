@@ -51,40 +51,6 @@ object GameShapes {
     def mass = 0
   }
   
-  object AccelerometerGravity extends ForceField with Category[Shape] {
-    var force_x: Float = 0
-    var force_y: Float = 0
-    
-    override def remove(s: GameShapes.Shape) = {
-      super.remove(s)
-      s.gravity = ZeroGravity
-      s.friction = ElasticFriction
-    }
-    
-    override def add(s: GameShapes.Shape) = {
-      super.add(s)
-      s.gravity = this
-      s.friction = BasicFriction
-    }
-  }
-  
-  object Gravity2D extends Category[Shape]  with ForceField {
-    var force_x: Float = 0
-    var force_y: Float = 0.001f
-    
-    override def remove(s: GameShapes.Shape) = {
-      super.remove(s)
-      s.gravity = ZeroGravity
-      s.friction = ElasticFriction
-    }
-    
-    override def add(s: GameShapes.Shape) = {
-      super.add(s)
-      s.gravity = this
-      s.friction = BasicFriction
-    }
-  }
-  
   trait BouncingFriction {
     def frictionCollision: Float
     def frictionTangent: Float
@@ -651,6 +617,7 @@ object GameShapes {
         target = s
       } else {
         reset()
+        super.add(s)
         target = s
       }
     }
