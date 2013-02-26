@@ -982,6 +982,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def setModeModifyGame() {
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_prev = false
+    MenuOptions.copy_to_prev = true
     enterEditMode()
     AddRuleButton.hovered = false
     selectEvent(null)
@@ -1098,8 +1099,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   }
 
   /**
-   * Selects the given event by returning to the time this event occured
-   * Change the game new values by the rule.
+   * Selects the given event by returning to the time this event occurred
+   * Changes the game new values by the rule.
    **/
   def selectEvent(i: ParameterHistory[TriggerEvent]) = {
     selectedEvent = TriggerEvent.getInputEvent(i)

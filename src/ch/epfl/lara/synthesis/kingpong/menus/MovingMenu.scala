@@ -30,7 +30,7 @@ object MenuOptions {
 
 /** Change the menu. */
 object MovingMenu {
-  var menus: List[MenuButton] = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, TrashButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton)
+  var menus: List[CustomMenu] = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, TrashButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton)
   def draw(canvas: Canvas, gameEngine: GameEngine2DView, selectedShape: Shape, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Int = {
     val top_shift = selectedShape match {
       case d: IntegerBox =>
@@ -61,7 +61,7 @@ object MovingMenu {
     PaintButton.setPos(3, 1)
     
     RenameButton.setText(selectedShape.mName)
-    RenameButton.setPos(gameEngine.whitePaint, 33/49, 0, top_shift-1)
+    RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
 
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)

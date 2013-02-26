@@ -396,13 +396,55 @@ abstract class Game /*extends scala.Serializable*/ {
   /** Moves the simulation time to the new time */
   def advanceTimeTo(newTime: Long, ruleToStopBefore: ReactiveRule = null): Boolean = {
     initializePhase = false
+    var continue = true
+   
+      
     val deltaTime = newTime - currentTime
     setCurrentTime(newTime)
     if(maxTime < newTime) maxTime = newTime
-    if(!replayMode) {
-      history_timestamp.addOrReplaceValue(newTime, newTime)
-      inputEvents.addEvent(newTime, NEW_TIMESTAMP_EVENT, null, null, 0, 0, 0, 0)
+
+    /** Process waiting input events */
+    waitingEvents synchronized {   
+      // Save the inputs as just happening before the new timestamp change event
+      // So that when replaying, they will be stored for the new events.
+      waitingEvents.foreach { p =>
+        if(!replayMode) {
+          p.value.code match {
+            case TOUCHDOWN_EVENT =>
+              inputEvents.addEvent(currentTime, TOUCHDOWN_EVENT, null, null, p.value.x1, p.value.y1, 0, 0)
+            case TOUCHUP_EVENT =>
+              inputEvents.addEvent(currentTime, TOUCHUP_EVENT, null, null, p.value.x1, p.value.y1, 0, 0)
+            case TOUCHMOVE_EVENT =>
+              inputEvents.addEvent(currentTime, TOUCHMOVE_EVENT, null, null, p.value.x1, p.value.y1, p.value.x2, p.value.y2)
+            case _ => Log.d("Game.scala", "unknown event code : " + p.value.code)
+          }
+        }
+      }
+      
+      if(!replayMode) {
+        history_timestamp.addOrReplaceValue(newTime, newTime)
+        inputEvents.addEvent(newTime, NEW_TIMESTAMP_EVENT, null, null, 0, 0, 0, 0)
+      }
+    
+      // Process the inputs that happened between the last timestamp and right now.
+      waitingEvents.foreach { p =>
+        if(!replayMode || continue) {
+          p.value.code match {
+            case TOUCHUP_EVENT =>
+              continue = processFingerUpEvent(p.value.x1, p.value.y1, ruleToStopBefore)
+            case TOUCHDOWN_EVENT =>
+              continue = processFingerDownEvent(p.value.x1, p.value.y1, ruleToStopBefore)
+              if(!replayMode && continue) gameEngine.vibrate()
+            case TOUCHMOVE_EVENT =>
+              continue = processFingerMoveEvent(p.value.x1, p.value.y1, p.value.x2, p.value.y2, ruleToStopBefore)
+            case _ => Log.d("Game.scala", "unknown event code : " + p.value.code)
+          }
+        }
+      }
+      waitingEvents.reset()
     }
+    if(replayMode && !continue) return continue
+    
     
     if(!replayMode) {
       AccelerometerGravity.force_x = currentAccelerationX
@@ -424,7 +466,7 @@ abstract class Game /*extends scala.Serializable*/ {
     shapes foreachVisiblePair { (s1, s2) =>
       GameShapes.handleCollision(this, s1, s2)
     }
-    var continue = true
+
     added_whenEverRules foreach {
       case r@WhenEverRule(condExpr, codeList) =>
         if(r == ruleToStopBefore) continue = false
@@ -525,17 +567,28 @@ abstract class Game /*extends scala.Serializable*/ {
     } else false
   }
   
-  /** Finger events */
-  def onFingerDownEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
-    if(!replayMode) inputEvents.addEvent(currentTime, TOUCHDOWN_EVENT, null, null, x, y, 0, 0)
+  /** Asynchronous finger down event */
+  def onFingerDown(x: Float, y: Float):Unit = {
+    waitingEvents.synchronized {
+      waitingEvents.addEvent(currentTime, TOUCHDOWN_EVENT, null, null, x, y, 0, 0)
+    }
+  }
+  /** Executed finger down event */
+  def processFingerDownEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
     var continue = true
     val result = added_whenFingerDownOnRules.foldLeft(false){ case (found, (shape, rule)) =>
       processEventsIfShapeSelectableBy(shape, x, y, {() => if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found
     }
     if(replayMode) continue else result
   }
-  def onFingerUpEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
-    if(!replayMode) inputEvents.addEvent(currentTime, TOUCHUP_EVENT, null, null, x, y, 0, 0)
+  /** Asynchronous finger up event */
+  def onFingerUp(x: Float, y: Float):Unit = {
+    waitingEvents.synchronized {
+      waitingEvents.addEvent(currentTime, TOUCHUP_EVENT, null, null, x, y, 0, 0)
+    }
+  }
+  /** Executed finger up event */
+  def processFingerUpEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
     var continue = true
     val result = added_whenFingerUpOnRules.foldLeft(false){ case (found, (shape, rule)) =>
       processEventsIfShapeSelectableBy(shape, x, y, {() =>  if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found
@@ -550,10 +603,14 @@ abstract class Game /*extends scala.Serializable*/ {
     context.getOrElseUpdate("xTo", EConstant(0)).asInstanceOf[ModifiableValue].setValue(xTo)
     context.getOrElseUpdate("yTo", EConstant(0)).asInstanceOf[ModifiableValue].setValue(yTo)   
   }
-  
-  /** Finger move events  */
-  def onFingerMoveEvent(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, ruleToStopBefore: ReactiveRule = null): Boolean = {
-    if(!replayMode) inputEvents.addEvent(currentTime, TOUCHMOVE_EVENT, null, null, xFrom, yFrom, xTo, yTo)
+  /** Asynchronous finger move event */
+  def onFingerMove(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float):Unit = {
+    waitingEvents.synchronized {
+      waitingEvents.addEvent(currentTime, TOUCHMOVE_EVENT, null, null, xFrom, yFrom, xTo, yTo)
+    }
+  }
+  /** Executed finger move event  */
+  def processFingerMoveEvent(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, ruleToStopBefore: ReactiveRule = null): Boolean = {
     updateContextMoveCoordinates(xFrom, yFrom, xTo, yTo)
     var continue = true
     val result = added_whenFingerMovesOnRules.foldLeft(false){ case (found, (shape, rule)) => processMoveAction(shape, xFrom, yFrom, xTo, yTo,
@@ -835,11 +892,11 @@ abstract class Game /*extends scala.Serializable*/ {
       inputEvents.foreachBetween(currentTime, timestamp){ i => if(continue) {
         i match {
           case i if i.value.code == TOUCHDOWN_EVENT => 
-            continue = onFingerDownEvent(i.value.x1, i.value.y1, ruleToStopBefore)
+            onFingerDown(i.value.x1, i.value.y1)
           case i if i.value.code == TOUCHMOVE_EVENT => 
-            continue = onFingerMoveEvent(i.value.x1, i.value.y1, i.value.x2, i.value.y2, ruleToStopBefore)
+            onFingerMove(i.value.x1, i.value.y1, i.value.x2, i.value.y2)
           case i if i.value.code == TOUCHUP_EVENT => 
-            continue = onFingerUpEvent(i.value.x1, i.value.y1, ruleToStopBefore)
+            onFingerUp(i.value.x1, i.value.y1)
           case i if i.value.code == NEW_TIMESTAMP_EVENT => 
             continue = advanceTimeTo(i.timestamp, ruleToStopBefore)
             Log.d("Game.scala", "Going forward to time " + i.timestamp)

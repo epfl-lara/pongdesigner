@@ -127,11 +127,11 @@ abstract class MenuTextButton extends CustomMenu {
       val left = rectData.left
       val top = rectData.top
       val bottom = rectData.bottom
-      rectFData.set(x- 32 - width / 2, y - height - 32, x + width / 2 + 32, y)
+      rectFData.set(x- 32 - width / 2, y - height/2 - 16, x + width / 2 + 32, y+ height/2 + 16)
       rectFData.round(mRectDataButton)
       
       mTextX = x - width / 2 - left
-      mTextY = y - bottom - 16
+      mTextY = y + height / 2 - bottom
       
       icons(gameEngine, selectedShape) foreach { id =>
         val d = bitmaps.getOrElse(R.drawable.flat_button_resizable, null).asInstanceOf[NinePatchDrawable]

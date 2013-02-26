@@ -66,6 +66,19 @@ trait OrderedListByTimestamp[T] extends SourceOf[T] {
   
   def last_value = if(mLastValue != null) mLastValue.value else null
   
+  def reset() = {
+    this synchronized {
+      var pointer = mFirstValue
+      while(pointer != null) {
+        val headToRemove = pointer
+        pointer = pointer.next
+        if(pointer != null) pointer.prev = null
+        push(headToRemove)
+      }
+      mFirstValue = pointer
+    }
+  }
+
   def foreachFromFarAway(timestamp: Long)(f: ParameterHistory[T] => Unit) = {
     this synchronized {
       var pointerFirst = mFirstValue

@@ -3,6 +3,7 @@ package ch.epfl.lara.synthesis.kingpong
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.content.Context
+import ch.epfl.lara.synthesis.kingpong.ast._
 
 /**
  * ObjLayout contains static global variables
@@ -59,6 +60,9 @@ object ConditionActionEmpty extends ConditionAction {
   height = 20
 }
 
+/**
+ * The dynamic representation of a rule AST
+ */
 class GraphicalRule extends ObjLayout {
   import ObjLayout._
   private var mObjectConcerned: GameObjectLayout = new GameObjectLayout()

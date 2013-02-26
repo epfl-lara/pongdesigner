@@ -238,9 +238,7 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
               mIMatrix.mapPoints(coords)
               val x = coords(0)
               val y = coords(1)
-              if(game.onFingerDownEvent(x, y)) {
-                vibrate()
-              }
+              game.onFingerDown(x, y)
               lastX(pointerId) = x
               lastY(pointerId) = y
             }
@@ -306,7 +304,7 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
                   mIMatrix.mapPoints(coords)
                   xTo = coords(0)
                   yTo = coords(1)
-                  game.onFingerMoveEvent(xFrom, yFrom, xTo, yTo)
+                  game.onFingerMove(xFrom, yFrom, xTo, yTo)
                 }
                 //appendLog("Pointer Id=" + pointerId + " moved from " + xFrom + "," + yFrom + " to " + xTo + "," + yTo )
                 lastX(pointerId) = xTo
@@ -327,7 +325,7 @@ trait GameEngineView extends SurfaceView with SurfaceHolder.Callback with Runnab
               mIMatrix.mapPoints(coords)
               val x = coords(0)
               val y = coords(1)
-              game.onFingerUpEvent(x, y)
+              game.onFingerUp(x, y)
             }
             //appendLog("Pointer Id=" + pointerId + " went up on " + me.getX() + "," + me.getY())
           }
