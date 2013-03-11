@@ -6,8 +6,8 @@ class PongEscape extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /**
    * Game Layouts
@@ -48,9 +48,9 @@ class PongEscape extends Game {
   val textBox = TextBox(88.224f, 340.986f, 240, 60, "") named "textBox"
   textBox.color = -55698
   arena1 += textBox
-  val score = IntegerBox(screenWidth - 50, 60, 10, 30, 0) named "score"
+  val score = IntegerBox(layoutWidth - 50, 60, 10, 30, 0) named "score"
   arena1 += score
-  val increment = IntegerBox(screenWidth + 50, 60, 10, 30, 1) named "increment"
+  val increment = IntegerBox(layoutWidth + 50, 60, 10, 30, 1) named "increment"
   arena1 += increment
   
   WhenCollisionBetween(wall3, wall4) {
@@ -114,6 +114,6 @@ class PongEscape extends Game {
   }
   Camera.x = 0
   Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  Camera.width = layoutWidth
+  Camera.height = layoutHeight
 }

@@ -50,10 +50,10 @@ object StaticMenu {
     res
   }
   
-  def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     menus foreach {
       menu =>
-        if(menu.hovered) menu.onFingerMove(selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+        if(menu.hovered) menu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
     }
   }
   
@@ -92,7 +92,7 @@ object AddRectangleButton extends MenuButton {
     selectedShape match {
       case model:Rectangle =>
         // TODO : implement the "clone" button
-        r = game.Rectangle(game.screenWidth / 2, game.screenHeight / 2, model.width, model.height)
+        r = game.Rectangle(game.layoutWidth / 2, game.layoutHeight / 2, model.width, model.height)
         r.velocity_x = selectedShape.velocity_x
         r.velocity_y = selectedShape.velocity_y
         r.noVelocity = selectedShape.noVelocity
@@ -100,7 +100,7 @@ object AddRectangleButton extends MenuButton {
         name = model.name
         duplicate = true
       case _ =>
-        r = game.Rectangle(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt, button_size.toInt)
+        r = game.Rectangle(game.layoutWidth / 2, game.layoutHeight / 2, button_size.toInt, button_size.toInt)
         name = "Wall"
     }
     AddShape.addShape(gameEngine, game, r, name, duplicate)
@@ -126,7 +126,7 @@ object AddCircleButton extends MenuButton {
     selectedShape match {
       case model:Circle =>
         // TODO : implement the "clone" button
-        r = game.Circle(game.screenWidth / 2, game.screenHeight / 2, model.radius)
+        r = game.Circle(game.layoutWidth / 2, game.layoutHeight / 2, model.radius)
         r.velocity_x = selectedShape.velocity_x
         r.velocity_y = selectedShape.velocity_y
         r.noVelocity = selectedShape.noVelocity
@@ -134,7 +134,7 @@ object AddCircleButton extends MenuButton {
         name = model.name
         duplicate = true
       case _ =>
-        r = game.Circle(game.screenWidth / 2, game.screenHeight / 2, 50)
+        r = game.Circle(game.layoutWidth / 2, game.layoutHeight / 2, 50)
         name = "Ball"
     }
     AddShape.addShape(gameEngine, game, r, name, duplicate)
@@ -159,7 +159,7 @@ object AddDigitButton extends MenuButton {
     selectedShape match {
       case model:IntegerBox =>
         // TODO : implement the "clone" button
-        r = game.IntegerBox(game.screenWidth / 2, game.screenHeight / 2, model.width.toInt, model.height.toInt, 0)
+        r = game.IntegerBox(game.layoutWidth / 2, game.layoutHeight / 2, model.width.toInt, model.height.toInt, 0)
         r.velocity_x = selectedShape.velocity_x
         r.velocity_y = selectedShape.velocity_y
         r.noVelocity = selectedShape.noVelocity
@@ -167,7 +167,7 @@ object AddDigitButton extends MenuButton {
         name = model.name
         duplicate = true
       case _ =>
-        r = game.IntegerBox(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt/2, button_size.toInt/2, 0)
+        r = game.IntegerBox(game.layoutWidth / 2, game.layoutHeight / 2, button_size.toInt/2, button_size.toInt/2, 0)
         name = "Score"
     }
     AddShape.addShape(gameEngine, game, r, name, duplicate)
@@ -193,7 +193,7 @@ object AddTextButton extends MenuButton {
     selectedShape match {
       case model:TextBox =>
         // TODO : implement the "clone" button
-        r = game.TextBox(game.screenWidth / 2, game.screenHeight / 2, model.width, model.height, model.text)
+        r = game.TextBox(game.layoutWidth / 2, game.layoutHeight / 2, model.width, model.height, model.text)
         r.velocity_x = selectedShape.velocity_x
         r.velocity_y = selectedShape.velocity_y
         r.noVelocity = selectedShape.noVelocity
@@ -201,7 +201,7 @@ object AddTextButton extends MenuButton {
         name = model.name
         duplicate = true
       case _ =>
-        r = game.TextBox(game.screenWidth / 2, game.screenHeight / 2, button_size.toInt*2, button_size.toInt/2, "Custom text")
+        r = game.TextBox(game.layoutWidth / 2, game.layoutHeight / 2, button_size.toInt*2, button_size.toInt/2, "Custom text")
         name = "Label"
     }
     AddShape.addShape(gameEngine, game, r, name, duplicate)
@@ -355,28 +355,15 @@ object SelectPrevNextButton extends MenuButton {
  */
 object ChooseExistingRuleButton extends MenuButton {
   import MenuOptions._
+  
   override def onFingerUp(gameEngine: GameEngine2DView, selectedShape: Shape, x: Float, y: Float) = {
     val game = gameEngine.getGame()
     val res = context.getResources()
     val many_rules = game.init_rules.toList
-    CustomDialogs.launchRuleChooserDialog(context, res.getString(R.string existing_rule_dialog_title),
-        many_rules map (_.toScalaString("", game.context)),
-        many_rules,
-        { rule => 
-          // Let the code apply to the game, and the user edit the output. 
-          CodeGenerator.modifyAndInsertRule(context, game, rule, game.currentTime, {rule =>
-            //Replay the rule and select its effects.
-            // Need to select an event corresponding to the rule.
-            val event = gameEngine.findEventForRule(rule)
-            if(event != null) {
-              gameEngine.setModeSelect()
-              game.storePrevValues()
-              gameEngine.selectRule(rule, event)
-              gameEngine.triggerRule(rule, event)
-            } else {
-              gameEngine.setModeModifyGame()
-            }
-          })
+    CustomDialogs.launchRuleChooserDialog(context, res.getString(R.string existing_rule_dialog_title), 
+        many_rules map (_.toScalaString("", game.context)), 
+        many_rules, 
+        { rule => modifySpecificRule(gameEngine, game, rule)
         },
         { () => })
     hovered = false
@@ -385,6 +372,23 @@ object ChooseExistingRuleButton extends MenuButton {
   def icons(gameEngine: GameEngine2DView, selectedShape: Shape) = {
     (if(hovered) R.drawable.flat_button_highlighted else R.drawable.flat_button) :: 
       R.drawable.existing_rules :: Nil
+  }
+  
+  def modifySpecificRule(gameEngine: GameEngine2DView, game: Game, rule: ReactiveRule): Unit = {
+    // Let the code apply to the game, and the user edit the output. 
+    CodeGenerator.modifyAndInsertRule(context, game, rule, game.currentTime, {rule =>
+      //Replay the rule and select its effects.
+      // Need to select an event corresponding to the rule.
+      val event = gameEngine.findEventForRule(rule)
+      if(event != null) {
+        gameEngine.setModeSelect()
+        game.storePrevValues()
+        gameEngine.selectRule(rule, event)
+        gameEngine.triggerRule(rule, event)
+      } else {
+        gameEngine.setModeModifyGame()
+      }
+    })
   }
 }
 

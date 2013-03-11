@@ -7,8 +7,8 @@ class PongGCDCanvas extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /**
    * Game Layouts
@@ -85,6 +85,6 @@ class PongGCDCanvas extends Game {
   }.represents(List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(goal), "value"), "$plus$eq"),List(EConstantNumber(1.0))), EApply(ESelect(ESelect(EIdentShape(goal), "value"), "$eq"),List(EConstantNumber(16.0)))))))
   Camera.x = 0
   Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  Camera.width = layoutWidth
+  Camera.height = layoutHeight
 }

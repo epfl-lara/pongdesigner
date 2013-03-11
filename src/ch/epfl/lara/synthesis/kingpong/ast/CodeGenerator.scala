@@ -31,6 +31,8 @@ object CodeGenerator {
   val xTo_ident = EIdent("xTo")
   val yFrom_ident = EIdent("yFrom")
   val yTo_ident = EIdent("yTo")
+  val x_ident = EIdent("x")
+  val y_ident = EIdent("y")
   val newValue_ident = EIdent("newValue")
   val oldValue_ident = EIdent("oldValue")
 
@@ -562,6 +564,21 @@ object CodeGenerator {
         //if(roughlyProportional)
         possibilities = (shape_ident.angle += shiftAngle)::possibilities
         possibilities = (shape_ident.angle = roundedAngle)::possibilities
+        if(causeEventCode == TOUCHDOWN_EVENT) {
+          game.getArena foreach { shape1: GameShapes.Shape =>
+            shape1 match {
+              case c:Circle =>
+                var angleEvent = game.angle(c.x, c.y, causeEvent.x1, causeEvent.y1)
+                var angleShape = shape.angle
+                if(Math.abs(angleEvent - angleShape) < 20) {
+                  val c_ident = EIdentShape(c)
+                  possibilities = (shape_ident.angle = Expression.angle(c_ident.x, c_ident.y, x_ident, y_ident))::possibilities
+                }
+              case _ =>
+            }
+          }
+        }
+        
         new_code = ParallelExpressions(possibilities)::new_code
       }
       // Change in velocity recorded only if the angle did not change or the initial velocity was null
@@ -904,7 +921,7 @@ object CodeGenerator {
    * Recovers an existing rule from an event or creates a new one.
    */
   def getRuleFromEvent(game: Game, causeEvent: TriggerEvent): Option[ReactiveRule] = {
-    causeEvent.code match {
+    val result = causeEvent.code match {
       case COLLISION_EVENT =>
           val lookupPair = GameShapes.ShapePair(causeEvent.shape1, causeEvent.shape2)
           Some(game.added_whenCollisionRules.getOrElse(lookupPair, WhenCollisionBetweenRule(EIdentShape(causeEvent.shape1), EIdentShape(causeEvent.shape2), Nil)))
@@ -948,27 +965,27 @@ object CodeGenerator {
               if(causeEvent.x1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                 conditions = (shape_ident.x + shape_ident.width < 0)::conditions
               }
-              if(causeEvent.x1 == game.screenWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                conditions = (shape_ident.x > EScreenWidth())::conditions
+              if(causeEvent.x1 == game.layoutWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                conditions = (shape_ident.x > ELayoutWidth())::conditions
               }
               if(causeEvent.y1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                 conditions = (shape_ident.y + shape_ident.height < 0)::conditions
               }
-              if(causeEvent.y1 == game.screenHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                conditions = (shape_ident.y > EScreenHeight())::conditions
+              if(causeEvent.y1 == game.layoutHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                conditions = (shape_ident.y > ELayoutHeight())::conditions
               }
             case c:Circle =>
               if(causeEvent.x1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                 conditions = (shape_ident.x + shape_ident.radius < 0)::conditions
               }
-              if(causeEvent.x1 == game.screenWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                conditions = (shape_ident.x - shape_ident.radius > EScreenWidth())::conditions
+              if(causeEvent.x1 == game.layoutWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                conditions = (shape_ident.x - shape_ident.radius > ELayoutWidth())::conditions
               }
               if(causeEvent.y1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                 conditions = (shape_ident.y + shape_ident.radius < 0)::conditions
               }
-              if(causeEvent.y1 == game.screenHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                conditions = (shape_ident.y - shape_ident.radius > EScreenHeight())::conditions
+              if(causeEvent.y1 == game.layoutHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                conditions = (shape_ident.y - shape_ident.radius > ELayoutHeight())::conditions
               }
             case _ =>
               Expression.NONE
@@ -1013,6 +1030,7 @@ object CodeGenerator {
             Some(game.added_whenFingerMovesOnRules.getOrElse(shapeBelow, WhenFingerMovesOnRule(EIdentShape(shapeBelow), List(EIdent("xFrom"), EIdent("yFrom"), EIdent("xTo"), EIdent("yTo")), Nil)))
           } else None
     }
+    result map (game.giveRuleNewCoordinates(_))
   }
   
   /**
@@ -1050,27 +1068,27 @@ object CodeGenerator {
                   if(causeEvent.x1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                     conditions = (shape_ident.x + shape_ident.width < 0)::conditions
                   }
-                  if(causeEvent.x1 == game.screenWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                    conditions = (shape_ident.x > EScreenWidth())::conditions
+                  if(causeEvent.x1 == game.layoutWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                    conditions = (shape_ident.x > ELayoutWidth())::conditions
                   }
                   if(causeEvent.y1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                     conditions = (shape_ident.y + shape_ident.height < 0)::conditions
                   }
-                  if(causeEvent.y1 == game.screenHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                    conditions = (shape_ident.y > EScreenHeight())::conditions
+                  if(causeEvent.y1 == game.layoutHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                    conditions = (shape_ident.y > ELayoutHeight())::conditions
                   }
                 case c:Circle =>
                   if(causeEvent.x1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                     conditions = (shape_ident.x + shape_ident.radius < 0)::conditions
                   }
-                  if(causeEvent.x1 == game.screenWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                    conditions = (shape_ident.x - shape_ident.radius > EScreenWidth())::conditions
+                  if(causeEvent.x1 == game.layoutWidth || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                    conditions = (shape_ident.x - shape_ident.radius > ELayoutWidth())::conditions
                   }
                   if(causeEvent.y1 == 0 || causeEvent.code == BEYOND_SCREEN_EVENT) {
                     conditions = (shape_ident.y + shape_ident.radius < 0)::conditions
                   }
-                  if(causeEvent.y1 == game.screenHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
-                    conditions = (shape_ident.y - shape_ident.radius > EScreenHeight())::conditions
+                  if(causeEvent.y1 == game.layoutHeight || causeEvent.code == BEYOND_SCREEN_EVENT) {
+                    conditions = (shape_ident.y - shape_ident.radius > ELayoutHeight())::conditions
                   }
                 case _ =>
               }
@@ -1104,6 +1122,7 @@ object CodeGenerator {
       rule =>
         if(rule.contains(shape1.mName)) {
           val new_rule = rule.replaceShape(shape1, shape2)
+          game.giveRuleNewCoordinates(new_rule)
           game.insertRule(new_rule, game.currentTime + 1) // Add the rule in the future
         }
     }

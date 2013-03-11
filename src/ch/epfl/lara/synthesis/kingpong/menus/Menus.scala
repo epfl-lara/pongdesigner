@@ -45,7 +45,7 @@ trait CustomMenu {
   /** Called whenever a finger up is selected */
   def onFingerUp(gameEngine: GameEngine2DView, selectedShape: GameShapes.Shape, x: Float, y: Float) = {
   }
-  def onFingerMove(selectedShape: GameShapes.Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = { 
+  def onFingerMove(gameEngine: GameEngine2DView, selectedShape: GameShapes.Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = { 
   }
   def draw(canvas: Canvas, gameEngine: GameEngine2DView, selectedShape: Shape, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit
   var hovered = false

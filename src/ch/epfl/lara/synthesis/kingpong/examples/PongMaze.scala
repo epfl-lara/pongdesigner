@@ -6,8 +6,8 @@ class PongMaze extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /**
    * Game Layouts
@@ -131,6 +131,6 @@ class PongMaze extends Game {
   }
   Camera.x = 0
   Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  Camera.width = layoutWidth
+  Camera.height = layoutHeight
 }

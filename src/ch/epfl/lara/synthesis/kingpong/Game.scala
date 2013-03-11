@@ -40,6 +40,10 @@ import scala.util.Random
 
 object Game {
   var randomgenerator = new Random()
+  
+  def angle(x1: Float, y1: Float, x2: Float, y2: Float): Float = {
+    Math.toDegrees(Math.atan2(x2-x1, y2-y1)).toFloat
+  }
 }
 
 /**
@@ -48,16 +52,18 @@ object Game {
 abstract class Game /*extends scala.Serializable*/ {
   import TriggerEvent._
   import Game._
+  import GameShapes.Shape
+  import GameShapes.ShapePair
   
-  var screenWidth = 480
-  var screenHeight = 750
+  //var screenWidth = 480
+  //var screenHeight = 750
   var layoutWidth = 480
   var layoutHeight = 750
   //import GameShapes._
     
   /** Content of the game */
   var init_arenas = new ArrayBuffer[GameShapes.Arena]() // Arenas at the beginning
-  var init_shapes = new ArrayBuffer[GameShapes.Shape]() // Shapes at the beginning
+  var init_shapes = new ArrayBuffer[Shape]() // Shapes at the beginning
   var init_actions = new ArrayBuffer[Expression]() // In which order shapes are defined
   var init_rules = new ArrayBuffer[ReactiveRule]() // Rules at the beginning
   var context = new HashMap[String, Expression]()  // The context which binds a name to an expression.
@@ -77,8 +83,8 @@ abstract class Game /*extends scala.Serializable*/ {
   /** Arena coordinates */
   
   /** Arena bounding box */
-  private var mMaxX = this.screenWidth.toFloat
-  private var mMaxY = this.screenHeight.toFloat
+  private var mMaxX = layoutWidth.toFloat
+  private var mMaxY = layoutHeight.toFloat
   private var mMinX = 0f
   private var mMinY = 0f
   
@@ -88,7 +94,7 @@ abstract class Game /*extends scala.Serializable*/ {
   /** First-time true variable. */
   var initializePhase = true
   val self = this
-  var lookupPair = GameShapes.ShapePair(null, null)
+  var lookupPair = ShapePair(null, null)
   /**
    * Rules stored in a compiled form
    *  - whenEverRules : If an event occurs after time change
@@ -98,24 +104,26 @@ abstract class Game /*extends scala.Serializable*/ {
    *  - whenIntegerChangesRules : when an integer expression changes, with the (oldValue, newValue) as an argument
    */
   //var whenEverRules = ArrayBuffer[(()=>Boolean, ()=>Unit)]()
-  //var whenFingerDownRules = ArrayBuffer[(GameShapes.Shape, ()=>Unit)]()
-  //var whenFingerUpRules = ArrayBuffer[(GameShapes.Shape, ()=>Unit)]()
-  //var whenFingerMovesOnRules = ArrayBuffer[(GameShapes.Shape, (Float, Float, Float, Float)=>Unit)]()
+  //var whenFingerDownRules = ArrayBuffer[(Shape, ()=>Unit)]()
+  //var whenFingerUpRules = ArrayBuffer[(Shape, ()=>Unit)]()
+  //var whenFingerMovesOnRules = ArrayBuffer[(Shape, (Float, Float, Float, Float)=>Unit)]()
   //var whenIntegerChangesRules = HashMap[GameShapes.IntegerBox, List[(Int, Int)=>Unit]]()
-  //var whenCollisionRules = HashMap[GameShapes.ShapePair, List[()=>Unit]]()
-  //var noCollisionBetweenRules = HashMap[GameShapes.ShapePair, Boolean]()
+  //var whenCollisionRules = HashMap[ShapePair, List[()=>Unit]]()
+  //var noCollisionBetweenRules = HashMap[ShapePair, Boolean]()
 
   /** All possibles rules */
   var added_whenEverRules = new ArrayBuffer[WhenEverRule]()
-  var added_whenFingerDownOnRules = HashMap[GameShapes.Shape, WhenFingerDownOnRule]()
-  var added_whenFingerUpOnRules = HashMap[GameShapes.Shape, WhenFingerUpOnRule]()
-  var added_whenFingerMovesOnRules = HashMap[GameShapes.Shape, WhenFingerMovesOnRule]()
+  var added_whenFingerDownOnRules = HashMap[Shape, WhenFingerDownOnRule]()
+  var added_whenFingerUpOnRules = HashMap[Shape, WhenFingerUpOnRule]()
+  var added_whenFingerMovesOnRules = HashMap[Shape, WhenFingerMovesOnRule]()
   var added_whenIntegerChangesRules = HashMap[GameShapes.IntegerBox, WhenIntegerChangesRule]()
-  var added_whenCollisionRules = HashMap[GameShapes.ShapePair, WhenCollisionBetweenRule]()
-  var added_noCollisionBetweenRules = HashMap[GameShapes.ShapePair, Boolean]()
-  var added_noCollisionEffectBetweenRules = HashMap[GameShapes.ShapePair, Boolean]()
+  var added_whenCollisionRules = HashMap[ShapePair, WhenCollisionBetweenRule]()
+  var added_noCollisionBetweenRules = HashMap[ShapePair, Boolean]()
+  var added_noCollisionEffectBetweenRules = HashMap[ShapePair, Boolean]()
   
-  object Camera extends GameShapes.Camera
+  object Camera extends GameShapes.Camera {
+    attach(self)
+  }
   
   /** Arena setting and getting*/
   private var currentArena: GameShapes.Arena = null
@@ -130,6 +138,13 @@ abstract class Game /*extends scala.Serializable*/ {
     }
     currentArena
   }
+  def foreachVisibleshape(f: Shape => Unit) = {
+    getArena foreach f
+    //f(Camera)
+  }
+  def foreachVisiblePair(f: (Shape, Shape) => Unit) = {
+    getArena foreachVisiblePair f
+  }
   
   /** The game engine that is used to display this game*/
   private var gameEngine: GameEngineView = null
@@ -141,8 +156,8 @@ abstract class Game /*extends scala.Serializable*/ {
   
   /** Initialization of the game */
   def initializeGame() = {
-    context("screenWidth") = EConstant(screenWidth)
-    context("screenHeight") = EConstant(screenHeight)
+    context("layoutWidth") = EConstant(layoutWidth)
+    context("layoutHeight") = EConstant(layoutHeight)
     init_shapes foreach {
       shape => shape.storeInitialState(false)
     }
@@ -150,16 +165,16 @@ abstract class Game /*extends scala.Serializable*/ {
   
   /** Takes a snapshot of all game parameters */
   def snapShot() = {
-    getArena foreach (_.snapShot())
+    foreachVisibleshape  (_.snapShot())
   }
   /** Reverts the game state to the snapshot */
   def revertToSnapShot() = {
-    getArena foreach (_.revertToSnapShot())
+    foreachVisibleshape  (_.revertToSnapShot())
   }
   /** Verify that all the tests passed (not used at this point of development) */
   def verifyTests(): Boolean = {
     var verified = true
-    getArena foreach{ a => verified = verified && (a.verifyTests())}
+    foreachVisibleshape { a => verified = verified && (a.verifyTests())}
     verified
   }
   
@@ -173,10 +188,10 @@ abstract class Game /*extends scala.Serializable*/ {
   def enterEditMode() = {
     mMinX = 0f
     mMinY = 0f
-    mMaxX = screenWidth.toFloat
-    mMaxY = screenHeight.toFloat
+    mMaxX = layoutWidth.toFloat
+    mMaxY = layoutHeight.toFloat
     var result = new RectF(0, 0, 0, 0)
-    getArena foreach { shape =>
+    foreachVisibleshape { shape =>
       shape.getBoundingBox(result)
       val x1 = result.left
       val y1 = result.top
@@ -197,7 +212,7 @@ abstract class Game /*extends scala.Serializable*/ {
     inputEvents.keepOnlyValuesBeforeAndIncluding(currentTime)
     history_timestamp.keepOnlyValuesBeforeAndIncluding(currentTime)
     //Log.d("Game.scala", "beginning=" + beginning)
-    getArena foreach { shape =>
+    foreachVisibleshape { shape =>
       //Log.d("Game.scala", "beginning=" + beginning)
       shape.storeInitialState(beginning)
       if(beginning) {
@@ -236,12 +251,13 @@ abstract class Game /*extends scala.Serializable*/ {
     //whenEverRules += (()=>f1, ()=>f2)
     val new_rule = WhenEverRule(CompiledBoolean(() => f1), List(CompiledBlock(() => f2)))
     added_whenEverRules += new_rule
+    giveRuleNewCoordinates(new_rule)
     init_rules += new_rule
     new_rule
   }
   
   /** Pseudo-macro to add a WhenFingerDownOn rule into the game */
-  def WhenFingerDownOn(f1: GameShapes.Shape)(f2: =>Unit):ReactiveRule = {
+  def WhenFingerDownOn(f1: Shape)(f2: =>Unit):ReactiveRule = {
     added_whenFingerDownOnRules.getOrElse(f1, null) match {
       case w@WhenFingerDownOnRule(EIdentShape(f1), code) =>
         w.code = w.code ++ List(CompiledBlock(() => f2))
@@ -249,13 +265,14 @@ abstract class Game /*extends scala.Serializable*/ {
       case _ =>
         val new_rule = WhenFingerDownOnRule(EIdentShape(f1), List(CompiledBlock(() => f2)))
         added_whenFingerDownOnRules(f1) = new_rule
+        giveRuleNewCoordinates(new_rule)
         init_rules += new_rule
         new_rule
     }
   }
   
   /** Pseudo-macro to add a WhenFingerUpOn rule into the game */
-  def WhenFingerUpOn(f1: GameShapes.Shape)(f2: =>Unit) = {
+  def WhenFingerUpOn(f1: Shape)(f2: =>Unit) = {
     added_whenFingerUpOnRules.getOrElse(f1, null) match {
       case w@WhenFingerUpOnRule(EIdentShape(f1), code) =>
         w.code = w.code ++ List(CompiledBlock(() => f2))
@@ -263,13 +280,14 @@ abstract class Game /*extends scala.Serializable*/ {
       case _ =>
         val new_rule = WhenFingerUpOnRule(EIdentShape(f1), List(CompiledBlock(() => f2)))
         added_whenFingerUpOnRules(f1) = new_rule
+        giveRuleNewCoordinates(new_rule)
         init_rules += new_rule
         new_rule
     }
   }
   
   /** Pseudo-macro to add a WhenFingerMovesOn rule into the game */
-  def WhenFingerMovesOn(f1: GameShapes.Shape)(f2: (Float, Float, Float, Float) => Unit) = {
+  def WhenFingerMovesOn(f1: Shape)(f2: (Float, Float, Float, Float) => Unit) = {
     added_whenFingerMovesOnRules.getOrElse(f1, null) match {
       case w@WhenFingerMovesOnRule(_, List(a, b, c, d), code) => 
         w.code = w.code ++ List(CompiledBlock(() =>
@@ -291,6 +309,7 @@ abstract class Game /*extends scala.Serializable*/ {
                d.evaluate(context).number_value)))
         )
         added_whenFingerMovesOnRules(f1) = new_rule
+        giveRuleNewCoordinates(new_rule)
         init_rules += new_rule
         new_rule
     }
@@ -311,13 +330,14 @@ abstract class Game /*extends scala.Serializable*/ {
             f2(b.evaluate(context).number_value.toInt)))
         )
         added_whenIntegerChangesRules(f1) = new_rule
+        giveRuleNewCoordinates(new_rule)
         init_rules += new_rule
         new_rule
     }
   }
   
   /** Pseudo-macro to add a WhenCollisionBetween rule into the game */
-  def WhenCollisionBetween(f1: GameShapes.Shape, f2: GameShapes.Shape)(f3: =>Unit) = {
+  def WhenCollisionBetween(f1: Shape, f2: Shape)(f3: =>Unit) = {
     lookupPair.update(f1, f2)
     added_whenCollisionRules.getOrElse(lookupPair, null) match {
       case w@WhenCollisionBetweenRule(EIdentShape(s1), EIdentShape(s2), code) =>
@@ -325,24 +345,26 @@ abstract class Game /*extends scala.Serializable*/ {
         w
       case _ => 
         val new_rule = WhenCollisionBetweenRule(EIdentShape(f1), EIdentShape(f2), List(CompiledBlock(() => f3)))
-        added_whenCollisionRules(GameShapes.ShapePair(f1, f2)) = new_rule
+        added_whenCollisionRules(ShapePair(f1, f2)) = new_rule
+        giveRuleNewCoordinates(new_rule)
         init_rules += new_rule
         new_rule
     }
   }
   
   /** Pseudo-macro to add a WhenCollisionBetween rule into the game */
-  def WhenCollisionBetween[U <: GameShapes.Shape, T <: GameShapes.Shape](f3: (U, T) => Unit) = {
+  def WhenCollisionBetween[U <: Shape, T <: Shape](f3: (U, T) => Unit) = {
   }
   
   /** Pseudo-macro to add a NoCollisionBetween rule into the game */
-  def NoCollisionBetween(f1: GameShapes.Shape, f2: GameShapes.Shape) = {
-    added_noCollisionBetweenRules(GameShapes.ShapePair(f1, f2)) = true
+  def NoCollisionBetween(f1: Shape, f2: Shape) = {
+    added_noCollisionBetweenRules(ShapePair(f1, f2)) = true
+    // What does it mean to be a "rule" ? a constraint ? A condition ? A conditional computation ?
   }
   
   /** Pseudo-macro to add a NoCollisionEffectBetween rule into the game */
-  def NoCollisionEffectBetween(f1: GameShapes.Shape, f2: GameShapes.Shape) = {
-    added_noCollisionEffectBetweenRules(GameShapes.ShapePair(f1, f2)) = true
+  def NoCollisionEffectBetween(f1: Shape, f2: Shape) = {
+    added_noCollisionEffectBetweenRules(ShapePair(f1, f2)) = true
   }
   
   def setCurrentTime(time: Long) = {
@@ -354,17 +376,17 @@ abstract class Game /*extends scala.Serializable*/ {
   /**
    * A gravity object for tilt games
    */
-  object AccelerometerGravity extends GameShapes.ForceField with Category[GameShapes.Shape] {
+  object AccelerometerGravity extends GameShapes.ForceField with Category[Shape] {
     var force_x: Float = 0
     var force_y: Float = 0
     
-    override def remove(s: GameShapes.Shape) = {
+    override def remove(s: Shape) = {
       super.remove(s)
       s.gravity = GameShapes.ZeroGravity
       s.friction = GameShapes.ElasticFriction
     }
     
-    override def add(s: GameShapes.Shape) = {
+    override def add(s: Shape) = {
       super.add(s)
       s.gravity = this
       s.friction = GameShapes.BasicFriction
@@ -374,17 +396,17 @@ abstract class Game /*extends scala.Serializable*/ {
   /**
    * For platform games
    */
-  object Gravity2D extends Category[GameShapes.Shape]  with GameShapes.ForceField {
+  object Gravity2D extends Category[Shape]  with GameShapes.ForceField {
     var force_x: Float = 0
     var force_y: Float = 0.001f
     
-    override def remove(s: GameShapes.Shape) = {
+    override def remove(s: Shape) = {
       super.remove(s)
       s.gravity = GameShapes.ZeroGravity
       s.friction = GameShapes.ElasticFriction
     }
     
-    override def add(s: GameShapes.Shape) = {
+    override def add(s: Shape) = {
       super.add(s)
       s.gravity = this
       s.friction = GameShapes.BasicFriction
@@ -453,17 +475,15 @@ abstract class Game /*extends scala.Serializable*/ {
       history_force_y.addOrReplaceValue(newTime, AccelerometerGravity.force_y)
     } else {
       AccelerometerGravity.force_x = history_force_x(newTime, currentAccelerationX)
-      AccelerometerGravity.force_y = history_force_x(newTime, currentAccelerationY)
+      AccelerometerGravity.force_y = history_force_y(newTime, currentAccelerationY)
     }
-  
-    
-    val shapes = getArena    
-    shapes foreach { s =>
+   
+    foreachVisibleshape { s =>
       s.moveDuring(deltaTime, currentTime)
       //if(s.noVelocity) s.resetVelocityIfOutdated(currentTime)
     }
     // Here we update the velocity
-    shapes foreachVisiblePair { (s1, s2) =>
+    foreachVisiblePair { (s1, s2) =>
       GameShapes.handleCollision(this, s1, s2)
     }
 
@@ -480,14 +500,13 @@ abstract class Game /*extends scala.Serializable*/ {
     history_timestamp.removeTooOldValues(currentTime - lengthStoredEvent-1000)
     triggerEvents.removeTooOldValues(currentTime - lengthStoredEvent)
     continue = storeState(newTime, continue, ruleToStopBefore)
-    //if(replayMode) {
-    shapes foreach { s => s.storePrevValues() }
+
+    foreachVisibleshape { s => s.storePrevValues() }
     // We keep a copy of all the values at the current point.
-    // All rules
-    //}
+
     AccelerometerGravity.foreach {
       shape =>
-        shape.velocity *= 0.98f
+        shape.velocity = Math.max(shape.velocity * 0.98f, 0.11f)
     }
     continue
   }
@@ -495,7 +514,7 @@ abstract class Game /*extends scala.Serializable*/ {
   /** Stores the state of the entire game */
   def storeState(newTime: Long, c: Boolean = true, ruleToStopBefore: ReactiveRule = null): Boolean = {
     var continue = c
-    getArena foreach { s =>
+    foreachVisibleshape { s =>
       s.storeState(newTime)
       if(continue) continue = s.raiseTriggers(currentTime, ruleToStopBefore)
     }
@@ -514,14 +533,14 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   
   /** Copy the current values to the previous values for all shapes. */
-  def storePrevValues(except: GameShapes.Shape = null) = {
+  def storePrevValues(except: Shape = null) = {
     init_shapes foreach {
       shape => if(shape != except) shape.storePrevValues()
     }
   }
   
   /** Restores the previous values for all shapes. */
-  def restorePrev(except: GameShapes.Shape = null) = {
+  def restorePrev(except: Shape = null) = {
     init_shapes foreach {
       shape => if(shape != except) shape.restorePrev()
     }
@@ -530,7 +549,7 @@ abstract class Game /*extends scala.Serializable*/ {
   /**
    * Informs the collision detector if the collision should not happen.
    **/
-  def isNoCollisionBetween(s1: GameShapes.Shape, s2: GameShapes.Shape) : Boolean = {
+  def isNoCollisionBetween(s1: Shape, s2: Shape) : Boolean = {
     var result = true
     if(s1.noVelocity && s2.noVelocity) {
       result = !s1.movedAtTime(currentTime) && !s2.movedAtTime(currentTime)
@@ -546,13 +565,13 @@ abstract class Game /*extends scala.Serializable*/ {
   /**
    * Informs the collision detector if there should be no collision effect between two shapes.
    */
-  def isNoCollisionEffectBetween(s1: GameShapes.Shape, s2: GameShapes.Shape): Boolean = {
+  def isNoCollisionEffectBetween(s1: Shape, s2: Shape): Boolean = {
     lookupPair.update(s1, s2)
     added_noCollisionEffectBetweenRules.getOrElse(lookupPair, false)
   }
   
   /** Invokes the action if the shape is selectable by the coordinates */
-  def processEventsIfShapeSelectableBy(s: GameShapes.Shape, x: Float, y: Float, action: () => Unit): Boolean = {
+  def processEventsIfShapeSelectableBy(s: Shape, x: Float, y: Float, action: () => Unit): Boolean = {
     if(s.active && s.visible && s.selectableBy(x, y)) {
       action()
       true
@@ -560,7 +579,7 @@ abstract class Game /*extends scala.Serializable*/ {
   }
  
   /** Invokes the action if the shape is selectable by the coordinates */
-  def processMoveAction(s: GameShapes.Shape, xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, action: (Float, Float, Float, Float) => Unit) = {
+  def processMoveAction(s: Shape, xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, action: (Float, Float, Float, Float) => Unit) = {
     if(s.active && s.visible && s.selectableBy (xFrom, yFrom)) {
       action(xFrom, yFrom, xTo, yTo)
       true
@@ -575,6 +594,7 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   /** Executed finger down event */
   def processFingerDownEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
+    updateContextCoordinates(x, y)
     var continue = true
     val result = added_whenFingerDownOnRules.foldLeft(false){ case (found, (shape, rule)) =>
       processEventsIfShapeSelectableBy(shape, x, y, {() => if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found
@@ -589,6 +609,7 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   /** Executed finger up event */
   def processFingerUpEvent(x: Float, y: Float, ruleToStopBefore: ReactiveRule = null):Boolean = {
+    updateContextCoordinates(x, y)
     var continue = true
     val result = added_whenFingerUpOnRules.foldLeft(false){ case (found, (shape, rule)) =>
       processEventsIfShapeSelectableBy(shape, x, y, {() =>  if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found
@@ -603,25 +624,38 @@ abstract class Game /*extends scala.Serializable*/ {
     context.getOrElseUpdate("xTo", EConstant(0)).asInstanceOf[ModifiableValue].setValue(xTo)
     context.getOrElseUpdate("yTo", EConstant(0)).asInstanceOf[ModifiableValue].setValue(yTo)   
   }
+  /** Updates the context of the coordinates from a finger event */
+  def updateContextCoordinates(x: Float, y: Float) = {
+    context.getOrElseUpdate("x", EConstant(0)).asInstanceOf[ModifiableValue].setValue(x)
+    context.getOrElseUpdate("y", EConstant(0)).asInstanceOf[ModifiableValue].setValue(y)
+  }
+  
   /** Asynchronous finger move event */
   def onFingerMove(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float):Unit = {
     waitingEvents.synchronized {
       waitingEvents.addEvent(currentTime, TOUCHMOVE_EVENT, null, null, xFrom, yFrom, xTo, yTo)
     }
   }
-  /** Executed finger move event  */
+  /** Executed finger move event. Returns true if it was able to find a rule that applies */
   def processFingerMoveEvent(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, ruleToStopBefore: ReactiveRule = null): Boolean = {
     updateContextMoveCoordinates(xFrom, yFrom, xTo, yTo)
     var continue = true
-    val result = added_whenFingerMovesOnRules.foldLeft(false){ case (found, (shape, rule)) => processMoveAction(shape, xFrom, yFrom, xTo, yTo,
+    var result = added_whenFingerMovesOnRules.foldLeft(false){ case (found, (shape, rule)) => processMoveAction(shape, xFrom, yFrom, xTo, yTo,
         {(xFrom, yFrom, xTo, yTo) => if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found}
+    if(!result) {
+      
+      updateContextCoordinates(xTo, yTo)
+      result = added_whenFingerDownOnRules.foldLeft(false){ case (found, (shape, rule)) =>
+        processEventsIfShapeSelectableBy(shape, xTo, yTo, {() => if(rule == ruleToStopBefore) continue = false; if(continue) Expression.execute(rule.code, context)}) || found
+      }
+    }
     if(replayMode) continue else result
   }
 
   /**
    * Returns true if the ruleToStopBefore has not been reached
    */
-  def onCollisionEvent(s1: GameShapes.Shape, s2: GameShapes.Shape,
+  def onCollisionEvent(s1: Shape, s2: Shape,
       new_velocityXs1: Float, new_velocityYs1: Float, new_velocityXs2: Float, new_velocityYs2:Float,
       time_collision_relative: Float,
       x: Float, y: Float, 
@@ -714,8 +748,8 @@ abstract class Game /*extends scala.Serializable*/ {
     output addline "  /**"
     output addline "   * Game static values"
     output addline "   */"
-    output addline("  var screenWidth = " + screenWidth)
-    output addline("  var screenHeight = " + screenHeight)
+    output addline("  var layoutWidth = " + layoutWidth)
+    output addline("  var layoutHeight = " + layoutHeight)
     output addline ""
     output addline "  /**"
     output addline "   * Game Layouts"
@@ -800,7 +834,11 @@ abstract class Game /*extends scala.Serializable*/ {
   def Arena(): GameShapes.Arena = {
     val arena = GameShapes.Arena.build()
     arena.attach(this)
+    val firstArena = init_arenas.isEmpty
     init_arenas += arena
+    if(firstArena) { // Add the camera if it is the first arena.
+      arena += Camera
+    }
     init_actions += ValDefCode(EIdentArena(arena), EApply(ESelect(ETop(), "Arena"), List()))
     arena
   }
@@ -869,6 +907,8 @@ abstract class Game /*extends scala.Serializable*/ {
     random(vargs.toList)
   }
   
+  def angle(x1: Float, y1: Float, x2: Float, y2: Float) = Game.angle(x1, y1, x2, y2)
+  
   /**
    * Function used by the slider<
    * If we go back in time, we just get the shapes from the history.
@@ -909,7 +949,7 @@ abstract class Game /*extends scala.Serializable*/ {
   }
   
   /** Records the shape addition to the arena as custom code */
-  def recordShapeAdditionToArena(a: GameShapes.Arena, s: GameShapes.Shape) = {
+  def recordShapeAdditionToArena(a: GameShapes.Arena, s: Shape) = {
     init_actions += EApply(ESelect(EIdentArena(a), "$plus$eq"), List(EIdentShape(s)))
     if(s.mName == null || s.mName =="") {
       val new_name = GameShapes.getBrandNewName(null, context)
@@ -941,11 +981,11 @@ abstract class Game /*extends scala.Serializable*/ {
     if(waiting_rule != null) {
       waiting_rule match {
         case w@WhenCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2), code) =>
-          val lookupPair = GameShapes.ShapePair(shape1, shape2)
+          val lookupPair = ShapePair(shape1, shape2)
           if(!added_whenCollisionRules.contains(lookupPair)) {
             init_rules += waiting_rule
           }
-          added_whenCollisionRules(GameShapes.ShapePair(shape1, shape2)) = w
+          added_whenCollisionRules(ShapePair(shape1, shape2)) = w
         case w@WhenFingerMovesOnRule(EIdentShape(shape1), listcoords, code) =>
           if(!added_whenFingerMovesOnRules.contains(shape1)) {
             init_rules += waiting_rule
@@ -974,17 +1014,17 @@ abstract class Game /*extends scala.Serializable*/ {
           }
           added_whenIntegerChangesRules(shape1) = w
         case w@NoCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2)) =>
-          val lookupPair = GameShapes.ShapePair(shape1, shape2)
+          val lookupPair = ShapePair(shape1, shape2)
           if(!added_noCollisionBetweenRules.contains(lookupPair)) {
             init_rules += waiting_rule
           }
-          added_noCollisionBetweenRules(GameShapes.ShapePair(shape1, shape2)) = true
+          added_noCollisionBetweenRules(ShapePair(shape1, shape2)) = true
         case w@NoCollisionEffectBetweenRule(EIdentShape(shape1), EIdentShape(shape2)) =>
-          val lookupPair = GameShapes.ShapePair(shape1, shape2)
+          val lookupPair = ShapePair(shape1, shape2)
           if(!added_noCollisionEffectBetweenRules.contains(lookupPair)) {
             init_rules += waiting_rule
           }
-          added_noCollisionEffectBetweenRules(GameShapes.ShapePair(shape1, shape2)) = true
+          added_noCollisionEffectBetweenRules(ShapePair(shape1, shape2)) = true
         case _ =>
       }
       if(causeEventTime <= currentTime) {
@@ -995,10 +1035,29 @@ abstract class Game /*extends scala.Serializable*/ {
     }
   }
   
+  /**
+   * Places a new rule given the previous existing rules
+   */
+  def giveRuleNewCoordinates(rule: ReactiveRule): ReactiveRule = {
+    init_rules.find(_ == rule) match {
+      case Some(r) => // ok !!
+      case None =>
+        if(!init_rules.isEmpty) {
+          val r = init_rules(init_rules.size - 1)
+          rule.x = r.x
+          rule.y = r.y + 48
+        } else {
+          rule.x = -288
+          rule.y = 0
+        }
+    }
+    rule
+  }
+  
   /** Deletes the selected shape
    *  Deletes code portions modifying the shape
    * */
-  def deleteShape(shapeToDelete: GameShapes.Shape) =  {
+  def deleteShape(shapeToDelete: Shape) =  {
     import GameShapes._
     if(shapeToDelete != null) {
       getArena -= shapeToDelete
@@ -1007,31 +1066,7 @@ abstract class Game /*extends scala.Serializable*/ {
       removeFromArrayBuffer(init_actions, { action:Expression => null == action || action.contains(shapeToDelete)})
       removeFromArrayBuffer(init_rules, {
         rule:ReactiveRule => if(rule != null && rule.contains(shapeToDelete)) {
-          rule match {
-            case w@WhenCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2), code) =>
-              val lookupPair = GameShapes.ShapePair(shape1, shape2)
-              added_whenCollisionRules.remove(lookupPair)
-            case w@WhenFingerMovesOnRule(s, listcoords, code) =>
-              added_whenFingerMovesOnRules foreach {
-                case r@(shape1, w) => if(shapeToDelete == shape1) {
-                  added_whenFingerMovesOnRules.remove(shape1)
-                } else if(w.contains(shapeToDelete)) {
-                  w.removeShapeFromCode(shapeToDelete)
-                }}
-            case w@WhenEverRule(condition, code) => 
-              added_whenEverRules foreach { case w => if(w contains shapeToDelete) added_whenEverRules -= w }
-            case w@WhenFingerDownOnRule(s, code) =>
-              added_whenFingerDownOnRules foreach { case r@(shape1, w) => if(w.contains(shapeToDelete) || shapeToDelete == shape1) added_whenFingerDownOnRules.remove(shape1) }
-            case w@WhenFingerUpOnRule(s, code) =>
-              added_whenFingerUpOnRules foreach { case r@(shape1, w) => if(w.contains(shapeToDelete) || shapeToDelete == shape1) added_whenFingerUpOnRules.remove(shape1) }
-            case w@WhenIntegerChangesRule(EIdentShape(d: IntegerBox), listcoords, code) =>
-              val rule = added_whenIntegerChangesRules(d)
-              added_whenIntegerChangesRules foreach { case r@(shape1, w) => if(w.contains(shapeToDelete) || shapeToDelete == shape1) added_whenIntegerChangesRules -= d }
-            case w@NoCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2)) =>
-              val lookupPair = GameShapes.ShapePair(shape1, shape2)
-              added_noCollisionBetweenRules.remove(lookupPair)
-            case _ => Log.d("Game.scala", "Unrecognized rule where to delete " + shapeToDelete + " : " + rule)
-          }
+          deleteRule(rule, false)
           true
         } else {
           false
@@ -1040,12 +1075,50 @@ abstract class Game /*extends scala.Serializable*/ {
     }
   }
   
+  /**
+   * Function to delete a specific rule
+   */
+  def deleteRule(ruleToDelete: ReactiveRule, from_init_rules: Boolean = true) =  {
+    import GameShapes._
+    if(ruleToDelete != null) {
+      if(from_init_rules) {
+        removeFromArrayBuffer(init_rules, {
+          rule:ReactiveRule => rule != null && rule == ruleToDelete
+        })
+      }
+      ruleToDelete match {
+          case w@WhenCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2), code) =>
+            val lookupPair = ShapePair(shape1, shape2)
+            added_whenCollisionRules.remove(lookupPair)
+          case w@WhenFingerMovesOnRule(s, listcoords, code) =>
+            added_whenFingerMovesOnRules foreach {
+              case r@(shape1, w) => if(w == ruleToDelete) {
+                added_whenFingerMovesOnRules.remove(shape1)
+              }
+            }
+          case w@WhenEverRule(condition, code) => 
+            added_whenEverRules foreach { case w => if(w == ruleToDelete) added_whenEverRules -= w }
+          case w@WhenFingerDownOnRule(s, code) =>
+            added_whenFingerDownOnRules foreach { case r@(shape1, w) => if(w == ruleToDelete) added_whenFingerDownOnRules.remove(shape1) }
+          case w@WhenFingerUpOnRule(s, code) =>
+            added_whenFingerUpOnRules foreach { case r@(shape1, w) => if(w == ruleToDelete) added_whenFingerUpOnRules.remove(shape1) }
+          case w@WhenIntegerChangesRule(EIdentShape(d: IntegerBox), listcoords, code) =>
+            val rule = added_whenIntegerChangesRules(d)
+            added_whenIntegerChangesRules foreach { case r@(shape1, w) => if(w == ruleToDelete) added_whenIntegerChangesRules -= d }
+          case w@NoCollisionBetweenRule(EIdentShape(shape1), EIdentShape(shape2)) =>
+            val lookupPair = ShapePair(shape1, shape2)
+            added_noCollisionBetweenRules.remove(lookupPair)
+          case _ => Log.d("Game.scala", "Unrecognized rule to delete " + ruleToDelete)
+        }
+    }
+  }
+  
   var currentAccelerationX = 0f
   var currentAccelerationY = 0f
   
   def set2DAcceleration(x: Float, y: Float): Unit = {
     currentAccelerationX =  -x/1000
-    currentAccelerationY = -y/1000
+    currentAccelerationY = y/1000
   }
   
   def everyFrame() = {

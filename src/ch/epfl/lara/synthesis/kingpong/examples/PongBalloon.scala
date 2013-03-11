@@ -7,8 +7,8 @@ class PongBalloon extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /**
    * Game Layouts

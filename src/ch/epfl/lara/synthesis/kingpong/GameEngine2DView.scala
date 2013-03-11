@@ -50,7 +50,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   }
   
   /** Selected objects, events and rules */
-  var selectedShape: GameShapes.Shape = null
+  var selectedShape: Shape = null
   var selectedEvent: ParameterHistory[TriggerEvent] = null    
   var selectedRule: ReactiveRule = null
   var selectedRuleConstants = new ArrayBuffer[(Int, Int, Int, Expression)]
@@ -108,6 +108,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     startTime = System.currentTimeMillis()
     selectShape(null)
     selectEvent(null)
+    selectRule(null)
     setModeModifyGame()
     game.AccelerometerGravity.reset()
     game.Gravity2D.reset()
@@ -144,13 +145,15 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
 
       selectShape(null)
       selectEvent(null)
+      selectRule(null)
       selectedCategory = null
       CameraButton.selected = false
       AccelerometerButton.selected = false
       Gravity2DButton.selected = false
       setModeModifyGame()
       //mAddRuleButton.text = res.getString(R.string.design_rule)
-      MovingMenu.menus foreach { _.hovered = false}
+      ShapeMenu.menus foreach { _.hovered = false}
+      RuleMenu.menus foreach { _.hovered = false}
       StaticMenu.menus foreach { _.hovered = false}
       mMenuPositionX = 0
       mMenuPositionY = 0
@@ -241,7 +244,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         R.drawable.menu_camera,
         R.drawable.existing_rules,
         R.drawable.flat_button_resizable,
-        R.drawable.flat_button_resizable_highlighted
+        R.drawable.flat_button_resizable_highlighted,
+        R.drawable.cursor_square
         )
   drawables_to_load.foreach { id =>
     bitmaps(id) = res.getDrawable(id)
@@ -249,6 +253,11 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
 
   private val overlayNailBig : Drawable = res.getDrawable(R.drawable.nail_big)
   private val overlayCamera: Drawable = res.getDrawable(R.drawable.menu_camera)
+  private val overlayGrip: Drawable = res.getDrawable(R.drawable.cursor_square)
+  private val miniFingerDown : Drawable = res.getDrawable(R.drawable.fingerdown)
+  private val miniFingerUp : Drawable = res.getDrawable(R.drawable.fingerup)
+  private val noCollision : Drawable = res.getDrawable(R.drawable.no_collision)
+  private val noCollisionEffect : Drawable = res.getDrawable(R.drawable.no_collision_effect)
   /** Menus and their effects
    */
   var mMenuPositionX: Float = 0
@@ -332,7 +341,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   mCodePaint.setTypeface(Typeface.MONOSPACE)
   mCodePaint.setAntiAlias(true)
   mCodePaint.setSubpixelText(true)
-  mCodePaint.setColor(0xFFFFFFFF)
+  mCodePaint.setColor(0xFF000000)
   val mCodeConstantPaint = new Paint()
   mCodeConstantPaint.setColor(0xAA00FFFF)
   mCodeConstantPaint.setStyle(Paint.Style.STROKE)
@@ -512,7 +521,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       }
     }
     
-    if(CameraButton.selected) {
+    // Display the camera location CameraButton.selected
+    if(editMode) {
       var x = game.Camera.x
       var y = game.Camera.y
       var height = game.Camera.height
@@ -521,12 +531,22 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       canvas.drawLine(x, y + height, x + width, y + height, distancePaint)
       canvas.drawLine(x + width, y + height, x + width, y, distancePaint)
       canvas.drawLine(x + width, y, x, y, distancePaint)
-      rectFData.set(x+3*width/8, y+3*height/8, x+5*width/8, y+5*height/8)
-      rectFData.round(rectData)
-      overlayCamera.setBounds(rectData)
-      overlayCamera.setAlpha(0x77)
-      overlayCamera.draw(canvas)
-      overlayCamera.setAlpha(0xFF)
+      if(CameraButton.selected) {
+        rectFData.set(x+3*width/8, y+3*height/8, x+5*width/8, y+5*height/8)
+        rectFData.round(rectData)
+        overlayCamera.setBounds(rectData)
+        overlayCamera.setAlpha(0x77)
+        overlayCamera.draw(canvas)
+        overlayCamera.setAlpha(0xFF)
+      }
+    }
+    
+    // Maybe editMode not needed to display rules ?
+    if(editMode) {
+      game.init_rules foreach {
+        rule => if(rule != selectedRule) drawRule(canvas, rule)
+      }
+      drawRule(canvas, selectedRule)
     }
      
     // Displays the current category as selected objects
@@ -563,6 +583,91 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     }
   }
   
+  val color_notselected = 0xFFFFAA00
+  val color_selected = 0xFFFFFFFF
+  def background_rule(rule: ReactiveRule): Int = if(rule == selectedRule) color_selected else color_notselected
+  
+  def drawBackgroundRectangle(canvas: Canvas, x: Float, y: Float, width: Float, height: Float, color: Int = 0xFFFF0000) = {
+    defaultPaint.setColor(color & 0xFFFF00FF)
+    canvas.drawRect(x, y, x + width, y + height, defaultPaint)
+    defaultPaint.setColor(color)
+    canvas.drawRect(x + 2, y + 2, x + width - 2, y + height - 2, defaultPaint)
+  }
+  
+  val dimText = new Rect()
+  def drawRule(canvas: Canvas, rule: ReactiveRule) = {
+    if(rule != null) {
+      val color_background = background_rule(rule)
+      drawBackgroundRectangle(canvas, rule.x, rule.y, rule.width, rule.height,color_background)
+      
+      // Minimum : Fill with the shape(s) on which the rule applies,
+      // Minimum : Then add the icon of the event.
+      //This will appear monospace
+      //canvas.drawText("foo", 10, 10, mCodePaint);
+      rectData.set(rule.x+4, rule.y+4, rule.x + rule.width - 4, rule.y + rule.height - 4)
+      mCodePaint.setTextSize(rule.height*2f/3f)
+      
+      rule.selectionRectangle.set(rule.x+4, rule.y+4, rule.x + rule.width - 4, rule.y + rule.height - 4)
+      
+      rule match {
+        case WhenEverRule(condition, code) =>
+          // TODO : Display the text of the condition + the name of the rule
+        case WhenFingerMovesOnRule(obj, coords, code) =>
+          // TODO : Display the Shape + a finger movement icon
+        case WhenFingerDownOnRule(EIdentShape(s), code) =>
+          // TODO : Display the Shape + a finger movement icon
+          miniFingerDown.setBounds(rectData)
+          miniFingerDown.draw(canvas)
+          drawNameBeforeRule(canvas, rule, s.name, color_background)
+        case WhenFingerUpOnRule(EIdentShape(s), code) =>
+          miniFingerUp.setBounds(rectData)
+          miniFingerUp.draw(canvas) 
+          drawNameBeforeRule(canvas, rule, s.name, color_background)
+       case WhenCollisionBetweenRule(EIdentShape(s1), EIdentShape(s2), code) =>
+          bingBitmap.setAlpha(0xFF)
+          bingBitmap.setBounds(rectData)
+          bingBitmap.draw(canvas)
+          drawNameBeforeRule(canvas, rule, s1.name, color_background)
+          drawNameAfterRule(canvas, rule, s2.name, color_background)
+        case WhenIntegerChangesRule(EIdentShape(s1), coords, code) =>
+          numbersBitmap.setAlpha(0xFF)
+          numbersBitmap.setBounds(rectData)
+          numbersBitmap.draw(canvas)
+          drawNameBeforeRule(canvas, rule, s1.name, color_background)
+        case NoCollisionBetweenRule(EIdentShape(s1), EIdentShape(s2)) =>
+          noCollision.setBounds(rectData)
+          noCollision.draw(canvas)
+          drawNameBeforeRule(canvas, rule, s1.name, color_background)
+          drawNameAfterRule(canvas, rule, s2.name, color_background)
+        case NoCollisionEffectBetweenRule(EIdentShape(s1), EIdentShape(s2)) =>
+          noCollisionEffect.setBounds(rectData)
+          noCollisionEffect.draw(canvas)
+          drawNameBeforeRule(canvas, rule, s1.name, color_background)
+          drawNameAfterRule(canvas, rule, s2.name, color_background)
+        case _ =>
+          // No rule to display
+      }
+      rule.selectionRectangle.push()
+      // When the user clicks on the rule, he/she can modify the effects.
+    }
+    // Write the name of the rule on top of it when selected ?
+    // 
+  }
+  
+  def drawNameAfterRule(canvas: Canvas, rule: ReactiveRule, s: String, color: Int ) = {
+    mCodePaint.getTextBounds(s, 0, s.length(), dimText)
+    drawBackgroundRectangle(canvas, rule.x + rule.width, rule.y, dimText.width() + 16, rule.height, color)
+    rule.selectionRectangle.augment(dimText.width() + 16, rule.y)
+    canvas.drawText(s, rule.x + rule.width + 8 - dimText.left, rule.y + (rule.height - dimText.height())/2  - dimText.top, mCodePaint)
+  }
+  
+  def drawNameBeforeRule(canvas: Canvas, rule: ReactiveRule, s: String, color:Int) = {
+    mCodePaint.getTextBounds(s, 0, s.length(), dimText)
+    drawBackgroundRectangle(canvas, rule.x - dimText.right - 16, rule.y, dimText.width() + 16, rule.height, color)
+    rule.selectionRectangle.augment(rule.x - dimText.right - 16, rule.y)
+    canvas.drawText(s, rule.x - 8 - dimText.right, rule.y + (rule.height - dimText.height())/2  - dimText.top, mCodePaint)
+  }
+  
   /** Draw a velocity vector from the given point */
   def drawVelocity(canvas: Canvas, v: Float, x: Float, y: Float, vx: Float, vy: Float, paint: Paint) {
     val middleX = x
@@ -585,6 +690,24 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def drawCross(canvas: Canvas, x: Float, y: Float, paint: Paint) = {
     canvas.drawLine(coords(0) - cross_size, coords(1) - cross_size, coords(0) + cross_size, coords(1) + cross_size, paint)
     canvas.drawLine(coords(0) - cross_size, coords(1) + cross_size, coords(0) + cross_size, coords(1) - cross_size, paint)
+  }
+  
+  /** Screen to game coordinates conversions */
+  def coordsFromGameToScreen(coords: Array[Float]): Unit = {
+    mMatrix.mapPoints(coords)
+  }
+  def coordsFromGameToScreen(coords: Array[Float], x1: Float, y1: Float): Unit = {
+    coords(0) = x1
+    coords(1) = y1
+    coordsFromGameToScreen(coords)
+  }
+  def coordsFromScreenToGame(coords: Array[Float]): Unit = {
+    mIMatrix.mapPoints(coords)
+  }
+  def coordsFromScreenToGame(coords: Array[Float], x1: Float, y1: Float): Unit = {
+    coords(0) = x1
+    coords(1) = y1
+    coordsFromScreenToGame(coords)
   }
   
   /** Draws the input event on the canvas */
@@ -620,36 +743,25 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     }
     i.value.code match {
       case TOUCHDOWN_EVENT =>
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
         drawCross(canvas, coords(0), coords(1), paint)
         
         //canvas.drawCircle(coords(0), coords(1), 20, circlePaint)
         //canvas.drawCircle(coords(0), coords(1), 20, paint)
       case TOUCHUP_EVENT =>
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
         canvas.drawCircle(coords(0), coords(1), 15, circlePaint)
         canvas.drawCircle(coords(0), coords(1), 15, paint)
       case TOUCHMOVE_EVENT =>
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
-        mapcoords(0) = i.value.x2
-        mapcoords(1) = i.value.y2
-        mMatrix.mapPoints(mapcoords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
+        coordsFromGameToScreen(mapcoords, i.value.x2, i.value.y2)
         if(i == selectedEvent) {
           drawCross(canvas, coords(0), coords(1), touchSelectedPaint)
-
           canvas.drawCircle(mapcoords(0), mapcoords(1), 15, touchSelectedPaint)
         }
         canvas.drawLine(coords(0), coords(1), mapcoords(0), mapcoords(1), paint)
       case COLLISION_EVENT => 
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
         val ix1 = coords(0)
         val iy1 = coords(1)
         rectFData.set(ix1 - 24, iy1 - 21, ix1 + 25, iy1 + 21)
@@ -659,9 +771,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         if(i.timestamp < game.currentTime || i == selectedEvent) bitmap.setAlpha(255) else bitmap.setAlpha(128)
         bitmap.draw(canvas)
       case BEYOND_SCREEN_EVENT | BEYOND_SIDE_EVENT =>
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
         val ix1 = coords(0)
         val iy1 = coords(1)
         rectFData.set(ix1 - 23, iy1 - 19, ix1 + 22, iy1 + 20)
@@ -671,9 +781,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         if(i.timestamp < game.currentTime || i == selectedEvent) bitmap.setAlpha(255) else bitmap.setAlpha(128)
         bitmap.draw(canvas)
       case INTEGER_CHANGE_EVENT | INTEGER_EQUAL_EVENT | INTEGER_GREATER_EQUAL_EVENT | INTEGER_LESS_EQUAL_EVENT | INTEGER_POSITIVE_EVENT | INTEGER_NEGATIVE_EVENT =>
-        coords(0) = i.value.x1
-        coords(1) = i.value.y1
-        mMatrix.mapPoints(coords)
+        coordsFromGameToScreen(coords, i.value.x1, i.value.y1)
         val ix1 = coords(0)
         val iy1 = coords(1)
         rectFData.set(ix1 - 20, iy1 - 20, ix1 + 19, iy1 + 19)
@@ -704,6 +812,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     }
     if(editMode) {
       StaticMenu.draw(canvas, this, selectedShape, bitmaps, button_size/2, button_size/2)
+      if(game.currentTime == 0)
+      GameMenu.draw(canvas, this, selectedShape, bitmaps, 0, 0)
     }
     if(selectedShape != null) {
       if(MenuOptions.modify_prev) {
@@ -713,7 +823,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         coords(0) = selectedShape.centerX
         coords(1) = selectedShape.centerY
       }
-      mMatrix.mapPoints(coords)
+      coordsFromGameToScreen(coords)
       val selectionx = Math.min(Math.max(coords(0), button_size), mWidth - button_size*3.5f)
       val selectiony = Math.min(Math.max(coords(1), button_size*1.5f), mHeight-button_size*1.5f)
       
@@ -721,7 +831,16 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       val cy = selectiony + mMenuPositionY
       
       // Display the shape's menu.
-      MovingMenu.draw(canvas, this, selectedShape, bitmaps, cx, cy) * button_size
+      ShapeMenu.draw(canvas, this, selectedShape, bitmaps, cx, cy)
+    }
+    if(selectedRule != null) {
+      coords(0) = selectedRule.x + selectedRule.width /2
+      coords(1) = selectedRule.y + selectedRule.height /2
+      coordsFromGameToScreen(coords)
+      val selectionx = Math.min(Math.max(coords(0), button_size), mWidth - button_size*1.5f)
+      val selectiony = Math.min(Math.max(coords(1), button_size*1.5f), mHeight-button_size*1.5f)
+      // Display the shape's menu.
+      RuleMenu.draw(canvas, this, selectedShape, bitmaps, selectionx, selectiony)
     }
   }
   
@@ -735,9 +854,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /**Called when the finger is down at these coordinates */
   def onFingerDown(x: Float, y: Float):Boolean = {
     val return_value = highLightMenu(x, y)
-    touchCoordsDownGame(0) = x
-    touchCoordsDownGame(1) = y
-    mIMatrix.mapPoints(touchCoordsDownGame)
+    coordsFromScreenToGame(touchCoordsDownGame, x, y)
     touchCoordsDownOriginal(0) = x
     touchCoordsDownOriginal(1) = y
     if(selectedShape != null) {
@@ -766,17 +883,19 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def selectRule(rule: ReactiveRule, event: TriggerEvent = null) = {
     selectedRule = rule
     selectedRuleConstants.clear()
-    selectedRuleString = rule.toScalaString("", game.context, selectedRuleConstants, Some(1), Some(1))
-    selectedRuleStringSplit = selectedRuleString.split("\n")
-    integerBoxWatched = null
-    if(event != null) {
-      if(event.code == INTEGER_CHANGE_EVENT) {
-        integerBoxWatched = event.shape1.asInstanceOf[IntegerBox]
-        integerEvent = event
-      }
-    } else {
+    if(rule != null) {
+      selectedRuleString = rule.toScalaString("", game.context, selectedRuleConstants, Some(1), Some(1))
+      selectedRuleStringSplit = selectedRuleString.split("\n")
       integerBoxWatched = null
-      integerEvent = null
+      if(event != null) {
+        if(event.code == INTEGER_CHANGE_EVENT) {
+          integerBoxWatched = event.shape1.asInstanceOf[IntegerBox]
+          integerEvent = event
+        }
+      } else {
+        integerBoxWatched = null
+        integerEvent = null
+      }
     }
   }
   
@@ -834,8 +953,12 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def onFingerUp(x: Float, y: Float) = {
     //Log.d("GameEngine2DView", "Menu Selected at " + x + ", " + y)
     var menuSelected:Boolean = false
+    //GameMenu.onFingerUp(this, selectedShape, x, y)
     if(selectedShape != null) {
-      menuSelected = MovingMenu.onFingerUp(this, selectedShape, x, y)
+      menuSelected = ShapeMenu.onFingerUp(this, selectedShape, x, y)
+    }
+    if(!menuSelected && selectedRule != null) { // Test is top left menu activated
+      menuSelected = RuleMenu.onFingerUp(this, selectedShape, x, y)
     }
     if(!menuSelected) { // Test is top left menu activated
       mMenuPositionX = 0
@@ -847,13 +970,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     if(!menuSelected) {
       // If the previous attempts to select a menu failed,
       // We dissmiss all selection and we select something else depending on the game editor type.
-      MovingMenu.menus foreach {
+      ShapeMenu.menus foreach {
+        _.hovered = false
+      }
+      RuleMenu.menus foreach {
         _.hovered = false
       }
       
-      touchCoords(0) = x
-      touchCoords(1) = y
-      mIMatrix.mapPoints(touchCoords)
+      coordsFromScreenToGame(touchCoords, x, y)
       var oneShapeSelectable = false
       
       var closestTimeStampDiff: Long = -1
@@ -936,10 +1060,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
                     if(i == 0) {
                       setModeSelect()
                     } else if(i == 1) {
-                      game.insertRule(NoCollisionBetweenRule(EIdentShape(d1), EIdentShape(d2)), game.currentTime)
+                      val new_rule = NoCollisionBetweenRule(EIdentShape(d1), EIdentShape(d2))
+                      game.giveRuleNewCoordinates(new_rule)
+                      game.insertRule(new_rule, game.currentTime)
                       setModeModifyGame()
                     } else {
-                      game.insertRule(NoCollisionEffectBetweenRule(EIdentShape(d1), EIdentShape(d2)), game.currentTime)
+                      val new_rule = NoCollisionEffectBetweenRule(EIdentShape(d1), EIdentShape(d2))
+                      game.giveRuleNewCoordinates(new_rule)
+                      game.insertRule(new_rule, game.currentTime)
                       setModeSelect()
                     }
                   },
@@ -947,6 +1075,12 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
                 )
           } else {
             setModeSelect()
+          }
+          // Starts to build a rule based on game changes.
+          val rule = CodeGenerator.getRuleFromEvent(game, closestEvent.value).getOrElse(null)
+          if(rule != null) {
+            game.giveRuleNewCoordinates(rule)
+            //selectRule(rule)
           }
         }
       } else if(mRuleState == STATE_MODIFYING_CATEGORY) {
@@ -992,7 +1126,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   def chooseSelectedShape(xTouch: Float, yTouch: Float) = {
     var minDistance = -1.0f
     selectShape(null)
-    
+    selectRule(null)
+      
     game.getArena foreach { shape =>
       val x = xTouch + (if(MenuOptions.modify_prev) shape.x - shape.prev_x else 0)
       val y = yTouch + (if(MenuOptions.modify_prev) shape.y - shape.prev_y else 0)// - shape.y + shape.prev_y
@@ -1010,6 +1145,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       if(CameraButton.selected) {
         game.Camera.reset()
       }
+
+      // Selects a rule if no shape is selected
+      game.init_rules foreach { rule =>
+        if(xTouch >= rule.selectionRectangle.xmin && xTouch <= rule.selectionRectangle.xmax && yTouch >= rule.selectionRectangle.ymin && yTouch <= rule.selectionRectangle.ymax) {
+          selectRule(rule)
+        }
+      }
+      
     }
   }
   
@@ -1029,14 +1172,10 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /** Called when the finger moves by a small amount */
   def onFingerMove(xFrom: Float, yFrom: Float, xTo: Float, yTo: Float) = {
     //Log.d("Menu", "Menu hovered (" + mMenuPositionX + ", " + mMenuPositionY + ") from " + xFrom + ", " + yFrom + " to " + xTo + ", " + yTo)
-    touchCoords(0) = xTo
-    touchCoords(1) = yTo
-    touchCoords2(0) = xFrom
-    touchCoords2(1) = yFrom
     mDisplacementX = xTo - touchCoordsDownOriginal(0)
     mDisplacementY = yTo - touchCoordsDownOriginal(1)
-    mIMatrix.mapPoints(touchCoords)
-    mIMatrix.mapPoints(touchCoords2)
+    coordsFromScreenToGame(touchCoords, xTo, yTo)
+    coordsFromScreenToGame(touchCoords2, xFrom, yFrom)
     val shiftX = touchCoords(0) - touchCoords2(0)
     val shiftY = touchCoords(1) - touchCoords2(1)
     
@@ -1048,7 +1187,11 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     if(Math.abs(relativeY) < 10) {
       relativeY = 0
     }
-    MovingMenu.onFingerMove(selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    ShapeMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    RuleMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    
+    if(game.currentTime == 0) GameMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    
     if(MoveButton.hovered) {
       mMenuPositionX = 0
       mMenuPositionY = 0
@@ -1058,15 +1201,25 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /** Highlights the corresponding menu under the finger*/
   def highLightMenu(x: Float, y: Float): Boolean = {
     if(selectedShape != null) {
-      MovingMenu.testHovering(x, y, button_size)
+      ShapeMenu.testHovering(x, y, button_size)
     }
-    val menu_not_hovered = MovingMenu.menus.foldLeft(true) { (notHovered, menu ) => notHovered && !menu.hovered }
+    if(selectedRule != null) {
+      RuleMenu.testHovering(x, y, button_size)
+    }
+    val menu_not_hovered = ShapeMenu.menus.foldLeft(true) { (notHovered, menu ) => notHovered && !menu.hovered } ||
+                           RuleMenu.menus.foldLeft(true) { (notHovered, menu ) => notHovered && !menu.hovered }
     if(menu_not_hovered) {
       StaticMenu.menus foreach (_.testHovering(x, y, button_size))
+      if(game.currentTime == 0) GameMenu.testHovering(x, y, button_size)
     }
     var something_highlighted = false
-    MovingMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    ShapeMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    RuleMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
     StaticMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    if(!something_highlighted) {
+      
+      if(game.currentTime == 0) GameMenu.menus foreach { menu => something_highlighted = something_highlighted || menu.hovered }
+    }
     something_highlighted
   }
 
@@ -1085,7 +1238,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   /**
    * Select a given shape.
    **/
-  def selectShape(shape: GameShapes.Shape) = {
+  def selectShape(shape: Shape) = {
     selectedShape = shape
     if(selectedShape != null) {
       if(CameraButton.selected && selectedCategory != null) {
@@ -1129,5 +1282,14 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       case _ =>
     }
     Expression.execute(e.code, game.context)
+  }
+  
+  /**
+   * Updates the current rule given the shape modification
+   */
+  def updateCurrentRule(s: Shape) {
+    if(selectedRule != null) {
+      
+    }
   }
 }

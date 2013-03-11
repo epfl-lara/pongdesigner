@@ -7,8 +7,8 @@ class PongGamePacman extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /**
    * Game Layouts
@@ -366,6 +366,6 @@ class PongGamePacman extends Game {
   }.represents(List(IfCode(EApply(ESelect(EIdent("newValue"), "$eq$eq"),List(EConstantNumber(0.0))),List(ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(player), "x"), "$eq"),List(EConstantNumber(666.0))), EApply(ESelect(ESelect(EIdentShape(player), "x"), "$plus$eq"),List(EConstantNumber(599.0))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(player), "y"), "$eq"),List(EConstantNumber(761.0))), EApply(ESelect(ESelect(EIdentShape(player), "y"), "$plus$eq"),List(EConstantNumber(707.0))))), ParallelExpressions(List(EApply(ESelect(ESelect(EIdentShape(block), "y"), "$eq"),List(EConstantNumber(279.0))), EApply(ESelect(ESelect(EIdentShape(block), "y"), "$plus$eq"),List(EConstantNumber(-550.0)))))),List())))
   Camera.x = 0
   Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  Camera.width = layoutWidth
+  Camera.height = layoutHeight
 }

@@ -371,7 +371,7 @@ object GameShapes {
         history_velocity_y.addOrReplaceValue(timestamp, velocity_y)
         history_color.addOrReplaceValue(timestamp, color)
         history_visible.addOrReplaceValue(timestamp, visible)
-        history_outofscreen.addOrReplaceValue(timestamp, isOutsideRectangle(0, 0, attachedGame.screenWidth, attachedGame.screenHeight))
+        history_outofscreen.addOrReplaceValue(timestamp, isOutsideRectangle(0, 0, attachedGame.layoutWidth, attachedGame.layoutHeight))
       }
     }
 
@@ -400,7 +400,7 @@ object GameShapes {
     def raiseTriggers(timestamp: Long, ruleToStopBefore: ReactiveRule = null): Boolean = {
       if(attachedGame != null) {
         if(history_outofscreen(timestamp, false) && !history_outofscreen(timestamp-1, false)) {
-          attachedGame.triggerEvents.addEvent(attachedGame.currentTime, BEYOND_SCREEN_EVENT, this, null, Math.min(Math.max(mX, 0), attachedGame.screenWidth), Math.min(Math.max(mY, 0), attachedGame.screenHeight), 0, 0)
+          attachedGame.triggerEvents.addEvent(attachedGame.currentTime, BEYOND_SCREEN_EVENT, this, null, Math.min(Math.max(mX, 0), attachedGame.layoutWidth), Math.min(Math.max(mY, 0), attachedGame.layoutHeight), 0, 0)
         }
       }
       true
@@ -589,6 +589,7 @@ object GameShapes {
   }
   class Camera extends Rectangular with Category[Shape] {
     mName = "Camera"
+    noVelocity = true
     override def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
     override def distanceSelection(xCursor: Float, yCursor: Float):Float = 0
     override def getBoundingBox(r: RectF) = {
@@ -598,10 +599,15 @@ object GameShapes {
     
     var target: GameShapes.Shape = null
     override def x = {
-      if(target != null) target.centerX - (width/2) else super.x
+      if(target != null) {
+        Math.min(Math.max(target.centerX - (width/2), 0), attachedGame.layoutWidth - width)
+      } else super.x
     }
     override def y = {
-      if(target != null) target.centerY - (height/2) else super.y
+      if(target != null) {
+        Math.min(Math.max(target.centerY - (height/2), 0), attachedGame.layoutHeight - height)
+        
+      } else super.y
     }
     
     override def remove(s: GameShapes.Shape) = {

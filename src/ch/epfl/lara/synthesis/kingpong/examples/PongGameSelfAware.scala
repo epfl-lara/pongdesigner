@@ -12,24 +12,24 @@ class PongGameSelfAware extends Game {
   /**
    * Game static values
    */
-  screenWidth = 480
-  screenHeight = 750
+  layoutWidth = 480
+  layoutHeight = 750
 
   /** Game Layouts */
   var arena1 = Arena() named "arena1"
   val paddle1 = Rectangle(200, 10, 100, 40) named "paddle1" initialize(EConstant(200), EConstant(10), EConstant(100), EConstant(40))
   paddle1.noVelocity = true
   arena1 += paddle1
-  val paddle2 = Rectangle(200, screenHeight-50, 100, 40) named "paddle2" initialize(EConstant(200), EScreenHeight() + EConstant(50), EConstant(100), EConstant(40))
+  val paddle2 = Rectangle(200, layoutHeight-50, 100, 40) named "paddle2" initialize(EConstant(200), ELayoutHeight() + EConstant(50), EConstant(100), EConstant(40))
   paddle2.noVelocity = true
   arena1 += paddle2
-  val wall1 = Rectangle.fromBounds(0, 50, 20, screenHeight-50) named "wall1" initialize(EConstant(0), EConstant(50), EConstant(20), EScreenHeight() - EConstant(100))  
+  val wall1 = Rectangle.fromBounds(0, 50, 20, layoutHeight-50) named "wall1" initialize(EConstant(0), EConstant(50), EConstant(20), ELayoutHeight() - EConstant(100))  
   wall1.noVelocity = true
   arena1 += wall1
-  val wall2 = Rectangle.fromBounds(460, 50, 480, screenHeight-50) named "wall2" initialize(EConstant(460), EConstant(50), EConstant(20), EScreenHeight() - EConstant(100))
+  val wall2 = Rectangle.fromBounds(460, 50, 480, layoutHeight-50) named "wall2" initialize(EConstant(460), EConstant(50), EConstant(20), ELayoutHeight() - EConstant(100))
   wall2.noVelocity = true
   arena1 += wall2
-  val ball = Circle(screenWidth/2, screenHeight/2 + 20, 30) named "ball" initialize(EScreenWidth() / EConstant(2), EScreenHeight() / EConstant(2) + EConstant(20), EConstant(30))
+  val ball = Circle(layoutWidth/2, layoutHeight/2 + 20, 30) named "ball" initialize(ELayoutWidth() / EConstant(2), ELayoutHeight() / EConstant(2) + EConstant(20), EConstant(30))
   ball.noVelocity = false
   ball.velocity_x = 0.1f
   ball.velocity_y = 0.0f
@@ -48,14 +48,14 @@ class PongGameSelfAware extends Game {
   /**
    * Rules to be guessed.
    */
-  WhenEver(ball.y - ball.radius > screenHeight) {
-    ball.x = screenWidth / 2
-    ball.y = screenHeight / 2
+  WhenEver(ball.y - ball.radius > layoutHeight) {
+    ball.x = layoutWidth / 2
+    ball.y = layoutHeight / 2
     scorePlayer1 += 1
   }
-    init_rules += WhenEverRule(EApply(ESelect(EApply(ESelect(ESelect(EIdent("ball"), "y"), "$minus"), List(ESelect(EIdent("ball"), "radius"))), "$greater"), List(EIdent("screenWidth"))),
-        List(EApply(ESelect(EIdent("ball"), "x_$eq"), List(EApply(ESelect(EIdent("screenWidth"), "$div"), List(EConstant(2))))),
-             EApply(ESelect(EIdent("ball"), "y_$eq"), List(EApply(ESelect(EIdent("screenHeight"), "$div"), List(EConstant(2))))),
+    init_rules += WhenEverRule(EApply(ESelect(EApply(ESelect(ESelect(EIdent("ball"), "y"), "$minus"), List(ESelect(EIdent("ball"), "radius"))), "$greater"), List(EIdent("layoutWidth"))),
+        List(EApply(ESelect(EIdent("ball"), "x_$eq"), List(EApply(ESelect(EIdent("layoutWidth"), "$div"), List(EConstant(2))))),
+             EApply(ESelect(EIdent("ball"), "y_$eq"), List(EApply(ESelect(EIdent("layoutHeight"), "$div"), List(EConstant(2))))),
              EApply(ESelect(EIdent("scorePlayer1"), "$plus$eq"), List(EConstant(1)))
              )
     )
@@ -92,13 +92,13 @@ class PongGameSelfAware extends Game {
     List(EApply(ESelect(ESelect(EIdent("paddle2"), "x"), "$plus$eq"), List(EApply(ESelect(EIdent("xTo"), "$minus"),List(EIdent("xFrom"))))))
    )
     WhenEver (ball.y + ball.radius < 0) {
-      ball.x = screenWidth / 2
-      ball.y = screenHeight / 2
+      ball.x = layoutWidth / 2
+      ball.y = layoutHeight / 2
       scorePlayer2 += 1
     }
     val new_rule = WhenEverRule(EApply(ESelect(EApply(ESelect(ESelect(EIdent("ball"), "y"), "$plus"), List(ESelect(EIdent("ball"), "radius"))), "$less"), List(EConstant(0))),
-        List(EApply(ESelect(EIdent("ball"), "x_$eq"), List(EApply(ESelect(EIdent("screenWidth"), "$div"), List(EConstant(2))))),
-             EApply(ESelect(EIdent("ball"), "y_$eq"), List(EApply(ESelect(EIdent("screenHeight"), "$div"), List(EConstant(2))))),
+        List(EApply(ESelect(EIdent("ball"), "x_$eq"), List(EApply(ESelect(EIdent("layoutWidth"), "$div"), List(EConstant(2))))),
+             EApply(ESelect(EIdent("ball"), "y_$eq"), List(EApply(ESelect(EIdent("layoutHeight"), "$div"), List(EConstant(2))))),
              EApply(ESelect(EIdent("scorePlayer2"), "$plus$eq"), List(EConstant(1)))
              )
     )
@@ -111,17 +111,17 @@ class PongGameSelfAware extends Game {
     init_rules += WhenEverRule(EApply(ESelect(ESelect(EIdent("paddle1"), "x"), "$less"), List(EConstant(0))),
         List(EApply(ESelect(EIdent("paddle1"), "x_$eq"), List(EConstant(0))))    
     )
-  WhenEver(paddle1.x + paddle1.width > screenWidth) {
-    paddle1.x = screenWidth - paddle1.width
+  WhenEver(paddle1.x + paddle1.width > layoutWidth) {
+    paddle1.x = layoutWidth - paddle1.width
   }
   WhenEver(paddle2.x < 0) {
     paddle2.x = 0
   }
-  WhenEver(paddle2.x + paddle2.width > screenWidth) {
-    paddle2.x = screenWidth - paddle2.width
+  WhenEver(paddle2.x + paddle2.width > layoutWidth) {
+    paddle2.x = layoutWidth - paddle2.width
   }
   Camera.x = 0
   Camera.y = 0
-  Camera.width = screenWidth
-  Camera.height = screenHeight
+  Camera.width = layoutWidth
+  Camera.height = layoutHeight
 }

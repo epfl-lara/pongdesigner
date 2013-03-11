@@ -10,7 +10,7 @@ import android.content.Context
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
-  var copy_to_prev = false
+  var copy_to_prev = true
   /** Option indicating if the changes are made on the previous state or the current state. */
   var modify_prev = false
   
@@ -29,7 +29,7 @@ object MenuOptions {
 }
 
 /** Change the menu. */
-object MovingMenu {
+object ShapeMenu {
   var menus: List[CustomMenu] = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, TrashButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton)
   def draw(canvas: Canvas, gameEngine: GameEngine2DView, selectedShape: Shape, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Int = {
     val top_shift = selectedShape match {
@@ -57,8 +57,8 @@ object MovingMenu {
     PinButton.setPos(2, top_shift)
     VisibilityButton.setPos(3, top_shift)
     SizeButton.setPos(1, 1)
-    TrashButton.setPos(2, 1)
-    PaintButton.setPos(3, 1)
+    PaintButton.setPos(2, 1)
+    TrashButton.setPos(3, 1)
     
     RenameButton.setText(selectedShape.mName)
     RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
@@ -66,7 +66,6 @@ object MovingMenu {
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
-    
     top_shift
   }
   
@@ -82,10 +81,10 @@ object MovingMenu {
     res
   }
   
-  def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     menus foreach {
       menu =>
-        if(menu.hovered) menu.onFingerMove(selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+        if(menu.hovered) menu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
     }
   }
   
@@ -110,6 +109,8 @@ object ModifyTextButton extends MenuButton {
           }
           if(copy_to_prev) {
             d.prev_text = d.text
+          } else {
+            gameEngine.updateCurrentRule(d)
           }
         }
         CustomDialogs.launchChoiceDialog(context,
@@ -120,7 +121,7 @@ object ModifyTextButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Nothing
   }
   
@@ -153,7 +154,7 @@ object MoveButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null) {
       if(modify_prev) {
         selectedShape.prev_x = selected_shape_first_x + relativeX
@@ -180,7 +181,7 @@ object SpeedButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null && !selectedShape.noVelocity) {
       if(modify_prev) {
         selectedShape.prev_velocity_x += shiftX.toFloat / 1000f
@@ -232,7 +233,7 @@ object SizeButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null) {
       selectedShape match {
         case c:GameShapes.Circle =>
@@ -285,7 +286,7 @@ object PinButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Do nothing
   }
   
@@ -305,7 +306,7 @@ object PaintButton extends MenuButton {
   }
   
   // TODO : Make a better function to be able to choose the color
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null) {
       val selectedColor:Int = ((mDisplacementX / (button_size/3)).toInt % 6 + 6) % 6
       if(MenuOptions.modify_prev) {
@@ -336,7 +337,7 @@ object TrashButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Nothing
   }
   
@@ -360,7 +361,7 @@ object VisibilityButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Nothing
   }
   
@@ -395,7 +396,7 @@ object IncrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Nothing
   }
   
@@ -430,7 +431,7 @@ object DecrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     // Nothing
   }
   

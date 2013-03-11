@@ -8,11 +8,11 @@ import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.GameShapes._
 import android.util.Log
 
-object EScreenHeight {
-  def apply(): Expression = EIdent("screenHeight")
+object ELayoutHeight {
+  def apply(): Expression = EIdent("layoutHeight")
 }
-object EScreenWidth {
-  def apply(): Expression = EIdent("screenWidth")
+object ELayoutWidth {
+  def apply(): Expression = EIdent("layoutWidth")
 }
 object Expression {
   /**
@@ -218,8 +218,14 @@ object Expression {
       case EApply(ESelect(expression, method), values) =>
         values foreach (evaluateExpression(context, _))
         evaluateExpression(context, expression)
-        expression.typeExpr match {
-          case _ => //TODO if any with multiple arguments.
+        expression match {
+          case ETop() => //TODO if any with multiple arguments.
+            (method, values) match {
+              case ("angle", x1::y1::x2::y2::Nil) =>
+                t store Game.angle(x1.number_value, y1.number_value, x2.number_value, y2.number_value)
+              case _ =>
+            }
+          case _ => 
         }
       case ESelect(expression, parameter) =>
         evaluateExpression(context, expression)
@@ -297,6 +303,10 @@ object Expression {
         }
         result
     }
+  }
+  
+  def angle(x1: Expression, y1: Expression, x2: Expression, y2: Expression): Expression = {
+    EApply(ESelect(ETop(), "angle"), x1::y1::x2::y2::Nil)
   }
 }
 
@@ -438,7 +448,7 @@ sealed trait Expression extends NotNull {
         var first = true
         values foreach { value =>
           if(!first) {
-            start = ", " + start
+            start = start + ", "
           }
           col = currentCol map {c => c + start.size}
           var s = value.toScalaString("", context, modifiableConstants, currentLine, col)
@@ -709,6 +719,15 @@ case class CompiledBoolean(f: () => Boolean) extends Expression {
  * Rules that can be stored and executing in games.
  */
 sealed trait ReactiveRule {
+  // Position in the game
+  var x = 0
+  var y = 0
+  var width = 44
+  var height = 44
+  
+  // For selection purposes.
+  var selectionRectangle = new Layout
+  
   /** Checks if a rule contains a particular shape. */
   def contains(shape: GameShapes.Shape): Boolean = this match {
     case WhenEverRule(condition, code) =>
