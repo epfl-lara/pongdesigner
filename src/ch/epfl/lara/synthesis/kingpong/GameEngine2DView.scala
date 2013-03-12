@@ -100,6 +100,8 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   
   /** Resets the game */
   def reset() {
+    MenuOptions.button_size = button_size
+    ColorMenu.createMenuFromColorArray(this.getContext(), R.array.colors)
     game.reset()
     totalEditTime = 0L
     minTimePosition = 0L
@@ -153,6 +155,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       setModeModifyGame()
       //mAddRuleButton.text = res.getString(R.string.design_rule)
       ShapeMenu.menus foreach { _.hovered = false}
+      ColorMenu.menus foreach { _.hovered = false}
       RuleMenu.menus foreach { _.hovered = false}
       StaticMenu.menus foreach { _.hovered = false}
       mMenuPositionX = 0
@@ -174,7 +177,7 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     var newTime = systemTime - startTime - totalEditTime
     
     if(game != null && !editMode && !paused) {
-      if(1000 < newTime - game.currentTime) { // There was some delay and we are incrementing the time of the game too quickly.
+      if(200 < newTime - game.currentTime) { // There was some delay and we are incrementing the time of the game too quickly.
         totalEditTime += newTime - game.currentTime - 10
         newTime -= newTime - game.currentTime - 10
       }
@@ -208,7 +211,6 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   private val useBitmaps = true
   
   private val allColors = res.getStringArray(R.array.colors)
-  MenuOptions.allColors = allColors
   MenuOptions.context = context
   
   /** Menu drawing */
@@ -615,7 +617,6 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
         case WhenFingerMovesOnRule(obj, coords, code) =>
           // TODO : Display the Shape + a finger movement icon
         case WhenFingerDownOnRule(EIdentShape(s), code) =>
-          // TODO : Display the Shape + a finger movement icon
           miniFingerDown.setBounds(rectData)
           miniFingerDown.draw(canvas)
           drawNameBeforeRule(canvas, rule, s.name, color_background)
@@ -796,7 +797,6 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
   
   /** Draws the menu on the canvas */
   def drawMenuOn(canvas: Canvas) = {
-    MenuOptions.button_size = button_size
     if(editMode) {
       if(selectedEvent != null) {
         drawInputEventOn(selectedEvent, canvas)
@@ -832,6 +832,9 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       
       // Display the shape's menu.
       ShapeMenu.draw(canvas, this, selectedShape, bitmaps, cx, cy)
+      if(PaintButton.hovered) {
+        ColorMenu.draw(canvas, this, selectedShape, bitmaps, cx, cy)
+      }
     }
     if(selectedRule != null) {
       coords(0) = selectedRule.x + selectedRule.width /2
@@ -956,6 +959,9 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
     //GameMenu.onFingerUp(this, selectedShape, x, y)
     if(selectedShape != null) {
       menuSelected = ShapeMenu.onFingerUp(this, selectedShape, x, y)
+      if(PaintButton.hovered) {
+        ColorMenu.onFingerUp(this, selectedShape, x, y)
+      }
     }
     if(!menuSelected && selectedRule != null) { // Test is top left menu activated
       menuSelected = RuleMenu.onFingerUp(this, selectedShape, x, y)
@@ -971,6 +977,9 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       // If the previous attempts to select a menu failed,
       // We dissmiss all selection and we select something else depending on the game editor type.
       ShapeMenu.menus foreach {
+        _.hovered = false
+      }
+      ColorMenu.menus foreach {
         _.hovered = false
       }
       RuleMenu.menus foreach {
@@ -1188,6 +1197,10 @@ class GameEngine2DView(context: Context, attrs: AttributeSet, defStyle: Int) ext
       relativeY = 0
     }
     ShapeMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    if(PaintButton.hovered) {
+      ColorMenu.testHovering(xTo, yTo, button_size)
+      ColorMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    }
     RuleMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
     
     if(game.currentTime == 0) GameMenu.onFingerMove(this, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)

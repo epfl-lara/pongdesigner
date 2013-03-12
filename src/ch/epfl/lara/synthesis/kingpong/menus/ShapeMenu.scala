@@ -19,9 +19,6 @@ object MenuOptions {
   var selected_shape_first_y = 0f
   
   /** Initialized at run time*/
-  var allColors: Array[String] = null
-  
-  /** Initialized at run time*/
   var context: Context = null
   
   /** Size of the button */
@@ -302,21 +299,14 @@ object PaintButton extends MenuButton {
 
   override def onFingerUp(gameEngine: GameEngine2DView, selectedShape: Shape, x: Float, y: Float) = {
     // Nothing to declare
+    ColorMenu.onFingerUp(gameEngine, selectedShape, x, y)
     hovered = false
   }
   
   // TODO : Make a better function to be able to choose the color
   override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null) {
-      val selectedColor:Int = ((mDisplacementX / (button_size/3)).toInt % 6 + 6) % 6
-      if(MenuOptions.modify_prev) {
-        selectedShape.prev_color = Color.parseColor(allColors(selectedColor))
-      } else {
-        selectedShape.color = Color.parseColor(allColors(selectedColor))
-      }
-      if(copy_to_prev) {
-        selectedShape.prev_color = selectedShape.color
-      }
+      ColorMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
     }
   }
   

@@ -33,6 +33,9 @@ trait CustomMenu {
   protected var x: Float = 0f
   protected var y: Float = 0f
   
+  def getX() = x
+  def getY() = y
+  
   // Relative position from the center (0, 0) is the center.
   var dx: Float = 0
   var dy: Float = 0
@@ -81,6 +84,61 @@ abstract class MenuButton extends CustomMenu {
     hovered
   }
 }
+
+/**
+ * Color menus
+ */
+class ColorCircleMenu extends CustomMenu {
+  import MenuOptions._
+  private var color: Int = 0
+  var rectData = new Rect(0, 0, 0, 0)
+  var rectFData = new RectF(0, 0, 0, 0)
+  var paint = new Paint()
+  paint.setStyle(Paint.Style.FILL_AND_STROKE)
+  paint.setAntiAlias(true)
+
+  def draw(canvas: Canvas, gameEngine: GameEngine2DView, selectedShape: Shape, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
+    x = cx + button_size * dx
+    y = cy + button_size * dy
+    if(visible) {
+      icons(gameEngine, selectedShape) foreach {
+        id => val d = bitmaps.getOrElse(id, null)
+        if(d!= null) {
+          rectFData.set(x - button_size/2, y - button_size/2, x + button_size/2, y + button_size/2)
+          rectFData.round(rectData)
+          d.setBounds(rectData)
+          d.draw(canvas)
+        }
+      }
+      paint.setColor(color)
+      canvas.drawCircle(x, y, button_size/2.3f, paint)
+    }
+  }
+  def setColor(c: Int) = color = c
+  def testHovering(atX: Float, atY: Float, button_size: Float): Boolean = {
+    val t = button_size/2
+    hovered = (x-atX)*(x-atX) + (y-atY)*(y-atY) < t*t 
+    hovered
+  }
+  override def onFingerUp(gameEngine: GameEngine2DView, selectedShape: GameShapes.Shape, x: Float, y: Float) = {
+    // Do nothing
+  }
+  override def onFingerMove(gameEngine: GameEngine2DView, selectedShape: GameShapes.Shape, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = { 
+    if(hovered) {
+      if(MenuOptions.modify_prev) {
+        selectedShape.prev_color = color
+      } else {
+        selectedShape.color = color
+      }
+      if(copy_to_prev) {
+        selectedShape.prev_color = selectedShape.color
+      }
+    }
+  }
+  def icons(gameEngine: GameEngine2DView, selectedShape: Shape) =
+    (if(hovered) R.drawable.flat_button_highlighted else R.drawable.flat_button) :: Nil
+}
+
 /**
  * A menu button displaying text
  */

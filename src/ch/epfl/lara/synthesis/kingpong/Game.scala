@@ -506,7 +506,7 @@ abstract class Game /*extends scala.Serializable*/ {
 
     AccelerometerGravity.foreach {
       shape =>
-        shape.velocity = Math.max(shape.velocity * 0.98f, 0.11f)
+        shape.velocity = Math.min(shape.velocity * 0.98f, 0.25f)
     }
     continue
   }
