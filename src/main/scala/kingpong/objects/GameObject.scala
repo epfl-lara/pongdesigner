@@ -4,6 +4,7 @@ import scala.collection.mutable.{Map => MMap}
 
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 
@@ -39,6 +40,22 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed {
   // Utility functions
   // --------------------------------------------------------------------------  
   
+  /** Write the properties values to the underlying structure. The common case
+   *  is to force these values to the physical world, but it could also do
+   *  nothing.
+   */
+  def flush() = properties.values.foreach {_.flush()}
+  
+  /** Load the properties values from the underlying structure, typically 
+   *  the physical world.
+   */
+  def load() = properties.values.foreach {_.load()}
+
+  /** Reset all properties to their initial values.
+   */
+  def reset(implicit interpreter: Interpreter) = 
+    properties.values.foreach {_.reset}
+
   def apply(property: String): Property[_] = properties(property)
 
   def getAABB(): AABB

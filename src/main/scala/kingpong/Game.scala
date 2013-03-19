@@ -42,6 +42,8 @@ trait Game extends TypeChecker with Interpreter { self =>
              tpe: BodyType = BodyType.DYNAMIC)
             (implicit game: Game): Circle = {
     val c = new Circle(game, name, x, y, angle, radius, visible, density, friction, restitution, fixedRotation, tpe)
+    c.reset
+    c.flush()
     game add c
     c
   }
@@ -60,6 +62,8 @@ trait Game extends TypeChecker with Interpreter { self =>
                 tpe: BodyType = BodyType.DYNAMIC)
                (implicit game: Game): Rectangle = {
     val r = new Rectangle(game, name, x, y, angle, init_width, init_height, visible, density, friction, restitution, fixedRotation, tpe)
+    r.reset
+    r.flush()
     game add r
     r
   }
