@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="rename_rectangles">
+        <item>custom&#8230;</item>
+        <item>wall</item>
+        <item>block</item>
+        <item>paddle</item>
+        <item>goal</item>
+        <item>food</item>
+        <item>trigger</item>
+        <item>player</item>
+        <item>ennemy</item>
+    </string-array>
+    <string-array name="rename_circles">
+        <item>custom&#8230;</item>
+        <item>circle</item>
+        <item>player</item>
+        <item>ennemy</item>
+        <item>ball</item>
+        <item>deflector</item>
+        <item>food</item>
+        <item>item</item>
+    </string-array>
+    <string-array name="rename_textbox">
+        <item>custom&#8230;</item>
+        <item>textBox</item>
+        <item>label</item>
+        <item>description</item>
+        <item>message</item>
+    </string-array>
+        <string-array name="rename_integerbox">
+        <item>custom&#8230;</item>
+        <item>score</item>
+        <item>total</item>
+        <item>counter</item>
+        <item>finished</item>
+        <item>goal</item>
+        <item>quotient</item>
+        <item>number</item>
+        <item>remainder</item>
+        <item>zero</item>
+        </string-array>
+    <string-array name="text_possibilities">
+        <item>custom&#8230;</item>
+        <item>Victory!</item>
+        <item>Looser</item>
+        <item>Game over</item>
+        <item>Score:</item>
+        <item>Lives:</item>
+        <item>Start</item>
+        <item>Finish</item>
+        <item>\u2190</item>
+        <item>\u2191</item>
+        <item>\u2192</item>
+        <item>\u2193</item>
+                
+    </string-array>
+    <!-- string-array name="colors">        
+        <item>#FF00FFFF</item>  
+        <item>#FFFF266E</item>
+        <item>#FFFFB339</item>
+        <item>#FF179B7C</item>
+        <item>#FFAFA450</item>
+        <item>#FF000000</item>
+    </string-array -->
+    <string-array name="colors">        
+        <item>#FF34B27D</item>  
+        <item>#FFDBDB57</item>
+        <item>#FFE09952</item>
+        <item>#FFCB4D4D</item>
+        <item>#FF9933CC</item>
+        <item>#FF000000</item>
+    </string-array>
+</resources>

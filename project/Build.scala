@@ -5,10 +5,10 @@ import AndroidKeys._
 object General {
 
   // Parameters:
-  val buildName           = "kingpong"
+  val buildName           = "kingpong_experiment"
   val buildOrganization   = "ch.epfl.lara.synthesis"
   val buildScalaVersion   = "2.10.0"
-  val buildAndroidVersion = "16"
+  val buildAndroidVersion = "17"
 
   val settings = Defaults.defaultSettings ++ Seq (
     
@@ -19,7 +19,9 @@ object General {
     organization := buildOrganization,
     scalaVersion := buildScalaVersion,
     
-    scalaSource in Compile <<= baseDirectory(_ / "src"),
+    // Jbox2d
+    libraryDependencies += "org.jbox2d" % "jbox2d-library" % "2.1.2.2",
+    
     scalacOptions ++= Seq(
         "-feature",                      // Enable language feature warnings
         "-deprecation",                  // Enable detailed deprecation warnings 
@@ -34,11 +36,6 @@ object General {
 
     platformName := "android-" + buildAndroidVersion,
     keyalias := buildName,
-
-    manifestPath <<= (baseDirectory, manifestName) map((s,m) => Seq(s / m)) map (x=>x),
-    manifestTemplatePath <<= (baseDirectory, manifestName) (_ / _),
-    mainResPath <<= (baseDirectory, resDirectoryName) (_ / _) map (x=>x),
-    mainAssetsPath <<= (baseDirectory, assetsDirectoryName) (_ / _),
 
     useProguard := true,
     //proguardOption := "-keep class scala.Function1",
