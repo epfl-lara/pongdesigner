@@ -102,7 +102,7 @@ object Types {
 
   trait PongType[T] {
     def getPongType: Type
-    def toPongValue(v: T): Value[T]
+    def toPongValue(v: Any): Value[T]
     def toScalaValue(v: Value[Any]): T
   }
 

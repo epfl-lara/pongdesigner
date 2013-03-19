@@ -112,10 +112,10 @@ trait Interpreter {
       }
 
     case Assign(ref, rhs) =>
-      val v = eval(rhs).value
-      val tpe = anyToType(v)
+      val v = eval(rhs)
+      val tpe = anyToType(v.value)
       if (tpe == ref.tpe) {
-        ref.property.set(v.asInstanceOf[ref.TProp])
+        ref.property.set(ref.tpe.toScalaValue(v))
       } 
       else {
         throw InterpreterException(s"Expression $rhs has wrong type $tpe, expected ${ref.tpe}.")

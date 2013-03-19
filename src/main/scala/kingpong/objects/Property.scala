@@ -4,7 +4,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 
-trait Property[T] extends Timed { self => 
+abstract class Property[T : PongType]() extends Timed { self => 
   
   def name: String
 

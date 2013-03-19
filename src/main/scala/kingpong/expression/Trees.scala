@@ -39,18 +39,18 @@ object Trees {
 
   trait PropertyRef {  
   
-    private[kingpong] type TProp
-    private[kingpong] def tpe: Type
-    private[kingpong] def property: Property[TProp]
+    private[kingpong] type E
+    private[kingpong] def tpe: PongType[E]
+    private[kingpong] def property: Property[E]
 
     def :=(expr: Expr): Expr = Assign(this, expr)
   }
 
   object PropertyRef {
-    def apply[T](p: Property[T]) = new PropertyRef {
-      private[kingpong] type TProp = T
+    def apply[T : PongType](p: Property[T]) = new PropertyRef {
+      private[kingpong] type E = T
       private[kingpong] def property = p
-      private[kingpong] def tpe = anyToType(p.get)
+      private[kingpong] def tpe = implicitly[PongType[T]]
     }
 
     private[kingpong] def unapply(ref: PropertyRef): Option[Property[_]] = Some(ref.property)
