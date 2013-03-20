@@ -7,7 +7,7 @@ object General {
   // Parameters:
   val buildName           = "kingpong_experiment"
   val buildOrganization   = "ch.epfl.lara.synthesis"
-  val buildScalaVersion   = "2.10.0"
+  val buildScalaVersion   = "2.10.1"
   val buildAndroidVersion = "17"
 
   val settings = Defaults.defaultSettings ++ Seq (
