@@ -3,6 +3,7 @@ package ch.epfl.lara.synthesis.kingpong.objects
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
+import ch.epfl.lara.synthesis.kingpong.expression.Value
 
 abstract class Property[T : PongType]() extends Timed { self => 
   
@@ -25,11 +26,17 @@ abstract class Property[T : PongType]() extends Timed { self =>
   
   def setInit(e: Expr): self.type
   def set(v: T): self.type
-  def set(e: Expr)(implicit interpreter: Interpreter): self.type
   def reset(implicit interpreter: Interpreter): self.type
 
+  def getPongType: Type = tpe.getPongType
+  def setPongValue(v: Value[Any]): self.type = set(tpe.toScalaValue(v))
+  def getPongValue: Value[T] = tpe.toPongValue(get)
+
   /** Get the reference of this property. */
-  lazy val ref = PropertyRef(this)
+  lazy val ref = SinglePropertyRef(this)
+
+  /** The PongType implicit used for conversions. */
+  lazy val tpe = implicitly[PongType[T]]
 }
 
 abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) extends Property[T] {
@@ -54,9 +61,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
     this
   }
 
-  def set(e: Expr)(implicit interpreter: Interpreter) = {
-    set(interpreter.evaluate[T](e))
-  }
+  
 
   def reset(implicit interpreter: Interpreter) = {
     set(interpreter.evaluate[T](_init))

@@ -37,24 +37,40 @@ object Trees {
   case class Assign(lhs: PropertyRef, rhs: Expr) extends Expr
 
 
-  trait PropertyRef {  
-  
-    private[kingpong] type E
-    private[kingpong] def tpe: PongType[E]
-    private[kingpong] def property: Property[E]
+  trait PropertyRef extends Expr { self =>
+    
+    private[kingpong] def getPongType: Type
+    private[kingpong] def setPongValue(v: Value[Any]): self.type
+    private[kingpong] def getPongValue: Value[Any]
 
     def :=(expr: Expr): Expr = Assign(this, expr)
   }
 
-  object PropertyRef {
-    def apply[T : PongType](p: Property[T]) = new PropertyRef {
-      private[kingpong] type E = T
-      private[kingpong] def property = p
-      private[kingpong] def tpe = implicitly[PongType[T]]
+  case class SinglePropertyRef[T](property: Property[T]) extends PropertyRef {
+    
+    private[kingpong] def getPongType = property.getPongType
+
+    private[kingpong] def setPongValue(v: Value[Any]) = {
+      property.setPongValue(v)
+      this
     }
 
-    private[kingpong] def unapply(ref: PropertyRef): Option[Property[_]] = Some(ref.property)
+    private[kingpong] def getPongValue = property.getPongValue
+  }
 
+  case class CategoryPropertyRef(properties: Set[Property[_]]) extends PropertyRef {
+    
+    //TODO how to handle a get on an empty category ?
+    require(properties.nonEmpty)
+
+    private[kingpong] def getPongType = properties.head.getPongType
+
+    private[kingpong] def setPongValue(v: Value[Any]) = {
+      properties foreach {_.setPongValue(v)}
+      this
+    }
+
+    private[kingpong] def getPongValue = properties.head.getPongValue
   }
 
   /*

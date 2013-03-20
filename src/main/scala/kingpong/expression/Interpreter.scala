@@ -43,7 +43,7 @@ trait Interpreter {
         case v => throw InterpreterException(s"The If condition $c is not a boolean but is $v.")
       }
 
-    case PropertyRef(p) => anyToValue(p.get)
+    case ref: PropertyRef => ref.getPongValue
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
@@ -114,11 +114,11 @@ trait Interpreter {
     case Assign(ref, rhs) =>
       val v = eval(rhs)
       val tpe = anyToType(v.value)
-      if (tpe == ref.tpe) {
-        ref.property.set(ref.tpe.toScalaValue(v))
+      if (tpe == ref.getPongType) {
+        ref.setPongValue(v)
       } 
       else {
-        throw InterpreterException(s"Expression $rhs has wrong type $tpe, expected ${ref.tpe}.")
+        throw InterpreterException(s"Expression $rhs has wrong type $tpe, expected ${ref.getPongType}.")
       }
       
       UnitV

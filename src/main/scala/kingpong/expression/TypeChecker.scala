@@ -25,7 +25,7 @@ trait TypeChecker {
       expr.setType(t1)
       
 
-    case ref: PropertyRef => expr.setType(ref.tpe.getPongType)
+    case ref: PropertyRef => ref.setType(ref.getPongType)
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
@@ -80,7 +80,7 @@ trait TypeChecker {
       expr.setType(TBoolean)
 
     case Assign(ref, rhs) =>
-      typeCheck(rhs, ref.tpe.getPongType)
+      typeCheck(rhs, ref.getPongType)
       expr.setType(TUnit)
   }
   
