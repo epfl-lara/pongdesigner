@@ -6,20 +6,6 @@ object Types {
     def isSubTypeOf(tpe: Type): Boolean
   }
 
-  /*
-  // having this "bottom" class (which extends every other one) can be convenient for error recovery...
-  case object TError extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = true
-    override def toString = "[error]"
-  }
-
-  // the default type for all Typed objects
-  case object TUntyped extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = false
-    override def toString = "[untyped]"
-  }
-  */
-
   case object TInt extends Type {
     override def isSubTypeOf(tpe: Type) = tpe == this
     override def toString = "Int"

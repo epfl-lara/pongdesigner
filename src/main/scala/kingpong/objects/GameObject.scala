@@ -8,7 +8,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 
-abstract class GameObject(init_name: Expr) extends WithPoint with Timed {
+abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =>
   
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
@@ -25,6 +25,17 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed {
   val y: Property[Float]
   val angle: Property[Float]
   val visible: Property[Boolean]
+
+  // --------------------------------------------------------------------------
+  // Category
+  // --------------------------------------------------------------------------
+
+  var category: Category = DefaultCategory(this)
+  
+  def withCategory(c: Category): self.type = {
+    c add this
+    self
+  }
 
   // --------------------------------------------------------------------------
   // Timed functions
@@ -56,7 +67,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed {
   def reset(implicit interpreter: Interpreter) = 
     properties.values.foreach {_.reset}
 
-  def apply(property: String): Property[_] = properties(property)
+  def apply(property: String): PropertyRef = properties(property).ref
 
   def getAABB(): AABB
   

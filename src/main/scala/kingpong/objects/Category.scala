@@ -8,7 +8,7 @@ class Category(name: String) { self =>
 
   private val _children = MSet.empty[GameObject]
   
-  private[kingpong] val properties = MMap.empty[String, PropertyRef]
+  val properties = MMap.empty[String, PropertyRef]
   
   def add(o: GameObject): self.type = {
     _children += o
@@ -32,4 +32,8 @@ class Category(name: String) { self =>
       k -> CategoryPropertyRef(p)
     }
   }
+}
+
+object DefaultCategory {
+  def apply(o: GameObject): Category = new Category(o.name.get).add(o)
 }

@@ -74,7 +74,18 @@ class SimpleGame extends Game {
 
   val world = new PhysicalWorld(Vec2(0, 0))
   
+  val cat = new Category("Category 1")
   
-  val c = circle("Circle 1", 200, 50, radius = 50)
+  val c1 = circle("Circle 1", 200, 50, radius = 50).withCategory(cat)
+  val c2 = circle("Circle 2", 40, 50, radius = 50).withCategory(cat)
+
+  /* Rules examples:
+
+  On(Collide(c1, c2)) { case (a, b) => Seq(
+    a("x") := 300,
+    b("visible") := false
+  )}
+  
+  */
 
 }
