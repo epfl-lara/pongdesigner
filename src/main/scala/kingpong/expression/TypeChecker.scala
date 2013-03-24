@@ -7,23 +7,24 @@ trait TypeChecker {
   
   case class TypeCheckException(msg: String) extends Exception(msg)
   
-  def typeCheck(expr: Expr): Expr = expr match {
-    case Block(Nil)    => expr.setType(TUnit)
+  def typeCheck(stat: Stat): Stat = stat match {
     case Block(stats)  => 
       stats foreach typeCheck
-      val t = stats.last.getType
-      expr.setType(t)
-      
-    case If(c, e1, e2) => 
+      stat
+
+    case If(c, s1, s2) => 
       typeCheck(c, TBoolean)
-      val t1 = typeCheck(e1).getType
-      val t2 = typeCheck(e2).getType
-      if (t1 != t2) {
-        expr.setType(TError)
-        throw TypeCheckException(s"The IF branches $e1 and $e2 have two different types $t1 and $t2.")
-      }
-      expr.setType(t1)
-      
+      typeCheck(s1)
+      typeCheck(s2)
+      stat
+
+    case Assign(prop, rhs) =>
+      //TODO take care of similarities between Int and Float
+      typeCheck(rhs, prop.getPongType)
+      stat
+  }
+
+  def typeCheck(expr: Expr): Expr = expr match {
 
     case ref: PropertyRef => ref.setType(ref.getPongType)
     case IntegerLiteral(_) => expr.setType(TInt)
@@ -79,9 +80,6 @@ trait TypeChecker {
       typeCheck(e, TBoolean)
       expr.setType(TBoolean)
 
-    case Assign(ref, rhs) =>
-      typeCheck(rhs, ref.getPongType)
-      expr.setType(TUnit)
   }
   
   def typeCheck(expr: Expr, exp: Type*): Type = {

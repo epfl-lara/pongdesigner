@@ -22,7 +22,7 @@ object Implicits {
       case i: Int => IntV(i)
       case _ => throw InterpreterException(s"The value $v is incompatible with Int.")
     }
-    def toScalaValue(v: Value[Any]) = v match {
+    def toScalaValue(v: Value) = v match {
       case FloatV(f) if f.isWhole => f.toInt
       case IntV(i)   => i
       case _ => throw InterpreterException(s"The value $v is incompatible with Int.")
@@ -36,7 +36,7 @@ object Implicits {
       case i: Int => FloatV(i.toFloat)
       case _ => throw InterpreterException(s"The value $v is incompatible with Float.")
     }
-    def toScalaValue(v: Value[Any]) = v match {
+    def toScalaValue(v: Value) = v match {
       case FloatV(f) => f
       case IntV(i)   => i.toFloat
       case _ => throw InterpreterException(s"The value $v is incompatible with Float.")
@@ -49,7 +49,7 @@ object Implicits {
       case b: Boolean => BooleanV(b)
       case _ => throw InterpreterException(s"The value $v is incompatible with Boolean.")
     }
-    def toScalaValue(v: Value[Any]) = v match {
+    def toScalaValue(v: Value) = v match {
       case BooleanV(b) => b
       case _ => throw InterpreterException(s"The value $v is incompatible with Boolean.")
     }
@@ -61,7 +61,7 @@ object Implicits {
       case s: String => StringV(s)
       case _ => throw InterpreterException(s"The value $v is incompatible with String.")
     }
-    def toScalaValue(v: Value[Any]) = v match {
+    def toScalaValue(v: Value) = v match {
       case StringV(s) => s
       case _ => throw InterpreterException(s"The value $v is incompatible with String.")
     }

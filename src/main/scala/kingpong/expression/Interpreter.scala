@@ -4,20 +4,18 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 
 
-sealed trait Value[+T] extends Any {
-  def value: T
+sealed trait Value extends Any {
+  def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
 }
   
-case class IntV(value: Int) extends AnyVal with Value[Int]
-case class FloatV(value: Float) extends AnyVal with Value[Float]
-case class StringV(value: String) extends AnyVal with Value[String]
-case class BooleanV(value: Boolean) extends AnyVal with Value[Boolean]
-case object UnitV extends Value[Unit] {
-  def value = Unit
-}
+case class IntV(value: Int) extends AnyVal with Value
+case class FloatV(value: Float) extends AnyVal with Value
+case class StringV(value: String) extends AnyVal with Value
+case class BooleanV(value: Boolean) extends AnyVal with Value
+case object UnitV extends Value
 
 object NumericV {
-  def unapply(value: Value[Any]): Option[Float] = value match {
+  def unapply(value: Value): Option[Float] = value match {
     case IntV(i) => Some(i.toFloat)
     case FloatV(f) => Some(f)
     case _ => None
@@ -28,20 +26,22 @@ case class InterpreterException(msg: String) extends Exception(msg)
 
 trait Interpreter {
   
-  def evaluate[T : PongType](expr: Expr): T = implicitly[PongType[T]].toScalaValue(eval(expr))
+  def eval(stat: Stat): Unit = stat match {
+    case Block(stats) => 
+      stats map eval
 
-  def eval(expr: Expr): Value[Any] = expr match {
-    case Block(Nil)    => UnitV
-    case Block(stats)  => 
-      val values = stats map eval
-      values.last
-      
-    case If(c, e1, e2) => 
+    case If(c, s1, s2) => 
       eval(c) match {
-        case BooleanV(true)  => eval(e1)
-        case BooleanV(false) => eval(e2)
+        case BooleanV(true)  => eval(s1)
+        case BooleanV(false) => eval(s2)
         case v => throw InterpreterException(s"The If condition $c is not a boolean but is $v.")
       }
+
+    case Assign(prop, rhs) =>
+      prop.setPongValue(eval(rhs))
+  }
+
+  def eval(expr: Expr): Value = expr match {
 
     case ref: PropertyRef => ref.getPongValue
     case IntegerLiteral(v) => IntV(v)
@@ -111,20 +111,9 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    case Assign(ref, rhs) =>
-      val v = eval(rhs)
-      val tpe = anyToType(v.value)
-      if (tpe == ref.getPongType) {
-        ref.setPongValue(v)
-      } 
-      else {
-        throw InterpreterException(s"Expression $rhs has wrong type $tpe, expected ${ref.getPongType}.")
-      }
-      
-      UnitV
   }
 
-  def anyToValue(any: Any): Value[Any] = any match {
+  def anyToValue(any: Any): Value = any match {
     case v: Int => IntV(v)
     case v: Float => FloatV(v)
     case v: String => StringV(v)

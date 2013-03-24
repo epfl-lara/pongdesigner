@@ -29,8 +29,8 @@ abstract class Property[T : PongType]() extends Timed { self =>
   def reset(implicit interpreter: Interpreter): self.type
 
   def getPongType: Type = tpe.getPongType
-  def setPongValue(v: Value[Any]): self.type = set(tpe.toScalaValue(v))
-  def getPongValue: Value[T] = tpe.toPongValue(get)
+  def setPongValue(v: Value): self.type = set(tpe.toScalaValue(v))
+  def getPongValue: Value = tpe.toPongValue(get)
 
   /** Get the reference of this property. */
   lazy val ref = SinglePropertyRef(this)
@@ -64,7 +64,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   
 
   def reset(implicit interpreter: Interpreter) = {
-    set(interpreter.evaluate[T](_init))
+    set(interpreter.eval(_init).as[T])
   } 
 }
 

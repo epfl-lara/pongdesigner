@@ -7,15 +7,16 @@ object Trees {
 
   sealed trait Tree
 
-  //case class WhileStat(expr: ExprTree, stat: StatTree) extends StatTree
-  //case class PrintlnStat(expr: ExprTree) extends StatTree
-  //case class AssignStat(id: Identifier, rhs: ExprTree) extends StatTree
-  //case class AssignTabStat(id: Identifier, index: ExprTree, rhs: ExprTree) extends StatTree
+  /** Statement, can have side-effect. */
+  sealed trait Stat extends Tree
 
+  case class Assign(prop: PropertyRef, rhs: Expr) extends Stat
+
+  case class Block(exprs: Seq[Stat]) extends Stat
+  case class If(expr: Expr, s1: Stat, s2: Stat) extends Stat
+
+  /** Expressions, without side-effect. */
   sealed trait Expr extends Tree with Typed 
-
-  case class Block(stats: List[Expr]) extends Expr
-  case class If(expr: Expr, t1: Expr, t2: Expr) extends Expr
 
   case class IntegerLiteral(value: Int) extends Expr
   case class FloatLiteral(value: Float) extends Expr
@@ -34,23 +35,21 @@ object Trees {
   case class LessThan(lhs: Expr, rhs: Expr) extends Expr
   case class Not(expr: Expr) extends Expr
 
-  case class Assign(lhs: PropertyRef, rhs: Expr) extends Expr
-
 
   trait PropertyRef extends Expr { self =>
     
     private[kingpong] def getPongType: Type
-    private[kingpong] def setPongValue(v: Value[Any]): self.type
-    private[kingpong] def getPongValue: Value[Any]
+    private[kingpong] def setPongValue(v: Value): self.type
+    private[kingpong] def getPongValue: Value
 
-    def :=(expr: Expr): Expr = Assign(this, expr)
+    def :=(expr: Expr): Stat = Assign(this, expr)
   }
 
   case class SinglePropertyRef[T](property: Property[T]) extends PropertyRef {
     
     private[kingpong] def getPongType = property.getPongType
 
-    private[kingpong] def setPongValue(v: Value[Any]) = {
+    private[kingpong] def setPongValue(v: Value) = {
       property.setPongValue(v)
       this
     }
@@ -65,7 +64,7 @@ object Trees {
 
     private[kingpong] def getPongType = properties.head.getPongType
 
-    private[kingpong] def setPongValue(v: Value[Any]) = {
+    private[kingpong] def setPongValue(v: Value) = {
       properties foreach {_.setPongValue(v)}
       this
     }
@@ -73,16 +72,4 @@ object Trees {
     private[kingpong] def getPongValue = properties.head.getPongValue
   }
 
-  /*
-  case class Parenthesis(expr: ExprTree) extends ExprTree
-  
-  case class Length(expr: ExprTree) extends ExprTree
-  
-  case class TabPos(tab: ExprTree, index: ExprTree) extends ExprTree
-  case class NewTab(size: ExprTree) extends ExprTree
-  case class New(id: Identifier) extends ExprTree
-
-  case class MethodCall(parent: ExprTree, id: Identifier, args: List[ExprTree]) extends ExprTree with Symbolic[MethodSymbol]
-  case class This() extends ExprTree with Symbolic[ClassSymbol]
-  */
 }

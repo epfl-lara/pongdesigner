@@ -26,7 +26,7 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
     typeCheck(e, implicitly[PongType[T]].getPongType)
-    evaluate[T](e)
+    eval(e).as[T]
   }
 
   def circle(name: Expr,
@@ -85,7 +85,7 @@ class SimpleGame extends Game {
     a("x") := 300,
     b("visible") := false
   )}
-  
+
   */
 
 }
