@@ -3,9 +3,9 @@ package ch.epfl.lara.synthesis.kingpong.expression
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 
+case class TypeCheckException(msg: String) extends Exception(msg)
+
 trait TypeChecker {
-  
-  case class TypeCheckException(msg: String) extends Exception(msg)
   
   def typeCheck(stat: Stat): Stat = stat match {
     case Block(stats)  => 

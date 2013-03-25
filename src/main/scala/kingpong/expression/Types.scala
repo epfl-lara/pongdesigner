@@ -40,15 +40,6 @@ object Types {
     override def isSubTypeOf(tpe: Type) = false
     override def toString = "<error>"
   }
-
-  def anyToType(any: Any): Type = any match {
-    case _: Int => TInt
-    case _: Float => TFloat
-    case _: String => TString
-    case _: Boolean => TBoolean
-    case _: Unit => TUnit
-    case _ => throw InterpreterException(s"The value $any has an unknown type.")
-  }
  
   trait Typed { self =>
 

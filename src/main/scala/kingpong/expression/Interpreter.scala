@@ -112,14 +112,5 @@ trait Interpreter {
       }
 
   }
-
-  def anyToValue(any: Any): Value = any match {
-    case v: Int => IntV(v)
-    case v: Float => FloatV(v)
-    case v: String => StringV(v)
-    case v: Boolean => BooleanV(v)
-    case v: Unit => UnitV
-    case v => throw InterpreterException(s"The value $v has an unknown type.")
-  }
   
 }

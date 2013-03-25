@@ -22,6 +22,9 @@ object General {
     // Jbox2d
     libraryDependencies += "org.jbox2d" % "jbox2d-library" % "2.1.2.2",
     
+    // ScalaTest
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M5b" % "test",
+
     scalacOptions ++= Seq(
         "-feature",                      // Enable language feature warnings
         "-deprecation",                  // Enable detailed deprecation warnings 
