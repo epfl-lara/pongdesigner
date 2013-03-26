@@ -2,11 +2,18 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 
 case class TypeCheckException(msg: String) extends Exception(msg)
 
 trait TypeChecker {
   
+  def typeCheck(rule: Rule): Rule = {
+    typeCheck(rule.cond, TBoolean)
+    typeCheck(rule.action)
+    rule
+  } 
+
   def typeCheck(stat: Stat): Stat = stat match {
     case Block(stats)  => 
       stats foreach typeCheck
@@ -22,6 +29,8 @@ trait TypeChecker {
       //TODO take care of similarities between Int and Float
       typeCheck(rhs, prop.getPongType)
       stat
+
+    case NOP => stat//Do nothing, it typechecks
   }
 
   def typeCheck(expr: Expr): Expr = expr match {
@@ -80,6 +89,10 @@ trait TypeChecker {
       typeCheck(e, TBoolean)
       expr.setType(TBoolean)
 
+    case FingerMoveOver(c) => expr.setType(TBoolean)
+    case FingerDownOver(c) => expr.setType(TBoolean)
+    case FingerUpOver(c) => expr.setType(TBoolean)
+    case Collision(c1, c2) => expr.setType(TBoolean)
   }
   
   def typeCheck(expr: Expr, exp: Type*): Type = {

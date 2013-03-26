@@ -11,12 +11,24 @@ object Trees {
   sealed trait Stat extends Tree
 
   case class Assign(prop: PropertyRef, rhs: Expr) extends Stat
-
-  case class Block(exprs: Seq[Stat]) extends Stat
+  case class Block(stats: Seq[Stat]) extends Stat
   case class If(expr: Expr, s1: Stat, s2: Stat) extends Stat
+  case object NOP extends Stat
 
   /** Expressions, without side-effect. */
-  sealed trait Expr extends Tree with Typed 
+  sealed trait Expr extends Tree with Typed {
+
+    def +(e: Expr): Expr = Plus(this, e)
+    def -(e: Expr): Expr = Minus(this, e)
+    def *(e: Expr): Expr = Times(this, e)
+    def /(e: Expr): Expr = Div(this, e)
+    def &&(e: Expr): Expr = And(this, e)
+    def ||(e: Expr): Expr = Or(this, e)
+    def ===(e: Expr): Expr = Equals(this, e)
+    def <(e: Expr): Expr = LessThan(this, e)
+    def unary_! : Expr = Not(this)
+
+  }
 
   case class IntegerLiteral(value: Int) extends Expr
   case class FloatLiteral(value: Float) extends Expr
@@ -35,6 +47,10 @@ object Trees {
   case class LessThan(lhs: Expr, rhs: Expr) extends Expr
   case class Not(expr: Expr) extends Expr
 
+  case class FingerMoveOver(c: Category) extends Expr
+  case class FingerDownOver(c: Category) extends Expr
+  case class FingerUpOver(c: Category) extends Expr
+  case class Collision(c1: Category, c2: Category) extends Expr
 
   trait PropertyRef extends Expr { self =>
     

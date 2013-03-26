@@ -39,6 +39,8 @@ trait Interpreter {
 
     case Assign(prop, rhs) =>
       prop.setPongValue(eval(rhs))
+
+    case NOP => //Do nothing
   }
 
   def eval(expr: Expr): Value = expr match {
@@ -110,6 +112,14 @@ trait Interpreter {
         case BooleanV(v) => BooleanV(!v)
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
+
+
+
+    //TODO implement finger expression, we need a context containing finger position.
+    case FingerMoveOver(c) => ???
+    case FingerDownOver(c) => ???
+    case FingerUpOver(c) => ???
+    case Collision(c1, c2) => ???
 
   }
   
