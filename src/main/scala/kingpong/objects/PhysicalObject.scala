@@ -24,16 +24,9 @@ abstract class PhysicalObject(init_name: Expr,
                               init_fixedRotation: Expr
                              ) extends GameObject(init_name) { self =>
   
-  protected val game: Game
-  protected val body: Body
-
-  // exactly one fixture (and thus shape) on the body         
-  require(body.getFixtureList() != null && 
-          body.getFixtureList().getNext() == null)
-  
-  body.setUserData(self)
-  
-  protected val fixture = body.getFixtureList()
+  protected def game: Game
+  protected def body: Body 
+  protected def fixture = body.getFixtureList()
   
   /** The body mass. */
   def mass = body.getMass()
@@ -141,7 +134,7 @@ class Rectangle (protected val game: Game,
                                          init_friction, init_restitution, init_fixedRotation)
                   with Rectangular {
 
-  final val body = {
+  val body = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
@@ -159,6 +152,8 @@ class Rectangle (protected val game: Game,
     
     val body = game.world.world.createBody(body_def)
     body.createFixture(fixture_def)
+    body.setUserData(this)
+
     body
   }
 
@@ -209,6 +204,8 @@ class Circle(protected val game: Game,
     
     val body = game.world.world.createBody(body_def)
     body.createFixture(fixture_def)
+    body.setUserData(this)
+
     body
   }
 

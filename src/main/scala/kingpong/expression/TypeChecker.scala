@@ -26,7 +26,6 @@ trait TypeChecker {
       stat
 
     case Assign(prop, rhs) =>
-      //TODO take care of similarities between Int and Float
       typeCheck(rhs, prop.getPongType)
       stat
 
@@ -97,7 +96,7 @@ trait TypeChecker {
   
   def typeCheck(expr: Expr, exp: Type*): Type = {
     val t = typeCheck(expr).getType
-    if (!exp.toSeq.contains(t)) {
+    if (exp.forall(!_.accept(t))) {
       expr.setType(TError)
       throw TypeCheckException(s"The expression $expr has type $t, expected $exp.")
     }

@@ -97,20 +97,3 @@ trait Game extends TypeChecker with Interpreter { self =>
   }
 
 }
-
-
-class SimpleGame extends Game {
-
-  val world = new PhysicalWorld(Vec2(0, 0))
-  
-  val cat = new Category("Category 1")
-  
-  val c1 = circle("Circle 1", 200, 50, radius = 50).withCategory(cat)
-  val c2 = circle("Circle 2", 40, 50, radius = 50).withCategory(cat)
-
-  
-  once (c1("x") < 42) { Seq(
-    c1("visible") := false
-  )}
-
-}

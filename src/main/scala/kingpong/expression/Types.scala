@@ -3,41 +3,47 @@ package ch.epfl.lara.synthesis.kingpong.expression
 object Types {
 
   sealed abstract class Type {
-    def isSubTypeOf(tpe: Type): Boolean
+    def accept(tpe: Type): Boolean
   }
 
   case object TInt extends Type {
-    override def isSubTypeOf(tpe: Type) = tpe == this
+    override def accept(tpe: Type) = tpe == this
     override def toString = "Int"
   }
   
   case object TFloat extends Type {
-    override def isSubTypeOf(tpe: Type) = tpe == this
+    override def accept(tpe: Type) = tpe match {
+      case TInt | TFloat => true
+      case _ => false
+    }
     override def toString = "Float"
   }
   
   case object TString extends Type {
-    override def isSubTypeOf(tpe: Type) = tpe == this
+    override def accept(tpe: Type) = tpe == this
     override def toString = "String"
   }
 
   case object TBoolean extends Type {
-    override def isSubTypeOf(tpe: Type) = tpe == this
+    override def accept(tpe: Type) = tpe == this
     override def toString = "Boolean"
   }
   
   case object TUnit extends Type {
-    override def isSubTypeOf(tpe: Type) = false
+    override def accept(tpe: Type) = tpe match {
+      case TUntyped | TError => false
+      case _ => true
+    }
     override def toString = "Unit"
   }
   
   case object TUntyped extends Type {
-    override def isSubTypeOf(tpe: Type) = false
+    override def accept(tpe: Type) = false
     override def toString = "<untyped>"
   }
   
   case object TError extends Type {
-    override def isSubTypeOf(tpe: Type) = false
+    override def accept(tpe: Type) = false
     override def toString = "<error>"
   }
  

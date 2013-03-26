@@ -24,7 +24,7 @@ object Trees {
     def /(e: Expr): Expr = Div(this, e)
     def &&(e: Expr): Expr = And(this, e)
     def ||(e: Expr): Expr = Or(this, e)
-    def ===(e: Expr): Expr = Equals(this, e)
+    def =:=(e: Expr): Expr = Equals(this, e)
     def <(e: Expr): Expr = LessThan(this, e)
     def unary_! : Expr = Not(this)
 
