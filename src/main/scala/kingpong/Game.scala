@@ -97,3 +97,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   }
 
 }
+
+class EmptyGame() extends Game {
+  val world = new PhysicalWorld(Vec2(0, 0))
+}
