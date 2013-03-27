@@ -34,6 +34,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =
   
   def withCategory(c: Category): self.type = {
     c add this
+    category = c
     self
   }
 
