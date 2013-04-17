@@ -8,6 +8,8 @@ import org.jbox2d.dynamics.FixtureDef
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
 
+import android.util.Log
+
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.Game
@@ -113,7 +115,7 @@ abstract class PhysicalObject(init_name: Expr,
   // Utility functions
   // --------------------------------------------------------------------------  
   
-  def getAABB() = fixture.getAABB()
+  def getAABB() = fixture.getAABB(0)
   
 }
 
@@ -139,10 +141,13 @@ class Rectangle (protected val game: Game,
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
     body_def.`type` = init_tpe
-    
+    if (init_tpe == BodyType.DYNAMIC) {
+      body_def.bullet = true
+    }
+
     val shape = new PolygonShape()
-    shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width),
-                   game.typeCheckAndEvaluate[Float](init_height))
+    shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
+                   game.typeCheckAndEvaluate[Float](init_height)/2)
   
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
@@ -151,22 +156,22 @@ class Rectangle (protected val game: Game,
     fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
     
     val body = game.world.world.createBody(body_def)
-    body.createFixture(fixture_def)
+    val fixture = body.createFixture(fixture_def)
     body.setUserData(this)
 
     body
   }
 
-  protected val shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
+  protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
   val width: Property[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
-    shape.setAsBox(w, height.get)
-    body.resetMassData() // update the body mass
+    //shape.setAsBox(w, height.get)
+    //body.resetMassData() // update the body mass
   }
 
   val height: Property[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
-    shape.setAsBox(width.get, h)
-    body.resetMassData() // update the body mass
+    //shape.setAsBox(width.get, h)
+    //body.resetMassData() // update the body mass
   }
   
 }
@@ -175,7 +180,6 @@ class Circle(protected val game: Game,
              init_name: Expr,
              init_x: Expr,
              init_y: Expr,
-             init_angle: Expr,
              init_radius: Expr,
              init_visible: Expr,
              init_density: Expr,
@@ -183,7 +187,7 @@ class Circle(protected val game: Game,
              init_restitution: Expr,
              init_fixedRotation: Expr,
              init_tpe: BodyType = BodyType.DYNAMIC
-            ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_density,
+            ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_density,
                                      init_friction, init_restitution, init_fixedRotation) {
 	
   // Create the physical JBox2D body with a circle shape.
@@ -192,6 +196,9 @@ class Circle(protected val game: Game,
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
     body_def.`type` = init_tpe
+    if (init_tpe == BodyType.DYNAMIC) {
+      body_def.bullet = true
+    }
     
     val shape = new CircleShape()
     shape.m_radius = game.typeCheckAndEvaluate[Float](init_radius)
@@ -203,17 +210,15 @@ class Circle(protected val game: Game,
     fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
     
     val body = game.world.world.createBody(body_def)
-    body.createFixture(fixture_def)
+    val fixture = body.createFixture(fixture_def)
     body.setUserData(this)
 
     body
   }
 
-  property[Float]("radius", init_radius) { r =>
-    fixture.getShape().m_radius = r
-    body.resetMassData() // update the body mass
-  } { () =>
-    fixture.getShape().m_radius
+  val radius = simplePhysicalProperty[Float]("radius", init_radius) { r =>
+    //fixture.getShape().m_radius = r
+    //body.resetMassData() // update the body mass
   }
-   
+  
 }

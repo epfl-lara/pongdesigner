@@ -27,7 +27,7 @@ object JBox2DInterface {
   // Implicits functions
   // --------------------------------------------------------------------------  
   
-  implicit def TransformJBox2D(t: org.jbox2d.common.Transform) = Transform(t.position, t.getAngle())
+  implicit def TransformJBox2D(t: org.jbox2d.common.Transform) = Transform(t.p, t.q.getAngle())
   implicit def JBox2TransformD(t: Transform) = new org.jbox2d.common.Transform().set(t.pos, t.angle)
   
   implicit def Vec2JBox2D(v: org.jbox2d.common.Vec2): Vec2 = Vec2(v.x, v.y)

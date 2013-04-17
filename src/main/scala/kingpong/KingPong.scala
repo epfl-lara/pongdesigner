@@ -11,15 +11,13 @@ import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
-object Kingpong extends Activity {
+class Kingpong extends Activity {
   lazy private val view = findViewById(R.id.gameview).asInstanceOf[GameView]
 
-
-
   override def onCreate(savedInstanceState: Bundle) {
-
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.main)
   }
-
 
   override def onPause() = {
     super.onPause()

@@ -13,20 +13,21 @@ import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 //TODO remove when useless
 import org.jbox2d.dynamics.BodyType
 
+import android.util.Log
 
 trait Game extends TypeChecker with Interpreter { self => 
   implicit protected val game = self
 
   val world: PhysicalWorld
 
-  /** All objects in this game. */
   private val _objects = MSet.empty[GameObject]
-
-  /** All the rules in this game. */
   private val _rules = MSet.empty[Rule]
 
-  def objects = _objects.toSeq //TODO warning for performances ?
-  def rules = _rules.toSeq //TODO warning for performances ?
+  /** All objects in this game. */
+  def objects = _objects.iterator
+
+  /** All the rules in this game. */
+  def rules = _rules.iterator
   
   def add(o: GameObject) = _objects add o
   def add(rule: Rule) {
@@ -42,16 +43,15 @@ trait Game extends TypeChecker with Interpreter { self =>
   def circle(name: Expr,
              x: Expr,
              y: Expr,
-             angle: Expr = 0,
-             radius: Expr = 20, //TODO centralized default values
+             radius: Expr = 0.5, //TODO centralized default values
              visible: Expr = true,
-             density: Expr = 0.5,
-             friction: Expr = 1,
-             restitution: Expr = 1,
+             density: Expr = 1,
+             friction: Expr = 0.1,
+             restitution: Expr = 0.9,
              fixedRotation: Expr = true,
              tpe: BodyType = BodyType.DYNAMIC)
             (implicit game: Game): Circle = {
-    val c = new Circle(game, name, x, y, angle, radius, visible, density, friction, restitution, fixedRotation, tpe)
+    val c = new Circle(game, name, x, y, radius, visible, density, friction, restitution, fixedRotation, tpe)
     c.reset
     c.flush()
     game add c
@@ -62,16 +62,16 @@ trait Game extends TypeChecker with Interpreter { self =>
                 x: Expr,
                 y: Expr,
                 angle: Expr = 0,
-                init_width: Expr = 20,
-                init_height: Expr = 20,
+                width: Expr = 1,
+                height: Expr = 1,
                 visible: Expr = true,
-                density: Expr = 0.5,
-                friction: Expr = 1,
-                restitution: Expr = 1,
+                density: Expr = 1,
+                friction: Expr = 0.1,
+                restitution: Expr = 0.9,
                 fixedRotation: Expr = true,
                 tpe: BodyType = BodyType.DYNAMIC)
                (implicit game: Game): Rectangle = {
-    val r = new Rectangle(game, name, x, y, angle, init_width, init_height, visible, density, friction, restitution, fixedRotation, tpe)
+    val r = new Rectangle(game, name, x, y, angle, width, height, visible, density, friction, restitution, fixedRotation, tpe)
     r.reset
     r.flush()
     game add r
@@ -90,6 +90,15 @@ trait Game extends TypeChecker with Interpreter { self =>
     game add new On(cond, toSingleStat(actions))
   }
 
+
+  /** Perform a step. */
+  private[kingpong] def update(): Unit = {
+    world.step()
+    objects foreach {_.load()}
+    //rules foreach {_.evaluate}
+    //objects foreach {_.flush()}
+  }
+
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
     case Seq()  => NOP
     case Seq(s) => s
@@ -99,5 +108,13 @@ trait Game extends TypeChecker with Interpreter { self =>
 }
 
 class EmptyGame() extends Game {
-  val world = new PhysicalWorld(Vec2(0, 0))
+  val world = new PhysicalWorld(Vec2(0, 1f))
+
+  rectangle("Rectangle 1", 2, 0, width = 1, height = 1, fixedRotation = false)
+
+  circle("Circle 1", 3, 2, radius = 1, fixedRotation = false)
+  circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
+  
+  rectangle("Rectangle 2", 5, 8, width = 10, height = 1, tpe = BodyType.STATIC)
+
 }

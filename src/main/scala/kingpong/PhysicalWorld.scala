@@ -20,17 +20,17 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 
 class PhysicalWorld(g: Vec2) {
   
-  val world = new World(g, true)
-  world.setContactFilter(ContactFilter)
-  world.setContactListener(ContactListener)
+  val world = new World(g)
+  //world.setContactFilter(ContactFilter)
+  //world.setContactListener(ContactListener)
   
   private val begin_contacts = MSet.empty[Contact]
   private val end_contacts = MSet.empty[Contact]
   
-  def step(dt: Float) = synchronized {
+  def step() = synchronized {
     begin_contacts.clear()
     end_contacts.clear()
-    world.step(dt, 10, 8)
+    world.step(GameLoop.FRAME_PERIOD_S, 10, 8)
   }
   
   def beginContacts = synchronized {

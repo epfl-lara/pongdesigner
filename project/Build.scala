@@ -8,7 +8,7 @@ object General {
   val buildName           = "kingpong_experiment"
   val buildOrganization   = "ch.epfl.lara.synthesis"
   val buildScalaVersion   = "2.10.1"
-  val buildAndroidVersion = "17"
+  val buildAndroidVersion = "16"
 
   val settings = Defaults.defaultSettings ++ Seq (
     
@@ -20,7 +20,7 @@ object General {
     scalaVersion := buildScalaVersion,
     
     // Jbox2d
-    libraryDependencies += "org.jbox2d" % "jbox2d-library" % "2.1.2.2",
+    //libraryDependencies += "org.jbox2d" % "jbox2d-library" % "2.2.1.2",
     
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M5b" % "test",

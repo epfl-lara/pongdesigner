@@ -24,7 +24,8 @@ class SimpleGameSuite extends FunSuite with BeforeAndAfter {
       val c2 = circle("Circle 2", 40, 50, radius = 40).withCategory(cat)
       
       once (c1("x") < 42) { Seq(
-        c1("visible") := false
+        c1("visible") := false,
+        c2("angle") := c1("x") + 2
       )}
     }
   }

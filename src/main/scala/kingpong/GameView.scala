@@ -28,43 +28,76 @@ import android.os.Vibrator
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
-class GameView(context: Context) extends SurfaceView(context) 
-                                 with SurfaceHolder.Callback {
+object GameView {
+
+  // 1 meter is equivalent to 100 pixels (with default zoom)
+  val BOX2D_RATIO = 100
+}
+
+class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
+                                                      with SurfaceHolder.Callback {
+  import GameView._
+
 
   /** The game model currently rendered. */
-  var game: Game = new EmptyGame()
+  private var game: Game = new EmptyGame()
 
   /** The main game loop that calls `update()` and `render()`. */
-  val gameLoop = new GameLoop(getHolder(), this)
+  private val gameLoop = new GameLoop(getHolder(), this)
+
+  /** The transformation applied to the canvas. 
+   *  Transforms from Box2D units (meters) to pixels.
+   */
+  private val matrix = new Matrix()
+
+  /** The inverse transformation matrix from pixels to meters. */
+  private val matrixI = new Matrix()
 
   // Register to intercept eventss
   getHolder().addCallback(this)
 
   def reset(newGame: Game): Unit = {
     game = newGame
-
-    //TODO Implement reset()
-    ???
   }
 
   def update(): Unit = {
-    //TODO Implement update()
-    ???
+    game.update()
   }
 
-  def render(c: Canvas): Unit = {
-    //TODO Implement render()
-    ???
-  }
 
+  private val rectF = new RectF()
+  private val paint = new Paint()
+  def render(canvas: Canvas): Unit = {
+    canvas.setMatrix(matrix)
+    canvas.drawRGB(0xFF, 0xFF, 0xFF)
+
+    game.objects foreach { o => o match {
+      case r: Rectangle =>
+        paint.setColor(0xFF000000) // TODO r.color
+        if(!r.visible.get) 
+          paint.setAlpha(0x80)
+        //canvas.drawRect(r.x.get, r.y.get, r.x.get - r.width.get/2, r.y.get - r.height.get/2, paint)
+        canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
+
+      case c: Circle => 
+        paint.setColor(0xFF000000) // TODO c.color
+        if(!c.visible.get) 
+          paint.setAlpha(0x80)
+        canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
+    }}
+  }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
-    ???
+    Log.d("kingpong", "surfaceChanged")
+    computeTransformationMatrices()
+
   }
 
   def surfaceCreated(holder: SurfaceHolder): Unit = {
-    gameLoop.running = true
-    gameLoop.start()
+    if (!gameLoop.running) {
+      gameLoop.running = true
+      gameLoop.start()
+    }
   }
 
   def surfaceDestroyed(holder: SurfaceHolder): Unit = {
@@ -74,6 +107,25 @@ class GameView(context: Context) extends SurfaceView(context)
       gameLoop.join()
       retry = false
     }
+  }
+
+  def mapVector(p: Vec2): Vec2 = {
+    val toMap = Array(p.x, p.y)
+    matrix.mapVectors(toMap)
+    Vec2(toMap(0), toMap(1))
+  }
+
+  /** meters to pixels */
+  def mapRadius(r: Float): Float = matrix.mapRadius(r)
+
+  /** pixels to meters */
+  def mapRadiusI(r: Float): Float = matrixI.mapRadius(r)
+
+  private def computeTransformationMatrices() = {
+    matrix.reset() // identity matrix
+    //matrix.postScale(1, -1); // upside-down
+    matrix.postScale(BOX2D_RATIO, BOX2D_RATIO)
+    matrix.invert(matrixI)
   }
 
 }

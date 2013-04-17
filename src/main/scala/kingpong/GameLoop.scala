@@ -8,9 +8,10 @@ import android.util.Log
 
 
 object GameLoop {
-  val MAX_FPS = 50
+  val MAX_FPS = 40
   val MAX_FRAMES_SKIPPED = 5
-  val FRAME_PERIOD = 1000 / MAX_FPS
+  val FRAME_PERIOD_MS: Float = 1000f / MAX_FPS // In milliseconds
+  val FRAME_PERIOD_S: Float = 1f / MAX_FPS // In seconds
 }
 
 class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
@@ -21,7 +22,7 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
 
   override def run(): Unit = {
     var canvas: Canvas = null
-    Log.d("GameLoop", "Sarting game loop")
+    Log.d("kingpong", "Sarting game loop")
 
     while(running) {
       canvas = null
@@ -35,15 +36,16 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
           view.render(canvas)
 
           val timeDiff = System.currentTimeMillis() - beginTime
-          var sleepTime = (FRAME_PERIOD - timeDiff).asInstanceOf[Int]
+          var sleepTime = (FRAME_PERIOD_MS - timeDiff)
 
           if (sleepTime > 0) Try {
-            Thread.sleep(sleepTime)
+            Thread.sleep(sleepTime.toLong)
           }
 
           while (sleepTime < 0 && framesSkipped < MAX_FRAMES_SKIPPED) {
+            Log.d("kingpong", "GameLoop missed a frame.")
             view.update()
-            sleepTime += FRAME_PERIOD
+            sleepTime += FRAME_PERIOD_MS
             framesSkipped += 1
           }
         }
