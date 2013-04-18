@@ -21,33 +21,25 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 class PhysicalWorld(g: Vec2) {
   
   val world = new World(g)
-  //world.setContactFilter(ContactFilter)
-  //world.setContactListener(ContactListener)
+  world.setContactFilter(ContactFilter)
+  world.setContactListener(ContactListener)
   
   private val begin_contacts = MSet.empty[Contact]
   private val end_contacts = MSet.empty[Contact]
   
-  def step() = synchronized {
+  def step() = {
     begin_contacts.clear()
     end_contacts.clear()
     world.step(GameLoop.FRAME_PERIOD_S, 10, 8)
   }
   
-  def beginContacts = synchronized {
-    begin_contacts.toSet
-  }
+  def beginContacts = begin_contacts.iterator
   
-  def endContacts = synchronized {
-    end_contacts.toSet
-  }
+  def endContacts = end_contacts.iterator
   
-  def setGravity(g: Vec2) = synchronized {
-    world.setGravity(g)
-  }
+  def setGravity(g: Vec2) = world.setGravity(g)
   
-  def getGravity = synchronized {
-    world.getGravity()
-  }
+  def getGravity = world.getGravity()
   
   object ContactListener extends JBox2DContactListener {
     
@@ -75,7 +67,6 @@ class PhysicalWorld(g: Vec2) {
   object ContactFilter extends JBox2DContactFilter {
     
     override def shouldCollide(f1: Fixture, f2: Fixture) = {
-      
       true
     }
   }
