@@ -44,7 +44,6 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   protected var _crt: T = _
   protected var _init: Expr = init
   protected var _snap: T = _
-  protected var _lastFlushed: T = _
 
   def get = _crt
 
@@ -72,8 +71,7 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr)
   
   def flush() = {
     val current = get
-    if (_lastFlushed == null || _lastFlushed != current) {
-      _lastFlushed = current
+    if (loader() != current) {
       flusher(current)
     }
     this
@@ -90,6 +88,8 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr)
 abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr) 
   extends ConcreteProperty[T](name, init) {
   
+  private var _lastFlushed: T = _
+
   def flush() = {
     val current = get
     if (_lastFlushed == null || _lastFlushed != current) {
