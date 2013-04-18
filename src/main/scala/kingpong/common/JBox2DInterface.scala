@@ -35,18 +35,34 @@ object JBox2DInterface {
   
   object Contact {
     def unapply(contact: Contact): Option[(PhysicalObject, PhysicalObject)] = {
-      val o1 = contact.c.getFixtureA().getBody().getUserData().asInstanceOf[PhysicalObject] 
-      val o2 = contact.c.getFixtureB().getBody().getUserData().asInstanceOf[PhysicalObject] 
-      Some(o1, o2)
+      Some(contact.objectA, contact.objectB)
     }
   }
   
   implicit class Contact(val c: org.jbox2d.dynamics.contacts.Contact) extends AnyVal with WithPoint {
   
-    def point: Vec2 =  {
+    def objectA: PhysicalObject = {
+      c.getFixtureA().getBody().getUserData().asInstanceOf[PhysicalObject]
+    }
+
+    def objectB: PhysicalObject = {
+      c.getFixtureB().getBody().getUserData().asInstanceOf[PhysicalObject]
+    }
+
+    def point: Vec2 = {
+      //TODO performance issue here, the WorldManifold could be 
+      // allocated only once
       val m = new WorldManifold()
       c.getWorldManifold(m)
       m.points(0)
+    }
+
+    def normal: Vec2 = {
+      //TODO performance issue here, the WorldManifold could be 
+      // allocated only once
+      val m = new WorldManifold()
+      c.getWorldManifold(m)
+      m.normal
     }
     
   }
