@@ -32,6 +32,9 @@ object GameView {
 
   // 1 meter is equivalent to 100 pixels (with default zoom)
   val BOX2D_RATIO = 100
+
+  // Pi in float
+  val PI = 3.141592f
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
@@ -53,7 +56,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   /** The inverse transformation matrix from pixels to meters. */
   private val matrixI = new Matrix()
 
-  // Register to intercept eventss
+  // Register to intercept events
   getHolder().addCallback(this)
 
   def reset(newGame: Game): Unit = {
@@ -74,17 +77,25 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     game.objects foreach { o => o match {
       case r: Rectangle =>
         paint.setColor(0xFF000000) // TODO r.color
-        if(!r.visible.get) 
+        if(!r.visible.get)
           paint.setAlpha(0x80)
-        //canvas.drawRect(r.x.get, r.y.get, r.x.get - r.width.get/2, r.y.get - r.height.get/2, paint)
+
+        canvas.save()
+        canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
         canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
+        canvas.restore()
 
       case c: Circle => 
         paint.setColor(0xFF000000) // TODO c.color
-        if(!c.visible.get) 
+        if(!c.visible.get)
           paint.setAlpha(0x80)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
     }}
+
+    game.world.beginContacts foreach { c =>
+      paint.setColor(0xFFFF0000)
+      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
+    }
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
@@ -120,6 +131,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   /** pixels to meters */
   def mapRadiusI(r: Float): Float = matrixI.mapRadius(r)
+
+  def radToDegree(r: Float): Float = (r * 180 / PI) % 360
 
   private def computeTransformationMatrices() = {
     matrix.reset() // identity matrix

@@ -95,8 +95,8 @@ trait Game extends TypeChecker with Interpreter { self =>
   private[kingpong] def update(): Unit = {
     world.step()
     objects foreach {_.load()}
-    //rules foreach {_.evaluate}
-    //objects foreach {_.flush()}
+    rules foreach {_.evaluate}
+    objects foreach {_.flush()}
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
