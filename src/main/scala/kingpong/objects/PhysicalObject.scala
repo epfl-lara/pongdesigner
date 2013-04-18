@@ -56,38 +56,27 @@ abstract class PhysicalObject(init_name: Expr,
     body.getAngle()
   }
 
-  val visible = property[Boolean]("visible", init_visible) { b =>
+  val visible = simplePhysicalProperty[Boolean]("visible", init_visible) { b =>
     body.setActive(b)
-  } { () =>
-    body.isActive()
   }
 
-  val density = property[Float]("density", init_density) { d =>
+  val density = simplePhysicalProperty[Float]("density", init_density) { d =>
     fixture.setDensity(d)
     body.resetMassData() // update the body mass
-  } { () =>
-    fixture.getDensity()
   }
 
-  val friction = property[Float]("friction", init_friction) { f =>
+  val friction = simplePhysicalProperty[Float]("friction", init_friction) { f =>
     fixture.setFriction(f)
-  } { () =>
-    fixture.getFriction()
   }
 
-  val restitution = property[Float]("restitution", init_restitution) { r =>
+  val restitution = simplePhysicalProperty[Float]("restitution", init_restitution) { r =>
     fixture.setRestitution(r)
-  } { () =>
-    fixture.getRestitution()
   }
 
-  val fixedRotation = property[Boolean]("fixed-rotation", init_fixedRotation) { b =>
+  val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation) { b =>
     body.setFixedRotation(b)
-  } { () =>
-    body.isFixedRotation()
-  }
+  } 
   
-
   //TODO !!!!
   /*
   val tpe = Property(body.getType()) { v =>
@@ -165,13 +154,13 @@ class Rectangle (protected val game: Game,
   protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
   val width: Property[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
-    //shape.setAsBox(w, height.get)
-    //body.resetMassData() // update the body mass
+    shape.setAsBox(w/2, height.get/2)
+    body.resetMassData() // update the body mass
   }
 
   val height: Property[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
-    //shape.setAsBox(width.get, h)
-    //body.resetMassData() // update the body mass
+    shape.setAsBox(width.get/2, h/2)
+    body.resetMassData() // update the body mass
   }
   
 }
@@ -217,8 +206,8 @@ class Circle(protected val game: Game,
   }
 
   val radius = simplePhysicalProperty[Float]("radius", init_radius) { r =>
-    //fixture.getShape().m_radius = r
-    //body.resetMassData() // update the body mass
+    fixture.getShape().m_radius = r
+    body.resetMassData() // update the body mass
   }
   
 }
