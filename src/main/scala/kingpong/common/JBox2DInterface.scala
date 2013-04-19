@@ -6,6 +6,7 @@ import language.implicitConversions
 import ch.epfl.lara.synthesis.kingpong.objects._
 
 import org.jbox2d.collision.WorldManifold
+import org.jbox2d.common.MathUtils
 
 object JBox2DInterface {
 
@@ -17,6 +18,21 @@ object JBox2DInterface {
     protected def point = this
     
     def add(other: Vec2) = Vec2(x + other.x, y + other.y)
+    def sub(other: Vec2) = Vec2(x - other.x, y - other.y)
+
+    /** The squared Euclidean distance. */
+    def squaredDistance(to: Vec2): Float = {
+      val dx = to.x - point.x
+      val dy = to.y - point.y
+      dx*dx + dy*dy
+    }
+
+    /** The vector length. */
+    def length = MathUtils.sqrt(x * x + y * y)
+    
+    /** The Euclidean distance. */
+    def distance(to: Vec2): Float = MathUtils.sqrt(squaredDistance(to))
+  
   }
 
   case class Transform(pos: Vec2, angle: Float) extends WithPoint {

@@ -28,6 +28,8 @@ import android.os.Vibrator
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
+import org.jbox2d.common.MathUtils
+
 object GameView {
 
   // 1 meter is equivalent to 100 pixels (with default zoom)
@@ -55,6 +57,9 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   /** The inverse transformation matrix from pixels to meters. */
   private val matrixI = new Matrix()
+
+  /** Hold all touch events and pre-format them before dispatching them back. */
+  private val eventHolder = new EventHolder()
 
   // Register to intercept events
   getHolder().addCallback(this)
@@ -120,9 +125,45 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     }
   }
 
+
+  def onFingerDown(pos: Vec2): Unit = {
+    //val point = mapVectorI(pxPoint)
+
+  }
+
+  def onFingerUp(pos: Vec2): Unit = {
+
+  }
+
+  def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
+    matrix.postTranslate(to.x - from.x, to.y - from.y)
+    matrix.invert(matrixI)
+  }
+
+  def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {
+
+    val lengthFrom = from1.sub(from2).length
+    val lengthTo = to1.sub(to2).length
+    val scale = if (lengthFrom != 0) lengthTo / lengthFrom else 1f
+    
+    val d1 = from1.distance(to1)
+    val d2 = from2.distance(to2)
+    val p = if(d1+d2 != 0) d2/(d1+d2) else 0f
+
+    matrix.postTranslate((to1.x + to2.x)/2 - (from1.x + from2.x)/2, (to1.y + to2.y)/2 - (from1.y + from2.y)/2)
+    matrix.postScale(scale, scale, from1.x * p + from2.x * (1-p), from1.y * p + from2.y * (1-p))
+    matrix.invert(matrixI)
+  }
+
   def mapVector(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
-    matrix.mapVectors(toMap)
+    matrix.mapPoints(toMap)
+    Vec2(toMap(0), toMap(1))
+  }
+
+  def mapVectorI(p: Vec2): Vec2 = {
+    val toMap = Array(p.x, p.y)
+    matrixI.mapPoints(toMap)
     Vec2(toMap(0), toMap(1))
   }
 
@@ -132,13 +173,70 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   /** pixels to meters */
   def mapRadiusI(r: Float): Float = matrixI.mapRadius(r)
 
-  def radToDegree(r: Float): Float = (r * 180 / PI) % 360
+  def radToDegree(r: Float): Float = r * MathUtils.RAD2DEG
 
   private def computeTransformationMatrices() = {
     matrix.reset() // identity matrix
     //matrix.postScale(1, -1); // upside-down
     matrix.postScale(BOX2D_RATIO, BOX2D_RATIO)
     matrix.invert(matrixI)
+  }
+
+  override def onTouchEvent(me: MotionEvent): Boolean = {
+    eventHolder.onTouchEvent(me)
+    true
+  }
+
+  private object EventHolder {
+    val FINGERS = 10
+  }
+
+  private class EventHolder {
+    import EventHolder._
+
+    private val last = Array.fill(FINGERS)(Vec2(0, 0))
+
+    def onTouchEvent(me: MotionEvent): Unit = {
+      val action = me.getAction()
+      (action & MotionEvent.ACTION_MASK) match {
+        
+        // A finger gets down.
+        case MotionEvent.ACTION_DOWN | MotionEvent.ACTION_POINTER_DOWN =>
+          val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
+          val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
+          onFingerDown(point)
+          last(pointerIndex) = point
+
+        // A finger moves
+        case MotionEvent.ACTION_MOVE =>
+          if (me.getPointerCount() == 1) {
+            val pointer = Math.min(me.getPointerId(0), FINGERS - 1)
+            val from = last(pointer)
+            val to = Vec2(me.getX(0), me.getY(0))
+            onOneFingerMove(from, to)
+            last(pointer) = to
+            
+          } else if (me.getPointerCount() == 2) {
+            val pointer1 = Math.min(me.getPointerId(0), FINGERS - 1)
+            val pointer2 = Math.min(me.getPointerId(1), FINGERS - 1)
+            val from1 = last(pointer1)
+            val from2 = last(pointer2)
+            val to1 = Vec2(me.getX(0), me.getY(0))
+            val to2 = Vec2(me.getX(1), me.getY(1))
+            onTwoFingersMove(from1, to1, from2, to2)
+            last(pointer1) = to1
+            last(pointer2) = to2
+          }
+
+        case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
+          val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
+          val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
+          onFingerUp(point)
+          last(pointerIndex) = point
+
+        case _ => //Do nothing
+      }
+    }
   }
 
 }

@@ -17,6 +17,7 @@ class Kingpong extends Activity {
   override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.main)
+    view.requestFocus()
   }
 
   override def onPause() = {

@@ -46,8 +46,8 @@ trait Game extends TypeChecker with Interpreter { self =>
              radius: Expr = 0.5, //TODO centralized default values
              visible: Expr = true,
              density: Expr = 1,
-             friction: Expr = 0.1,
-             restitution: Expr = 0.9,
+             friction: Expr = 0.2,
+             restitution: Expr = 0.5,
              fixedRotation: Expr = true,
              tpe: BodyType = BodyType.DYNAMIC)
             (implicit game: Game): Circle = {
@@ -66,8 +66,8 @@ trait Game extends TypeChecker with Interpreter { self =>
                 height: Expr = 1,
                 visible: Expr = true,
                 density: Expr = 1,
-                friction: Expr = 0.1,
-                restitution: Expr = 0.9,
+                friction: Expr = 0.2,
+                restitution: Expr = 0.5,
                 fixedRotation: Expr = true,
                 tpe: BodyType = BodyType.DYNAMIC)
                (implicit game: Game): Rectangle = {
@@ -111,10 +111,11 @@ class EmptyGame() extends Game {
   val world = new PhysicalWorld(Vec2(0, 1f))
 
   rectangle("Rectangle 1", 2, 0, width = 1, height = 1, fixedRotation = false)
+  rectangle("Rectangle 2", 3.4, 0, width = 1, height = 2, fixedRotation = false)
 
   circle("Circle 1", 3, 2, radius = 1, fixedRotation = false)
   circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
   
-  rectangle("Rectangle 2", 5, 8, width = 10, height = 1, tpe = BodyType.STATIC)
+  rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
 }
