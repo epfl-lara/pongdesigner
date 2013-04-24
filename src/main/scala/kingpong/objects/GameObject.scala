@@ -48,6 +48,15 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =
   /** Revert to the latest snapshot for all properties. */
   def revert() = properties.values.foreach {_.revert()}
   
+  /** Save the current state to the history. */
+  def save(t: Long) = properties.values.foreach {_.save(t)}
+
+  /** Restore the state from the specified discrete time. */
+  def restore(t: Long) = properties.values.foreach {_.restore(t)}
+
+  /** Clear the history of this object. */
+  def clear() = properties.values.foreach {_.clear()}
+
   // --------------------------------------------------------------------------
   // Utility functions
   // --------------------------------------------------------------------------  

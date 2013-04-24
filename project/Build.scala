@@ -41,8 +41,15 @@ object General {
     keyalias := buildName,
 
     useProguard := true,
-    //proguardOption := "-keep class scala.Function1",
-    proguardOptimizations := Seq.empty
+    proguardOption := """
+      -dontpreverify
+      -dontwarn scala.**
+      -repackageclasses ''
+      -allowaccessmodification
+      -optimizations !code/simplification/arithmetic
+      -keep class scala.Function1
+    """
+    //proguardOptimizations := Seq.empty
   ))
 
   lazy val fullAndroidSettings =

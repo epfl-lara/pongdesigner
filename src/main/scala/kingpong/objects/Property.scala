@@ -5,6 +5,10 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
 
+object Property {
+  val MAX_HISTORY_SIZE = 200
+}
+
 abstract class Property[T : PongType]() extends Timed { self => 
   
   def name: String
@@ -20,9 +24,6 @@ abstract class Property[T : PongType]() extends Timed { self =>
   /** Load the value from the underlying structure, typically the physical world.
    */
   def load(): self.type
-
-  // TODO history for properties
-  // def history: Seq[(T, Long)]
   
   def setInit(e: Expr): self.type
   def set(v: T): self.type
@@ -45,6 +46,9 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   protected var _init: Expr = init
   protected var _snap: T = _
 
+  /** Contains the history. The head corresponds to the most recent value. */
+  protected var _history: List[(Long, T)] = List.empty
+
   def get = _crt
 
   //TODO look at this
@@ -63,22 +67,40 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 
   def reset(implicit interpreter: Interpreter) = {
     set(interpreter.eval(_init).as[T])
-  } 
+  }
+
+  def save(t: Long): Unit = {
+    if (_history.nonEmpty && _history.head != _crt) {
+      _history = ((t, _crt) :: _history).take(Property.MAX_HISTORY_SIZE) 
+    }
+  }
+
+  def restore(t: Long): Unit = {
+    _history.find(_._1 <= t) match {
+      case Some((time, value)) => _crt = value
+      case None => sys.error(s"The timestamp $t doesn't exist in the history.")
+    }
+  }
+
+  def clear(): Unit = {
+    _history = List.empty
+  }
+
 }
 
 abstract class PhysicalProperty[T : PongType](name: String, init: Expr) 
   extends ConcreteProperty[T](name, init) {
   
   def flush() = {
-    val current = get
-    if (loader() != current) {
-      flusher(current)
+    if (loader() != _crt) {
+      flusher(_crt)
     }
     this
   }
   
   def load() = {
-    set(loader())
+    _crt = loader()
+    this
   }
 
   val flusher: T => Unit
@@ -91,10 +113,9 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr)
   private var _lastFlushed: T = _
 
   def flush() = {
-    val current = get
-    if (_lastFlushed == null || _lastFlushed != current) {
-      _lastFlushed = current
-      flusher(current)
+    if (_lastFlushed == null || _lastFlushed != _crt) {
+      _lastFlushed = _crt
+      flusher(_crt)
     }
     this
   }

@@ -1,13 +1,21 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-trait Timed {
+trait Timed extends Any {
 
-  //TODO Do we want that also apply to the body (physical layer) ?
   /** Do a snapshot. */
   def snapshot(): Unit
   
-  //TODO Do we want that also apply to the body (physical layer) ?
   /** Revert to the latest snapshot. */
   def revert(): Unit
   
+  /** Save the curent value to the history with the specified 
+   *  discrete time.
+   */
+  def save(t: Long): Unit
+
+  /** Restore the value from the specified discrete time. */
+  def restore(t: Long): Unit
+
+  /** Destroy the history. */
+  def clear(): Unit
 }

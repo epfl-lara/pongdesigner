@@ -22,6 +22,7 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   private val _objects = MSet.empty[GameObject]
   private val _rules = MSet.empty[Rule]
+  private var _time: Long = 0
 
   /** All objects in this game. */
   def objects = _objects.iterator
@@ -93,10 +94,12 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
-    world.step()
-    objects foreach {_.load()}
+    _time += 1
     rules foreach {_.evaluate}
     objects foreach {_.flush()}
+    world.step()
+    objects foreach {_.load()}
+    objects foreach {_.save(_time)}
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {

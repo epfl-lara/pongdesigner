@@ -34,9 +34,6 @@ object GameView {
 
   // 1 meter is equivalent to 100 pixels (with default zoom)
   val BOX2D_RATIO = 100
-
-  // Pi in float
-  val PI = 3.141592f
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
