@@ -202,7 +202,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           onFingerDown(point)
-          last(pointerIndex) = point
+          last(pointerIndex).set(point)
 
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
@@ -211,7 +211,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
             val from = last(pointer)
             val to = Vec2(me.getX(0), me.getY(0))
             onOneFingerMove(from, to)
-            last(pointer) = to
+            last(pointer).set(to)
             
           } else if (me.getPointerCount() == 2) {
             val pointer1 = Math.min(me.getPointerId(0), FINGERS - 1)
@@ -221,15 +221,15 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
             val to1 = Vec2(me.getX(0), me.getY(0))
             val to2 = Vec2(me.getX(1), me.getY(1))
             onTwoFingersMove(from1, to1, from2, to2)
-            last(pointer1) = to1
-            last(pointer2) = to2
+            last(pointer1).set(to1)
+            last(pointer2).set(to2)
           }
 
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           onFingerUp(point)
-          last(pointerIndex) = point
+          last(pointerIndex).set(point)
 
         case _ => //Do nothing
       }

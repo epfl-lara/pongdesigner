@@ -99,6 +99,7 @@ trait Interpreter {
         case (NumericV(v1), NumericV(v2)) => BooleanV(v1 equals v2)
         case (StringV(v1), StringV(v2)) => BooleanV(v1 equals v2)
         case (BooleanV(v1), BooleanV(v2)) => BooleanV(v1 equals v2)
+        case (Vec2V(v1), Vec2V(v2)) => BooleanV(v1 equals v2)
         case (UnitV, UnitV) => BooleanV(true)
         case _ => BooleanV(false)
       }
