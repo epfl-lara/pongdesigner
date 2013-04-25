@@ -2,7 +2,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -12,6 +12,7 @@ case class IntV(value: Int) extends AnyVal with Value
 case class FloatV(value: Float) extends AnyVal with Value
 case class StringV(value: String) extends AnyVal with Value
 case class BooleanV(value: Boolean) extends AnyVal with Value
+case class Vec2V(value: Vec2) extends AnyVal with Value
 case object UnitV extends Value
 
 object NumericV {
@@ -50,6 +51,7 @@ trait Interpreter {
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
     case BooleanLiteral(v) => BooleanV(v)
+    case Vec2Literal(v) => Vec2V(v)
     case UnitLiteral => UnitV
     
     case Plus(lhs, rhs) =>  

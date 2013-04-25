@@ -46,13 +46,16 @@ trait Game extends TypeChecker with Interpreter { self =>
              y: Expr,
              radius: Expr = 0.5, //TODO centralized default values
              visible: Expr = true,
+             velocity: Expr = Vec2(0, 0),
+             angularVelocity: Expr = 0,
              density: Expr = 1,
              friction: Expr = 0.2,
              restitution: Expr = 0.5,
              fixedRotation: Expr = true,
              tpe: BodyType = BodyType.DYNAMIC)
             (implicit game: Game): Circle = {
-    val c = new Circle(game, name, x, y, radius, visible, density, friction, restitution, fixedRotation, tpe)
+    val c = new Circle(game, name, x, y, radius, visible, velocity, angularVelocity, 
+                       density, friction, restitution, fixedRotation, tpe)
     c.reset
     c.flush()
     game add c
@@ -66,13 +69,16 @@ trait Game extends TypeChecker with Interpreter { self =>
                 width: Expr = 1,
                 height: Expr = 1,
                 visible: Expr = true,
+                velocity: Expr = Vec2(0, 0),
+                angularVelocity: Expr = 0,
                 density: Expr = 1,
                 friction: Expr = 0.2,
                 restitution: Expr = 0.5,
                 fixedRotation: Expr = true,
                 tpe: BodyType = BodyType.DYNAMIC)
                (implicit game: Game): Rectangle = {
-    val r = new Rectangle(game, name, x, y, angle, width, height, visible, density, friction, restitution, fixedRotation, tpe)
+    val r = new Rectangle(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
+                          density, friction, restitution, fixedRotation, tpe)
     r.reset
     r.flush()
     game add r
@@ -100,6 +106,14 @@ trait Game extends TypeChecker with Interpreter { self =>
     world.step()
     objects foreach {_.load()}
     objects foreach {_.save(_time)}
+
+    if (_time == 200) {
+      objects foreach {_.restore(1)}
+      objects foreach {_.clear()}
+      objects foreach {_.flush()}
+      _time = 0
+    }
+
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {

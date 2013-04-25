@@ -20,6 +20,8 @@ abstract class PhysicalObject(init_name: Expr,
                               init_y: Expr,
                               init_angle: Expr,
                               init_visible: Expr,
+                              init_velocity: Expr,
+                              init_angularVelocity: Expr,
                               init_density: Expr,
                               init_friction: Expr,
                               init_restitution: Expr,
@@ -54,6 +56,18 @@ abstract class PhysicalObject(init_name: Expr,
     body.setTransform(body.getPosition(), a)
   } { () =>
     body.getAngle()
+  }
+
+  val velocity = property[Vec2]("velocity", init_velocity) { v =>
+    body.setLinearVelocity(v)
+  } { () =>
+    body.getLinearVelocity()
+  }
+
+  val angularVelocity = property[Float]("angular-velocity", init_angularVelocity) { av =>
+    body.setAngularVelocity(av)
+  } { () =>
+    body.getAngularVelocity()
   }
 
   val visible = simplePhysicalProperty[Boolean]("visible", init_visible) { b =>
@@ -116,13 +130,15 @@ class Rectangle (protected val game: Game,
                  init_width: Expr,
                  init_height: Expr,
                  init_visible: Expr,
+                 init_velocity: Expr,
+                 init_angularVelocity: Expr,
                  init_density: Expr,
                  init_friction: Expr,
                  init_restitution: Expr,
                  init_fixedRotation: Expr,
                  init_tpe: BodyType = BodyType.DYNAMIC
-                ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_density,
-                                         init_friction, init_restitution, init_fixedRotation)
+                ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
+                                         init_density, init_friction, init_restitution, init_fixedRotation)
                   with Rectangular {
 
   val body = {
@@ -171,13 +187,15 @@ class Circle(protected val game: Game,
              init_y: Expr,
              init_radius: Expr,
              init_visible: Expr,
+             init_velocity: Expr,
+             init_angularVelocity: Expr,
              init_density: Expr,
              init_friction: Expr,
              init_restitution: Expr,
              init_fixedRotation: Expr,
              init_tpe: BodyType = BodyType.DYNAMIC
-            ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_density,
-                                     init_friction, init_restitution, init_fixedRotation) {
+            ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
+                                     init_density, init_friction, init_restitution, init_fixedRotation) {
 	
   // Create the physical JBox2D body with a circle shape.
   final val body = {

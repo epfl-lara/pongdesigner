@@ -39,6 +39,7 @@ trait TypeChecker {
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
     case BooleanLiteral(_) => expr.setType(TBoolean)
+    case Vec2Literal(_) => expr.setType(TVec2)
     case UnitLiteral => expr.setType(TUnit)
     
     case Plus(lhs, rhs) =>  

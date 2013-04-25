@@ -6,7 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
 
 object Property {
-  val MAX_HISTORY_SIZE = 200
+  val MAX_HISTORY_SIZE = 300
 }
 
 abstract class Property[T : PongType]() extends Timed { self => 
@@ -70,7 +70,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   }
 
   def save(t: Long): Unit = {
-    if (_history.nonEmpty && _history.head != _crt) {
+    if (_history.isEmpty || _history.head != _crt) {
       _history = ((t, _crt) :: _history).take(Property.MAX_HISTORY_SIZE) 
     }
   }

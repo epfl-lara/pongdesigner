@@ -2,6 +2,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 
 object Trees {
 
@@ -34,6 +35,7 @@ object Trees {
   case class FloatLiteral(value: Float) extends Expr
   case class StringLiteral(value: String) extends Expr
   case class BooleanLiteral(value: Boolean) extends Expr
+  case class Vec2Literal(value: Vec2) extends Expr
   case object UnitLiteral extends Expr 
 
   case class Plus(lhs: Expr, rhs: Expr) extends Expr
