@@ -35,13 +35,14 @@ object Trees {
   case class FloatLiteral(value: Float) extends Expr
   case class StringLiteral(value: String) extends Expr
   case class BooleanLiteral(value: Boolean) extends Expr
-  case class Vec2Literal(value: Vec2) extends Expr
+  case class Vec2Literal(x: Float, y: Float) extends Expr
   case object UnitLiteral extends Expr 
 
   case class Plus(lhs: Expr, rhs: Expr) extends Expr
   case class Minus(lhs: Expr, rhs: Expr) extends Expr
   case class Times(lhs: Expr, rhs: Expr) extends Expr
   case class Div(lhs: Expr, rhs: Expr) extends Expr
+  case class Mod(lhs: Expr, rhs: Expr) extends Expr
 
   case class And(lhs: Expr, rhs: Expr) extends Expr
   case class Or(lhs: Expr, rhs: Expr) extends Expr

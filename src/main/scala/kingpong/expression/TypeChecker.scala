@@ -39,32 +39,74 @@ trait TypeChecker {
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
     case BooleanLiteral(_) => expr.setType(TBoolean)
-    case Vec2Literal(_) => expr.setType(TVec2)
+    case Vec2Literal(_, _) => expr.setType(TVec2)
     case UnitLiteral => expr.setType(TUnit)
     
-    case Plus(lhs, rhs) =>  
-      (typeCheck(lhs, TInt, TFloat), typeCheck(rhs, TInt, TFloat)) match {
-        case (TInt, TInt) => expr.setType(TInt)
-        case _ => expr.setType(TFloat)
+    case Plus(lhs, rhs) =>
+      (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
+        case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
+          case TInt => expr.setType(TInt)
+          case TFloat => expr.setType(TFloat)
+        }
+        case TFloat => 
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TFloat)
+        case TVec2 =>
+          typeCheck(rhs, TVec2)
+          expr.setType(TVec2)
+      }
+
+    case Minus(lhs, rhs) =>
+      (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
+        case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
+          case TInt => expr.setType(TInt)
+          case TFloat => expr.setType(TFloat)
+        }
+        case TFloat =>
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TFloat)
+        case TVec2 =>
+          typeCheck(rhs, TVec2)
+          expr.setType(TVec2)
       }
       
-    case Minus(lhs, rhs) => 
-      (typeCheck(lhs, TInt, TFloat), typeCheck(rhs, TInt, TFloat)) match {
-        case (TInt, TInt) => expr.setType(TInt)
-        case _ => expr.setType(TFloat)
+    case Times(lhs, rhs) =>
+      (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
+        case TInt => (typeCheck(rhs, TInt, TFloat, TVec2): @unchecked) match {
+          case TInt => expr.setType(TInt)
+          case TFloat => expr.setType(TFloat)
+          case TVec2 => expr.setType(TVec2)
+        }
+        case TFloat => (typeCheck(rhs, TInt, TFloat, TVec2): @unchecked) match {
+          case TInt | TFloat => expr.setType(TFloat)
+          case TVec2 => expr.setType(TVec2)
+        }
+        case TVec2 =>
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TVec2)
       }
       
-    case Times(lhs, rhs) => 
-      (typeCheck(lhs, TInt, TFloat), typeCheck(rhs, TInt, TFloat)) match {
-        case (TInt, TInt) => expr.setType(TInt)
-        case _ => expr.setType(TFloat)
+    case Div(lhs, rhs) =>
+      (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
+        case TInt | TFloat =>
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TFloat)
+        case TVec2 =>
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TVec2)
       }
-      
-    case Div(lhs, rhs) => 
-      typeCheck(lhs, TInt, TFloat)
-      typeCheck(rhs, TInt, TFloat)
-      expr.setType(TFloat)
   
+    case Mod(lhs, rhs) => 
+      (typeCheck(lhs, TInt, TFloat): @unchecked) match {
+        case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
+          case TInt => expr.setType(TInt)
+          case TFloat => expr.setType(TFloat)
+        }
+        case TFloat =>
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TFloat)
+      }
+
     case And(lhs, rhs) =>
       typeCheck(lhs, TBoolean)
       typeCheck(rhs, TBoolean)

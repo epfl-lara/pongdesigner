@@ -15,7 +15,7 @@ object Implicits {
   implicit def IntegerIsExpr(i: Int): Expr = IntegerLiteral(i)
   implicit def StringIsExpr(s: String): Expr = StringLiteral(s)
   implicit def BooleanIsExpr(b: Boolean): Expr = BooleanLiteral(b)
-  implicit def Vec2IsExpr(v: Vec2): Expr = Vec2Literal(v)
+  implicit def Vec2IsExpr(v: Vec2): Expr = Vec2Literal(v.x, v.y)
 
   implicit object IntegerIsPongType extends PongType[Int] {
     def getPongType = TInt
@@ -72,11 +72,11 @@ object Implicits {
   implicit object Vec2IsPongType extends PongType[Vec2] {
     def getPongType = TVec2
     def toPongValue(v: Any) = v match {
-      case vec: Vec2 => Vec2V(vec)
+      case vec: Vec2 => Vec2V(vec.x, vec.y)
       case _ => throw InterpreterException(s"The value $v is incompatible with Vec2.")
     }
     def toScalaValue(v: Value) = v match {
-      case Vec2V(vec) => vec
+      case Vec2V(x, y) => Vec2(x, y)
       case _ => throw InterpreterException(s"The value $v is incompatible with Vec2.")
     }
   }

@@ -29,6 +29,8 @@ class ExpressionSuite extends FunSuite with BeforeAndAfter {
     assert(e === StringLiteral("test"))
     e = true
     assert(e === BooleanLiteral(true))
+    e = Vec2(1, 2)
+    assert(e === Vec2Literal(1, 2))
   }
 
   test("Typecheck and Interpreter for expressions work.") {
@@ -43,6 +45,21 @@ class ExpressionSuite extends FunSuite with BeforeAndAfter {
     assert(e.getType === TFloat)
     assert(interpreter.eval(e) === FloatV(4.5f))
     assert(interpreter.eval(e).as[Float] === 4.5f)
+
+    e = Plus(Vec2(1, 2), Vec2(3, 4))
+    interpreter.typeCheck(e)
+    assert(e.getType === TVec2)
+    assert(interpreter.eval(e).as[Vec2] === Vec2(4, 6))
+
+    e = Times(2, Vec2(1, 2))
+    interpreter.typeCheck(e)
+    assert(e.getType === TVec2)
+    assert(interpreter.eval(e).as[Vec2] === Vec2(2, 4))
+
+    e = Div(Vec2(1, 2), 2)
+    interpreter.typeCheck(e)
+    assert(e.getType === TVec2)
+    assert(interpreter.eval(e).as[Vec2] === Vec2(0.5f, 1))
 
     e = Times(1, true)
     intercept[TypeCheckException] {
