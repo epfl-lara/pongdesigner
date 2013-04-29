@@ -28,9 +28,9 @@ object General {
     scalacOptions ++= Seq(
         "-feature",                      // Enable language feature warnings
         "-deprecation",                  // Enable detailed deprecation warnings 
-        "-unchecked"//,                    // Enable detailed unchecked warnings 
+        "-unchecked",                    // Enable detailed unchecked warnings 
         //"-language:experimental.macros", // Enable scala macros
-        //"-language:implicitConversions", // Remove feature warning about implicit methods
+        "-language:implicitConversions"//, // Remove feature warning about implicit methods
         //"-language:postfixOps"           // Remove feature warning about postfix operators
       )
   )
