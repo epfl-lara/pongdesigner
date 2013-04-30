@@ -3,6 +3,8 @@ package ch.epfl.lara.synthesis.kingpong.expression
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.rules.Context
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -27,7 +29,7 @@ case class InterpreterException(msg: String) extends Exception(msg)
 
 trait Interpreter {
   
-  def eval(stat: Stat): Unit = stat match {
+  def eval(stat: Stat)(implicit context: Context): Unit = stat match {
     case Block(stats) => 
       stats map eval
 
@@ -44,7 +46,7 @@ trait Interpreter {
     case NOP => //Do nothing
   }
 
-  def eval(expr: Expr): Value = expr match {
+  def eval(expr: Expr)(implicit context: Context): Value = expr match {
 
     case ref: PropertyRef => ref.getPongValue
     case IntegerLiteral(v) => IntV(v)
@@ -171,9 +173,8 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-
-
-    //TODO implement finger expression, we need a context containing finger position.
+    //TODO use the context to evaluate these...
+    // HOW TO get back the specific game object that triggered this expression.
     case FingerMoveOver(c) => ???
     case FingerDownOver(c) => ???
     case FingerUpOver(c) => ???

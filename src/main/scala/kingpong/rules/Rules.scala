@@ -13,12 +13,12 @@ object Rules {
     def cond: Expr
     def action: Stat
 
-    def evaluate(implicit interpreter: Interpreter): Unit
+    def evaluate(interpreter: Interpreter)(implicit context: Context): Unit
   }
 
 
   class Whenever(val cond: Expr, val action: Stat) extends Rule {
-    def evaluate(implicit interpreter: Interpreter) {
+    def evaluate(interpreter: Interpreter)(implicit context: Context) {
       if (interpreter.eval(cond).as[Boolean])
         interpreter.eval(action)
     }
@@ -27,7 +27,7 @@ object Rules {
   class On(val cond: Expr, val action: Stat) extends Rule {
     private var lastEval: Boolean = false
 
-    def evaluate(implicit interpreter: Interpreter) {
+    def evaluate(interpreter: Interpreter)(implicit context: Context) {
       val b = interpreter.eval(cond).as[Boolean]
 
       if (!lastEval && b) {
@@ -43,7 +43,7 @@ object Rules {
   class Once(val cond: Expr, val action: Stat) extends Rule {
     private var evaluated: Boolean = false
 
-    def evaluate(implicit interpreter: Interpreter) {
+    def evaluate(interpreter: Interpreter)(implicit context: Context) {
       // evaluate the action (and the condition) only if never evaluated
       if (!evaluated && interpreter.eval(cond).as[Boolean]) {
         interpreter.eval(action)

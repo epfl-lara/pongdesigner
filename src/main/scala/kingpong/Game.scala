@@ -9,6 +9,8 @@ import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 //TODO remove when useless
 import org.jbox2d.dynamics.BodyType
@@ -16,19 +18,17 @@ import org.jbox2d.dynamics.BodyType
 import android.util.Log
 
 trait Game extends TypeChecker with Interpreter { self => 
-  implicit protected val game = self
 
   val world: PhysicalWorld
 
   private val _objects = MSet.empty[GameObject]
   private val _rules = MSet.empty[Rule]
-  private var _time: Long = 0
 
   /** All objects in this game. */
-  def objects = _objects.iterator
+  def objects: Iterable[GameObject] = _objects
 
   /** All the rules in this game. */
-  def rules = _rules.iterator
+  def rules: Iterable[Rule] = _rules
   
   def add(o: GameObject) = _objects add o
   def add(rule: Rule) {
@@ -38,7 +38,7 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
     typeCheck(e, implicitly[PongType[T]].getPongType)
-    eval(e).as[T]
+    eval(e)(EventHistory).as[T]
   }
 
   def circle(name: Expr,
@@ -52,13 +52,12 @@ trait Game extends TypeChecker with Interpreter { self =>
              friction: Expr = 0.2,
              restitution: Expr = 0.5,
              fixedRotation: Expr = true,
-             tpe: BodyType = BodyType.DYNAMIC)
-            (implicit game: Game): Circle = {
-    val c = new Circle(game, name, x, y, radius, visible, velocity, angularVelocity, 
+             tpe: BodyType = BodyType.DYNAMIC): Circle = {
+    val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
                        density, friction, restitution, fixedRotation, tpe)
-    c.reset
+    c.reset(this)(EventHistory)
     c.flush()
-    game add c
+    this add c
     c
   }
 
@@ -75,51 +74,118 @@ trait Game extends TypeChecker with Interpreter { self =>
                 friction: Expr = 0.2,
                 restitution: Expr = 0.5,
                 fixedRotation: Expr = true,
-                tpe: BodyType = BodyType.DYNAMIC)
-               (implicit game: Game): Rectangle = {
-    val r = new Rectangle(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
+                tpe: BodyType = BodyType.DYNAMIC): Rectangle = {
+    val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                           density, friction, restitution, fixedRotation, tpe)
-    r.reset
+    r.reset(this)(EventHistory)
     r.flush()
-    game add r
+    this add r
     r
   }
 
   def whenever(cond: Expr)(actions: Seq[Stat]): Unit = {
-    game add new Whenever(cond, toSingleStat(actions))
+    this add new Whenever(cond, toSingleStat(actions))
   }
 
   def once(cond: Expr)(actions: Seq[Stat]): Unit = {
-    game add new Once(cond, toSingleStat(actions))
+    this add new Once(cond, toSingleStat(actions))
   }
 
   def on(cond: Expr)(actions: Seq[Stat]): Unit = {
-    game add new On(cond, toSingleStat(actions))
+    this add new On(cond, toSingleStat(actions))
   }
 
+  private[kingpong] def objectAt(pos: Vec2): Option[GameObject] = {
+    objects.filter(_.contains(pos)).headOption
+  }
 
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
-    _time += 1
-    rules foreach {_.evaluate}
+    val time = EventHistory.step()
+    rules foreach {_.evaluate(this)(EventHistory)}
     objects foreach {_.flush()}
     world.step()
     objects foreach {_.load()}
-    objects foreach {_.save(_time)}
+    objects foreach {_.save(time)}
 
-    if (_time == 200) {
+    if (time == 200) {
       objects foreach {_.restore(1)}
       objects foreach {_.clear()}
       objects foreach {_.flush()}
-      _time = 0
+      EventHistory.clear()
     }
 
+  }
+
+  private[kingpong] def onFingerDown(pos: Vec2): Unit = {
+    EventHistory.addEvent(FingerDown(pos, objectAt(pos)))
+  }
+
+  private[kingpong] def onFingerUp(pos: Vec2): Unit = {
+    EventHistory.addEvent(FingerUp(pos, objectAt(pos)))
+  }
+
+  private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
+    EventHistory.addEvent(FingerMove(from, to, objectAt(from)))
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
     case Seq()  => NOP
     case Seq(s) => s
     case _      => Block(stats)
+  }
+
+  /** Handle the history for events like fingers input and
+   *  contacts between physical objects.
+   *  This object also act as a context for the Interpreter. Indeed, 
+   *  the evaluation of rules needs to be aware of events from the 
+   *  last fully completed time step.
+   */
+  private object EventHistory extends Context {
+
+    private var time: Long = 0
+    private var history: List[(Long, Seq[Event])] = List.empty
+    private val crtEvents = MSet.empty[Event]
+
+    /* Advance the time and store the current events in the history. */
+    def step(): Long = crtEvents.synchronized {
+      val oldTime = time
+      time += 1
+      
+      if (crtEvents.nonEmpty) {
+        history = (oldTime, crtEvents.toSeq) :: history
+        crtEvents.clear()
+      }
+      
+      oldTime
+    }
+
+    /** Return the events from the last fully completed time step. 
+     *  Should not be called by another thread than the one who 
+     *  call `step()`.
+     */
+    def events: Seq[Event] = {
+      if (history.isEmpty || history.head._1 != time) {
+        Seq.empty
+      } else {
+        history.head._2
+      }
+    }
+
+    /** Add an event in the ongoing time step. 
+     *  Can be called by another thread, from user inputs.
+     */
+    def addEvent(e: Event): Unit = crtEvents.synchronized {
+      crtEvents add e
+    }
+
+    /** Completely clear the history and the ongoing time step. */
+    def clear(): Unit = crtEvents.synchronized {
+      time = 0
+      history = List.empty
+      crtEvents.clear()
+    }
+
   }
 
 }

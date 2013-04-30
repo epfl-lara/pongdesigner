@@ -119,6 +119,7 @@ abstract class PhysicalObject(init_name: Expr,
   // --------------------------------------------------------------------------  
   
   def getAABB() = fixture.getAABB(0)
+  def contains(pos: Vec2) = fixture.testPoint(pos)
   
 }
 

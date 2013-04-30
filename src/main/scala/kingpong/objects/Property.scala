@@ -1,15 +1,18 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.Snap
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 object Property {
   val MAX_HISTORY_SIZE = 300
 }
 
-abstract class Property[T : PongType]() extends Timed { self => 
+abstract class Property[T : PongType]() extends History with Snap { self => 
   
   def name: String
 
@@ -27,7 +30,7 @@ abstract class Property[T : PongType]() extends Timed { self =>
   
   def setInit(e: Expr): self.type
   def set(v: T): self.type
-  def reset(implicit interpreter: Interpreter): self.type
+  def reset(interpreter: Interpreter)(implicit context: Context): self.type
 
   def getPongType: Type = tpe.getPongType
   def setPongValue(v: Value): self.type = set(tpe.toScalaValue(v))
@@ -65,7 +68,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
     this
   }
 
-  def reset(implicit interpreter: Interpreter) = {
+  def reset(interpreter: Interpreter)(implicit context: Context) = {
     set(interpreter.eval(_init).as[T])
   }
 

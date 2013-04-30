@@ -23,6 +23,7 @@ object Trees {
     def -(e: Expr): Expr = Minus(this, e)
     def *(e: Expr): Expr = Times(this, e)
     def /(e: Expr): Expr = Div(this, e)
+    def %(e: Expr): Expr = Mod(this, e)
     def &&(e: Expr): Expr = And(this, e)
     def ||(e: Expr): Expr = Or(this, e)
     def =:=(e: Expr): Expr = Equals(this, e)

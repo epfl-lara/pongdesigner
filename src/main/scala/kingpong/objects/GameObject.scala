@@ -3,12 +3,15 @@ package ch.epfl.lara.synthesis.kingpong.objects
 import scala.collection.mutable.{Map => MMap}
 
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.Snap
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
-abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =>
+abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
   
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
@@ -39,15 +42,19 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =
   }
 
   // --------------------------------------------------------------------------
-  // Timed functions
-  // --------------------------------------------------------------------------  
-    
+  // Snapshot functions
+  // --------------------------------------------------------------------------
+
   /** Do a snapshot on all properties. */
   def snapshot() = properties.values.foreach {_.snapshot()}
   
   /** Revert to the latest snapshot for all properties. */
   def revert() = properties.values.foreach {_.revert()}
-  
+
+  // --------------------------------------------------------------------------
+  // History functions
+  // --------------------------------------------------------------------------
+
   /** Save the current state to the history. */
   def save(t: Long) = properties.values.foreach {_.save(t)}
 
@@ -74,12 +81,14 @@ abstract class GameObject(init_name: Expr) extends WithPoint with Timed { self =
 
   /** Reset all properties to their initial values.
    */
-  def reset(implicit interpreter: Interpreter) = 
-    properties.values.foreach {_.reset}
+  def reset(interpreter: Interpreter)(implicit context: Context) = 
+    properties.values.foreach {_.reset(interpreter)}
 
   def apply(property: String): PropertyRef = properties(property).ref
 
   def getAABB(): AABB
+
+  def contains(pos: Vec2): Boolean
   
   // --------------------------------------------------------------------------
   // Protected functions

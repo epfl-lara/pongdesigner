@@ -10,6 +10,8 @@ class Category(name: String) { self =>
   
   val properties = MMap.empty[String, PropertyRef]
   
+  def objects: Iterable[GameObject] = _children
+
   def add(o: GameObject): self.type = {
     _children += o
     resolveProperties()

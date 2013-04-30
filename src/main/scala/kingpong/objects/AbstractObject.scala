@@ -48,4 +48,6 @@ class Box[T : PongType](init_name: String,
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
 
+  def contains(pos: Vec2) = getAABB.contains(pos)
+
 }

@@ -9,13 +9,18 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 class ExpressionSuite extends FunSuite with BeforeAndAfter {
  
   implicit var interpreter: Interpreter with TypeChecker = _
+  implicit var context: Context = _
 
   before {
     interpreter = new Interpreter with TypeChecker {}
+    context = new Context {
+        def events = Seq.empty
+    }
   }
 
   test("Implicits to build expressions are working.") {
@@ -82,7 +87,7 @@ class ExpressionSuite extends FunSuite with BeforeAndAfter {
   }
 
   test("Typecheck and Interpreter for statements work.") {
-    val p = new SimpleProperty[Int]("test_prop", 1).reset
+    val p = new SimpleProperty[Int]("test_prop", 1).reset(interpreter)
     var s: Stat = If(Equals(p.ref, 1), 
       Assign(p.ref, Plus(p.ref, 1)),
       Assign(p.ref, Minus(p.ref, 1)))
