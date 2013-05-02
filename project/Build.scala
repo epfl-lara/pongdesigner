@@ -7,7 +7,7 @@ object General {
   // Parameters:
   val buildName           = "kingpong_experiment"
   val buildOrganization   = "ch.epfl.lara.synthesis"
-  val buildScalaVersion   = "2.10.1"
+  val buildScalaVersion   = "2.10.0"
   val buildAndroidVersion = "16"
 
   val settings = Defaults.defaultSettings ++ Seq (
@@ -24,7 +24,8 @@ object General {
     
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M5b" % "test",
-
+    javaHome := Some(file("c:\\Program Files\\Java\\jdk1.6.0_35")),
+    
     scalacOptions ++= Seq(
         "-feature",                      // Enable language feature warnings
         "-deprecation",                  // Enable detailed deprecation warnings 
