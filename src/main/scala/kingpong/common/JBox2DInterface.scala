@@ -14,48 +14,32 @@ object JBox2DInterface {
   // Interface classes
   // --------------------------------------------------------------------------  
   
-  case class Vec2(x: Float, y: Float) extends WithPoint {
-    protected def point = this
-    
-    def add(other: Vec2) = Vec2(x + other.x, y + other.y)
-    def sub(other: Vec2) = Vec2(x - other.x, y - other.y)
+  type Vec2 = org.jbox2d.common.Vec2
 
-    /** The squared Euclidean distance. */
-    def squaredDistance(to: Vec2): Float = {
-      val dx = to.x - point.x
-      val dy = to.y - point.y
-      dx*dx + dy*dy
-    }
+  object Vec2 {
+    def apply(other: Vec2) = new Vec2(other)
+    def apply(x: Float, y: Float) = new Vec2(x, y)
+  }
 
-    /** The vector length. */
-    def length = MathUtils.sqrt(x * x + y * y)
-    
-    /** The Euclidean distance. */
-    def distance(to: Vec2): Float = MathUtils.sqrt(squaredDistance(to))
-  
+  implicit class Vec2Extended(val v: Vec2) extends AnyVal {
+    def distance(to: Vec2) = MathUtils.distance(v, to)
+    def distanceSquared(to: Vec2) = MathUtils.distanceSquared(v, to)
   }
 
   case class Transform(pos: Vec2, angle: Float) extends WithPoint {
     protected def point = pos
   }
   
-  // --------------------------------------------------------------------------
-  // Implicits functions
-  // --------------------------------------------------------------------------  
-  
-  implicit def TransformJBox2D(t: org.jbox2d.common.Transform) = Transform(t.p, t.q.getAngle())
-  implicit def JBox2TransformD(t: Transform) = new org.jbox2d.common.Transform().set(t.pos, t.angle)
-  
-  implicit def Vec2JBox2D(v: org.jbox2d.common.Vec2): Vec2 = Vec2(v.x, v.y)
-  implicit def JBox2DVec2(v: Vec2): org.jbox2d.common.Vec2 = new org.jbox2d.common.Vec2(v.x, v.y)
-  
+
+  type Contact = org.jbox2d.dynamics.contacts.Contact
+
   object Contact {
     def unapply(contact: Contact): Option[(PhysicalObject, PhysicalObject)] = {
       Some(contact.objectA, contact.objectB)
     }
   }
   
-  implicit class Contact(val c: org.jbox2d.dynamics.contacts.Contact) extends AnyVal with WithPoint {
+  implicit class ContactExtended(val c: Contact) extends AnyVal with WithPoint {
   
     def objectA: PhysicalObject = {
       c.getFixtureA().getBody().getUserData().asInstanceOf[PhysicalObject]
@@ -83,6 +67,8 @@ object JBox2DInterface {
     
   }
   
+  type AABB = org.jbox2d.collision.AABB
+
   object AABB {
     // return the lower left bound and the upper right bound
     def unapply(aabb: AABB): Option[(Vec2, Vec2)] = {
@@ -90,21 +76,10 @@ object JBox2DInterface {
     }
   }
   
-  implicit class AABB(val aabb: org.jbox2d.collision.AABB) extends AnyVal with WithPoint {
+  implicit class AABBExtended(val aabb: AABB) extends AnyVal with WithPoint {
     
-    protected def point = center
-    
-    def lowerBound: Vec2 = aabb.lowerBound
-    def upperBound: Vec2 = aabb.upperBound
-    
-    def center: Vec2 = {
-      aabb.getCenter()
-    }
-    
-    def contains(other: AABB) = {
-      aabb.contains(other.aabb)
-    }
-    
+    protected def point = aabb.getCenter()
+
     def contains(point: Vec2) = {
       point.x > aabb.lowerBound.x &&
       point.y > aabb.lowerBound.y &&
@@ -117,5 +92,12 @@ object JBox2DInterface {
     }
     
   }
+
+  // --------------------------------------------------------------------------
+  // Implicits functions
+  // --------------------------------------------------------------------------  
+  
+  implicit def TransformJBox2D(t: org.jbox2d.common.Transform) = Transform(t.p, t.q.getAngle())
+  implicit def JBox2TransformD(t: Transform) = new org.jbox2d.common.Transform().set(t.pos, t.angle)
   
 }

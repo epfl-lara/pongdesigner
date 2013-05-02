@@ -35,14 +35,12 @@ object GameView {
   // 1 meter is equivalent to 100 pixels (with default zoom)
   val BOX2D_RATIO = 100
 
-  // Pi in float
-  val PI = 3.141592f
+  val FINGERS = 10
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
                                                       with SurfaceHolder.Callback {
   import GameView._
-
 
   /** The game model currently rendered. */
   private var game: Game = new EmptyGame()
@@ -58,8 +56,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   /** The inverse transformation matrix from pixels to meters. */
   private val matrixI = new Matrix()
 
-  /** Hold all touch events and pre-format them before dispatching them back. */
-  private val eventHolder = new EventHolder()
+  /** The current game state. */
+  private var state: GameState = Running
 
   // Register to intercept events
   getHolder().addCallback(this)
@@ -69,7 +67,13 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   def update(): Unit = {
-    game.update()
+
+    state match {
+      case Running =>
+        game.update()
+      case Editing =>
+        //TODO
+    }
   }
 
 
@@ -101,6 +105,16 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       paint.setColor(0xFFFF0000)
       canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
     }
+
+    game.world.currentContacts foreach { c =>
+      paint.setColor(0xFF00FF00)
+      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
+    }
+
+    game.world.endContacts foreach { c =>
+      paint.setColor(0xFF0000FF)
+      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
+    }
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
@@ -126,13 +140,18 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
 
-  def onFingerDown(pos: Vec2): Unit = {
-    //val point = mapVectorI(pxPoint)
-
+  def onFingerDown(pos: Vec2): Unit = state match {
+    case Running => 
+      game.onFingerDown(mapVectorI(pos))
+    case Editing =>
+      //TODO
   }
 
-  def onFingerUp(pos: Vec2): Unit = {
-
+  def onFingerUp(pos: Vec2): Unit = state match {
+    case Running => 
+      game.onFingerUp(mapVectorI(pos))
+    case Editing =>
+      //TODO
   }
 
   def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
@@ -155,12 +174,14 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     matrix.invert(matrixI)
   }
 
+  /** meters to pixels */
   def mapVector(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrix.mapPoints(toMap)
     Vec2(toMap(0), toMap(1))
   }
 
+  /** pixels to meters */
   def mapVectorI(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrixI.mapPoints(toMap)
@@ -183,15 +204,12 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   override def onTouchEvent(me: MotionEvent): Boolean = {
-    eventHolder.onTouchEvent(me)
+    EventHolder.onTouchEvent(me)
     true
   }
 
+  /** Hold all touch events and pre-format them before dispatching them back. */
   private object EventHolder {
-    val FINGERS = 10
-  }
-
-  private class EventHolder {
     import EventHolder._
 
     private val last = Array.fill(FINGERS)(Vec2(0, 0))
@@ -205,7 +223,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           onFingerDown(point)
-          last(pointerIndex) = point
+          last(pointerIndex).set(point)
 
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
@@ -214,7 +232,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
             val from = last(pointer)
             val to = Vec2(me.getX(0), me.getY(0))
             onOneFingerMove(from, to)
-            last(pointer) = to
+            last(pointer).set(to)
             
           } else if (me.getPointerCount() == 2) {
             val pointer1 = Math.min(me.getPointerId(0), FINGERS - 1)
@@ -224,19 +242,24 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
             val to1 = Vec2(me.getX(0), me.getY(0))
             val to2 = Vec2(me.getX(1), me.getY(1))
             onTwoFingersMove(from1, to1, from2, to2)
-            last(pointer1) = to1
-            last(pointer2) = to2
+            last(pointer1).set(to1)
+            last(pointer2).set(to2)
           }
 
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           onFingerUp(point)
-          last(pointerIndex) = point
+          last(pointerIndex).set(point)
 
         case _ => //Do nothing
       }
     }
   }
+
+  private sealed trait GameState
+  private case object Running extends GameState
+  private case object Editing extends GameState
+
 
 }

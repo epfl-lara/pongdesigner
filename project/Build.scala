@@ -29,9 +29,9 @@ object General {
     scalacOptions ++= Seq(
         "-feature",                      // Enable language feature warnings
         "-deprecation",                  // Enable detailed deprecation warnings 
-        "-unchecked"//,                    // Enable detailed unchecked warnings 
+        "-unchecked",                    // Enable detailed unchecked warnings 
         //"-language:experimental.macros", // Enable scala macros
-        //"-language:implicitConversions", // Remove feature warning about implicit methods
+        "-language:implicitConversions"//, // Remove feature warning about implicit methods
         //"-language:postfixOps"           // Remove feature warning about postfix operators
       )
   )
@@ -42,8 +42,15 @@ object General {
     keyalias := buildName,
 
     useProguard := true,
-    //proguardOption := "-keep class scala.Function1",
-    proguardOptimizations := Seq.empty
+    proguardOption := """
+      -dontpreverify
+      -dontwarn scala.**
+      -repackageclasses ''
+      -allowaccessmodification
+      -optimizations !code/simplification/arithmetic
+      -keep class scala.Function1
+    """
+    //proguardOptimizations := Seq.empty
   ))
 
   lazy val fullAndroidSettings =

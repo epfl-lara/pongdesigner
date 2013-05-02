@@ -4,7 +4,6 @@ import scala.collection.mutable.{Set => MSet}
 
 import org.jbox2d.dynamics.World
 import org.jbox2d.callbacks.{ContactListener => JBox2DContactListener}
-import org.jbox2d.dynamics.contacts.{Contact => JBox2DContact}
 import org.jbox2d.collision.{Manifold => JBox2DManifold}
 import org.jbox2d.callbacks.{ContactImpulse => JBox2DContactImpulse}
 import org.jbox2d.callbacks.{ContactFilter => JBox2DContactFilter}
@@ -25,6 +24,7 @@ class PhysicalWorld(g: Vec2) {
   world.setContactListener(ContactListener)
   
   private val begin_contacts = MSet.empty[Contact]
+  private val current_contacts = MSet.empty[Contact]
   private val end_contacts = MSet.empty[Contact]
   
   def step() = {
@@ -35,6 +35,8 @@ class PhysicalWorld(g: Vec2) {
   
   def beginContacts = begin_contacts.iterator
   
+  def currentContacts = current_contacts.iterator
+  
   def endContacts = end_contacts.iterator
   
   def setGravity(g: Vec2) = world.setGravity(g)
@@ -43,23 +45,25 @@ class PhysicalWorld(g: Vec2) {
   
   object ContactListener extends JBox2DContactListener {
     
-    def beginContact(c: JBox2DContact) = {
+    def beginContact(c: Contact) = {
       // TODO do we need to test if the contact is enabled ?
       // c.isEnabled() 
       begin_contacts += c
+      current_contacts += c
     }
     
-    def endContact(c: JBox2DContact) = {
+    def endContact(c: Contact) = {
       // TODO do we need to test if the contact is enabled ?
       // c.isEnabled() 
       end_contacts += c
+      current_contacts -= c
     }
     
-    def preSolve(c: JBox2DContact, m: JBox2DManifold) = {
+    def preSolve(c: Contact, m: JBox2DManifold) = {
       // nothing ?
     }
     
-    def postSolve(c: JBox2DContact, i: JBox2DContactImpulse) = {
+    def postSolve(c: Contact, i: JBox2DContactImpulse) = {
       // nothing ?
     }
   }
