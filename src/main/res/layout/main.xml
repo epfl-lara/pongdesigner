@@ -5,11 +5,49 @@
     android:orientation="vertical"
     android:background="@color/Black">
 
-  <ch.epfl.lara.synthesis.kingpong.GameView
+    <ch.epfl.lara.synthesis.kingpong.GameView
         android:id="@+id/gameview"
         android:layout_width="match_parent"
         android:layout_height="0dip"
         android:layout_gravity="top"
         android:layout_weight="1"
-        />
+    />
+
+
+    <LinearLayout
+        android:id="@+id/buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right" >
+
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@color/Black"
+            android:contentDescription="@string/dummy"
+            android:scaleType="fitCenter"
+            android:src="@drawable/back" />
+
+       <SeekBar
+            android:id="@+id/time_bar"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:progress="60"
+            android:secondaryProgress="70"
+            style="@style/TimeSeekBar"/>
+
+        <ImageButton
+            android:id="@+id/time_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@color/Black"
+            android:contentDescription="@string/dummy"
+            android:scaleType="fitCenter"
+            android:src="@drawable/timebutton2" />
+
+    </LinearLayout>
+
 </LinearLayout>

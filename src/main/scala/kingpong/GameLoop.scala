@@ -18,7 +18,12 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
   import GameLoop._
   
   /** Is the loop running. */
-  var running: Boolean = false
+  private var running: Boolean = true
+
+  /** Ask this game loop to stop. */
+  def requestStop(): Unit = {
+    running = false
+  }
 
   override def run(): Unit = {
     var canvas: Canvas = null
