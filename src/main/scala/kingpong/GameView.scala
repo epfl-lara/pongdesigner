@@ -32,6 +32,10 @@ import org.jbox2d.common.MathUtils
 
 object GameView {
 
+  sealed trait GameState
+  case object Running extends GameState
+  case object Editing extends GameState
+
   // 1 meter is equivalent to 100 pixels (with default zoom)
   val BOX2D_RATIO = 100
 
@@ -46,7 +50,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   private var game: Game = new EmptyGame()
 
   /** The main game loop that calls `update()` and `render()`. */
-  private val gameLoop = new GameLoop(getHolder(), this)
+  private var gameLoop: Option[GameLoop] = None
 
   /** The transformation applied to the canvas. 
    *  Transforms from Box2D units (meters) to pixels.
@@ -57,10 +61,52 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   private val matrixI = new Matrix()
 
   /** The current game state. */
-  private var state: GameState = Running
+  private var _state: GameState = Editing
+  private def state_=(s: GameState) = _state = s
+  def state = _state
+
+  /** Flag to know if the canvas is ready to draw on it. */
+  private var isSurfaceCreated = false
 
   // Register to intercept events
   getHolder().addCallback(this)
+
+
+  /** Called by the activity when the game has to sleep deeply. 
+   *  The state is changed to `Editing` and the game loop is stoped.
+   */
+  def onPause(): Unit = {
+    Log.d("kingpong", "onPause()")
+    state = Editing
+    stopLoop()
+  }
+
+  /** Called by the activity after a deep sleep. 
+   *  The state is keeped to `Editing` and the game loop is started.
+   */
+  def onResume(): Unit = {
+    Log.d("kingpong", "onResume()")
+    state = Editing
+    if (isSurfaceCreated)
+      startLoop()
+  }
+
+  /** Change the current state to Editing. */
+  def toEditing(): Unit = if (state == Running) {
+    Log.d("kingpong", "toEditing()")
+    state = Editing
+  }
+
+  /** Change the current state to Running. */
+  def toRunning(): Unit = if (state == Editing) {
+    Log.d("kingpong", "toRunning()")
+    state = Running
+  }
+
+  /** Reset the game to its initial state. */
+  def backToBeginning(): Unit = {
+    //TODO
+  }
 
   def reset(newGame: Game): Unit = {
     game = newGame
@@ -118,25 +164,21 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
-    Log.d("kingpong", "surfaceChanged")
+    Log.d("kingpong", "surfaceChanged()")
     computeTransformationMatrices()
 
   }
 
   def surfaceCreated(holder: SurfaceHolder): Unit = {
-    if (!gameLoop.running) {
-      gameLoop.running = true
-      gameLoop.start()
-    }
+    Log.d("kingpong", "surfaceCreated()")
+    isSurfaceCreated = true
+    startLoop()
   }
 
   def surfaceDestroyed(holder: SurfaceHolder): Unit = {
-    gameLoop.running = false
-    var retry = true
-    while (retry) Try { 
-      gameLoop.join()
-      retry = false
-    }
+    Log.d("kingpong", "surfaceDestroyed()")
+    isSurfaceCreated = false
+    stopLoop()
   }
 
 
@@ -203,6 +245,35 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     matrix.invert(matrixI)
   }
 
+  /** Stop the thread loop. */
+  private def stopLoop(): Unit = gameLoop match {
+    case Some(loop) =>
+      loop.requestStop()
+      var retry = true
+      while (retry) Try { 
+        loop.join()
+        retry = false
+      }
+      gameLoop = None
+
+    case _ => //Do nothing
+  }
+
+  /** Start a fresh thread loop that will call `update()` and
+   *  `render()`. 
+   *  If a loop is already running, calling this 
+   *  will have no effect. If the thread exists but is either 
+   *  dead or not started, a new thread will be created and 
+   *  started.
+   */
+  private def startLoop(): Unit = {
+    if (!gameLoop.isDefined || 
+        !gameLoop.get.isAlive) {
+      gameLoop = Some(new GameLoop(getHolder, this))
+      gameLoop.get.start()
+    }
+  }
+
   override def onTouchEvent(me: MotionEvent): Boolean = {
     EventHolder.onTouchEvent(me)
     true
@@ -256,10 +327,5 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       }
     }
   }
-
-  private sealed trait GameState
-  private case object Running extends GameState
-  private case object Editing extends GameState
-
 
 }
