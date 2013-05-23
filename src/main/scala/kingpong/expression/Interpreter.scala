@@ -41,14 +41,14 @@ trait Interpreter {
       }
 
     case Assign(prop, rhs) =>
-      prop.setPongValue(eval(rhs))
+      prop.setNext(eval(rhs))
 
     case NOP => //Do nothing
   }
 
   def eval(expr: Expr)(implicit context: Context): Value = expr match {
 
-    case ref: PropertyRef => ref.getPongValue
+    case ref: PropertyRef => ref.get
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)

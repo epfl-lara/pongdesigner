@@ -68,6 +68,11 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // Utility functions
   // --------------------------------------------------------------------------  
   
+  /** Validate the next values of the underlying structure 
+   *  and replace the current value with it. 
+   */
+  def validate() = properties.values.foreach {_.validate()}
+
   /** Write the properties values to the underlying structure. The common case
    *  is to force these values to the physical world, but it could also do
    *  nothing.

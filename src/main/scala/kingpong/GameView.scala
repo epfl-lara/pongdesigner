@@ -2,9 +2,11 @@ package ch.epfl.lara.synthesis.kingpong
 
 import scala.util.Try
 
+import android.app.Activity
 import android.view.SurfaceView
 import android.view.MotionEvent
 import android.view.SurfaceHolder
+import android.view.Surface
 
 import android.graphics.Canvas
 import android.content.Context
@@ -24,6 +26,10 @@ import android.util.AttributeSet
 
 import android.os.Handler
 import android.os.Vibrator
+import android.hardware.SensorManager
+import android.hardware.Sensor
+import android.hardware.SensorEventListener
+import android.hardware.SensorEvent
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
@@ -45,6 +51,8 @@ object GameView {
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
                                                       with SurfaceHolder.Callback {
   import GameView._
+
+  private var activity: Activity = null
 
   /** The game model currently rendered. */
   private var game: Game = new EmptyGame()
@@ -71,6 +79,12 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   // Register to intercept events
   getHolder().addCallback(this)
 
+  /** Called one time at the initialization phase by the Activity.
+   */
+  def setActivity(activity: Activity): Unit = {
+    this.activity = activity
+    EventHolder.setSensorManager(activity.getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager])
+  }
 
   /** Called by the activity when the game has to sleep deeply. 
    *  The state is changed to `Editing` and the game loop is stoped.
@@ -78,6 +92,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def onPause(): Unit = {
     Log.d("kingpong", "onPause()")
     state = Editing
+    EventHolder.disableAccelerometer()
     stopLoop()
   }
 
@@ -87,8 +102,10 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def onResume(): Unit = {
     Log.d("kingpong", "onResume()")
     state = Editing
-    if (isSurfaceCreated)
+    if (isSurfaceCreated) {
+      EventHolder.enableAccelerometer()
       startLoop()
+    }
   }
 
   /** Change the current state to Editing. */
@@ -105,7 +122,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   /** Reset the game to its initial state. */
   def backToBeginning(): Unit = {
-    //TODO
+    game.reset()
   }
 
   def reset(newGame: Game): Unit = {
@@ -166,7 +183,6 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
     Log.d("kingpong", "surfaceChanged()")
     computeTransformationMatrices()
-
   }
 
   def surfaceCreated(holder: SurfaceHolder): Unit = {
@@ -181,6 +197,16 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     stopLoop()
   }
 
+  def onAccelerometerChanged(vector: Vec2): Unit = {
+    // do NOT touch the given vector! 
+    // It is mutable for performance purposes.
+    state match {
+      case Running => 
+        game.onAccelerometerChanged(vector.clone)
+      case Editing =>
+        //TODO
+    } 
+  }
 
   def onFingerDown(pos: Vec2): Unit = state match {
     case Running => 
@@ -280,11 +306,51 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   /** Hold all touch events and pre-format them before dispatching them back. */
-  private object EventHolder {
+  private object EventHolder extends SensorEventListener {
     import EventHolder._
 
-    private val last = Array.fill(FINGERS)(Vec2(0, 0))
+    private val accAlpha = 0.8f
+    private val accLast = Vec2(0, 0)
 
+    private var sensorManager: SensorManager = null
+    private var accelerometer: Sensor = null
+
+    def setSensorManager(manager: SensorManager): Unit = {
+      sensorManager = manager
+      accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    }
+
+    def enableAccelerometer(): Unit = if (sensorManager != null && accelerometer != null) {
+      sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    def disableAccelerometer(): Unit = if (sensorManager != null && accelerometer != null) {
+      sensorManager.unregisterListener(this)
+    }
+
+    def onAccuracyChanged(sensor: Sensor, accuracy: Int): Unit = {}
+
+    // Called when the accelerometer change
+    def onSensorChanged(event: SensorEvent): Unit = {      
+      val x = accAlpha * accLast.x + (1 - accAlpha) * event.values(0)
+      val y = accAlpha * accLast.y + (1 - accAlpha) * event.values(1)
+      
+      val rotation = activity.getWindowManager.getDefaultDisplay.getRotation
+
+      rotation match {
+        case Surface.ROTATION_0 =>
+          onAccelerometerChanged(accLast.set(x, y))
+        case Surface.ROTATION_90 =>
+          onAccelerometerChanged(accLast.set(-y, x))
+        case Surface.ROTATION_180 =>
+          onAccelerometerChanged(accLast.set(-x, -y))
+        case Surface.ROTATION_270 =>
+          onAccelerometerChanged(accLast.set(y, -x))
+        case _ =>
+      }
+    }
+
+    private val last = Array.fill(FINGERS)(Vec2(0, 0))
     def onTouchEvent(me: MotionEvent): Unit = {
       val action = me.getAction()
       (action & MotionEvent.ACTION_MASK) match {

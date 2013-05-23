@@ -30,6 +30,11 @@ trait Game extends TypeChecker with Interpreter { self =>
   /** All the rules in this game. */
   def rules: Iterable[Rule] = _rules
   
+  def reset(): Unit = {
+    _objects.foreach(_.reset(this)(EventHistory))
+    EventHistory.clear()
+  }
+
   def add(o: GameObject) = _objects add o
   def add(rule: Rule) {
     typeCheck(rule)
@@ -115,6 +120,10 @@ trait Game extends TypeChecker with Interpreter { self =>
       EventHistory.clear()
     }
 
+  }
+
+  private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
+    //TODO
   }
 
   private[kingpong] def onFingerDown(pos: Vec2): Unit = {

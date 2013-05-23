@@ -59,8 +59,8 @@ object Trees {
   trait PropertyRef extends Expr { self =>
     
     private[kingpong] def getPongType: Type
-    private[kingpong] def setPongValue(v: Value): self.type
-    private[kingpong] def getPongValue: Value
+    private[kingpong] def setNext(v: Value): self.type
+    private[kingpong] def get: Value
 
     def :=(expr: Expr): Stat = Assign(this, expr)
   }
@@ -69,12 +69,12 @@ object Trees {
     
     private[kingpong] def getPongType = property.getPongType
 
-    private[kingpong] def setPongValue(v: Value) = {
-      property.setPongValue(v)
+    private[kingpong] def setNext(v: Value) = {
+      property.setNext(v)
       this
     }
 
-    private[kingpong] def getPongValue = property.getPongValue
+    private[kingpong] def get = property.getPongValue
   }
 
   case class CategoryPropertyRef(properties: Set[Property[_]]) extends PropertyRef {
@@ -84,12 +84,12 @@ object Trees {
 
     private[kingpong] def getPongType = properties.head.getPongType
 
-    private[kingpong] def setPongValue(v: Value) = {
-      properties foreach {_.setPongValue(v)}
+    private[kingpong] def setNext(v: Value) = {
+      properties foreach {_.setNext(v)}
       this
     }
 
-    private[kingpong] def getPongValue = properties.head.getPongValue
+    private[kingpong] def get = properties.head.getPongValue
   }
 
 }

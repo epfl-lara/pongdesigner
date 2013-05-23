@@ -26,6 +26,7 @@ class Kingpong extends Activity {
   override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.main)
+    view.setActivity(this)
     view.requestFocus()
 
     timeButton.setOnClickListener( new View.OnClickListener{ 

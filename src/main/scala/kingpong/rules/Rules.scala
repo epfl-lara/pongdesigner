@@ -19,8 +19,9 @@ object Rules {
 
   class Whenever(val cond: Expr, val action: Stat) extends Rule {
     def evaluate(interpreter: Interpreter)(implicit context: Context) {
-      if (interpreter.eval(cond).as[Boolean])
+      if (interpreter.eval(cond).as[Boolean]) {
         interpreter.eval(action)
+      }
     }
   }
 
