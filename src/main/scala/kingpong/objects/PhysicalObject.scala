@@ -147,9 +147,10 @@ class Rectangle (protected val game: Game,
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
     body_def.`type` = init_tpe
-    if (init_tpe == BodyType.DYNAMIC) {
-      body_def.bullet = true
-    }
+    
+    //if (init_tpe == BodyType.DYNAMIC) {
+    //  body_def.bullet = true
+    //}
 
     val shape = new PolygonShape()
     shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
@@ -204,9 +205,10 @@ class Circle(protected val game: Game,
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
     body_def.`type` = init_tpe
-    if (init_tpe == BodyType.DYNAMIC) {
-      body_def.bullet = true
-    }
+    
+    //if (init_tpe == BodyType.DYNAMIC) {
+    //  body_def.bullet = true
+    //}
     
     val shape = new CircleShape()
     shape.m_radius = game.typeCheckAndEvaluate[Float](init_radius)
