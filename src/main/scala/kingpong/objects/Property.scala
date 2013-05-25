@@ -2,15 +2,12 @@ package ch.epfl.lara.synthesis.kingpong.objects
 
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Snap
+import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-
-object Property {
-  val MAX_HISTORY_SIZE = 300
-}
 
 abstract class Property[T : PongType]() extends History with Snap { self => 
   
@@ -75,7 +72,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   protected var _snap: T = _
 
   /** Contains the history. The head corresponds to the most recent value. */
-  protected var _history: List[(Long, T)] = List.empty
+  protected var _history: RingBuffer[(Long, T)] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
   def get = _crt
   def next = _next
@@ -110,7 +107,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 
   def save(t: Long): Unit = {
     if (_history.isEmpty || _history.head != _crt) {
-      _history = ((t, _crt) :: _history).take(Property.MAX_HISTORY_SIZE) 
+      _history += (t, _crt)
     }
   }
 
@@ -122,7 +119,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   }
 
   def clear(): Unit = {
-    _history = List.empty
+    _history.clear()
   }
 
 }

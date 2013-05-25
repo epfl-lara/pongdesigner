@@ -33,6 +33,7 @@ import android.hardware.SensorEvent
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 import org.jbox2d.common.MathUtils
 
@@ -102,8 +103,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def onResume(): Unit = {
     Log.d("kingpong", "onResume()")
     state = Editing
-    if (isSurfaceCreated) {
-      EventHolder.enableAccelerometer()
+    EventHolder.enableAccelerometer()
+    if (isSurfaceCreated) {   
       startLoop()
     }
   }
@@ -178,6 +179,16 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       paint.setColor(0xFF0000FF)
       canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
     }
+
+    game.events.find(_.isInstanceOf[AccelerometerChanged]) match {
+      case Some(e @ AccelerometerChanged(v)) =>
+        Log.d("kingpong", s"drawLine $e")
+        paint.setColor(0xFFFF00FF)
+        val pos = mapVectorI(Vec2(100, 100))
+        canvas.drawLine(pos.x, pos.y, pos.x + v.x*10, pos.y + + v.y*10, paint)
+      case _ => //Do nothing
+    }
+
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
@@ -321,17 +332,19 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     }
 
     def enableAccelerometer(): Unit = if (sensorManager != null && accelerometer != null) {
+      Log.d("kingpong", "enableAccelerometer()")
       sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
     def disableAccelerometer(): Unit = if (sensorManager != null && accelerometer != null) {
+      Log.d("kingpong", "disableAccelerometer()")
       sensorManager.unregisterListener(this)
     }
 
     def onAccuracyChanged(sensor: Sensor, accuracy: Int): Unit = {}
 
     // Called when the accelerometer change
-    def onSensorChanged(event: SensorEvent): Unit = {      
+    def onSensorChanged(event: SensorEvent): Unit = {
       val x = accAlpha * accLast.x + (1 - accAlpha) * event.values(0)
       val y = accAlpha * accLast.y + (1 - accAlpha) * event.values(1)
       

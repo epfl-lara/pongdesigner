@@ -1,5 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.common
 
+object History {
+  val MAX_HISTORY_SIZE = 300
+}
+
 trait History extends Any {  
   /** Save the curent value to the history with the specified 
    *  discrete time.

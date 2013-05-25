@@ -4,6 +4,8 @@ import scala.collection.mutable.{Set => MSet}
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
@@ -30,8 +32,14 @@ trait Game extends TypeChecker with Interpreter { self =>
   /** All the rules in this game. */
   def rules: Iterable[Rule] = _rules
   
+  //TODO what should be the right way to get back events, 
+  // particularly for a time interval
+  /** Events from the curent last full step. */
+  def events = EventHistory.events
+
   def reset(): Unit = {
     _objects.foreach(_.reset(this)(EventHistory))
+    world.clear()
     EventHistory.clear()
   }
 
@@ -114,16 +122,13 @@ trait Game extends TypeChecker with Interpreter { self =>
     objects foreach {_.save(time)}
 
     if (time == 200) {
-      objects foreach {_.restore(1)}
-      objects foreach {_.clear()}
-      objects foreach {_.flush()}
-      EventHistory.clear()
+      reset()
     }
 
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
-    //TODO
+    EventHistory.addEvent(AccelerometerChanged(vector))
   }
 
   private[kingpong] def onFingerDown(pos: Vec2): Unit = {
@@ -153,7 +158,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   private object EventHistory extends Context {
 
     private var time: Long = 0
-    private var history: List[(Long, Seq[Event])] = List.empty
+    private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
     private val crtEvents = MSet.empty[Event]
 
     /* Advance the time and store the current events in the history. */
@@ -162,7 +167,7 @@ trait Game extends TypeChecker with Interpreter { self =>
       time += 1
       
       if (crtEvents.nonEmpty) {
-        history = (oldTime, crtEvents.toSeq) :: history
+        history += (oldTime, crtEvents.toSeq)
         crtEvents.clear()
       }
       
@@ -185,13 +190,22 @@ trait Game extends TypeChecker with Interpreter { self =>
      *  Can be called by another thread, from user inputs.
      */
     def addEvent(e: Event): Unit = crtEvents.synchronized {
-      crtEvents add e
+      e match {
+        case AccelerometerChanged(_) => 
+          crtEvents.retain{
+            case _ : AccelerometerChanged => false
+            case _ => true
+          }
+          crtEvents add e
+        case _ => 
+          crtEvents add e
+      }      
     }
 
     /** Completely clear the history and the ongoing time step. */
     def clear(): Unit = crtEvents.synchronized {
       time = 0
-      history = List.empty
+      history.clear()
       crtEvents.clear()
     }
 

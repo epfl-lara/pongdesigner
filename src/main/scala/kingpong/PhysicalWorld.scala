@@ -33,6 +33,12 @@ class PhysicalWorld(g: Vec2) {
     world.step(GameLoop.FRAME_PERIOD_S, 3, 2)
   }
   
+  def clear(): Unit = {
+    begin_contacts.clear()
+    current_contacts.clear()
+    end_contacts.clear()
+  }
+
   def beginContacts = begin_contacts.iterator
   
   def currentContacts = current_contacts.iterator
