@@ -147,6 +147,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     canvas.setMatrix(matrix)
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
 
+    paint.setStrokeWidth(mapRadiusI(1))
+
     game.objects foreach { o => o match {
       case r: Rectangle =>
         paint.setColor(0xFF000000) // TODO r.color
@@ -182,10 +184,10 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
     game.events.find(_.isInstanceOf[AccelerometerChanged]) match {
       case Some(e @ AccelerometerChanged(v)) =>
-        Log.d("kingpong", s"drawLine $e")
+        paint.setStrokeWidth(mapRadiusI(2))
         paint.setColor(0xFFFF00FF)
         val pos = mapVectorI(Vec2(100, 100))
-        canvas.drawLine(pos.x, pos.y, pos.x + v.x*10, pos.y + + v.y*10, paint)
+        canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
       case _ => //Do nothing
     }
 
@@ -352,7 +354,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
       rotation match {
         case Surface.ROTATION_0 =>
-          onAccelerometerChanged(accLast.set(x, y))
+          onAccelerometerChanged(accLast.set(-x, y))
         case Surface.ROTATION_90 =>
           onAccelerometerChanged(accLast.set(-y, x))
         case Surface.ROTATION_180 =>

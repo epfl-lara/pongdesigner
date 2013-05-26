@@ -8,7 +8,7 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
 
   def length = _size
   override def size = _size
-  override def isEmpty = read == write
+  override def isEmpty = _size == 0
   override def head = apply(0)
   override def last = apply(_size-1)
 

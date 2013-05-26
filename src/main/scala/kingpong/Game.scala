@@ -37,6 +37,11 @@ trait Game extends TypeChecker with Interpreter { self =>
   /** Events from the curent last full step. */
   def events = EventHistory.events
 
+  /** Time of the current step. It corresponds to the last fully 
+   *  completed step.
+   */
+  def time = EventHistory.time
+
   def reset(): Unit = {
     _objects.foreach(_.reset(this)(EventHistory))
     world.clear()
@@ -152,24 +157,26 @@ trait Game extends TypeChecker with Interpreter { self =>
    */
   private object EventHistory extends Context {
 
-    private var time: Long = 0
+    private var recording_time: Long = 0
 
     // Oldest first (head), more recent at the end (last). Both in O(1).
     private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
     private val crtEvents = MSet.empty[Event]
 
+    /** Time for the last fully completed step. */
+    def time = recording_time - 1
+
     /* Advance the time and store the current events in the history. */
     def step(): Long = crtEvents.synchronized {
-      val oldTime = time
-      time += 1
+      recording_time += 1
       
       if (crtEvents.nonEmpty) {
-        history += (oldTime, crtEvents.toSeq)
+        history += (time, crtEvents.toSeq)
         crtEvents.clear()
       }
       
-      oldTime
+      time
     }
 
     /** Return the events from the last fully completed time step. 
@@ -177,7 +184,7 @@ trait Game extends TypeChecker with Interpreter { self =>
      *  call `step()`.
      */
     def events: Seq[Event] = {
-      if (history.isEmpty || history.last._1 != time - 1) {
+      if (history.isEmpty || history.last._1 != time ) {
         Seq.empty
       } else {
         history.last._2
@@ -202,7 +209,7 @@ trait Game extends TypeChecker with Interpreter { self =>
 
     /** Completely clear the history and the ongoing time step. */
     def clear(): Unit = crtEvents.synchronized {
-      time = 0
+      recording_time = 0
       history.clear()
       crtEvents.clear()
     }
