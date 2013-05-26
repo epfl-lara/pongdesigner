@@ -31,8 +31,8 @@ class SimpleGameSuite extends FunSuite with BeforeAndAfter {
   }
 
   test("SimpleGame construction") {
-    assert(game.objects.exists(_("name").getPongValue == StringV("Circle 1")))
-    assert(game.objects.exists(_("radius").getPongValue == FloatV(40f)))
+    assert(game.objects.exists(_("name").get == StringV("Circle 1")))
+    assert(game.objects.exists(_("radius").get == FloatV(40f)))
   }
 
 }

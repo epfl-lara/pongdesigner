@@ -94,6 +94,7 @@ class ExpressionSuite extends FunSuite with BeforeAndAfter {
 
     interpreter.typeCheck(s)
     interpreter.eval(s)
+    p.validate()
     assert(p.get === 2)
   }
 }

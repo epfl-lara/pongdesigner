@@ -10,16 +10,17 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
   override def size = _size
   override def isEmpty = read == write
   override def head = apply(0)
+  override def last = apply(_size-1)
 
   def apply(idx: Int): A = {
-    if (idx >= _size) 
+    if (idx >= _size || idx < 0) 
       throw new IndexOutOfBoundsException(idx.toString)
     else 
       array((read + idx) % maxSize)
   }
 
   def update(idx: Int, elem: A) {
-    if (idx >= _size) 
+    if (idx >= _size || idx < 0) 
       throw new IndexOutOfBoundsException(idx.toString)
     else 
       array((read + idx) % maxSize) = elem

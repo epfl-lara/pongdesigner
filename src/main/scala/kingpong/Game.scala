@@ -120,11 +120,6 @@ trait Game extends TypeChecker with Interpreter { self =>
     world.step()
     objects foreach {_.load()}
     objects foreach {_.save(time)}
-
-    if (time == 200) {
-      reset()
-    }
-
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
@@ -158,7 +153,10 @@ trait Game extends TypeChecker with Interpreter { self =>
   private object EventHistory extends Context {
 
     private var time: Long = 0
+
+    // Oldest first (head), more recent at the end (last). Both in O(1).
     private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
+
     private val crtEvents = MSet.empty[Event]
 
     /* Advance the time and store the current events in the history. */
@@ -179,10 +177,10 @@ trait Game extends TypeChecker with Interpreter { self =>
      *  call `step()`.
      */
     def events: Seq[Event] = {
-      if (history.isEmpty || history.head._1 != time) {
+      if (history.isEmpty || history.last._1 != time - 1) {
         Seq.empty
       } else {
-        history.head._2
+        history.last._2
       }
     }
 
