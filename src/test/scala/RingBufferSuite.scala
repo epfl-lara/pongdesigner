@@ -17,15 +17,23 @@ class RingBufferSuite extends FunSuite with BeforeAndAfter {
 
   test("insert elements") {
     assert(buffer.size === 0)
+    assert(buffer.isEmpty === true)
 
     buffer += 1
     buffer += 2
 
+    assert(buffer.isEmpty === false)
+    assert(buffer.nonEmpty === true)
     assert(buffer.size === 2)
     assert(buffer.head === 1)
     assert(buffer.last === 2)
     assert(buffer(0) === 1)
     assert(buffer(buffer.size - 1) === 2)
+
+    buffer ++= Seq(3, 4)
+    assert(buffer.size === 4)
+    assert(buffer(2) === 3)
+    assert(buffer(3) === 4)
   }
 
   test("update elements") {
@@ -54,6 +62,8 @@ class RingBufferSuite extends FunSuite with BeforeAndAfter {
     buffer += 6
     buffer += 7
 
+    assert(buffer.isEmpty === false)
+    assert(buffer.nonEmpty === true)
     assert(buffer.size === 4)
     assert(buffer.head === 4)
     assert(buffer.last === 7)
