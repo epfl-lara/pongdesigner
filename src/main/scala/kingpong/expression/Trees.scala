@@ -1,5 +1,8 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
+// remove the warning 
+import language.existentials
+
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -51,45 +54,27 @@ object Trees {
   case class LessThan(lhs: Expr, rhs: Expr) extends Expr
   case class Not(expr: Expr) extends Expr
 
-  case class FingerMoveOver(c: Category) extends Expr
-  case class FingerDownOver(c: Category) extends Expr
-  case class FingerUpOver(c: Category) extends Expr
-  case class Collision(c1: Category, c2: Category) extends Expr
+  case class FingerMoveOver(o: GameObject) extends Expr
+  case class FingerDownOver(o: GameObject) extends Expr
+  case class FingerUpOver(o: GameObject) extends Expr
+  case class Collision(o1: GameObject, o2: GameObject) extends Expr
 
-  trait PropertyRef extends Expr { self =>
+  case class PropertyRef(property: Property[_]) extends Expr {
     
-    private[kingpong] def getPongType: Type
-    private[kingpong] def setNext(v: Value): self.type
-    private[kingpong] def get: Value
-
-    def :=(expr: Expr): Stat = Assign(this, expr)
-  }
-
-  case class SinglePropertyRef[T](property: Property[T]) extends PropertyRef {
+    /** Return the internal type of this property. */
+    private[kingpong] def getPongType: Type = property.getPongType
     
-    private[kingpong] def getPongType = property.getPongType
-
+    /** Set the next value if this property. */
     private[kingpong] def setNext(v: Value) = {
       property.setNext(v)
       this
     }
 
-    private[kingpong] def get = property.getPongValue
-  }
+    /** Get the current value of this property. */
+    private[kingpong] def get: Value = property.getPongValue
 
-  case class CategoryPropertyRef(properties: Set[Property[_]]) extends PropertyRef {
-    
-    //TODO how to handle a get on an empty category ?
-    require(properties.nonEmpty)
-
-    private[kingpong] def getPongType = properties.head.getPongType
-
-    private[kingpong] def setNext(v: Value) = {
-      properties foreach {_.setNext(v)}
-      this
-    }
-
-    private[kingpong] def get = properties.head.getPongValue
+    def :=(expr: Expr): Stat = Assign(this, expr)
+    def assign(expr: Expr): Stat = this := expr
   }
 
 }

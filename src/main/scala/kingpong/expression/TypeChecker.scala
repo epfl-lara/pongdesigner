@@ -8,6 +8,11 @@ case class TypeCheckException(msg: String) extends Exception(msg)
 
 trait TypeChecker {
   
+  def typeCheck(iterator: RuleIterator): RuleIterator = {
+    iterator.typeCheck(this)
+    iterator
+  } 
+
   def typeCheck(rule: Rule): Rule = {
     typeCheck(rule.cond, TBoolean)
     typeCheck(rule.action)

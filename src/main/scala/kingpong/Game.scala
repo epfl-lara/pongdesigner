@@ -24,13 +24,13 @@ trait Game extends TypeChecker with Interpreter { self =>
   val world: PhysicalWorld
 
   private val _objects = MSet.empty[GameObject]
-  private val _rules = MSet.empty[Rule]
+  private val _rules = MSet.empty[RuleIterator]
 
   /** All objects in this game. */
   def objects: Iterable[GameObject] = _objects
 
-  /** All the rules in this game. */
-  def rules: Iterable[Rule] = _rules
+  /** All the rules iterators in this game. */
+  def rules: Iterable[RuleIterator] = _rules
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
@@ -44,14 +44,16 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   def reset(): Unit = {
     _objects.foreach(_.reset(this)(EventHistory))
+    _objects.foreach(_.clear())
+    _rules.foreach(_.reset())
     world.clear()
     EventHistory.clear()
   }
 
   def add(o: GameObject) = _objects add o
-  def add(rule: Rule) {
-    typeCheck(rule)
-    _rules add rule
+  def add(iterator: RuleIterator) {
+    typeCheck(iterator)
+    _rules add iterator
   }
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
@@ -101,16 +103,25 @@ trait Game extends TypeChecker with Interpreter { self =>
     r
   }
 
+  def foreach(category: Category)(rule: GameObject => Rule): Unit = {
+    this add new Foreach1(category, rule)
+  }
+
+  def foreach(category1: Category, category2: Category)
+             (rule: (GameObject, GameObject) => Rule): Unit = {
+    this add new Foreach2(category1, category2, rule.tupled)
+  }
+
   def whenever(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new Whenever(cond, toSingleStat(actions))
+    this add new NoCategory(new Whenever(cond, toSingleStat(actions)))
   }
 
   def once(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new Once(cond, toSingleStat(actions))
+    this add new NoCategory(new Once(cond, toSingleStat(actions)))
   }
 
   def on(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new On(cond, toSingleStat(actions))
+    this add new NoCategory(new On(cond, toSingleStat(actions)))
   }
 
   private[kingpong] def objectAt(pos: Vec2): Option[GameObject] = {
@@ -121,6 +132,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   private[kingpong] def update(): Unit = {
     val time = EventHistory.step()
     rules foreach {_.evaluate(this)(EventHistory)}
+    objects foreach {_.validate()}
     objects foreach {_.flush()}
     world.step()
     objects foreach {_.load()}
@@ -219,14 +231,21 @@ trait Game extends TypeChecker with Interpreter { self =>
 }
 
 class EmptyGame() extends Game {
-  val world = new PhysicalWorld(Vec2(0, 1f))
+  val world = new PhysicalWorld(Vec2(0, 1.5f))
 
-  rectangle("Rectangle 1", 2, 0, width = 1, height = 1, fixedRotation = false)
-  rectangle("Rectangle 2", 3.4, 0, width = 1, height = 2, fixedRotation = false)
+  val cat = new Category("Moving objects")
 
-  circle("Circle 1", 3, 2, radius = 1, fixedRotation = false)
-  circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
+  rectangle("Rectangle 1", 2, 0, width = 1, height = 1, fixedRotation = false).withCategory(cat)
+  rectangle("Rectangle 2", 3.4, 0, width = 1, height = 2, fixedRotation = false).withCategory(cat)
+
+  circle("Circle 1", 3, 2, radius = 1, fixedRotation = false).withCategory(cat)
+  circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
   
   rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
+
+  foreach(cat) { o =>
+    new Whenever(8 < o("y"), o("y") := 0)
+  }
+
 
 }

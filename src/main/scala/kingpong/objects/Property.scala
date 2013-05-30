@@ -58,10 +58,10 @@ abstract class Property[T : PongType]() extends History with Snap { self =>
   def getPongType: Type = tpe.getPongType
 
   /** Get the reference of this property. */
-  lazy val ref = SinglePropertyRef(this)
+  lazy val ref = PropertyRef(this)
 
   /** The PongType implicit used for conversions. */
-  lazy val tpe = implicitly[PongType[T]]
+  def tpe = implicitly[PongType[T]]
 }
 
 abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) extends Property[T] {
@@ -113,7 +113,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 
   def restore(t: Long): Unit = {
     _history.find(_._1 >= t) match {
-      case Some((time, value)) => _crt = value
+      case Some((time, value)) => set(value)
       case None => sys.error(s"The timestamp $t doesn't exist in the history.")
     }
   }
@@ -135,7 +135,7 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr)
   }
   
   def load() = {
-    _crt = loader()
+    set(loader())
     this
   }
 
@@ -154,6 +154,11 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr)
       flusher(_crt)
     }
     this
+  }
+
+  override def reset(interpreter: Interpreter)(implicit context: Context) = {
+    _lastFlushed = null.asInstanceOf[T]
+    super.reset(interpreter)
   }
   
   def load() = this

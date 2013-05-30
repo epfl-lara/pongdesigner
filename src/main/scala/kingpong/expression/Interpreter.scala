@@ -173,12 +173,19 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    //TODO use the context to evaluate these...
-    // HOW TO get back the specific game object that triggered this expression.
-    case FingerMoveOver(c) => ???
-    case FingerDownOver(c) => ???
-    case FingerUpOver(c) => ???
-    case Collision(c1, c2) => ???
+    case FingerMoveOver(o) => 
+      BooleanV(context.fingerMoves(_.obj.exists(_ == o)).nonEmpty)
+
+    case FingerDownOver(o) => 
+      BooleanV(context.fingerDowns(_.obj.exists(_ == o)).nonEmpty)
+
+    case FingerUpOver(o) => 
+      BooleanV(context.fingerUps(_.obj.exists(_ == o)).nonEmpty)
+
+    case Collision(o1, o2) => 
+      BooleanV(context.beginContacts{ c =>
+        c.contact.objectA == o1 && c.contact.objectB == o2
+      }.nonEmpty)
 
   }
   
