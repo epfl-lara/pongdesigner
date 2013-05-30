@@ -123,6 +123,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   /** Reset the game to its initial state. */
   def backToBeginning(): Unit = {
+    toEditing()
     game.reset()
   }
 

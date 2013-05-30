@@ -49,7 +49,10 @@ class Kingpong extends Activity {
     view.onResume()
   }
 
-  private def onBackButtonClick() = view.backToBeginning()
+  private def onBackButtonClick() = {
+    timeButton.setImageDrawable(timeButtonPlay)
+    view.backToBeginning()
+  }
   
   private def onTimeButtonClick() = view.state match {
     case GameView.Editing =>

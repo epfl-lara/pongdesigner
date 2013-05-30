@@ -19,13 +19,13 @@ abstract class AbstractObject(init_name: Expr,
   val visible = simpleProperty[Boolean]("visible", init_visible)  
 }
 
-class Box[T : PongType](init_name: String, 
+class Box[T : PongType](init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
+                        init_angle: Expr,
                         init_width: Expr, 
                         init_height: Expr, 
                         init_value: Expr,
-                        init_angle: Expr,
                         init_visible: Expr
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible)
                          with Rectangular {

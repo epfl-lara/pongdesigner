@@ -51,7 +51,17 @@ trait Game extends TypeChecker with Interpreter { self =>
   }
 
   def add(o: GameObject) = _objects add o
-  def add(iterator: RuleIterator) {
+  
+
+  /** Register this rule iterator in this game engine. */
+  def register(iterator: RuleIterator) {
+    typeCheck(iterator)
+    _rules add iterator
+  }
+
+  /** Register this rule in this game engine. */
+  def register(rule: Rule) {
+    val iterator = new NoCategory(rule)
     typeCheck(iterator)
     _rules add iterator
   }
@@ -103,25 +113,39 @@ trait Game extends TypeChecker with Interpreter { self =>
     r
   }
 
-  def foreach(category: Category)(rule: GameObject => Rule): Unit = {
-    this add new Foreach1(category, rule)
+  def intbox(name: Expr,
+             x: Expr,
+             y: Expr,
+             value: Expr = 0,
+             angle: Expr = 0,
+             width: Expr = 1,
+             height: Expr = 1,
+             visible: Expr = true): Box[Int] = {
+    val box = new Box[Int](name, x, y, angle, width, height, value, visible)
+    box.reset(this)(EventHistory)
+    this add box
+    box
+  }
+
+  def foreach(category: Category)(rule: GameObject => Rule): RuleIterator = {
+    new Foreach1(category, rule)
   }
 
   def foreach(category1: Category, category2: Category)
-             (rule: (GameObject, GameObject) => Rule): Unit = {
-    this add new Foreach2(category1, category2, rule.tupled)
+             (rule: (GameObject, GameObject) => Rule): RuleIterator = {
+    new Foreach2(category1, category2, rule.tupled)
   }
 
-  def whenever(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new NoCategory(new Whenever(cond, toSingleStat(actions)))
+  def whenever(cond: Expr)(actions: Seq[Stat]): Rule = {
+    new Whenever(cond, toSingleStat(actions))
   }
 
-  def once(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new NoCategory(new Once(cond, toSingleStat(actions)))
+  def once(cond: Expr)(actions: Seq[Stat]): Rule = {
+    new Once(cond, toSingleStat(actions))
   }
 
-  def on(cond: Expr)(actions: Seq[Stat]): Unit = {
-    this add new NoCategory(new On(cond, toSingleStat(actions)))
+  def on(cond: Expr)(actions: Seq[Stat]): Rule = {
+    new On(cond, toSingleStat(actions))
   }
 
   private[kingpong] def objectAt(pos: Vec2): Option[GameObject] = {
@@ -241,11 +265,25 @@ class EmptyGame() extends Game {
   circle("Circle 1", 3, 2, radius = 1, fixedRotation = false).withCategory(cat)
   circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
   
-  rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
+  val score = intbox("Score", 1, 1, value = 0)
 
-  foreach(cat) { o =>
-    new Whenever(8 < o("y"), o("y") := 0)
+  val cat2 = new Category("Static objects")
+
+  val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC).withCategory(cat2)
+
+  val r1 = foreach(cat) { o =>
+    whenever(base("y") < o("y")) { Seq(
+      o("y") := 0
+    )}
   }
 
+  val r2 = foreach(cat, cat2) { (o1, o2) =>
+    once(Collision(o1, o2)) { Seq(
+      score("value") := score("value") + 1
+    )}
+  }
+
+  register(r1)
+  register(r2)
 
 }
