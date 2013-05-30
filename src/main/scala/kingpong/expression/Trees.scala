@@ -31,6 +31,9 @@ object Trees {
     def ||(e: Expr): Expr = Or(this, e)
     def =:=(e: Expr): Expr = Equals(this, e)
     def <(e: Expr): Expr = LessThan(this, e)
+    def <=(e: Expr): Expr = LessEq(this, e)
+    def >(e: Expr): Expr = GreaterThan(this, e)
+    def >=(e: Expr): Expr = GreaterEq(this, e)
     def unary_! : Expr = Not(this)
 
   }
@@ -52,6 +55,9 @@ object Trees {
   case class Or(lhs: Expr, rhs: Expr) extends Expr
   case class Equals(lhs: Expr, rhs: Expr) extends Expr
   case class LessThan(lhs: Expr, rhs: Expr) extends Expr
+  case class LessEq(lhs: Expr, rhs: Expr) extends Expr
+  case class GreaterThan(lhs: Expr, rhs: Expr) extends Expr
+  case class GreaterEq(lhs: Expr, rhs: Expr) extends Expr
   case class Not(expr: Expr) extends Expr
 
   case class FingerMoveOver(o: GameObject) extends Expr
@@ -74,7 +80,10 @@ object Trees {
     private[kingpong] def get: Value = property.getPongValue
 
     def :=(expr: Expr): Stat = Assign(this, expr)
-    def assign(expr: Expr): Stat = this := expr
+    def +=(expr: Expr): Stat = Assign(this, Plus(this, expr))
+    def -=(expr: Expr): Stat = Assign(this, Minus(this, expr))
+    def *=(expr: Expr): Stat = Assign(this, Times(this, expr))
+    def /=(expr: Expr): Stat = Assign(this, Div(this, expr))
   }
 
 }

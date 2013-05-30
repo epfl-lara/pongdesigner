@@ -131,6 +131,21 @@ trait TypeChecker {
       typeCheck(lhs, TInt, TFloat)
       typeCheck(rhs, TInt, TFloat)
       expr.setType(TBoolean)
+
+    case LessEq(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
+
+    case GreaterThan(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
+
+    case GreaterEq(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
       
     case Not(e) =>
       typeCheck(e, TBoolean)

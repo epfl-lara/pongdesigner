@@ -166,6 +166,24 @@ trait Interpreter {
         case (NumericV(v1), NumericV(v2)) => BooleanV(v1 < v2)
         case _ => throw InterpreterException(s"A LessThan is not possible between $lhs and $rhs.")
       }
+
+    case LessEq(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 <= v2)
+        case _ => throw InterpreterException(s"A LessEq is not possible between $lhs and $rhs.")
+      }
+
+    case GreaterThan(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 > v2)
+        case _ => throw InterpreterException(s"A GreaterThan is not possible between $lhs and $rhs.")
+      }
+
+    case GreaterEq(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 >= v2)
+        case _ => throw InterpreterException(s"A GreaterEq is not possible between $lhs and $rhs.")
+      }
       
     case Not(e) =>
       eval(e) match {

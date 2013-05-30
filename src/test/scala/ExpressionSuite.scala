@@ -66,6 +66,26 @@ class ExpressionSuite extends FunSuite with BeforeAndAfter {
     assert(e.getType === TVec2)
     assert(interpreter.eval(e).as[Vec2] === Vec2(0.5f, 1))
 
+    e = LessThan(3, 2)
+    interpreter.typeCheck(e)
+    assert(e.getType === TBoolean)
+    assert(interpreter.eval(e).as[Boolean] === false)
+
+    e = LessEq(2, 2)
+    interpreter.typeCheck(e)
+    assert(e.getType === TBoolean)
+    assert(interpreter.eval(e).as[Boolean] === true)
+
+    e = GreaterThan(1, 2)
+    interpreter.typeCheck(e)
+    assert(e.getType === TBoolean)
+    assert(interpreter.eval(e).as[Boolean] === false)
+
+    e = GreaterEq(3, 2)
+    interpreter.typeCheck(e)
+    assert(e.getType === TBoolean)
+    assert(interpreter.eval(e).as[Boolean] === true)
+
     e = Times(1, true)
     intercept[TypeCheckException] {
       interpreter.typeCheck(e)
