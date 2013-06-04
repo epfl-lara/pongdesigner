@@ -107,12 +107,12 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 
   def save(t: Long): Unit = {
     if (_history.isEmpty || _history.last._2 != _crt) {
-      _history += (t, _crt)
+      _history += (t, tpe.clone(_crt))
     }
   }
 
   def restore(t: Long): Unit = {
-    _history.find(_._1 >= t) match {
+    _history.findLast(_._1 <= t) match {
       case Some((time, value)) => set(value)
       case None => sys.error(s"The timestamp $t doesn't exist in the history.")
     }

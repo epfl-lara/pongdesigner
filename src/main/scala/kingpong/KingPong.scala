@@ -12,9 +12,12 @@ import org.jbox2d.collision.shapes._
 import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.objects._
 
-class Kingpong extends Activity {
+class Kingpong extends Activity 
+               with SeekBar.OnSeekBarChangeListener {
+
   lazy private val view = findViewById(R.id.gameview).asInstanceOf[GameView]
   lazy private val timeButton = findViewById(R.id.time_button).asInstanceOf[ImageButton]
   lazy private val backButton = findViewById(R.id.back_button).asInstanceOf[ImageButton]
@@ -27,6 +30,11 @@ class Kingpong extends Activity {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.main)
     view.setActivity(this)
+    
+    timeBar.setMax(History.MAX_HISTORY_SIZE)
+    timeBar.setProgress(0)
+    timeBar.setSecondaryProgress(0)
+    timeBar.setOnSeekBarChangeListener(this)
     view.requestFocus()
 
     timeButton.setOnClickListener( new View.OnClickListener{ 
@@ -63,5 +71,15 @@ class Kingpong extends Activity {
       view.toEditing()
       timeButton.setImageDrawable(timeButtonPlay)
   }
+
+  /** When the progress bar changes from the user. */
+  def onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) = {
+    if (fromUser) {
+      view.onProgressBarChanged(progress)
+    }
+  }
+
+  def onStartTrackingTouch(seekBar: SeekBar) {}
+  def onStopTrackingTouch(seekBar: SeekBar) {}
 
 }

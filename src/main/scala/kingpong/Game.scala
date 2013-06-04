@@ -41,8 +41,19 @@ trait Game extends TypeChecker with Interpreter { self =>
    *  completed step.
    */
   def time = EventHistory.time
+  
+  /*** Maximum time achieved in this game. */
+  def maxTime = EventHistory.maxTime
 
-  def reset(): Unit = {
+  private[kingpong] def restore(t: Long): Unit = {
+    if (t >= 0 && t <= maxTime) {
+      _objects.foreach(_.restore(t))
+      EventHistory.restore(t)
+      world.clear()
+    }
+  }
+
+  private[kingpong] def reset(): Unit = {
     _objects.foreach(_.reset(this)(EventHistory))
     _objects.foreach(_.clear())
     _rules.foreach(_.reset())
@@ -50,8 +61,30 @@ trait Game extends TypeChecker with Interpreter { self =>
     EventHistory.clear()
   }
 
+  /** Perform a step. */
+  private[kingpong] def update(): Unit = {
+
+    // save contacts
+    world.beginContacts foreach { EventHistory addEvent BeginContact(_) }
+    world.currentContacts foreach { EventHistory addEvent CurrentContact(_) }
+    world.endContacts foreach { EventHistory addEvent EndContact(_) }
+
+    EventHistory.step()
+    rules foreach {_.evaluate(this)(EventHistory)}
+    objects foreach {_.validate()}
+    objects foreach {_.flush()}
+    world.step()
+    objects foreach {_.load()}
+    objects foreach {_.save(time)}
+
+    if (time == 200) {
+      restore(1)
+    }
+
+  }
+
+
   def add(o: GameObject) = _objects add o
-  
 
   /** Register this rule iterator in this game engine. */
   def register(iterator: RuleIterator) {
@@ -152,17 +185,6 @@ trait Game extends TypeChecker with Interpreter { self =>
     objects.filter(_.contains(pos)).headOption
   }
 
-  /** Perform a step. */
-  private[kingpong] def update(): Unit = {
-    val time = EventHistory.step()
-    rules foreach {_.evaluate(this)(EventHistory)}
-    objects foreach {_.validate()}
-    objects foreach {_.flush()}
-    world.step()
-    objects foreach {_.load()}
-    objects foreach {_.save(time)}
-  }
-
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
     EventHistory.addEvent(AccelerometerChanged(vector))
   }
@@ -194,6 +216,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   private object EventHistory extends Context {
 
     private var recording_time: Long = 0
+    private var max_time: Long = 0
 
     // Oldest first (head), more recent at the end (last). Both in O(1).
     private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
@@ -202,17 +225,26 @@ trait Game extends TypeChecker with Interpreter { self =>
 
     /** Time for the last fully completed step. */
     def time = recording_time - 1
+    def maxTime = max_time
+
+    def restore(t: Long): Unit = {
+      if (time >= 0 && time <= max_time) {
+        recording_time = t + 1
+        crtEvents.clear()
+      }
+    }
 
     /* Advance the time and store the current events in the history. */
-    def step(): Long = crtEvents.synchronized {
+    def step(): Unit = crtEvents.synchronized {
       recording_time += 1
       
+      if (max_time < time)
+        max_time = time
+
       if (crtEvents.nonEmpty) {
         history += (time, crtEvents.toSeq)
         crtEvents.clear()
       }
-      
-      time
     }
 
     /** Return the events from the last fully completed time step. 
@@ -246,6 +278,7 @@ trait Game extends TypeChecker with Interpreter { self =>
     /** Completely clear the history and the ongoing time step. */
     def clear(): Unit = crtEvents.synchronized {
       recording_time = 0
+      max_time = 0
       history.clear()
       crtEvents.clear()
     }
@@ -279,9 +312,10 @@ class EmptyGame() extends Game {
 
   val r2 = foreach(cat, cat2) { (o1, o2) =>
     once(Collision(o1, o2)) { Seq(
-      score("value") := score("value") + 1
-    )}
+      score("value") += 1
+    )}  
   }
+
 
   register(r1)
   register(r2)

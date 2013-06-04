@@ -29,6 +29,8 @@ object Implicits {
       case IntV(i)   => i
       case _ => throw InterpreterException(s"The value $v is incompatible with Int.")
     }
+
+    def clone(v: Int) = v
   }
 
   implicit object FloatIsPongType extends PongType[Float] {
@@ -43,6 +45,8 @@ object Implicits {
       case IntV(i)   => i.toFloat
       case _ => throw InterpreterException(s"The value $v is incompatible with Float.")
     }
+
+    def clone(v: Float) = v
   }
 
   implicit object BooleanIsPongType extends PongType[Boolean] {
@@ -55,6 +59,8 @@ object Implicits {
       case BooleanV(b) => b
       case _ => throw InterpreterException(s"The value $v is incompatible with Boolean.")
     }
+
+    def clone(v: Boolean) = v
   }
 
   implicit object StringIsPongType extends PongType[String] {
@@ -67,6 +73,8 @@ object Implicits {
       case StringV(s) => s
       case _ => throw InterpreterException(s"The value $v is incompatible with String.")
     }
+
+    def clone(v: String) = v
   }
 
   implicit object Vec2IsPongType extends PongType[Vec2] {
@@ -79,6 +87,8 @@ object Implicits {
       case Vec2V(x, y) => Vec2(x, y)
       case _ => throw InterpreterException(s"The value $v is incompatible with Vec2.")
     }
+
+    def clone(v: Vec2) = v.clone
   }
 
 }

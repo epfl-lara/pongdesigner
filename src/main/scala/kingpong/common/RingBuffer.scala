@@ -1,5 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.common
 
+import util.control.Breaks._
 
 /**
  *  Datastructure with constant memory size and maximum number of elements.
@@ -27,7 +28,7 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     if (idx >= _size || idx < 0) 
       throw new IndexOutOfBoundsException(idx.toString)
     else 
-      array((read + idx) % maxSize)
+      array(toIndex(idx))
   }
 
   /** Update the `idx`th element from the start.
@@ -37,7 +38,7 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     if (idx >= _size || idx < 0) 
       throw new IndexOutOfBoundsException(idx.toString)
     else 
-      array((read + idx) % maxSize) = elem
+      array(toIndex(idx)) = elem
   }
 
   /** Add a new element at the end of this buffer.
@@ -48,7 +49,7 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     array(write) = elem
     write = (write + 1) % maxSize
     if (_size == maxSize) 
-      read = (read + 1) % maxSize
+      read = toIndex(1)
     else 
       _size += 1
   }
@@ -59,6 +60,26 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
    */
   def ++=(elems: Iterable[A]) {
     for (elem <- elems) this += elem
+  }
+
+  /** Find the last element in the first series of elements 
+   *  that satisfy the predicate.
+   */
+  def findLast(p: A => Boolean): Option[A] = {
+    var found: Option[A] = None
+    breakable {
+      var i: Int = 0
+      while (i < size) {
+        val e = array(toIndex(i))
+        if (p(e)) {
+          found = Some(e)
+        } else if (found != None) {
+          break
+        }
+        i += 1
+      }
+    }
+    found
   }
   
   /** Iterator that iterates over all elements in this buffer. */
@@ -77,7 +98,7 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     if (n >= maxSize)
       clear()
     else
-      read = (read + n) % maxSize
+      read = toIndex(n)
     this
   }
   
@@ -87,5 +108,11 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     write = 0
     _size = 0
   }
+
+  override def toString = {
+    this.mkString("[", ",", "]")
+  }
+
+  private def toIndex(i: Int): Int = (read + i) % maxSize
 
 }

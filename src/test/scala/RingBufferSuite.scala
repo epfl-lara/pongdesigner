@@ -94,4 +94,18 @@ class RingBufferSuite extends FunSuite with BeforeAndAfter {
 
   }
 
+  test("test findLast()") {
+    
+    buffer += 1
+    buffer += 2
+    buffer += 3
+    buffer += 4
+
+    assert(buffer.findLast(_ > 5) === None)
+    assert(buffer.findLast(e => e > 1 && e < 4) === Some(3))
+    assert(buffer.findLast(_ > 1) === Some(4))
+    assert(buffer.findLast(_ <= 3) === Some(3))
+    assert(buffer.findLast(_ % 2 == 0) === Some(2))
+  }
+
 }

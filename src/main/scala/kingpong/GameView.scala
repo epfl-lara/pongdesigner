@@ -7,6 +7,7 @@ import android.view.SurfaceView
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.Surface
+import android.widget.SeekBar
 
 import android.graphics.Canvas
 import android.content.Context
@@ -50,7 +51,7 @@ object GameView {
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
-                                                      with SurfaceHolder.Callback {
+                                                      with SurfaceHolder.Callback  {
   import GameView._
 
   private var activity: Activity = null
@@ -107,6 +108,11 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     if (isSurfaceCreated) {   
       startLoop()
     }
+  }
+
+  /** Called by the activity when to progress bar is modified by the user. */
+  def onProgressBarChanged(progress: Int): Unit = {
+    
   }
 
   /** Change the current state to Editing. */
@@ -166,6 +172,11 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         if(!c.visible.get)
           paint.setAlpha(0x80)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
+
+      case b: Box[_] => 
+        paint.setColor(0xFF000000) // TODO c.color
+        canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
+
     }}
 
     game.world.beginContacts foreach { c =>
