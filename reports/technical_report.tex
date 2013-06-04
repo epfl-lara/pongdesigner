@@ -1,0 +1,46 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\title{Semester project -- Pong Designer\\Technical report}
+\author{Lomig Mégard}
+
+\begin{document}
+\maketitle
+
+\section{Physical engine}
+
+
+\section{Game objects}
+
+
+
+\section{Game loop}
+
+- Fixed time step
+
+\subsection*{Update}
+
+During the execution of the \texttt{update()} loop:
+\begin{enumerate}
+\item execute the rules. The context is available and contains all asynchronous events recorded since the last iteration.
+\item new values (from the rules) are flushed to the physics engine.
+\item perform the physics engine \texttt{step} which computes new collisions and moves the objects.
+\item load new values (from the physics engine) to the upper layer of objects.
+\item save the current state to the history.
+\end{enumerate}
+
+\subsection*{Render}
+
+\section{Expressions and statements}
+
+
+\section{Categories of objects}
+
+
+
+
+\end{document}
