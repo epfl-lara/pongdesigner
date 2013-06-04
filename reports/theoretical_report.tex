@@ -14,24 +14,9 @@
 
 \section{Introduction}
 
-\section{Physical engine}
-The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physical engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physical engine. 
+\section{Type system}
 
-I choose the project JBox2D\footnote{Website: \url{http://www.jbox2d.org/}} that exists for a long enough time to have good performances and a large community. For the moment we do not use all its features. Some could be useful in the future, for example the joins that permit to link two objects in multiple ways.
 
-The architecture of JBox2D is based on the physical body. Each of them can have one or many shapes, defining its mass, center of mass, collision outline and other physical properties. To simplify the implementation, the principle of body has been kept in Pong Designer but some freedom have been removed. Particularly, each body has exactly one shape.
-
-- integration (in the technical report ?)
-
-\section{Fixed time step}
-
-- explain the different possibilities:
-  
-- draw the schema
-
-- Fixed time step implementation (technical)
-
-\section{Strongly typed vs human input}
 
 - In theory: strongly typed, in practice, the user input 
 
@@ -46,6 +31,23 @@ The architecture of JBox2D is based on the physical body. Each of them can have 
 - Problem: collapsing multiples rules in one. Find a way to handle categories
 
 - technical: implementation of categories.
+
+\section{Physical engine}
+The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physical engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physical engine. 
+
+I choose the project JBox2D\footnote{Website: \url{http://www.jbox2d.org/}} that exists for a long enough time to have good performances and a large community. For the moment we do not use all its features. Some could be useful in the future, for example the joins that permit to link two objects in multiple ways.
+
+The architecture of JBox2D is based on the physical body. Each of them can have one or many shapes, defining its mass, center of mass, collision outline and other physical properties. To simplify the implementation, the principle of body has been kept in Pong Designer but some freedom have been removed. Particularly, each body has exactly one shape.
+
+\section{Fixed time step}
+
+- explain the different possibilities:
+  
+- draw the schema
+
+- Fixed time step implementation (technical)
+
+
 
 \section{Conclusion}
 
