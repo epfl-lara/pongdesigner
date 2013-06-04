@@ -5,6 +5,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{url}
+\usepackage{enumitem}
 
 \title{Semester project -- Pong Designer\\Theoretical report}
 \author{Lomig Mégard}
@@ -15,16 +16,19 @@
 \section{Introduction}
 
 \section{Type system}
+The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. This need forbids the use of raw Scala to handle rule content. The choice of an AST was clear since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. In order to be sure that an expression is correct, a system of dynamic type has been added to these trees. They are computed also at runtime. For the moment, the following types are handled. These types have a strong link to their corresponding Scala type. The translation in both directions is efficient and type safe.
+\begin{itemize}[noitemsep,topsep=2pt,parsep=1pt,partopsep=1pt]
+\item Integer
+\item Floating point number
+\item String
+\item Boolean
+\item Pair of floats
+\end{itemize}
 
+\paragraph*{}
+The problem of typing was also raised by the user inputs. Indeed, XXX.
 
-
-- In theory: strongly typed, in practice, the user input 
-
-- solution: runtime typecheck and interpretation
-
-- solution to performance: generate real scala code after.
-
-- technical: implementation of expression and statement.
+The game performances can suffer of the interpretation of rules. In a future, we could generate Scala code with the same behaviour as the trees. The compiled code would cohabits with its AST and thus benefits from both for the performance and the modularity.
 
 \section{Categories of objects}
 
