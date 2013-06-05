@@ -111,7 +111,7 @@ We introduce the rule iterator \texttt{foreach} that takes care of generating, t
 val rule = foreach(cat1, cat2) { (o1, o2) => ... }
 \end{lstlisting}
 
-The process to obtain this elegant solution was long. The original one accepted the categories directly in the rules. The problem that occurred rapidly was a lack of meaning in expressions. For example in the following code it was hard to know that the \texttt{brick} must be filled with the objects of the category \texttt{bricks}. In the general case with more than one category involved, the problem is even impossible to solve. 
+The process to obtain this elegant solution was long. The original one was accepting the categories directly in the rules. The problem that occurred rapidly was a lack of meaning in expressions. For example in the following code it was hard to know that the \texttt{brick} must be filled with the objects of the category \texttt{bricks}. In the general case with more than one category involved, the problem is even impossible to solve since not enough information is available to give the wanted behaviour to the rule.
 \begin{lstlisting}
 whenever(Collision(ball, bricks)) { brick => ... }
 whenever(Collision(balls, bricks)) { (ball, brick) => ... }
@@ -136,7 +136,7 @@ During the integration of the physical engine, I had to chose between fixed time
 
 With this simple approach, the FPS and UPS are variable. It is a problem because the physical simulation needs a fixed $\Delta t$ between two successive steps. At most, the difference should be little, which we cannot ensure with the previous design. Indeed, both the time to update the physical world and the one required to draw the objects on the screen are unpredictable due to the numerous factors that influence it. A thread can be preempt and thus slowed by the system, the number of objects do update and draw can change and, more specifically to our project, the number of rules to evaluate is variable. From the point of view of the user, the game could have different speeds on two devices and even during the simulation.
 
-In order to have a fixed UPS, we introduce a sleeping period to synchronize all time steps. Figure \ref{fig:fixedTimeStep} shows the result when we have effectively the time to sleep after both \texttt{update} and \texttt{render}. The thread that runs the game loop, updating and drawing the game, is depicted on the top part of the time line. The android thread which handle all events as user inputs is on the bottom. We observe that all asynchronous events are stored during an entire time step (including the sleep) and then shared with the game engine at the beginning of the next step.
+In order to have a fixed UPS, we introduce a sleeping period to synchronize all time steps as explained in \cite{timeStep}. Figure \ref{fig:fixedTimeStep} shows the result when we have effectively the time to sleep after both \texttt{update} and \texttt{render}. The thread that runs the game loop, updating and drawing the game, is depicted on the top part of the time line. The android thread which handle all events as user inputs is on the bottom. We observe that all asynchronous events are stored during an entire time step (including the sleep) and then shared with the game engine at the beginning of the next step.
 
 \begin{figure*}[h]
 \centering
@@ -146,7 +146,7 @@ In order to have a fixed UPS, we introduce a sleeping period to synchronize all 
 \end{figure*}
 
 
-// EXPLAIN the missed frame
+This technique ensure a constant UPS but not a constant FPS. Indeed, if the update and the rendering take more than the time allocated to one time step, we will perform two successive \texttt{update} to catch up. We see this case in figure \ref{fig:missFrame} where the first rendering is taking too much time. The second time step contains thus two updates, missing one frame, however the third time step can be performed normally. The result for the user is a constant and logical simulation with occasionally some missed frame. The visual feeling is better than with variable UPS.
 
 
 \begin{figure*}[h]
