@@ -139,7 +139,7 @@ foreach(cat1, cat2) { (o1, o2) =>
 \section{Game loop}
 
 \subsection{Time step}
-The game loop uses fixed time step. The following code corresponds to the main loop that calls \texttt{update} and \texttt{render} on the game engine.
+The game loop uses fixed time step. The following code corresponds to the main loop that calls \texttt{update} and \texttt{render} on the game engine. The \texttt{update} call is redirected on the game itself if it is running.
 
 \begin{lstlisting}
 var canvas: Canvas = null
@@ -177,16 +177,13 @@ while(running) {
 
 
 \subsection{Update}
-
-
-// draft:\\
-During the execution of the \texttt{update()} loop:
+The \texttt{update} method in the game follows a strict sequence of operations:
 \begin{enumerate}
-\item execute the rules. The context is available and contains all asynchronous events recorded since the last iteration.
-\item new values (from the rules) are flushed to the physics engine.
-\item perform the physics engine \texttt{step} which computes new collisions and moves the objects.
-\item load new values (from the physics engine) to the upper layer of objects.
-\item save the current state to the history.
+\item Evaluate the rules. The context can be used and contains all asynchronous events recorded since the last iteration. The collisions of the last physical step are also available.
+\item Properties with new values are flushed to the physics engine.
+\item Update the physical world using JBox2D. This performs new collisions and moves the objects.
+\item Load new values from the physics engine to the properties.
+\item Save the current state in the history.
 \end{enumerate}
 
 \subsection{Render}

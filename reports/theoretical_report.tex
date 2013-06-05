@@ -56,10 +56,13 @@
 \maketitle
 
 \section{Introduction}
+This semester project came to support the Pong Designer project by Mikaël Mayer. The program was becoming increasingly large and suffered from a lack of global design. The home-made physics engine reached its limits in term of performance and precision. We decided to integrate a real physics engine together with some new clear design choices that would improve the future of the project. After some time, we concluded that it would be too complicated to take the current code and modify it. Therefore, I started almost from scratch the backbone of the new program. The majority of time was spent on design choices and the implementation of the basic bricks. There are the physics engine, the type system with its AST of expressions, the game objects that wrap physical ones and finally the system of rules. Each of these brick has been thought to be the more extensible and generic possible. The resulting project does not change the theoretical ideas behind Pong Designer, but refines its implementation and offers a stronger basis for further improvements.
 
+In this report, I will begin with a description of Pong Designer and the principles it supports. Then, the type system behind the rules and expressions will be explained. The different rules and their properties will be listed. I will after that talk more about the categories that are used to group objects with a common behaviour. I will also give more information to the chosen physics engine JBox2D. From a more technical point of view, the choice of fixed time step for the game engine will be explained. Finally, the possible future work and the conclusion will close this report.
 
+\section{Programming by Demonstration}
 
-same principle, change mainly the implementation
+// explain the principles behind the work of Mikaël without repeating all its paper. 
 
 \section{Type system}
 The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. Indeed, we must offer to the user the possibility to change for example the value of a constant that lies deep into a rule statement. This need forbids the use of raw Scala to handle rule behaviour. The choice of an AST was simple since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. The following example shows a statement with its tree representation.
@@ -117,15 +120,15 @@ whenever(Collision(ball, bricks)) { brick => ... }
 whenever(Collision(balls, bricks)) { (ball, brick) => ... }
 \end{lstlisting}
 
-\section{Physical engine}
-The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physical engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physical engine. 
+\section{Physics engine}
+The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physics engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physics engine. 
 
 I choose the project JBox2D\footnote{Website: \url{http://www.jbox2d.org/}} that exists for a long enough time to have good performances and a large community. For the moment we do not use all its features. Some could be useful in the future, for example the joins that permit to link two objects in multiple ways.
 
 The architecture of JBox2D is based on the physical body. Each of them can have one or many shapes, defining its mass, center of mass, collision outline and other physical properties. To simplify the implementation, the principle of body has been kept in Pong Designer but some freedom have been removed. Particularly, each body has exactly one shape.
 
 \section{Fixed time step}
-During the integration of the physical engine, I had to chose between fixed time step variable time step. To understand the context, we need to look at one particular time step and decompose it. First, let FPS be the number of frames rendered per second and UPS be the number of times per second the word is updated, including the JBox2D step. Figure \ref{fig:variableTimeStep} shows the two phases \texttt{update} and \texttt{render}. 
+During the integration of the physics engine, I had to chose between fixed time step variable time step. To understand the context, we need to look at one particular time step and decompose it. First, let FPS be the number of frames rendered per second and UPS be the number of times per second the word is updated, including the JBox2D step. Figure \ref{fig:variableTimeStep} shows the two phases \texttt{update} and \texttt{render}. 
 
 \begin{figure*}[h]
 \centering
@@ -134,7 +137,7 @@ During the integration of the physical engine, I had to chose between fixed time
 \label{fig:variableTimeStep}
 \end{figure*}
 
-With this simple approach, the FPS and UPS are variable. It is a problem because the physical simulation needs a fixed $\Delta t$ between two successive steps. At most, the difference should be little, which we cannot ensure with the previous design. Indeed, both the time to update the physical world and the one required to draw the objects on the screen are unpredictable due to the numerous factors that influence it. A thread can be preempt and thus slowed by the system, the number of objects do update and draw can change and, more specifically to our project, the number of rules to evaluate is variable. From the point of view of the user, the game could have different speeds on two devices and even during the simulation.
+With this simple approach, the FPS and UPS are variable. It is a problem because the physics simulation needs a fixed $\Delta t$ between two successive steps. At most, the difference should be little, which we cannot ensure with the previous design. Indeed, both the time to update the physical world and the one required to draw the objects on the screen are unpredictable due to the numerous factors that influence it. A thread can be preempt and thus slowed by the system, the number of objects do update and draw can change and, more specifically to our project, the number of rules to evaluate is variable. From the point of view of the user, the game could have different speeds on two devices and even during the simulation.
 
 In order to have a fixed UPS, we introduce a sleeping period to synchronize all time steps as explained in \cite{FixYourTimestep, AndroidGameLoop}. Figure \ref{fig:fixedTimeStep} shows the result when we have effectively the time to sleep after both \texttt{update} and \texttt{render}. The thread that runs the game loop, updating and drawing the game, is depicted on the top part of the time line. The android thread which handle all events as user inputs is on the bottom. We observe that all asynchronous events are stored during an entire time step (including the sleep) and then shared with the game engine at the beginning of the next step.
 
