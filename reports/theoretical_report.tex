@@ -58,6 +58,9 @@
 \section{Introduction}
 
 
+
+same principle, change mainly the implementation
+
 \section{Type system}
 The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. Indeed, we must offer to the user the possibility to change for example the value of a constant that lies deep into a rule statement. This need forbids the use of raw Scala to handle rule behaviour. The choice of an AST was simple since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. The following example shows a statement with its tree representation.
 \begin{lstlisting}
@@ -77,10 +80,42 @@ In order to be sure that an expression is correct, a system of dynamic type has 
 \paragraph*{}
 The game performances can suffer of the interpretation of rules. In a future, we could generate Scala code with the same behaviour as the trees. The compiled code would cohabits with its AST and thus benefits from both, in order to have the performance and the modularity.
 
+\section{Rules}
+In the Pong Designer game engine, the rules can change some properties value and thus the world state if their condition holds. They are immutable and use a boolean expression for their condition and a statement for the body. We wanted to have some rules to be executed only once per game run, without adding a boolean flag that would have complicated the code. Therefore, three types of rule are present:
+\begin{itemize}[noitemsep,topsep=2pt,parsep=1pt,partopsep=1pt]
+\item \texttt{Whenever}: triggered when the condition is satisfied
+\item \texttt{On}: triggered when the condition change from false to true
+\item \texttt{Once}: triggered only once when the condition is satisfied
+\end{itemize}
+
 \section{Categories of objects}
+In the original Pong Designer, when a user duplicates an object all the rules associate with it are also copied. This leads to a large number of rules and a poor modularity. If we take the example of the Brick Breaker, a brick has to been build first with its rules and only after the user can duplicate it. Any behaviour modification wanted on all bricks require to modify them one by one the. To address this problem, we built a system of group, or category. With them, the user and the game engine can reason both at the level of a group of objects or at an atomic level. Each object has been assigned a category, and only one. In the future, we could remove this limitation to permit more sophisticated grouping but resulting in a more complex user interface. The following code snippet illustrates how to use categories. 
 
-- Problem: collapsing multiples rules in one. Find a way to handle categories
+\begin{lstlisting}
+val bricks = new Category("Bricks")
+rectangle("b1", x = 1, y = 0).withCategory(bricks)
+rectangle("b2", x = 3, y = 0).withCategory(bricks)
 
+// ball and score definition not visible here
+val rule = foreach(bricks) { brick =>
+  whenever(Collision(ball, brick)) { Seq(
+    brick("visible") := false, 
+    score("value") += 1
+  )}
+}
+\end{lstlisting}
+
+We introduce the rule iterator \texttt{foreach} that takes care of generating, typecheking and evaluating the rules. The iteration can also occurs on multiples categories:
+
+\begin{lstlisting}
+val rule = foreach(cat1, cat2) { (o1, o2) => ... }
+\end{lstlisting}
+
+The process to obtain this elegant solution was long. The original one accepted the categories directly in the rules. The problem that occurred rapidly was a lack of meaning in expressions. For example in the following code it was hard to know that the \texttt{brick} must be filled with the objects of the category \texttt{bricks}. In the general case with more than one category involved, the problem is even impossible to solve. 
+\begin{lstlisting}
+whenever(Collision(ball, bricks)) { brick => ... }
+whenever(Collision(balls, bricks)) { (ball, brick) => ... }
+\end{lstlisting}
 
 \section{Physical engine}
 The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physical engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physical engine. 
