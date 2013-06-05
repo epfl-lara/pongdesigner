@@ -48,12 +48,15 @@
 }
 
 \title{Semester project -- Pong Designer\\Theoretical report}
-\author{Lomig Mégard}
+\author{\textit{Author:} Lomig Mégard\\
+\textit{Supervisors:} Prof. Viktor Kuncak and Mikaël Mayer\vspace*{0.5cm}\\
+\textsc{LARA/EPFL}}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
+
 
 \section{Type system}
 The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. Indeed, we must offer to the user the possibility to change for example the value of a constant that lies deep into a rule statement. This need forbids the use of raw Scala to handle rule behaviour. The choice of an AST was simple since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. The following example shows a statement with its tree representation.
@@ -78,7 +81,6 @@ The game performances can suffer of the interpretation of rules. In a future, we
 
 - Problem: collapsing multiples rules in one. Find a way to handle categories
 
-- technical: implementation of categories.
 
 \section{Physical engine}
 The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physical engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physical engine. 
@@ -92,9 +94,6 @@ The architecture of JBox2D is based on the physical body. Each of them can have 
 - explain the different possibilities:
   
 - draw the schema
-
-- Fixed time step implementation (technical)
-
 
 
 \section{Conclusion}

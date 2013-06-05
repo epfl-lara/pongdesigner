@@ -47,7 +47,9 @@
 }
 
 \title{Semester project -- Pong Designer\\Technical report}
-\author{Lomig Mégard}
+\author{\textit{Author:} Lomig Mégard\\
+\textit{Supervisors:} Prof. Viktor Kuncak and Mikaël Mayer\vspace*{0.5cm}\\
+\textsc{LARA/EPFL}}
 
 \begin{document}
 \maketitle
@@ -118,6 +120,8 @@ This syntax is not very convenient but we assumed that this code would be genera
 
 \section{Categories}
 
+// Explain how categories are implemented
+
 \begin{lstlisting}
 foreach(cat) { o =>
   whenever(base("y") < o("y")) { Seq(
@@ -134,10 +138,14 @@ foreach(cat1, cat2) { (o1, o2) =>
 
 \section{Game loop}
 
-- Fixed time step
+\subsection{Time step}
+
+// Schema on a time step
 
 \subsection{Update}
 
+
+// draft:\\
 During the execution of the \texttt{update()} loop:
 \begin{enumerate}
 \item execute the rules. The context is available and contains all asynchronous events recorded since the last iteration.
@@ -148,6 +156,8 @@ During the execution of the \texttt{update()} loop:
 \end{enumerate}
 
 \subsection{Render}
+
+// Explain how the rendering is performed
 
 
 
