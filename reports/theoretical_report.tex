@@ -7,6 +7,46 @@
 \usepackage{url}
 \usepackage{enumitem}
 
+\usepackage{listings}
+\lstdefinelanguage{scala}{
+  morekeywords={abstract,case,catch,class,def,%
+    do,else,extends,false,final,finally,%
+    for,if,implicit,import,match,mixin,%
+    new,null,object,override,package,%
+    private,protected,requires,return,sealed,%
+    super,this,throw,trait,true,try,%
+    type,val,var,while,with,yield},
+  otherkeywords={=>,<-,<\%,<:,>:,\#,@},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[n]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]"""
+}
+
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+  language=scala,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=true
+  tabsize=3
+}
+
 \title{Semester project -- Pong Designer\\Theoretical report}
 \author{Lomig Mégard}
 
@@ -16,19 +56,23 @@
 \section{Introduction}
 
 \section{Type system}
-The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. This need forbids the use of raw Scala to handle rule content. The choice of an AST was clear since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. In order to be sure that an expression is correct, a system of dynamic type has been added to these trees. They are computed also at runtime. For the moment, the following types are handled. These types have a strong link to their corresponding Scala type. The translation in both directions is efficient and type safe.
+The central point of Pong designer is its rule system. It requires the ability to reason about them, to deconstruct a rule to modify only a subset of it. Indeed, we must offer to the user the possibility to change for example the value of a constant that lies deep into a rule statement. This need forbids the use of raw Scala to handle rule behaviour. The choice of an AST was simple since it is convenient to manipulate and modify in Scala. Each expression is thus evaluated by an interpreter at runtime. The following example shows a statement with its tree representation.
+\begin{lstlisting}
+circle("x") := circle("x") + 1
+Assign(circle.x, Add(circle.x, IntegerLiteral(1)))
+\end{lstlisting}
+
+In order to be sure that an expression is correct, a system of dynamic type has been added to these trees. They are computed at runtime by the typechecker. For the moment, the following types are handled. They have a strong link to their corresponding Scala type. The translation in both directions is efficient and almost type safe.
 \begin{itemize}[noitemsep,topsep=2pt,parsep=1pt,partopsep=1pt]
 \item Integer
-\item Floating point number
+\item Float
 \item String
 \item Boolean
 \item Pair of floats
 \end{itemize}
 
 \paragraph*{}
-The problem of typing was also raised by the user inputs. Indeed, XXX.
-
-The game performances can suffer of the interpretation of rules. In a future, we could generate Scala code with the same behaviour as the trees. The compiled code would cohabits with its AST and thus benefits from both for the performance and the modularity.
+The game performances can suffer of the interpretation of rules. In a future, we could generate Scala code with the same behaviour as the trees. The compiled code would cohabits with its AST and thus benefits from both, in order to have the performance and the modularity.
 
 \section{Categories of objects}
 

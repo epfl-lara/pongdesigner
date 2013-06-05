@@ -4,6 +4,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{enumitem}
 
 \usepackage{listings}
 \lstdefinelanguage{scala}{
@@ -51,8 +52,50 @@
 \begin{document}
 \maketitle
 
-\section{Expressions and statements}
+\section{Type system}
+The type system relies on type classes in Scala. For example, the signature of a property restrains the generic type that can be used.
+\begin{lstlisting}
+abstract class Property[T : PongType](...) {}
+\end{lstlisting}
 
+The \texttt{PongType} is defined in such a way we can translate an internal result of the interpreter to a Scala object, and the other way around.
+\begin{lstlisting}
+trait PongType[T] {
+  def getPongType: Type
+  def toPongValue(v: Any): Value
+  def toScalaValue(v: Value): T
+  def clone(v: T): T
+}
+\end{lstlisting}
+
+The following method illustrates how these types can be used. The \texttt{Context} contains some global information required for the evaluation, as for example the current finger movements.
+\begin{lstlisting}
+def typecheckAndEvaluate[T : PongType](e: Expr): T = {
+  typeCheck(e, implicitly[PongType[T]].getPongType)
+  eval(e)(Context).as[T]
+}
+\end{lstlisting}
+
+\clearpage
+\section{Expressions and statements}
+The AST of statements is illustrated in figure \ref{fig:AST-stats}. All classes are immutable but can reference a property whom value can change. Statements can have side-effect, here modifying a property value with the \texttt{Assign} operation. 
+
+\begin{figure*}[h]
+\centering
+\includegraphics[scale = 0.7]{images/AST_stats} 
+\caption{AST of statements.}
+\label{fig:AST-stats}
+\end{figure*}
+
+The expressions cannot have side-effects. Here is a summarized list of the different kinds of expressions. The different expressions that use finger position and objects collision need a context to be evaluated. It is provided by the game engine that exposes the asynchronous events of the last terminated time step.
+\begin{itemize}[noitemsep,topsep=2pt,parsep=1pt,partopsep=1pt]
+\item Literals: \texttt{IntegerLiteral}, \texttt{StringLiteral}, ...
+\item Arithmetic: \texttt{Add}, \texttt{Minus}, \texttt{Mod}, ...
+\item Boolean: \texttt{And}, \texttt{LessThan}, \texttt{Equals}, ...
+\item Finger: \texttt{MoveOver}, \texttt{DownOn}, ...
+\item Collision
+\item Property
+\end{itemize}
 
 \section{Game objects}
 This project uses JBox2D version 2.2.1.1 for its physical engine. Since Pong Designer needs to handle the history of all properties, a wrapper named \texttt{PhysicalObject} is built around each JBox2D body. It takes care of instantiating the body with arbitrary expressions in the world and of managing the different properties with their history. 
@@ -74,6 +117,20 @@ This syntax is not very convenient but we assumed that this code would be genera
 
 
 \section{Categories}
+
+\begin{lstlisting}
+foreach(cat) { o =>
+  whenever(base("y") < o("y")) { Seq(
+    o("y") := 0
+  )}
+}
+
+foreach(cat1, cat2) { (o1, o2) =>
+  once(Collision(o1, o2)) { Seq(
+    score("value") += 1
+  )}  
+}
+\end{lstlisting}
 
 \section{Game loop}
 
