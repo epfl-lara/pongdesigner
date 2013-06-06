@@ -82,7 +82,6 @@ def typecheckAndEvaluate[T : PongType](e: Expr): T = {
 }
 \end{lstlisting}
 
-\clearpage
 \section{Expressions and statements}
 The AST of statements is illustrated in figure \ref{fig:AST-stats}. All classes are immutable but can reference a property whom value can change. Statements can have side-effect, here modifying a property value with the \texttt{Assign} operation. 
 
@@ -144,7 +143,6 @@ foreach(cat1, cat2) { (o1, o2) =>
 \section{Time management}
 To manage a bounded history with good performances, I implemented a \texttt{RingBuffer} collection. It permits to have a complexity in $O(1)$ for \texttt{append}, \texttt{head} and \texttt{last} among others.
 
-
 \section{Game loop}
 
 \subsection{Time step}
@@ -195,9 +193,6 @@ The \texttt{update} method in the game follows a strict sequence of operations:
 \item Save the current state in the history.
 \end{enumerate}
 
-\subsection{Render}
-
-// Explain how the rendering is performed
 
 
 
