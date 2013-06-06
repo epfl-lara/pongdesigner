@@ -54,6 +54,10 @@
 \begin{document}
 \maketitle
 
+\section{Introduction}
+This report explains de different implementation choices taken during the semester. The reader should first read the theoretical report in order to have the context.
+
+
 \section{Type system}
 The type system relies on type classes in Scala. For example, the signature of a property restrains the generic type that can be used.
 \begin{lstlisting}
@@ -135,6 +139,11 @@ foreach(cat1, cat2) { (o1, o2) =>
   )}  
 }
 \end{lstlisting}
+
+
+\section{Time management}
+To manage a bounded history with good performances, I implemented a \texttt{RingBuffer} collection. It permits to have a complexity in $O(1)$ for \texttt{append}, \texttt{head} and \texttt{last} among others.
+
 
 \section{Game loop}
 
