@@ -91,7 +91,7 @@ In the Pong Designer game engine, the rules can change some properties value and
 \end{itemize}
 
 \section{Categories of objects}
-In the original Pong Designer, when a user duplicates an object all the rules associate with it are also copied. This leads to a large number of rules and a poor modularity. If we take the example of the Brick Breaker, a brick has to been build first with its rules and only after the user can duplicate it. Any behaviour modification wanted on all bricks require to modify them one by one the. To address this problem, we built a system of group, or category. With them, the user and the game engine can reason both at the level of a group of objects or at an atomic level. Each object has been assigned a category, and only one. In the future, we could remove this limitation to permit more sophisticated grouping but resulting in a more complex user interface. The following code snippet illustrates how to use categories. 
+In the original Pong Designer, when a user duplicates an object all the rules associate with it are also copied. This leads to a large number of rules and a poor modularity. If we take the example of the Brick Breaker, a brick has to been build first with its rules and only after the user can duplicate it. Any behaviour modification wanted on all bricks require to modify them one by one. To address this problem, we built a system of group, or category. With them, the user and the game engine can reason both at the level of a group of objects or at an atomic level. Each object has been assigned a category, and only one. In the future, we could remove this limitation to permit more sophisticated grouping but resulting in a more complex user interface. The following code snippet illustrates how to use categories. 
 
 \begin{lstlisting}
 val bricks = new Category("Bricks")
@@ -120,7 +120,7 @@ whenever(Collision(balls, bricks)) { (ball, brick) => ... }
 \end{lstlisting}
 
 \section{Physics engine}
-The original goal if this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physics engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate dedicated physics engine. 
+The original goal of this project was to look at the physical engine used in the application and to find a way to improve it. That was especially needed since the implementation was suffering of tunnelling, namely when a physical object with a high velocity pass through another one. The physics engine was not the central point and it was a lost of time to maintain and debug. This is why we decided to integrate a dedicated physics engine. 
 
 I choose the project JBox2D\footnote{Website: \url{http://www.jbox2d.org/}} that exists for a long enough time to have good performances and a large community. For the moment we do not use all its features. Some could be useful in the future, for example the joins that permit to link two objects in multiple ways.
 
@@ -132,7 +132,7 @@ The time management is an important feature of Pong Designer. It permits to navi
 The history permits to \texttt{restore} the game to any past state given a specific discrete timestamp. Since the objects properties are separated from the physical simulation layer, we can replay the history efficiently and decide when flushing the new values to the physical layer and continue with a simulated environment. To limit the memory consumption, the history size is bounded by a constant. However, it is always possible to  \texttt{reset} the game to its initial state.
 
 \section{Fixed time step}
-During the integration of the physics engine, I had to choose between fixed time step variable time step. To understand the context, we need to look at one particular time step and decompose it. First, let FPS be the number of frames rendered per second and UPS be the number of times per second the word is updated, including the JBox2D step. Figure \ref{fig:variableTimeStep} shows the two phases \texttt{update} and \texttt{render}. 
+During the integration of the physics engine, I had to choose between fixed time step and variable time step. To understand the context, we need to look at one particular time step and decompose it. First, let FPS be the number of frames rendered per second and UPS be the number of times per second the word is updated, including the JBox2D step. Figure \ref{fig:variableTimeStep} shows the two phases \texttt{update} and \texttt{render}. 
 
 \begin{figure*}[h]
 \centering
@@ -141,7 +141,7 @@ During the integration of the physics engine, I had to choose between fixed time
 \label{fig:variableTimeStep}
 \end{figure*}
 
-With this simple approach, the FPS and UPS are variable. It is a problem because the physics simulation needs a fixed $\Delta t$ between two successive steps. At most, the difference should be little, which we cannot ensure with the previous design. Indeed, both the time to update the physical world and the one required to draw the objects on the screen are unpredictable due to the numerous factors that influence it. A thread can be preempt and thus slowed by the system, the number of objects do update and draw can change and, more specifically to our project, the number of rules to evaluate is variable. From the point of view of the user, the game could have different speeds on two devices and even during the simulation.
+With this simple approach, the FPS and UPS are variable. It is a problem because the physics simulation needs a fixed $\Delta t$ between two successive steps. At most, the difference should be little, which we cannot ensure with the previous design. Indeed, both the time to update the physical world and the one required to draw the objects on the screen are unpredictable due to the numerous factors that influence it. A thread can be preempt and thus slowed by the system, the number of objects to update and draw can change and, more specifically to our project, the number of rules to evaluate is variable. From the point of view of the user, the game could have different speeds on two devices and even during the simulation.
 
 In order to have a fixed UPS, we introduce a sleeping period to synchronize all time steps as explained in \cite{FixYourTimestep, AndroidGameLoop}. Figure \ref{fig:fixedTimeStep} shows the result when we have effectively the time to sleep after both \texttt{update} and \texttt{render}. The thread that runs the game loop, updating and drawing the game, is depicted on the top part of the time line. The android thread which handle all events as user inputs is on the bottom. We observe that all asynchronous events are stored during an entire time step (including the sleep) and then shared with the game engine at the beginning of the next step.
 
