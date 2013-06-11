@@ -64,6 +64,7 @@ object Types {
     def getPongType: Type
     def toPongValue(v: Any): Value
     def toScalaValue(v: Value): T
+    def clone(v: T): T
   }
 
 }

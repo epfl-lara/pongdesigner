@@ -8,6 +8,11 @@ case class TypeCheckException(msg: String) extends Exception(msg)
 
 trait TypeChecker {
   
+  def typeCheck(iterator: RuleIterator): RuleIterator = {
+    iterator.typeCheck(this)
+    iterator
+  } 
+
   def typeCheck(rule: Rule): Rule = {
     typeCheck(rule.cond, TBoolean)
     typeCheck(rule.action)
@@ -123,6 +128,21 @@ trait TypeChecker {
       expr.setType(TBoolean)
       
     case LessThan(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
+
+    case LessEq(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
+
+    case GreaterThan(lhs, rhs) =>
+      typeCheck(lhs, TInt, TFloat)
+      typeCheck(rhs, TInt, TFloat)
+      expr.setType(TBoolean)
+
+    case GreaterEq(lhs, rhs) =>
       typeCheck(lhs, TInt, TFloat)
       typeCheck(rhs, TInt, TFloat)
       expr.setType(TBoolean)

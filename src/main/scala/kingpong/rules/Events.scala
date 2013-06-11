@@ -17,4 +17,6 @@ object Events {
   case class BeginContact(contact: Contact) extends Event
   case class CurrentContact(contact: Contact) extends Event
   case class EndContact(contact: Contact) extends Event
+
+  case class AccelerometerChanged(vector: Vec2) extends Event
 }

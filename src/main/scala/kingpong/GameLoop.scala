@@ -8,7 +8,7 @@ import android.util.Log
 
 
 object GameLoop {
-  val MAX_FPS = 40
+  val MAX_FPS = 30
   val MAX_FRAMES_SKIPPED = 5
   val FRAME_PERIOD_MS: Float = 1000f / MAX_FPS // In milliseconds
   val FRAME_PERIOD_S: Float = 1f / MAX_FPS // In seconds

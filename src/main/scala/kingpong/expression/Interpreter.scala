@@ -41,14 +41,14 @@ trait Interpreter {
       }
 
     case Assign(prop, rhs) =>
-      prop.setPongValue(eval(rhs))
+      prop.setNext(eval(rhs))
 
     case NOP => //Do nothing
   }
 
   def eval(expr: Expr)(implicit context: Context): Value = expr match {
 
-    case ref: PropertyRef => ref.getPongValue
+    case ref: PropertyRef => ref.get
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
@@ -166,6 +166,24 @@ trait Interpreter {
         case (NumericV(v1), NumericV(v2)) => BooleanV(v1 < v2)
         case _ => throw InterpreterException(s"A LessThan is not possible between $lhs and $rhs.")
       }
+
+    case LessEq(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 <= v2)
+        case _ => throw InterpreterException(s"A LessEq is not possible between $lhs and $rhs.")
+      }
+
+    case GreaterThan(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 > v2)
+        case _ => throw InterpreterException(s"A GreaterThan is not possible between $lhs and $rhs.")
+      }
+
+    case GreaterEq(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (NumericV(v1), NumericV(v2)) => BooleanV(v1 >= v2)
+        case _ => throw InterpreterException(s"A GreaterEq is not possible between $lhs and $rhs.")
+      }
       
     case Not(e) =>
       eval(e) match {
@@ -173,12 +191,19 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    //TODO use the context to evaluate these...
-    // HOW TO get back the specific game object that triggered this expression.
-    case FingerMoveOver(c) => ???
-    case FingerDownOver(c) => ???
-    case FingerUpOver(c) => ???
-    case Collision(c1, c2) => ???
+    case FingerMoveOver(o) => 
+      BooleanV(context.fingerMoves(_.obj.exists(_ == o)).nonEmpty)
+
+    case FingerDownOver(o) => 
+      BooleanV(context.fingerDowns(_.obj.exists(_ == o)).nonEmpty)
+
+    case FingerUpOver(o) => 
+      BooleanV(context.fingerUps(_.obj.exists(_ == o)).nonEmpty)
+
+    case Collision(o1, o2) => 
+      BooleanV(context.beginContacts{ c =>
+        c.contact.objectA == o1 && c.contact.objectB == o2
+      }.nonEmpty)
 
   }
   

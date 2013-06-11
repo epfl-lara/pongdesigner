@@ -8,24 +8,19 @@ class Category(name: String) { self =>
 
   private val _children = MSet.empty[GameObject]
   
-  val properties = MMap.empty[String, PropertyRef]
-  
   def objects: Iterable[GameObject] = _children
 
   def add(o: GameObject): self.type = {
     _children += o
-    resolveProperties()
     this
   }
 
   def remove(o: GameObject): self.type = {
     _children -= o
-    resolveProperties()
     this
   }
 
-  def apply(property: String): PropertyRef = properties(property)
-
+  /*
   private def resolveProperties() {
     properties.clear()
     val keys = _children.map(_.properties.keySet).foldLeft(Set.empty[String]) {_ intersect _}
@@ -34,6 +29,7 @@ class Category(name: String) { self =>
       k -> CategoryPropertyRef(p)
     }
   }
+  */
 }
 
 object DefaultCategory {
