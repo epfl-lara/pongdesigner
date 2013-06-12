@@ -82,10 +82,11 @@
 \end{frame}
 
 \begin{frame}{Pong Designer}
-The user defines both the state and the \textbf{behaviour}:\\[1em]
+The user defines both the state and the \textbf{behaviour} using the programming by demonstration paradigm:\\[1em]
 \begin{itemize}
-\item Programming by demonstration
-\item The user demonstrates the pre- and post-conditions
+\item The user creates a state where the pre-condition occurs
+\item Go back in time to select it
+\item Modify the state to show the post-conditions
 \item The game engine infers an appropriate rule
 \end{itemize}
 \end{frame}
@@ -111,29 +112,36 @@ The user defines both the state and the \textbf{behaviour}:\\[1em]
 \begin{frame}[t]{Overview}
 \begin{itemize}
 \item Architecture
+\item Statements and expressions
 \item Type system
+\item Rules
+\item Categories
+\item Time management
+\item Physics engine
+\item Game objects
+\item One time step
+\item Future work
+\item Conclusion
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Architecture - 1}
 \centering
-\includegraphics[scale=0.65]{images/architecture-1}
+\includegraphics[scale=0.7]{images/architecture-1}
 \end{frame}
 
 \begin{frame}{Architecture - 2}
 \centering
-\includegraphics[scale=0.65]{images/architecture-2}
+\includegraphics[scale=0.7]{images/architecture-2}
 \end{frame}
 
 \begin{frame}[fragile]{Statements and expressions - 1}
-\begin{lstlisting}
-circle("x") := circle("x") + 1
-Assign(circle.x, Add(circle.x, IntegerLiteral(1)))
-\end{lstlisting}
 \begin{itemize}
-\item Permit to modify the rules, the reason about them
+\item Permit to modify the rules, to reason about them
 \item Use of AST: convenient to manipulate
 \item Runtime typechecker and interpreter
+\item Statement with side-effects, without type
+\item Expressions without side-effects, with type
 \end{itemize}
 \end{frame}
 
@@ -141,22 +149,61 @@ Assign(circle.x, Add(circle.x, IntegerLiteral(1)))
 \begin{lstlisting}
 circle("x") := circle("x") + 1
 \end{lstlisting}
-\vspace*{5mm}
 \begin{center}
-\includegraphics[scale=0.8]{images/AST_example}
+\includegraphics[scale=0.9]{images/AST_example}
 \end{center}
 \end{frame}
 
 
-\begin{frame}{Type system}
+\begin{frame}[fragile]{Type system - 1}
+Each object property has two linked types:
 \begin{itemize}
-\item 
+\item the expression type (use type classes)
+\item the value type (use Scala types)
 \end{itemize}
+
+\vspace*{5mm}
+
+\begin{lstlisting}
+abstract class Property[T : PongType](...) {
+  def get: T
+  def tpe = implicitly[PongType[T]]
+  ...
+}
+\end{lstlisting}
+
 \end{frame}
 
 
+\begin{frame}[fragile]{Type system - 2}
+Benefit from the two types:
+\begin{itemize}
+\item the user can build expression with properties
+\item the game engine is typesafe
+\end{itemize}
+
+\vspace*{5mm}
+
+\begin{lstlisting}
+def evaluate[T : PongType](e: Expr): T = {
+  typeCheck(e, implicitly[PongType[T]].getPongType)
+  eval(e)(EventHistory).as[T]
+}
+\end{lstlisting}
+
+\end{frame}
+
 
 \begin{frame}[fragile]{Rules}
+Permit to change the game state.
+\begin{itemize}
+\item One boolean expression for condition
+\item One statement for body
+\item Several triggers: \texttt{Whenever}, \texttt{On} and \texttt{Once}
+\end{itemize}
+
+\vspace*{5mm}
+
 \begin{lstlisting}
 whenever(Collision(ball, brick)) { Seq(
   brick("visible") := false, 
@@ -166,6 +213,13 @@ whenever(Collision(ball, brick)) { Seq(
 \end{frame}
 
 \begin{frame}[fragile]{Categories}
+
+\begin{itemize}
+\item Unified behaviour for a group of objects
+\item Each object has one category
+\item Rules don't accept categories, use \texttt{foreach} to iterate
+\end{itemize}
+
 \begin{lstlisting}
 val bricks = new Category("Bricks")
 rectangle("b1", x = 1, y = 0).withCategory(bricks)
@@ -180,5 +234,61 @@ val rule = foreach(bricks) { brick =>
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}{Time management}
+Go back in time to create new rules.
+\begin{itemize}
+\item Store game state at each time step
+\item Use a \texttt{RingBuffer} to handle bounded history
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Physics engine}
+\begin{itemize}
+\item Dedicated physical world using JBox2D
+\item Only basic features are currently used
+\item Each JBox2D body is wrapped by a \texttt{GameObject}
+\item A \texttt{GameObject} handles its history and does the bridge with the type system
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Game objects}
+A \texttt{GameObject} handles its history and does the bridge with the type system
+ 
+\begin{center}
+\includegraphics[scale=0.65]{images/objects}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{One time step}
+
+Fixed discrete time step. One game update is:
+\vspace*{2mm}
+\begin{enumerate}
+\item Evaluate the rules;
+\item New values are flushed to the physics engine;
+\item Update the physical world using JBox2D;
+\item Load new values from the physics engine;
+\item Save the current state in the history.
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{Future work}
+This project produced multiple building bricks. The next step is to use them:
+\begin{itemize}
+\item Integrate the inferencer on top of these bricks
+\item Port the old UI to the new implementation
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Conclusion}
+\begin{itemize}
+\item Good design takes time
+\item JBox2D is fast but not quick to learn
+\item Scala runs smoothly on Android 
+\end{itemize}
+\end{frame}
 
 \end{document}
