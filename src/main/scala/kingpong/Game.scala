@@ -299,7 +299,7 @@ class EmptyGame() extends Game {
   rectangle("Rectangle 2", 3.4, 0, width = 1, height = 2, fixedRotation = false).withCategory(cat)
 
   circle("Circle 1", 3, 2, radius = 1, fixedRotation = false).withCategory(cat)
-  circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
+  val c2 = circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
   
   val score = intbox("Score", 1, 1, value = 0)
 
@@ -315,13 +315,18 @@ class EmptyGame() extends Game {
   }
 
   val r2 = foreach(cat, cat2) { (o1, o2) =>
-    once(Collision(o1, o2)) { Seq(
+    on(Collision(o1, o2)) { Seq(
       score("value") += 1
     )}  
   }
 
+  val r3 = whenever(FingerDownOver(c2)) { Seq(
+    c2("radius") += 0.1
+  )}
+
 
   register(r1)
   register(r2)
+  register(r3)
 
 }

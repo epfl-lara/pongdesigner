@@ -14,6 +14,8 @@ import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 abstract class PhysicalObject(init_name: Expr, 
                               init_x: Expr,
@@ -35,6 +37,10 @@ abstract class PhysicalObject(init_name: Expr,
   /** The body mass. */
   def mass = body.getMass()
   
+  override def reset(interpreter: Interpreter)(implicit context: Context) = {
+    super.reset(interpreter)
+    body.setAwake(true)
+  }
   
   // --------------------------------------------------------------------------
   // Properties

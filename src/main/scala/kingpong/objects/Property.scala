@@ -72,7 +72,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   protected var _snap: T = _
 
   /** Contains the history. The head corresponds to the most recent value. */
-  protected var _history: RingBuffer[(Long, T)] = new RingBuffer(History.MAX_HISTORY_SIZE)
+  protected val _history: RingBuffer[(Long, T)] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
   def get = _crt
   def next = _next
