@@ -47,16 +47,18 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   private[kingpong] def restore(t: Long): Unit = {
     if (t >= 0 && t <= maxTime) {
-      _objects.foreach(_.restore(t))
+      objects.foreach(_.restore(t))
+      rules.foreach(_.restore(t))
       EventHistory.restore(t)
       world.clear()
     }
   }
 
   private[kingpong] def reset(): Unit = {
-    _objects.foreach(_.reset(this)(EventHistory))
-    _objects.foreach(_.clear())
-    _rules.foreach(_.reset())
+    objects.foreach(_.reset(this)(EventHistory))
+    objects.foreach(_.clear())
+    rules.foreach(_.reset())
+    rules.foreach(_.clear())
     world.clear()
     EventHistory.clear()
   }
@@ -76,10 +78,11 @@ trait Game extends TypeChecker with Interpreter { self =>
     world.step()
     objects foreach {_.load()}
     objects foreach {_.save(time)}
+    rules foreach {_.save(time)}
 
-    if (time == 200) {
-      restore(1)
-    }
+    //if (time == 200) {
+    // restore(1)
+    //}
 
   }
 
@@ -306,7 +309,8 @@ class EmptyGame() extends Game {
 
   val r1 = foreach(cat) { o =>
     whenever(base("y") < o("y")) { Seq(
-      o("y") := 0
+      o("y") := 0, 
+      o("velocity") := Vec2(0, 0)
     )}
   }
 

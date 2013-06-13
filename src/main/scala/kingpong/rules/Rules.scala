@@ -1,9 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.rules
 
-import scala.collection.mutable.{Map => MMap}
-
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.TypeChecker
@@ -21,10 +21,14 @@ object Rules {
   case class On(cond: Expr, action: Stat) extends Rule
   case class Once(cond: Expr, action: Stat) extends Rule
 
-  sealed trait RuleIterator {
+  sealed trait RuleIterator extends History {
 
-    private val state: MMap[Key, Boolean] = MMap.empty.withDefaultValue(false)
+    private var state: Map[Key, Boolean] = Map.empty.withDefaultValue(false)
     
+    /** Contains the history. The head corresponds to the most recent value. */
+    private val history: RingBuffer[(Long, Map[Key, Boolean])] = new RingBuffer(History.MAX_HISTORY_SIZE)
+
+
     protected type Key
     protected def generator: Key => Rule
     protected def keys: Iterable[Key]
@@ -46,22 +50,38 @@ object Rules {
             val b = interpreter.eval(cond).as[Boolean]
             if (!state(key) && b) {
               interpreter.eval(action)
-              state(key) = true
+              state += key -> true
             } else if (!b) {
-              state(key) = false
+              state += key -> false
             }
 
           case Once(cond, action) =>
             if (!state(key) && interpreter.eval(cond).as[Boolean]) {
               interpreter.eval(action)
-              state(key) = true
+              state += key -> true
             }
         }
       }
     }
 
     /** Reset the rules evaluation flags. */
-    def reset(): Unit = state.clear()
+    def reset(): Unit = state = Map.empty.withDefaultValue(false)
+
+    def save(t: Long): Unit = {
+      if (history.isEmpty || history.last._2 != state) {
+        history += (t, state)
+      }
+    }
+
+    def restore(t: Long): Unit = {
+      history.findLast(_._1 <= t) match {
+        case Some((_, s)) => state = s
+        case None => sys.error(s"The timestamp $t doesn't exist in the history.")
+      }
+    }
+
+    def clear(): Unit = history.clear()
+
   }
 
   class NoCategory(rule: Rule) extends RuleIterator {
