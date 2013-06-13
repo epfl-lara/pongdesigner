@@ -244,10 +244,9 @@ Go back in time to create new rules.
 
 \begin{frame}{Physics engine}
 \begin{itemize}
-\item Dedicated physical world using JBox2D
+\item Dedicated physics engine using JBox2D
 \item Only basic features are currently used
 \item Each JBox2D body is wrapped by a \texttt{GameObject}
-\item A \texttt{GameObject} handles its history and does the bridge with the type system
 \end{itemize}
 \end{frame}
 
@@ -265,11 +264,11 @@ A \texttt{GameObject} handles its history and does the bridge with the type syst
 Fixed discrete time step. One game update is:
 \vspace*{2mm}
 \begin{enumerate}
-\item Evaluate the rules;
-\item New values are flushed to the physics engine;
-\item Update the physical world using JBox2D;
-\item Load new values from the physics engine;
-\item Save the current state in the history.
+\item Evaluate the rules
+\item New values are flushed to the physics engine
+\item Update the physical world using JBox2D
+\item Load new values from the physics engine
+\item Save the current state in the history
 \end{enumerate}
 
 \end{frame}
@@ -286,7 +285,7 @@ This project produced multiple building bricks. The next step is to use them:
 \begin{frame}{Conclusion}
 \begin{itemize}
 \item Good design takes time
-\item JBox2D is fast but not quick to learn
+\item JBox2D is fast but hard to learn
 \item Scala runs smoothly on Android 
 \end{itemize}
 \end{frame}
