@@ -48,16 +48,18 @@ trait Game extends TypeChecker with Interpreter { self =>
 
   private[kingpong] def restore(t: Long): Unit = {
     if (t >= 0 && t <= maxTime) {
-      _objects.foreach(_.restore(t))
+      objects.foreach(_.restore(t))
+      rules.foreach(_.restore(t))
       EventHistory.restore(t)
       world.clear()
     }
   }
 
   private[kingpong] def reset(): Unit = {
-    _objects.foreach(_.reset(this)(EventHistory))
-    _objects.foreach(_.clear())
-    _rules.foreach(_.reset())
+    objects.foreach(_.reset(this)(EventHistory))
+    objects.foreach(_.clear())
+    rules.foreach(_.reset())
+    rules.foreach(_.clear())
     world.clear()
     EventHistory.clear()
   }
@@ -77,10 +79,11 @@ trait Game extends TypeChecker with Interpreter { self =>
     world.step()
     objects foreach {_.load()}
     objects foreach {_.save(time)}
+    rules foreach {_.save(time)}
 
-    if (time == 200) {
-      restore(1)
-    }
+    //if (time == 200) {
+    // restore(1)
+    //}
 
   }
 
@@ -297,7 +300,7 @@ class EmptyGame() extends Game {
   rectangle("Rectangle 2", 3.4, 0, width = 1, height = 2, fixedRotation = false).withCategory(cat)
 
   circle("Circle 1", 3, 2, radius = 1, fixedRotation = false).withCategory(cat)
-  circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
+  val c2 = circle("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false).withCategory(cat)
   
   val score = intbox("Score", 1, 1, value = 0)
 
@@ -307,18 +310,24 @@ class EmptyGame() extends Game {
 
   val r1 = foreach(cat) { o =>
     whenever(base("y") < o("y")) { Seq(
-      o("y") := 0
+      o("y") := 0, 
+      o("velocity") := Vec2(0, 0)
     )}
   }
 
   val r2 = foreach(cat, cat2) { (o1, o2) =>
-    once(Collision(o1, o2)) { Seq(
+    on(Collision(o1, o2)) { Seq(
       score("value") += 1
     )}  
   }
 
+  val r3 = whenever(FingerDownOver(c2)) { Seq(
+    c2("radius") += 0.1
+  )}
+
 
   register(r1)
   register(r2)
+  register(r3)
 
 }

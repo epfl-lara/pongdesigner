@@ -179,6 +179,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
     }}
 
+    /*
     game.world.beginContacts foreach { c =>
       paint.setColor(0xFFFF0000)
       canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
@@ -202,7 +203,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
       case _ => //Do nothing
     }
-
+    */
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {

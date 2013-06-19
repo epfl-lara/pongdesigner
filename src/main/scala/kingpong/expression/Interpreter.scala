@@ -202,7 +202,8 @@ trait Interpreter {
 
     case Collision(o1, o2) => 
       BooleanV(context.beginContacts{ c =>
-        c.contact.objectA == o1 && c.contact.objectB == o2
+        (c.contact.objectA == o1 && c.contact.objectB == o2) ||
+        (c.contact.objectA == o2 && c.contact.objectB == o1)
       }.nonEmpty)
 
   }

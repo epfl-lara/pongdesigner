@@ -41,7 +41,7 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
           view.render(canvas)
 
           val timeDiff = System.currentTimeMillis() - beginTime
-          var sleepTime = (FRAME_PERIOD_MS - timeDiff)
+          var sleepTime = FRAME_PERIOD_MS - timeDiff
 
           if (sleepTime > 0) Try {
             Thread.sleep(sleepTime.toLong)
