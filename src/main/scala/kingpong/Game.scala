@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import scala.collection.mutable.{Set => MSet}
+import scala.math.Numeric$DoubleIsFractional$
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
