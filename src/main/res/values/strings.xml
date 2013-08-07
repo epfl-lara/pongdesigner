@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">King Pong</string>
+    <string name="app_name">Pong designer</string>
+    <string name="app_name_interview">Interview Pong designer</string>
     <string name="dummy">dummy</string>
-    <string name="title_activity_game_designer">King Pong designer</string>
+    <string name="title_activity_game_designer">Pong designer</string>
     <string name="design_rule">Rule editor</string>
     <string name="select_event">Select cause</string>
     <string name="existing_rule">Existing rule…</string>
@@ -19,36 +20,109 @@
     <string name="choose_rule">Choose a rule</string>
     <string name="rename_title">Rename %1$s</string>
     <string name="delete_title">Delete %1$s</string>
-    <string name="confirm_delete">Really send to trash?</string>
+    <string name="confirm_delete">Confirme deletion?</string>
     <string name="modify_text_title">Modify text %1$s</string>
-    
+    <string name="delete_line_code">Confirm the deletion of \'%1$s\'</string>
     <string name="confirm_reset_title">Reset game</string>
     <string name="confirm_reset_message">Create an empty game?</string>
+    <string name="share_audio_via">Share audio file via</string>
     
-    <string name="choose_trigger">%1$s value changed. Choose an trigger event:</string>
+    <string name="choose_trigger">%1$s value changed. Choose a trigger event:</string>
     <string name="trigger_integer_1">Whenever %1$s changes</string>
     <string name="trigger_integer_2">When %1$s == %2$d</string>
     <string name="trigger_integer_3">When %1$s >= %2$d</string>
     <string name="trigger_integer_4">When %1$s &lt;= %2$d</string>
     <string name="trigger_integer_5">When %1$s > 0</string>
     <string name="trigger_integer_6">When %1$s &lt; 0</string>
+    <string name="trigger_integer_7">When %1$s >= 0</string>
+    <string name="trigger_integer_8">When %1$s &lt;= 0</string>
     
-    <string name="choose_trigger_outofscreen">Choose an trigger event for %1$s:</string>
+    <string name="choose_trigger_outofscreen">Choose n trigger event for %1$s:</string>
     <string name="trigger_outscreen_1">When %1$s lefts the game</string>
-    <string name="trigger_outscreen_2">When %1$s cross this border</string>
+    <string name="trigger_outscreen_2">When %1$s crosses this border</string>
     
     <string name="choose_collision">When %1$s hits %2$s</string>
     <string name="trigger_collision_1">Let me edit the effects of the collision.</string>
     <string name="trigger_collision_2">Cancel any collision. %1$s and %2$s do not collide at all.</string>
     <string name="trigger_collision_3">%1$s and %2$s should go through each other but the collision is recorded.</string>
     
+    <string name="loadExternal">Load external game...</string>
     <string name="savedGame1">Fibonacci</string>
     <string name="savedGame2">Syracuse</string>
-    <string name="savedGame3">King pong</string>
-    <string name="savedGame4">Pong Maze</string>    
-    <string name="savedGame5">Pong Escape</string>    
+    <string name="savedGame3">2-player Pong</string>
+    <string name="savedGame4">Space Invaders</string>    
+    <string name="savedGame5">Pong Escape</string>
     <string name="savedGame6">PongMan</string>
-    <string name="savedGame7">GCD canvas</string>
+    <string name="savedGame7">Tilting Maze</string>
     <string name="savedGame8">Pong Balloon</string>
     <string name="savedGame9">Brick breaker 3 players</string>
+    <string name="saveFileAs">Save game as:</string>
+    <string name="exportFileAs">Save and export game as:</string>
+    <string name="export">Export</string>
+    <string name="options">Options</string>
+    <string name="loadFileAs">Load game:</string>
+    <string name="importFileAs">Import:</string>
+    <string name="share_game_via">Share game via:</string>
+    <string name="loading_game">Loading. Please wait...</string>
+    <string name="saving_game">Saving. Please wait...</string>
+    
+    <string name="tutorial">Tutorial</string>
+    <string name="tutorial_0">Do not show this tooltip next time.</string>
+    <string name="tutorial_1">Show the complete tutorial...</string>
+    <string name="tutorial_continue">Next</string>
+    <string name="init_help">To start the game, press on this button.</string>
+    <string name="tutorial_2">This bar shows the time elapsing.</string>
+    <string name="tutorial_3">To change the editing time point while editing, slide back or forth.</string>
+    <string name="tutorial_4">Go back to the beginning to edit the initial state of the game.</string>
+    <string name="tutorial_5">Display all events to create a rule.</string>
+    <string name="tutorial_6">Record a set of instructions whenever the shapes collide.</string>
+    <string name="tutorial_7">Record instructions whenever the shapes overlap, cancelling collision.</string>
+    <string name="tutorial_8">Cancel any type of overlapping or collision detection.</string>
+    <string name="tutorial_9">Change the game state according to the rule you want to create.</string>
+    <string name="tutorial_10">Accept the changes by pressing OK.</string>
+    <string name="tutorial_11">Merge new changes in the game into the rule.</string>
+    <string name="tutorial_12">Toggle between editing or not the rule.</string>
+    <string name="tutorial_13">Apply the rule once.</string>
+    <string name="tutorial_14">You can also modify some code portions.</string>
+    <string name="tutorial_end">The tutorial is finished. You can open an existing game to test it.</string>
+
+    <string name="add_rectangle_hint">Adds a rectangle to the game</string>
+    <string name="add_circle_hint">Adds a circle to the game</string>
+    <string name="add_integerbox_hint">Adds a integer to the game</string>
+    <string name="add_textbox_hint">Adds a text to the game</string>
+    <string name="select_accelerometer_hint">Enables selecting objects affected by the accelerometer</string>
+    <string name="select_gravity2d_hint">Enables selecting objects affected by the 2D gravity</string>
+    <string name="select_camera_hint">Enables selecting an object followed by the camera, and changing the camera\'s properties</string>
+    <string name="select_rule_hint">Enables selecting events based on objects to create rules</string>
+    <string name="select_prevnext_hint">Toggles between modifying the previous or the new state</string>
+    
+    <string name="change_name_hint">Changes the name of the shape</string>
+    <string name="change_text_hint">Changes the text of the shape</string>
+    <string name="change_position_hint">Changes the position of the shape</string>
+    <string name="change_increment_hint">Change the number by 1</string>
+    <string name="change_decrement_hint">Change the number by -1</string>
+    <string name="change_speed_hint">Drag to change the speed</string>
+    <string name="change_size_hint">Drag to change the size</string>
+    <string name="change_paint_hint">Drag to select the paint</string>
+    <string name="change_nail_hint">Switches between a static and a dynamic shape</string>
+    <string name="change_visible_hint">Change the visibility (and physical interaction) of the shape</string>
+    <string name="change_trash_hint">Delete this shape</string>
+ 
+    <string name="event_collide_hint">Condition that the shapes collide.</string>
+    <string name="event_overlap_hint">Condition that the shapes overlap without collision.</string>
+    <string name="event_nocollide_hint">Removes overlapping or collision detection.</string>
+    <string name="event_fingerdown_hint">When the finger presses the shape.</string>
+    <string name="event_fingerup_hint">When the finger gets off the shape.</string>
+    <string name="event_fingermove_hint">When the finger moves from the shape.</string>
+    
+    <string name="change_rule_hint">Opens a rule for editing.</string>
+    <string name="play_rule_hint">Plays the content of this rule.</string>
+    <string name="trash_rule_hint">Delete this rule.</string>
+    
+    <string name="resize_layout_hint">Resize the layout of the game.</string>
+    
+    <string name="prefs_general_title">Preferences</string>
+    <string name="prefs_show_tooltip">Show menu tooltips</string>
+    <string name="prefs_show_tooltip_on">Tooltips are enabled</string>
+    <string name="prefs_show_tooltip_off">Tooltips are disabled</string>
 </resources>
