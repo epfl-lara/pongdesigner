@@ -37,7 +37,7 @@ class SimplePong() extends Game {
   rectangle(borders)(name="Border2", x=0.5, y=5, width=1, height=10)
   rectangle(borders)(name="Border3", x=4.5, y=5, width=1, height=10)
   rectangle(duplicators)(name="BallDuplicator1", x=1.5, y=1.5, width=1, height=1)
-  val paddle1 = rectangle(paddles)(name="paddle1", x=2.5, y=9.5, width=2, height=1)
+  val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=2, height=1)
   for(j <- 0 until 4) {
     for(i <- 0 until 3) {
       rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+j, width = 1, height = 1)
@@ -51,12 +51,38 @@ class SimplePong() extends Game {
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
   val r1 = foreach(balls)("ball"){
-    whenever(paddle1("bottom") < obj("ball")("y")) { Seq(
+    whenever(on(paddle1("bottom") > obj("ball")("y"))) { Seq(
       score("value") -= 1,
       obj("ball")("x") = obj("ball").init_x,
       obj("ball")("y") = obj("ball").init_y
     )}
   }
+  
+  /** In the game, it appears as a python-like language:
+   *    on Paddle1.bottom > Ball1.y:
+   *      decrease Score1.value by 1
+   *      reset Ball1.x
+   *      reset Ball1.y
+   * 
+   *  And could have been constructed by
+   *    1) Selecting a paddle and a ball as conditions
+   *    The system
+   *    If there are multiple balls, the systems asks if this rule apply for this ball or for all balls.
+   *    2) Selecting an alignment condition, either current or pre-defined (here the ball is below the paddle)
+   *    3) change the score value by -1
+   *    4) Push the reset position button on the ball somewhere in its menu.
+   *    5) Validate.
+   *  
+   *  If any of the three objects (Ball1, Paddle1, Score1) is duplicated, then the following lines are automatically added:
+   *  
+   *  for ball in Balls:
+   *  for paddle in Paddles:
+   *  for score in Scores:
+   *    on paddle.bottom > ball.y:
+   *      decrease score.value by 1
+   *      reset ball.x
+   *      reset ball.y
+   */
 
   val r2 = foreach(balls, blocks)("ball", "block") {
     whenever(Collision(obj("ball"), obj("block"))) { Seq(

@@ -57,9 +57,10 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   private var activity: Activity = null
 
   /** The game model currently rendered. */
-  private var game: Game = new EmptyGame()
+  private var game: Game = null
   def setGame(g: Game) = game = g
   def getGame() = game
+  def hasGame(): Boolean = game != null
   def initialize() = {}
 
   /** The main game loop that calls `update()` and `render()`. */
@@ -102,7 +103,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   /** Called by the activity after a deep sleep. 
-   *  The state is keeped to `Editing` and the game loop is started.
+   *  The state is kept to `Editing` and the game loop is started.
    */
   def onResume(): Unit = {
     Log.d("kingpong", "onResume()")
@@ -157,7 +158,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
 
     paint.setStrokeWidth(mapRadiusI(1))
-
+    if(game == null) return;
     game.objects foreach { o => o match {
       case r: Rectangle =>
         paint.setColor(0xFF000000) // TODO r.color

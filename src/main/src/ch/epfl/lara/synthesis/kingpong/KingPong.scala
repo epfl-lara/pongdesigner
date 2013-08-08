@@ -33,23 +33,10 @@ import android.media.MediaRecorder
 import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
 import android.graphics.drawable.Drawable
 import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.Messages
 
 object KingPong {
-  final val SHOW_PROGRESS_DIALOG = 1
-  final val SHOW_PROGRESS_DIALOG_SAVE = 11
-  final val HIDE_PROGRESS_DIALOG = 2
-  final val TEXT_PROGRESS_DIALOG = 3
-  final val FILE_LOAD= 4
-  final val FILE_PARSE= 5
-  final val FILE_EXPORT = 6
-  final val FILE_SAVE = 7
-  final val FILE_SAVE_AND_EXPORT = 8
-  final val SHOW_INITIAL_TOOLTIP = 9
-  final val CANCEL_TUTORIAL = 10
-  final val FILENAME_TAG = "filename"
-  final val TEXT_TAG = "progress_text"
-  final val LINE_TAG = "progress_line"
-  final val TOTAL_TAG = "progressTotal"
+
     
   final val INTERVIEWNAME = "INTERVIEW_NAME"
     
@@ -59,114 +46,31 @@ object KingPong {
   final val PONGGAMEMAZE_FILE = "Maze"
   final val PONGGAMETUTORIAL_FILE = "Tutorial"
   
-  def mapGame(s: String): Game = { s match {
+  final val PONGNAME_SIMPLEBRICKBREAKER = "BrickBreaker"
+  private var mapgames: Map[String,()=>Game] = Map.empty
+  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new SimplePong()))
+  
+  //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
       case PONGGAMESPACEINVADERS_FILE => new PongSpaceInvaders()
       case PONGGAMEPACMAN_FILE => new PongGamePacman()
       case PONGGAMEMAZE_FILE => new PongMaze2()
       case PONGGAMETUTORIAL_FILE => new Pongtutorial()
-      */case _ => null
-    }
-  }
+      */
+ //     case PONGNAME_SIMPLEBRICKBREAKER => 
+  //    case _ => new EmptyGame()
+   // }
+  //}
   
   final val PREFS_NAME = "MyPrefsFile"
     
-  class LoadSaveGameTask(private var activity: KingPong) extends MyAsyncTask[String, (String, Int, Int), Game] {
-    var max=100
-    var prog =0
-    var gameHandler: Game = null
-    var saving: Boolean = false
-    var exporting: Boolean = false
-    var filename: String = ""
-      
-    def this(previous: LoadSaveGameTask) = {
-      this(previous.activity)
-      gameHandler = previous.gameHandler
+  trait AutoShutOff {
+    def fromPrevious(previous: AutoShutOff) {
       record = previous.record
       previous.record = null
       previous.finishRecording = null
       previous.willShutDown = false
     }
-    
-    protected def doInBackground1(names: ArrayBuffer[String]): Game = {
-      filename = names(0)
-      prog = 0
-      if(saving) {
-        val scala_file = filename.endsWith(".scala")
-        /*gameHandler.outputItself(filename, !scala_file, {
-        (text: String, i: Int, j: Int) => {
-          publishProgress((text, i, j))
-        }
-        })*/ // TODO: output the game to a file
-        
-      } else {
-        filename match {
-          case PONGGAMECOMPLETE_FILE | PONGGAMESPACEINVADERS_FILE | PONGGAMEPACMAN_FILE | PONGGAMEMAZE_FILE | PONGGAMETUTORIAL_FILE =>
-            publishProgress(("Loading " + filename, 0, 100))
-            gameHandler = mapGame(filename)
-            publishProgress(("Finished", 100, 100))
-          case _ =>
-            gameHandler = new EmptyGame()
-            /*gameHandler.setGameEngine(activity.mGameView)
-            gameHandler.fromFile(filename, {
-               (text: String, i: Int, j: Int) => 
-                 publishProgress((text, i, j))
-             })*/ /// TODO: Create a game from file.
-        }
-      }
-      gameHandler
-    }
-  
-    override protected def onProgressUpdate1(progress: ArrayBuffer[(String, Int, Int)]) = {
-      if(activity != null) {
-        val msg = Message.obtain()
-        msg.what = KingPong.TEXT_PROGRESS_DIALOG
-        prog = progress(0)._2
-        max =  progress(0)._3
-        
-        msg.getData().putString(KingPong.TEXT_TAG, progress(0)._1)
-        msg.getData().putInt(KingPong.LINE_TAG, progress(0)._2)
-        msg.getData().putInt(KingPong.TOTAL_TAG, progress(0)._3)
-        activity.mHandler.sendMessage(msg)
-      }
-      //setProgressPercent(progress(0));
-    }
-     
-     override protected def onPostExecute(game: Game) {
-       if(activity != null && activity.mGameView != null && !saving) {
-         game.setGameEngine(activity.mGameView)
-         activity.mGameView.setGame(game)
-         activity.mGameView.initialize()
-         // TODO: Initialize the game when loaded
-       }
-       if(activity != null) {
-         var msg = Message.obtain()
-         msg.what = KingPong.HIDE_PROGRESS_DIALOG;
-         activity.mHandler.sendMessage(msg);
-       }
-       if(activity != null && saving) {
-         if(!exporting) {
-          Toast.makeText(activity, "Game saved as '"+filename+"'", 1000).show()
-         } else {
-           val msg = Message.obtain();
-           msg.what = KingPong.FILE_EXPORT;
-           msg.getData().putString(KingPong.FILENAME_TAG, filename)
-           activity.mHandler.sendMessage(msg)
-          ()
-        }
-       }
-       prog = 0
-       max = 100
-     }
-     
-     def detach() = activity = null
-
-     def attach(activity: KingPong) {
-       this.activity=activity
-       if(prog == max && gameHandler != null) {
-         onPostExecute(gameHandler)
-       }
-     }
      var record: MediaRecorder = _
      var finishRecording: Thread = _
      var willShutDown: Boolean = false
@@ -196,6 +100,89 @@ object KingPong {
        if(finishRecording != null) finishRecording.start()
      }
   }
+    
+  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: Game = null) extends MyAsyncTask[String, (String, Int, Int), Game] with AutoShutOff {
+    var max=100
+    var prog =0
+    var filename: String = ""
+    if(activity.task != null) {
+      val previous = activity.task
+      fromPrevious(previous)
+      game = previous.game
+    }
+    
+    protected def doInBackground1(names: ArrayBuffer[String]): Game = {
+      filename = names(0)
+      prog = 0
+      if(saving) {
+        val scala_file = filename.endsWith(".scala")
+        /*game.outputItself(filename, !scala_file, {
+        (text: String, i: Int, j: Int) => {
+          publishProgress((text, i, j))
+        }
+        })*/ // TODO: output the game to a file
+        
+      } else {
+        if(mapgames contains filename) {
+          mapgames(filename)
+          publishProgress(("Loading " + filename, 0, 100))
+          game = mapgames(filename)()
+          publishProgress(("Finished", 100, 100))
+        } else {
+          game = new EmptyGame()
+          /*game.setGameEngine(activity.mGameView)
+          game.fromFile(filename, {
+             (text: String, i: Int, j: Int) => 
+               publishProgress((text, i, j))
+           })*/ /// TODO: Create a game from file.
+        }
+      }
+      game
+    }
+  
+    override protected def onProgressUpdate1(progress: ArrayBuffer[(String, Int, Int)]) = {
+      if(activity != null) {
+        prog = progress(0)._2
+        max =  progress(0)._3
+        
+        activity ! Messages.TextProgressDialog(progress(0))
+      }
+      //setProgressPercent(progress(0));
+    }
+     
+     override protected def onPostExecute(game: Game) {
+       if(activity != null && activity.mGameView != null && !saving) {
+         game.setGameEngine(activity.mGameView)
+         activity.mGameView.setGame(game)
+         activity.mGameView.initialize()
+         // TODO: Initialize the game when loaded
+       }
+       if(activity != null) {
+         activity ! Messages.HideProgressDialog()
+         activity
+       }
+       if(activity != null && saving) {
+         if(!exporting) {
+          Toast.makeText(activity, "Game saved as '"+filename+"'", 1000).show()
+         } else {
+          activity ! Messages.FileExport(filename)
+          ()
+        }
+       }
+       prog = 0
+       max = 100
+     }
+     
+     def detach() = activity = null
+
+     def attach(activity: KingPong) {
+       this.activity=activity
+       if(prog == max && game != null) {
+         onPostExecute(game)
+       }
+     }
+     
+  }
 }
 
 class KingPong extends Activity 
@@ -212,10 +199,26 @@ class KingPong extends Activity
   private var mSensorManager: SensorManager = null
   private var mAccelerometer: Sensor = null
   private var task : LoadSaveGameTask = null
+  Log.d("KingPong", "KingPong class creating")
 
   onCreate { savedInstanceState: Bundle =>
-    setContentView(R.layout.main)
+    //setContentView(R.layout.main)
+    setContentView(R.layout.activity_main)
     mGameView.setActivity(this)
+    
+    task = getLastNonConfigurationInstance().asInstanceOf[LoadSaveGameTask]
+    
+    if(task == null) {
+      task = new LoadSaveGameTask(this)
+    }
+    if(!mGameView.hasGame()) {
+      if(task.game == null) {
+        task.game = new EmptyGame()
+      }
+      mGameView.setGame(task.game)
+    }
+    //mGameView.enterEditMode()
+    mGameView.setKeepScreenOn(true)
     
     time_bar.setMax(History.MAX_HISTORY_SIZE)
     time_bar.setProgress(0)
@@ -229,6 +232,51 @@ class KingPong extends Activity
      mSensorManager = getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager]
      mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
   }
+  
+  override def onCreateOptionsMenu(menu: Menu): Boolean = {
+      val inflater = getMenuInflater()
+      inflater.inflate(R.menu.game_menu, menu);
+      return true;
+  }
+  
+  override def onOptionsItemSelected(item: MenuItem): Boolean = {
+    import common._
+      // Handle item selection
+      item.getItemId() match {
+          case R.id.save =>
+            //mGameView.saveGame(mHandler, false)
+            true
+          case R.id.reset =>
+            val context = this
+            val res = context.getResources()
+            CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
+                { _ =>
+                  mGameView.setGame(new EmptyGame())
+                },
+                { _ => }
+            )
+            true
+          case R.id.exportbutton =>
+            //mGameView.saveGame(mHandler, true) // Export
+            true
+          case R.id.load_external =>
+            //new LoadFileTask().execute()
+            //mGameView.loadGame(mHandler)
+            true
+          case R.id.brickbreaker =>
+            self ! Messages.FileLoad(PONGNAME_SIMPLEBRICKBREAKER)
+            true
+          case R.id.tutorial_game =>
+            //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
+            true
+          case R.id.optionsButton =>
+            val i : Intent = new Intent(this, classOf[UserPreferences])
+            startActivity(i)
+            true
+          case _ =>
+              super.onOptionsItemSelected(item)
+      }
+  }
 
   onPause {
     mGameView.onPause()
@@ -240,11 +288,12 @@ class KingPong extends Activity
       mFirstLaunch = false
       mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
       if(task == null) {
-        
+        task = new LoadSaveGameTask(self, saving=false, exporting=false, game=null)
+        task.execute(PONGNAME_SIMPLEBRICKBREAKER)
       } else {
         // Resume the dialog task if needed.
         task.attach(this)
-        mGameView.setGame(task.gameHandler)
+        mGameView.setGame(task.game)
         
         /*if(task.record != null) {
           if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFF0000)
@@ -256,9 +305,7 @@ class KingPong extends Activity
       val settings = getSharedPreferences(PREFS_NAME, 0);
       val startTutorial = settings.getBoolean("startTutorial", true);
       if(startTutorial) {
-        val m = Message.obtain()
-        m.what = SHOW_INITIAL_TOOLTIP
-        mHandler.sendMessageDelayed(m, 1000)
+        (self after 1000) ! Messages.ShowInitialTooltip()
       }
   }
 
@@ -289,8 +336,8 @@ class KingPong extends Activity
   
   configurationObject {
     if(task != null) {
-      if(mGameView != null) task.gameHandler = mGameView.getGame
-      task.gameHandler.storeInitialState(false)
+      if(mGameView != null) task.game = mGameView.getGame
+      task.game.storeInitialState(false)
       task.detach()
     }
     task
@@ -349,71 +396,61 @@ class KingPong extends Activity
     mProgressDialog.setCancelable(false)
     mProgressDialog.show()
   }
+  def after(delay: Long): RichHandler = new RichHandler(delay, mHandler)
+  def !(m: Message) = mHandler ! m
   
+  class RichHandler(delay: Long, handler: Handler) {
+    def !(m: Message) = handler.sendMessageDelayed(m, delay)
+  }
+  /**
+   * Handler for working with asynchronous messages.
+   */
   private var mHandler = new Handler(){
+    import Messages._
+    def !(m: Message) = sendMessage(m)
     override def handleMessage(input_msg: Message) {
-        input_msg.what match {
-        case SHOW_PROGRESS_DIALOG =>
-          createProgressDialog()
+        input_msg match {
+          
+        case ShowProgressDialog() =>
+          createProgressDialog(save=false)
           //mProgressDialog.setIndeterminate(false)
-        case SHOW_PROGRESS_DIALOG_SAVE =>
-          createProgressDialog(true)
-        case HIDE_PROGRESS_DIALOG =>
+          
+        case ShowProgressDialogSave() =>
+          createProgressDialog(save=true)
+          
+        case HideProgressDialog() =>
           if(mProgressDialog != null) mProgressDialog.dismiss()
           mProgressDialog = null
-        case TEXT_PROGRESS_DIALOG =>
+          
+        case TextProgressDialog(text, line, max) =>
           if(mProgressDialog == null) createProgressDialog()
             if(mProgressDialog != null) {
-            mProgressDialog.setMessage(input_msg.getData().getString(TEXT_TAG))
-            mProgressDialog.setProgress(input_msg.getData().getInt(LINE_TAG))
-            val max = input_msg.getData().getInt(TOTAL_TAG)
+            mProgressDialog.setMessage(text)
+            mProgressDialog.setProgress(line)
             if(max > 0) {
               mProgressDialog.setIndeterminate(false)
               mProgressDialog.setMax(max)
             }
           }
-        case FILE_LOAD =>
+          
+        case FileLoad(tempName) =>
           //new LoadFileTask().execute(input_msg.getData().getString(FILENAME_TAG))
-          tempName = input_msg.getData().getString(FILENAME_TAG)
-          var msg = Message.obtain()
-          msg.what = KingPong.SHOW_PROGRESS_DIALOG
-          sendMessage(msg)
-          if(task != null) {
-            task = new LoadSaveGameTask(task)
-          } else {
-            task = new LoadSaveGameTask(self)
-          }
+          this ! ShowProgressDialog()
+          task = new LoadSaveGameTask(self)
           task.execute(tempName)
-        case FILE_SAVE =>
-          tempName = input_msg.getData().getString(FILENAME_TAG)
-          var msg = Message.obtain()
-          msg.what = KingPong.SHOW_PROGRESS_DIALOG_SAVE
-          sendMessage(msg)
-          if(task != null) {
-            task = new LoadSaveGameTask(task)
-          } else {
-            task = new LoadSaveGameTask(self)
-          }
-          task.saving = true
-          task.exporting = false
-          task.gameHandler = mGameView.getGame
+          
+        case FileSave(tempName) =>
+          ShowProgressDialogSave()
+          this ! ShowProgressDialogSave()
+          task = new LoadSaveGameTask(self, saving=true, exporting=false, game=mGameView.getGame)
           task.execute(tempName)
-        case FILE_SAVE_AND_EXPORT =>
-          tempName = input_msg.getData().getString(FILENAME_TAG)
-          var msg = Message.obtain()
-          msg.what = KingPong.SHOW_PROGRESS_DIALOG_SAVE
-          sendMessage(msg)
-          if(task != null) {
-            task = new LoadSaveGameTask(task)
-          } else {
-            task = new LoadSaveGameTask(self)
-          }
-          task.saving = true
-          task.exporting = true
-          task.gameHandler = mGameView.getGame
+          
+        case FileSaveAndExport(tempName) =>
+          this ! ShowProgressDialogSave()
+          task = new LoadSaveGameTask(self, saving=true, exporting=true, game=mGameView.getGame)
           task.execute(tempName)
-        case FILE_EXPORT =>
-          tempName = input_msg.getData().getString(FILENAME_TAG)
+          
+        case FileExport(tempName) =>
           val sharingIntent: Intent = new Intent(android.content.Intent.ACTION_SEND)
           sharingIntent.setType("text/plain")
           var U : android.net.Uri = null
@@ -421,14 +458,17 @@ class KingPong extends Activity
           U = Uri.fromFile(F)
           sharingIntent.putExtra(Intent.EXTRA_STREAM, U)
           startActivity(Intent.createChooser(sharingIntent, self.getString(R.string.share_game_via)))
-        case SHOW_INITIAL_TOOLTIP =>
+          
+        case ShowInitialTooltip() =>
           //Tutorial.setActivity(KingPong.this, this)
           //Tutorial.initialTooltip()
-        case CANCEL_TUTORIAL =>
+          
+        case CancelTutorial() =>
           val settings = getSharedPreferences(PREFS_NAME, 0);
           val editor = settings.edit();
           editor.putBoolean("startTutorial", false);
           editor.commit();
+
         case _ =>
             Log.w("MyTag","Warning: message type \""+input_msg.what+"\" not supported");
         }

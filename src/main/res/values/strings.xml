@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="app_name">Pong designer</string>
     <string name="app_name_interview">Interview Pong designer</string>
     <string name="dummy">dummy</string>
@@ -26,7 +27,6 @@
     <string name="confirm_reset_title">Reset game</string>
     <string name="confirm_reset_message">Create an empty game?</string>
     <string name="share_audio_via">Share audio file via</string>
-    
     <string name="choose_trigger">%1$s value changed. Choose a trigger event:</string>
     <string name="trigger_integer_1">Whenever %1$s changes</string>
     <string name="trigger_integer_2">When %1$s == %2$d</string>
@@ -36,26 +36,24 @@
     <string name="trigger_integer_6">When %1$s &lt; 0</string>
     <string name="trigger_integer_7">When %1$s >= 0</string>
     <string name="trigger_integer_8">When %1$s &lt;= 0</string>
-    
     <string name="choose_trigger_outofscreen">Choose n trigger event for %1$s:</string>
     <string name="trigger_outscreen_1">When %1$s lefts the game</string>
     <string name="trigger_outscreen_2">When %1$s crosses this border</string>
-    
     <string name="choose_collision">When %1$s hits %2$s</string>
     <string name="trigger_collision_1">Let me edit the effects of the collision.</string>
     <string name="trigger_collision_2">Cancel any collision. %1$s and %2$s do not collide at all.</string>
     <string name="trigger_collision_3">%1$s and %2$s should go through each other but the collision is recorded.</string>
-    
     <string name="loadExternal">Load external game...</string>
     <string name="savedGame1">Fibonacci</string>
     <string name="savedGame2">Syracuse</string>
     <string name="savedGame3">2-player Pong</string>
-    <string name="savedGame4">Space Invaders</string>    
+    <string name="savedGame4">Space Invaders</string>
     <string name="savedGame5">Pong Escape</string>
     <string name="savedGame6">PongMan</string>
     <string name="savedGame7">Tilting Maze</string>
     <string name="savedGame8">Pong Balloon</string>
     <string name="savedGame9">Brick breaker 3 players</string>
+    <string name="brickbreaker">Brick breaker</string>
     <string name="saveFileAs">Save game as:</string>
     <string name="exportFileAs">Save and export game as:</string>
     <string name="export">Export</string>
@@ -65,7 +63,6 @@
     <string name="share_game_via">Share game via:</string>
     <string name="loading_game">Loading. Please wait...</string>
     <string name="saving_game">Saving. Please wait...</string>
-    
     <string name="tutorial">Tutorial</string>
     <string name="tutorial_0">Do not show this tooltip next time.</string>
     <string name="tutorial_1">Show the complete tutorial...</string>
@@ -85,7 +82,6 @@
     <string name="tutorial_13">Apply the rule once.</string>
     <string name="tutorial_14">You can also modify some code portions.</string>
     <string name="tutorial_end">The tutorial is finished. You can open an existing game to test it.</string>
-
     <string name="add_rectangle_hint">Adds a rectangle to the game</string>
     <string name="add_circle_hint">Adds a circle to the game</string>
     <string name="add_integerbox_hint">Adds a integer to the game</string>
@@ -95,7 +91,6 @@
     <string name="select_camera_hint">Enables selecting an object followed by the camera, and changing the camera\'s properties</string>
     <string name="select_rule_hint">Enables selecting events based on objects to create rules</string>
     <string name="select_prevnext_hint">Toggles between modifying the previous or the new state</string>
-    
     <string name="change_name_hint">Changes the name of the shape</string>
     <string name="change_text_hint">Changes the text of the shape</string>
     <string name="change_position_hint">Changes the position of the shape</string>
@@ -107,22 +102,22 @@
     <string name="change_nail_hint">Switches between a static and a dynamic shape</string>
     <string name="change_visible_hint">Change the visibility (and physical interaction) of the shape</string>
     <string name="change_trash_hint">Delete this shape</string>
- 
     <string name="event_collide_hint">Condition that the shapes collide.</string>
     <string name="event_overlap_hint">Condition that the shapes overlap without collision.</string>
     <string name="event_nocollide_hint">Removes overlapping or collision detection.</string>
     <string name="event_fingerdown_hint">When the finger presses the shape.</string>
     <string name="event_fingerup_hint">When the finger gets off the shape.</string>
     <string name="event_fingermove_hint">When the finger moves from the shape.</string>
-    
     <string name="change_rule_hint">Opens a rule for editing.</string>
     <string name="play_rule_hint">Plays the content of this rule.</string>
     <string name="trash_rule_hint">Delete this rule.</string>
-    
     <string name="resize_layout_hint">Resize the layout of the game.</string>
-    
     <string name="prefs_general_title">Preferences</string>
     <string name="prefs_show_tooltip">Show menu tooltips</string>
     <string name="prefs_show_tooltip_on">Tooltips are enabled</string>
     <string name="prefs_show_tooltip_off">Tooltips are disabled</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+
 </resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory 
+        android:title="@string/prefs_general_title">
+        <CheckBoxPreference android:title="@string/prefs_show_tooltip"
+            android:summaryOn="@string/prefs_show_tooltip_on"
+            android:summaryOff="@string/prefs_show_tooltip_off"
+            android:key="tooltips"
+            android:defaultValue="true"/>
+        <!--  ListPreference android:title="@string/prefs_locale"
+            android:key="locale"
+            android:summary="@string/pref_select_locale" android:entries="@array/locales"
+            android:entryValues="@array/locales_values" /-->
+    </PreferenceCategory>
+</PreferenceScreen>

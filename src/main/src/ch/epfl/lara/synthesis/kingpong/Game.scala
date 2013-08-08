@@ -312,8 +312,6 @@ trait Game extends TypeChecker with Interpreter { self =>
   
   def relative_dx: Expr = FingerCoordX2 - FingerCoordX1
   def relative_dy: Expr = FingerCoordY2 - FingerCoordY1
-  
-  
 }
 
 class EmptyGame() extends Game {
