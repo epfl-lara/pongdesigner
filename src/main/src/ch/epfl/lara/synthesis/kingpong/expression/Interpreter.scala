@@ -46,16 +46,34 @@ trait Interpreter {
     case Assign(prop, rhs) =>
       prop.setNext(eval(rhs))
 
+    case Copy(name, ref) =>
+      // TODO : do the copy and record it to the events.
+    case Reset(prop) =>
+      prop.property.reset(this)
     case NOP => //Do nothing
   }
 
   def eval(expr: Expr)(implicit context: Context): Value = expr match {
-
+    case ref: PropertyRefRef => eval(ref.expr)
     case ref: PropertyRef => ref.get
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
     case BooleanLiteral(v) => BooleanV(v)
+    case Vec2Expr(lhs, rhs) => 
+      eval(lhs) match {
+        case IntV(v1) => eval(rhs) match {
+          case IntV(v2) => Vec2V(v1, v2)
+          case FloatV(v2) => Vec2V(v1, v2)
+          case _ => error(expr)
+        }
+        case FloatV(v1) => eval(rhs) match {
+          case IntV(v2) => Vec2V(v1, v2)
+          case FloatV(v2) => Vec2V(v1, v2)
+          case _ => error(expr)
+        }
+        case _ => error(expr)
+      }
     case Vec2Literal(x, y) => Vec2V(x, y)
     case UnitLiteral => UnitV
     case Val(s) => context.getOrElse(s, FloatV(0))

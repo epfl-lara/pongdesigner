@@ -36,8 +36,6 @@ import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Messages
 
 object KingPong {
-
-    
   final val INTERVIEWNAME = "INTERVIEW_NAME"
     
   final val PONGGAMECOMPLETE_FILE = "2-playerPong"
@@ -202,8 +200,8 @@ class KingPong extends Activity
   Log.d("KingPong", "KingPong class creating")
 
   onCreate { savedInstanceState: Bundle =>
-    //setContentView(R.layout.main)
-    setContentView(R.layout.activity_main)
+    setContentView(R.layout.main)
+    //setContentView(R.layout.activity_main)
     mGameView.setActivity(this)
     
     task = getLastNonConfigurationInstance().asInstanceOf[LoadSaveGameTask]
@@ -280,6 +278,10 @@ class KingPong extends Activity
 
   onPause {
     mGameView.onPause()
+  }
+  
+  onDestroy {
+    if(mProgressDialog != null) mProgressDialog.dismiss()
   }
 
   onResume {
@@ -436,7 +438,7 @@ class KingPong extends Activity
         case FileLoad(tempName) =>
           //new LoadFileTask().execute(input_msg.getData().getString(FILENAME_TAG))
           this ! ShowProgressDialog()
-          task = new LoadSaveGameTask(self)
+          task = new LoadSaveGameTask(self, saving=false, exporting=false,game=mGameView.getGame)
           task.execute(tempName)
           
         case FileSave(tempName) =>

@@ -153,6 +153,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   private val rectF = new RectF()
   private val paint = new Paint()
+  paint.setAntiAlias(true)
   def render(canvas: Canvas): Unit = {
     canvas.setMatrix(matrix)
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
@@ -178,6 +179,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
       case b: Box[_] => 
         paint.setColor(0xFF000000) // TODO c.color
+        paint.setTextSize(b.height.get)
         canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
 
     }}

@@ -23,7 +23,8 @@ object Trees {
   /** Statement, can have side-effect. */
   sealed trait Stat extends Tree
 
-  case class Assign(prop: PropertyRef, rhs: Expr) extends Stat { def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); rhs.setBinding(n, o); this} }
+  case class Assign(prop: PropertyRefTrait, rhs: Expr) extends Stat { def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); rhs.setBinding(n, o); this} }
+  case class Reset(prop: PropertyRefTrait) extends Stat { def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); this} }
   case class Block(stats: Seq[Stat]) extends Stat { def setBinding(n: String, o: GameObject) = { stats.foreach(_.setBinding(n, o)); this } }
   case class If(cond: Expr, s1: Stat, s2: Stat) extends Stat { def setBinding(n: String, o: GameObject) = { cond.setBinding(n, o); s1.setBinding(n, o); s2.setBinding(n, o); this } }
   case class Copy(name: String, o: GameObjectRef)(b: Block) extends Stat with OBinding
@@ -46,6 +47,14 @@ object Trees {
     def >=(e: Expr): Expr = GreaterEq(this, e)
     def unary_! : Expr = Not(this)
 
+    /*def :=(expr: Expr): Stat = throw new Exception(s"$this is not assignable $expr")
+    def +=(expr: Expr): Stat = throw new Exception(s"$this is not assignable $expr")
+    def -=(expr: Expr): Stat = throw new Exception(s"$this is not assignable $expr")
+    def *=(expr: Expr): Stat = throw new Exception(s"$this is not assignable $expr")
+    def /=(expr: Expr): Stat = throw new Exception(s"$this is not assignable $expr")*/
+    def property: Property[_] = throw new Exception(s"$this is not a property reference")
+    def reset(): Stat = throw new Exception(s"$this is not a property reference and thus reset cannot be called")
+    
     def copy: Expr = this // TODO: to change in the future
   }
 
@@ -53,6 +62,7 @@ object Trees {
   case class FloatLiteral(value: Float) extends Expr with NoBinding
   case class StringLiteral(value: String) extends Expr with NoBinding
   case class BooleanLiteral(value: Boolean) extends Expr with NoBinding
+  case class Vec2Expr(x: Expr, y: Expr) extends Expr with NoBinding
   case class Vec2Literal(x: Float, y: Float) extends Expr with NoBinding
   case object UnitLiteral extends Expr with NoBinding
   case class Val(name: String) extends Expr with NoBinding
@@ -88,8 +98,11 @@ object Trees {
    def contains(pos: ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.Vec2): Boolean = if(obj != null) obj.contains(pos) else false
    def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
    val visible: ch.epfl.lara.synthesis.kingpong.objects.Property[Boolean] = if(obj != null) obj.visible else null
-   val x:  ch.epfl.lara.synthesis.kingpong.objects.Property[Float] = if(obj != null) obj.x else null
-   val y: ch.epfl.lara.synthesis.kingpong.objects.Property[Float] = if(obj != null) obj.y else null
+   def x: Property[Float] = if(obj != null) obj.x else null
+   def y: Property[Float] = if(obj != null) obj.y else null
+   override def apply(property: String): PropertyRefRef = PropertyRefRef(ref, obj, property)
+   override def update(property: String, arg: Expr): Stat = PropertyRefRef(ref, obj, property) := arg
+   
    override def category = if(obj != null) obj.category else null
    override def category_=(c: Category) = if(obj != null) obj.category = c
    override def properties = if(obj != null) obj.properties else super.properties
@@ -107,7 +120,15 @@ object Trees {
   case object FingerCoordY2 extends Expr with NoBinding
   case class Collision(lhs: GameObjectRef, rhs: GameObjectRef) extends Expr with LeftRightBinding 
 
-  case class PropertyRef(property: Property[_]) extends Expr with NoBinding {
+  sealed trait PropertyRefTrait extends Expr {
+    def :=(expr: Expr): Stat = Assign(this, expr)
+    def +=(expr: Expr): Stat = Assign(this, Plus(this, expr))
+    def -=(expr: Expr): Stat = Assign(this, Minus(this, expr))
+    def *=(expr: Expr): Stat = Assign(this, Times(this, expr))
+    def /=(expr: Expr): Stat = Assign(this, Div(this, expr))
+    
+    def property: Property[_]
+    override def reset(): Stat = Reset(this)
     
     /** Return the internal type of this property. */
     private[kingpong] def getPongType: Type = property.getPongType
@@ -117,15 +138,21 @@ object Trees {
       property.setNext(v)
       this
     }
-
     /** Get the current value of this property. */
     private[kingpong] def get: Value = property.getPongValue
-
-    def :=(expr: Expr): Stat = Assign(this, expr)
-    def +=(expr: Expr): Stat = Assign(this, Plus(this, expr))
-    def -=(expr: Expr): Stat = Assign(this, Minus(this, expr))
-    def *=(expr: Expr): Stat = Assign(this, Times(this, expr))
-    def /=(expr: Expr): Stat = Assign(this, Div(this, expr))
   }
-
+  case class PropertyRef(override val property: Property[_]) extends PropertyRefTrait with NoBinding {
+    
+  }
+  case class PropertyRefRef(ref: String, var obj: GameObject, prop: String) extends PropertyRefTrait {
+    var expr: Expr = null
+    override def property = obj(prop).property
+    def setBinding(n: String, o: GameObject): this.type = {
+      if(n == ref) {
+        obj = o
+        expr = obj(prop) // Can be of any type.
+      }
+      this
+    }
+  }
 }

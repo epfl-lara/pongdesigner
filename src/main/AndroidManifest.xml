@@ -17,7 +17,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="ch.epfl.lara.synthesis.kingpong.Kingpong"
+            android:name="ch.epfl.lara.synthesis.kingpong.KingPong"
             android:label="@string/title_activity_game_designer" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong
 
 import scala.collection.mutable.{Set => MSet, Map => MMap}
 import scala.math.Numeric$DoubleIsFractional$
-
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.History
@@ -14,11 +13,14 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-
-//TODO remove when useless
 import org.jbox2d.dynamics.BodyType
-
 import android.util.Log
+import org.jbox2d.dynamics.FixtureDef
+import org.jbox2d.collision.shapes.PolygonShape
+import org.jbox2d.dynamics.BodyDef
+
+import scala.Dynamic
+import scala.language.dynamics
 
 trait Game extends TypeChecker with Interpreter { self => 
 
@@ -35,7 +37,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
-  /** Events from the curent last full step. */
+  /** Events from the current last full step. */
   def events = EventHistory.events
 
   /** Time of the current step. It corresponds to the last fully 
@@ -68,10 +70,16 @@ trait Game extends TypeChecker with Interpreter { self =>
   private[kingpong] def update(): Unit = {
 
     // save contacts
-    world.beginContacts foreach { EventHistory addEvent BeginContact(_) }
-    world.currentContacts foreach { EventHistory addEvent CurrentContact(_) }
-    world.endContacts foreach { EventHistory addEvent EndContact(_) }
-
+    world.beginContacts foreach { 
+      EventHistory addEvent BeginContact(_)
+    }
+    world.currentContacts foreach {
+      EventHistory addEvent CurrentContact(_)
+    }
+    world.endContacts foreach {
+      EventHistory addEvent EndContact(_)
+    }
+    
     EventHistory.step()                                /// Opens saving for new coordinates
     rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules
     objects foreach {_.validate()}                     /// Store new computed values
@@ -86,7 +94,6 @@ trait Game extends TypeChecker with Interpreter { self =>
     //}
 
   }
-
 
   def add(o: GameObject) = _objects add o
 
@@ -144,7 +151,8 @@ trait Game extends TypeChecker with Interpreter { self =>
                 fixedRotation: Expr = category.fixedRotation.copy,
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                          density, friction, restitution, fixedRotation, tpe)
+                         density, friction, restitution, fixedRotation, tpe)
+    //val r = new Rectangle
     if(category != null) r.setCategory(category)
     r.reset(this)(EventHistory)
     r.flush()
@@ -306,7 +314,7 @@ trait Game extends TypeChecker with Interpreter { self =>
   
   /// Unnamed constant pointer always pointing to the game object
   implicit def gameObjectToGameObjectRef(g: GameObject): GameObjectRef = GameObjectRef(null, g)
-  
+
   /// Pointer having a name but pointing to nothing yet.
   def obj(s: String): GameObjectRef = GameObjectRef(s, null)
   
@@ -325,7 +333,7 @@ class EmptyGame() extends Game {
   circle(cat)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
   val c2 = circle(cat)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
   
-  val score = intbox(null)("Score", 1, 1, value = 0)
+  val score = intbox(new Category("scores")())("Score", 1, 1, value = 0)
 
   val cat2 = new Category("Static objects")()
 

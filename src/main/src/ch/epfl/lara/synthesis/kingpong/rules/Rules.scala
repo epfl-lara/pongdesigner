@@ -17,7 +17,7 @@ object Rules {
     def action: Stat
     def setBinding(n: String, o: GameObject): this.type
   }
-  trait NoBinding extends Rule {
+  sealed trait NoBinding extends Rule {
     def setBinding(n: String, o: GameObject) = { this }
   }
 

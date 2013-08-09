@@ -23,7 +23,7 @@ import org.jbox2d.dynamics.BodyType
 import android.util.Log
 
 class SimplePong() extends Game {
-  val world = new PhysicalWorld(Vec2(0, 1.5f))
+  val world = new PhysicalWorld(Vec2(0, 0f))
 
   val borders = Category("Borders")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC)
   val blocks = Category("Blocks")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC)
@@ -33,28 +33,28 @@ class SimplePong() extends Game {
   val scores = Category("Scores")()
   val cat2 = Category("Static objects")()
 
-  rectangle(borders)(name="Border1", x=2.5, y=0.5, width=5, height=1)
-  rectangle(borders)(name="Border2", x=0.5, y=5, width=1, height=10)
-  rectangle(borders)(name="Border3", x=4.5, y=5, width=1, height=10)
+  rectangle(borders)(name="Border1", x=2.5, y=0, width=5, height=0.1)
+  rectangle(borders)(name="Border2", x=0, y=5, width=0.1, height=10)
+  rectangle(borders)(name="Border3", x=5, y=5, width=0.1, height=10)
   rectangle(duplicators)(name="BallDuplicator1", x=1.5, y=1.5, width=1, height=1)
-  val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=2, height=1)
+  val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=1, height=0.2)
   for(j <- 0 until 4) {
     for(i <- 0 until 3) {
-      rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+j, width = 1, height = 1)
+      rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+j, width = 0.2, height = 0.2)
     }
   }
 
-  circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25)
+  circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -1.0f))
 
-  val score = intbox(scores)("Score1", x=2, y=5, value = 0)
+  val score = intbox(scores)("Score1", x=2, y=5, value = 0, width=1, height=1)
   
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
   val r1 = foreach(balls)("ball"){
-    whenever(on(paddle1("bottom") > obj("ball")("y"))) { Seq(
+    whenever(on(paddle1("bottom") < obj("ball")("top"))) { Seq(
       score("value") -= 1,
-      obj("ball")("x") = obj("ball").init_x,
-      obj("ball")("y") = obj("ball").init_y
+      obj("ball")("x").reset(),
+      obj("ball")("y").reset()
     )}
   }
   
@@ -82,6 +82,12 @@ class SimplePong() extends Game {
    *      decrease score.value by 1
    *      reset ball.x
    *      reset ball.y
+   *      
+   *      
+   *  I would like to write alignment code such that:
+   *  
+   *      ball.y = choose( y => ball.bottom == paddle.bottom )
+   *  where bottom is in fact replaced by y+radius in the first case and y+height in the second.    
    */
 
   val r2 = foreach(balls, blocks)("ball", "block") {

@@ -33,20 +33,43 @@ trait TypeChecker {
     case Assign(prop, rhs) =>
       typeCheck(rhs, prop.getPongType)
       stat
-
+      
+    case Copy(name, o) =>
+      typeCheck(o, TObject)
+      stat
+      
+    case Reset(prop) =>
+      stat
+      
     case NOP => stat//Do nothing, it typechecks
   }
 
   def typeCheck(expr: Expr): Expr = expr match {
-
-    case ref: PropertyRef => ref.setType(ref.getPongType)
+    case ref: PropertyRefTrait => ref.setType(ref.getPongType)
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
     case BooleanLiteral(_) => expr.setType(TBoolean)
     case Vec2Literal(_, _) => expr.setType(TVec2)
     case UnitLiteral => expr.setType(TUnit)
-    
+    case FingerCoordX1 => expr.setType(TFloat)
+    case FingerCoordX2 => expr.setType(TFloat)
+    case FingerCoordY1 => expr.setType(TFloat)
+    case FingerCoordY2 => expr.setType(TFloat)
+    case GameObjectRef(_, _) => expr.setType(TObject)
+    case On(_) => expr.setType(TBoolean)
+    case Once(_) => expr.setType(TBoolean)
+    case Val(_) => expr.setType(TFloat)
+    case Vec2Expr(lhs, rhs) =>
+      (typeCheck(lhs, TInt, TFloat): @unchecked) match {
+        case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
+          case TInt => expr.setType(TVec2)
+          case TFloat => expr.setType(TVec2)
+        }
+        case TFloat => 
+          typeCheck(rhs, TInt, TFloat)
+          expr.setType(TVec2)
+      }
     case Plus(lhs, rhs) =>
       (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
         case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
@@ -121,12 +144,12 @@ trait TypeChecker {
       typeCheck(lhs, TBoolean)
       typeCheck(rhs, TBoolean)
       expr.setType(TBoolean)
-      
+
     case Equals(lhs, rhs) =>
       typeCheck(lhs)
       typeCheck(rhs)
       expr.setType(TBoolean)
-      
+
     case LessThan(lhs, rhs) =>
       typeCheck(lhs, TInt, TFloat)
       typeCheck(rhs, TInt, TFloat)
@@ -146,7 +169,7 @@ trait TypeChecker {
       typeCheck(lhs, TInt, TFloat)
       typeCheck(rhs, TInt, TFloat)
       expr.setType(TBoolean)
-      
+
     case Not(e) =>
       typeCheck(e, TBoolean)
       expr.setType(TBoolean)

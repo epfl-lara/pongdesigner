@@ -33,6 +33,10 @@ object Types {
     override def accept(tpe: Type) = tpe == this
     override def toString = "Vec2"
   }
+  case object TObject extends Type {
+    override def accept(tpe: Type) = tpe == this
+    override def toString = "Object"
+  }
   
   case object TUnit extends Type {
     override def accept(tpe: Type) = tpe match {

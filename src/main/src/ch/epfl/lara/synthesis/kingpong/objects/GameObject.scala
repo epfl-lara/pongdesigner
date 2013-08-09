@@ -13,7 +13,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 import scala.Dynamic
 import scala.language.dynamics
 
-abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap with Dynamic { self =>
+abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
   
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
@@ -28,10 +28,12 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   private[this] var mName: Property[String] = simpleProperty[String]("name", init_name)  
   def name: Property[String] = mName
   
-  val x: Property[Float]
-  val y: Property[Float]
-  val angle: Property[Float]
-  val visible: Property[Boolean]
+  private[this] var mDeleted: Property[Boolean] = simpleProperty[Boolean]("deleted", false)
+  
+  def x: Property[Float]
+  def y: Property[Float]
+  def angle: Property[Float]
+  def visible: Property[Boolean]
 
   // --------------------------------------------------------------------------
   // Category
@@ -94,9 +96,45 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def reset(interpreter: Interpreter)(implicit context: Context) = 
     properties.values.foreach {_.reset(interpreter)}
 
-  def apply(property: String): PropertyRef = properties(property).ref
-  def selectDynamic(property: String): PropertyRef = properties(property).ref
-  def updateDynamic(property: String)(arg: Expr): Stat = update(property, arg)
+  /**
+   * Retrieves a property or anything else.
+   */
+  def apply(property: String): Expr = { //PropertyRefTrait
+    if(properties contains property) properties(property).ref else {
+      property match {
+        case "bottom" => 
+          this match {
+            case r: Rectangle => this("y") + this("height") / 2
+            case c: Circle => this("y") + this("radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "top" =>
+          this match {
+            case r: Rectangle => this("y") - this("height") / 2
+            case c: Circle => this("y") - this("radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "left" =>
+          this match {
+            case r: Rectangle => this("x") - this("width") / 2
+            case c: Circle => this("x") - this("radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "right" =>
+          this match {
+            case r: Rectangle => this("x") + this("width") / 2
+            case c: Circle => this("x") + this("radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "center" =>
+          Vec2Expr(this("x"), this("y"))
+        case _ =>
+          throw new Exception(s"$this does not have a $property method")
+      }
+    }
+  }
+  //def selectDynamic(methodName: String): PropertyRefTrait = properties(methodName).ref
+  //def updateDynamic(property: String)(arg: Expr): Stat = update(property, arg)
   def update(property: String, arg: Expr): Stat = properties(property).ref := arg
   //override def update
   def getAABB(): AABB

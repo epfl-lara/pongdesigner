@@ -22,6 +22,10 @@ trait Implicits {
   implicit def toRichView[B <: View](b: B) = new RichView(b)
 }
 
+/**
+ * Tool to have shorter activity code such as onPause { }
+ * or onCreate { bundle =>  ...  }
+ */
 trait ActivityUtil extends Activity with Implicits { self =>  
   private var customOnPause: () => Unit = null
   override def onPause() = {
@@ -30,6 +34,14 @@ trait ActivityUtil extends Activity with Implicits { self =>
   }
   def onPause(f: =>Unit) = {
     customOnPause = {() => f}
+  }
+  private var customOnDestroy: () => Unit = null
+  override def onDestroy() = {
+    super.onDestroy()
+    if(customOnDestroy != null) customOnDestroy()
+  }
+  def onDestroy(f: =>Unit) = {
+    customOnDestroy = {() => f}
   }
   private var customOnResume: () => Unit = null
   override def onResume() = {

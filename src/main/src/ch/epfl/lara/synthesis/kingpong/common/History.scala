@@ -5,7 +5,7 @@ object History {
 }
 
 trait History extends Any {  
-  /** Save the curent value to the history with the specified 
+  /** Save the current value to the history with the specified 
    *  discrete time.
    */
   def save(t: Long): Unit
