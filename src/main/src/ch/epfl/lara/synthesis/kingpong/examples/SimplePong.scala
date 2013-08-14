@@ -33,18 +33,18 @@ class SimplePong() extends Game {
   val scores = Category("Scores")()
   val cat2 = Category("Static objects")()
 
-  rectangle(borders)(name="Border1", x=2.5, y=0, width=5, height=0.1)
+  rectangle(borders)(name="Border1", x=2.5, y=0, width=4.8, height=0.1)
   rectangle(borders)(name="Border2", x=0, y=5, width=0.1, height=10)
   rectangle(borders)(name="Border3", x=5, y=5, width=0.1, height=10)
-  rectangle(duplicators)(name="BallDuplicator1", x=1.5, y=1.5, width=1, height=1)
+  rectangle(duplicators)(name="BallDuplicator1", x=1.5, y=1.5, width=1, height=1, color=red)
   val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=1, height=0.2)
-  for(j <- 0 until 4) {
-    for(i <- 0 until 3) {
-      rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+j, width = 0.2, height = 0.2)
+  for(j <- 0 until 4) { // Appears as for (i, j) in [0,4]x[0,3]:
+    for(i <- 0 until 3) { // 
+      rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+0.5*j, width = 0.9, height = 0.45, color=colorful(j))
     }
   }
 
-  circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -1.0f))
+  circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -5.0f))
 
   val score = intbox(scores)("Score1", x=2, y=5, value = 0, width=1, height=1)
   
@@ -78,21 +78,26 @@ class SimplePong() extends Game {
    *  for ball in Balls:
    *  for paddle in Paddles:
    *  for score in Scores:
-   *    on paddle.bottom > ball.y:
+   *    if paddle above ball:
    *      decrease score.value by 1
    *      reset ball.x
    *      reset ball.y
    *      
-   *      
    *  I would like to write alignment code such that:
    *  
-   *      ball.y = choose( y => ball.bottom == paddle.bottom )
-   *  where bottom is in fact replaced by y+radius in the first case and y+height in the second.    
+   *      ball.y = choose( ball.y => ball.bottom == paddle.bottom )
+   *  where bottom is in fact replaced by y+radius in the first case and y+height in the second.
+   *  
+   *  Invariants: Object within boundaries.
+   *     x' = x + k && 0 <= k <= 3, k max
+   *     x' <= 10
+   *  Produces the code:
+   *     x' = max(x+3, 10)
    */
 
   val r2 = foreach(balls, blocks)("ball", "block") {
     whenever(Collision(obj("ball"), obj("block"))) { Seq(
-      score("value") += 1,
+      score("value") += 1, // TODO operator that takes constants.
       obj("block")("visible") = false
     )}  
   }
@@ -119,4 +124,5 @@ class SimplePong() extends Game {
   register(r2)
   register(r3)
   register(r4)
+  //register(r5)
 }

@@ -46,8 +46,14 @@ trait Interpreter {
     case Assign(prop, rhs) =>
       prop.setNext(eval(rhs))
 
-    case Copy(name, ref) =>
-      // TODO : do the copy and record it to the events.
+    case Copy(name, ref, block) =>
+      if(ref.obj != null) {
+        val realname = context.getNewName(name)
+        val c = ref.obj.getCopy(name=realname)
+        block.setBinding(name, c)
+        eval(block)
+        // TODO : record the copy to the events
+      }
     case Reset(prop) =>
       prop.property.reset(this)
     case NOP => //Do nothing
@@ -76,6 +82,14 @@ trait Interpreter {
       }
     case Vec2Literal(x, y) => Vec2V(x, y)
     case UnitLiteral => UnitV
+    case Val("dx") =>
+      val Vec2V(fromx, fromy) = context.getOrElse("from", Vec2V(0, 0))
+      val Vec2V(tox, toy) = context.getOrElse("to", Vec2V(0, 0))
+      FloatV(tox - fromx)
+    case Val("dy") =>
+      val Vec2V(fromx, fromy) = context.getOrElse("from", Vec2V(0, 0))
+      val Vec2V(tox, toy) = context.getOrElse("to", Vec2V(0, 0))
+      FloatV(toy - fromy)
     case Val(s) => context.getOrElse(s, FloatV(0))
     case Plus(lhs, rhs) => eval(lhs) match {
       case IntV(v1) => eval(rhs) match {
@@ -218,7 +232,10 @@ trait Interpreter {
       var tox = 0f
       var toy = 0f
       var n = 0
-      context.fingerMoves(_.obj.exists(_ == o)) foreach {
+      if(!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
+        n += 0
+      }
+      context.fingerMoves(_.obj.exists(_ == o.obj)) foreach {
         event => fromx += event.from.x
            fromy += event.from.y
            tox += event.to.x
@@ -238,16 +255,17 @@ trait Interpreter {
       BooleanV(result)
 
     case FingerDownOver(o) => 
-      BooleanV(context.fingerDowns(_.obj.exists(_ == o)).nonEmpty)
+      BooleanV(context.fingerDowns(_.obj.exists(_ == o.obj)).nonEmpty)
 
     case FingerUpOver(o) => 
-      BooleanV(context.fingerUps(_.obj.exists(_ == o)).nonEmpty)
+      BooleanV(context.fingerUps(_.obj.exists(_ == o.obj)).nonEmpty)
 
-    case Collision(o1, o2) => 
-      BooleanV(context.beginContacts{ c =>
-        (c.contact.objectA == o1 && c.contact.objectB == o2) ||
-        (c.contact.objectA == o2 && c.contact.objectB == o1)
-      }.nonEmpty)
+    case Collision(o1, o2) =>
+      val v = context.beginContacts{ c =>
+        (c.contact.objectA == o1.obj && c.contact.objectB == o2.obj) ||
+        (c.contact.objectA == o2.obj && c.contact.objectB == o1.obj)
+      }.nonEmpty
+      BooleanV(v)
     case FingerCoordX1 =>
       FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
     case FingerCoordX2 =>

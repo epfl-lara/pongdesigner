@@ -49,4 +49,6 @@ trait Context extends Any {
     case None => set(value, orElse)
       orElse
   }
+  
+  def getNewName(s: String): String
 }

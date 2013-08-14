@@ -27,7 +27,8 @@ abstract class PhysicalObject(init_name: Expr,
                               init_density: Expr,
                               init_friction: Expr,
                               init_restitution: Expr,
-                              init_fixedRotation: Expr
+                              init_fixedRotation: Expr,
+                              init_color: Expr
                              ) extends GameObject(init_name) { self =>
   
   protected def game: Game
@@ -143,9 +144,10 @@ case class Rectangle (protected val game: Game,
                  init_friction: Expr,
                  init_restitution: Expr,
                  init_fixedRotation: Expr,
+                 init_color: Expr,
                  init_tpe: BodyType = BodyType.DYNAMIC
                 ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                                         init_density, init_friction, init_restitution, init_fixedRotation)
+                                         init_density, init_friction, init_restitution, init_fixedRotation, init_color)
                   with Rectangular {
 
   val body = {
@@ -187,9 +189,13 @@ case class Rectangle (protected val game: Game,
     body.resetMassData() // update the body mass
   }
   
+  def makecopy(name: String): GameObject = {
+    val thecopy = this.copy(game=game, init_name=name)
+    thecopy
+  }
 }
 
-class Circle(protected val game: Game,
+case class Circle(protected val game: Game,
              init_name: Expr,
              init_x: Expr,
              init_y: Expr,
@@ -201,9 +207,10 @@ class Circle(protected val game: Game,
              init_friction: Expr,
              init_restitution: Expr,
              init_fixedRotation: Expr,
+             init_color: Expr,
              init_tpe: BodyType = BodyType.DYNAMIC
             ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
-                                     init_density, init_friction, init_restitution, init_fixedRotation) {
+                                     init_density, init_friction, init_restitution, init_fixedRotation, init_color) {
 	
   // Create the physical JBox2D body with a circle shape.
   final val body = {
@@ -237,4 +244,8 @@ class Circle(protected val game: Game,
     body.resetMassData() // update the body mass
   }
   
+  def makecopy(name: String): GameObject = {
+    val thecopy = this.copy(game=game, init_name=name)
+    thecopy
+  }
 }

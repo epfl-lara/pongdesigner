@@ -27,7 +27,7 @@ object Trees {
   case class Reset(prop: PropertyRefTrait) extends Stat { def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); this} }
   case class Block(stats: Seq[Stat]) extends Stat { def setBinding(n: String, o: GameObject) = { stats.foreach(_.setBinding(n, o)); this } }
   case class If(cond: Expr, s1: Stat, s2: Stat) extends Stat { def setBinding(n: String, o: GameObject) = { cond.setBinding(n, o); s1.setBinding(n, o); s2.setBinding(n, o); this } }
-  case class Copy(name: String, o: GameObjectRef)(b: Block) extends Stat with OBinding
+  case class Copy(name: String, o: GameObjectRef, b: Block) extends Stat { def setBinding(n: String, obj: GameObject) = { o.setBinding(n, obj); b.setBinding(n, obj); this } }
   case object NOP extends Stat with NoBinding
 
   /** Expressions, without side-effect. */
@@ -89,27 +89,31 @@ object Trees {
   case class On(cond: Expr) extends Expr { def setBinding(n: String, o: GameObject) = { cond.setBinding(n, o); this } }
   case class Once(cond: Expr) extends Expr { def setBinding(n: String, o: GameObject) = { cond.setBinding(n, o); this } }
 
-  case class GameObjectRef(ref: String, var obj: GameObject) extends GameObject(StringLiteral(ref)) with Expr {
+  case class GameObjectRef(ref: String, var obj: GameObject) extends /*GameObject(StringLiteral(ref)) with*/ Expr {
     def setBinding(n: String, o: GameObject): this.type = {
       if(n == ref) obj = o
       this
     }
-   val angle: ch.epfl.lara.synthesis.kingpong.objects.Property[Float] = if(obj != null) obj.angle else null
-   def contains(pos: ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.Vec2): Boolean = if(obj != null) obj.contains(pos) else false
-   def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
-   val visible: ch.epfl.lara.synthesis.kingpong.objects.Property[Boolean] = if(obj != null) obj.visible else null
-   def x: Property[Float] = if(obj != null) obj.x else null
-   def y: Property[Float] = if(obj != null) obj.y else null
-   override def apply(property: String): PropertyRefRef = PropertyRefRef(ref, obj, property)
-   override def update(property: String, arg: Expr): Stat = PropertyRefRef(ref, obj, property) := arg
+    val angle: ch.epfl.lara.synthesis.kingpong.objects.Property[Float] = if(obj != null) obj.angle else null
+    def contains(pos: ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.Vec2): Boolean = if(obj != null) obj.contains(pos) else false
+    def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
+    val visible: ch.epfl.lara.synthesis.kingpong.objects.Property[Boolean] = if(obj != null) obj.visible else null
+    def x: Property[Float] = if(obj != null) obj.x else null
+    def y: Property[Float] = if(obj != null) obj.y else null
+    def apply(property: String): PropertyRefRef = PropertyRefRef(ref, obj, property)
+    def update(property: String, arg: Expr): Stat = PropertyRefRef(ref, obj, property) := arg
    
-   override def category = if(obj != null) obj.category else null
-   override def category_=(c: Category) = if(obj != null) obj.category = c
-   override def properties = if(obj != null) obj.properties else super.properties
-   override def name = if(obj != null) obj.name else super.name
-   override def setCategory(c: Category) = { if(obj != null) obj.setCategory(c) else super.setCategory(c) ; this }
-   def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this)(Block(blocks))
-   def delete() = this("deleted") := BooleanLiteral(true)
+    def category = if(obj != null) obj.category else null
+    def category_=(c: Category) = if(obj != null) obj.category = c
+    def properties = if(obj != null) obj.properties else null //super.properties
+    def name = if(obj != null) obj.name else null //super.name
+    def setCategory(c: Category) = { if(obj != null) obj.setCategory(c) else {} /*super.setCategory(c)*/  ;this }
+    def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this, Block(blocks))
+    /*def makecopy(name: String): GameObject = {
+      val thecopy = this.copy()
+      thecopy
+    }*/
+    def delete() = this("deleted") := BooleanLiteral(true)
   }
   case class FingerMoveOver(o: GameObjectRef) extends Expr with OBinding
   case class FingerDownOver(o: GameObjectRef) extends Expr with OBinding

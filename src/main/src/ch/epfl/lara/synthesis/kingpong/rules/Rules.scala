@@ -40,14 +40,20 @@ object Rules {
     
     /** Contains the history. The head corresponds to the most recent value. */
     private val history: RingBuffer[(Long, Map[Keys, Boolean])] = new RingBuffer(History.MAX_HISTORY_SIZE)
-
-    implicit class BindingGenerator(r: Rule) extends (Keys => Rule) {
+ 
+    trait BindingGenerator extends (Keys => Rule) {
+      def apply(keys: Keys): Rule
+    }
+    implicit class BindingGeneratorIterator(r: Rule) extends BindingGenerator {
       def apply(keys: Keys): Rule = {
         keys foreach { case (name, obj) =>
           r.setBinding(name, obj)
         }
         r
       }
+    }
+    class UniqueGenerator(r: Rule) extends BindingGenerator {
+      def apply(keys: Keys): Rule = r
     }
     protected type Keys <: Iterable[(String, GameObject)]
     protected def generator: BindingGenerator
@@ -59,7 +65,8 @@ object Rules {
 
     /** Evaluate the rules according to the previous evaluations flags. */
     def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
-      keys foreach { key =>
+      val c = keys
+      c foreach { key =>
         generator(key) match {
           case Whenever(cond, action) =>
             if (interpreter.eval(cond).as[Boolean]) {
@@ -108,8 +115,8 @@ object Rules {
 
   class NoCategory(rule: Rule) extends RuleIterator {
     protected type Keys = Seq[(String, GameObject)]
-    protected def keys = Seq()
-    protected def generator = rule
+    protected def keys = List(List[(String, GameObject)](("", null: GameObject)))
+    protected def generator = new UniqueGenerator(rule)
   }
 
   class Foreach1(category: Category, nameBinding: String, protected val rule: Rule) extends RuleIterator {

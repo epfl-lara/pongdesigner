@@ -18,11 +18,11 @@ import android.util.Log
 import org.jbox2d.dynamics.FixtureDef
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.dynamics.BodyDef
-
 import scala.Dynamic
 import scala.language.dynamics
+import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 
-trait Game extends TypeChecker with Interpreter { self => 
+trait Game extends TypeChecker with Interpreter with ColorConstants { self => 
 
   val world: PhysicalWorld
 
@@ -126,6 +126,7 @@ trait Game extends TypeChecker with Interpreter { self =>
              friction: Expr = category.friction.copy,
              restitution: Expr = category.restitution.copy,
              fixedRotation: Expr = category.fixedRotation.copy,
+             color: Expr = category.color.copy,
              tpe: BodyType = category.tpe): Circle = {
     val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
                        density, friction, restitution, fixedRotation, tpe)
@@ -149,6 +150,7 @@ trait Game extends TypeChecker with Interpreter { self =>
                 friction: Expr = category.friction.copy,
                 restitution: Expr = category.restitution.copy,
                 fixedRotation: Expr = category.fixedRotation.copy,
+                color: Expr = category.color.copy,
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                          density, friction, restitution, fixedRotation, tpe)
@@ -167,7 +169,8 @@ trait Game extends TypeChecker with Interpreter { self =>
              angle: Expr = category.angle.copy,
              width: Expr = category.width.copy,
              height: Expr = category.height.copy,
-             visible: Expr = category.visible.copy): Box[Int] = {
+             visible: Expr = category.visible.copy,
+             color: Expr = category.color.copy): Box[Int] = {
     val box = new Box[Int](name, x, y, angle, width, height, value, visible)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
@@ -197,7 +200,8 @@ trait Game extends TypeChecker with Interpreter { self =>
   }
 
   private[kingpong] def objectAt(pos: Vec2): Option[GameObject] = {
-    objects.filter(_.contains(pos)).headOption
+    val objects_containing_pos = objects.filter(_.contains(pos))
+    objects_containing_pos.headOption
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
@@ -213,7 +217,8 @@ trait Game extends TypeChecker with Interpreter { self =>
   }
 
   private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
-    EventHistory.addEvent(FingerMove(from, to, objectAt(from)))
+    val obj = objectAt(from)
+    EventHistory.addEvent(FingerMove(from, to, obj))
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
@@ -301,6 +306,24 @@ trait Game extends TypeChecker with Interpreter { self =>
     private var ctx: MMap[String, Value] = MMap.empty
     def get(value: String): Option[Value] = ctx.get(value)
     def set(value: String, v: Value): Unit = ctx(value) = v
+    
+    final val DEFAULT_NAME: String = "SHAPE"
+    /**
+     * Computes a new name based on the context and the given baseName
+     */
+    def getNewName(baseName: String): String = {
+      var prefix = DEFAULT_NAME
+      if(baseName != null && baseName != "") { 
+        //prefix = "\\d*\\z".r.replaceFirstIn(baseName, "")
+        //var i = baseName.length - 1
+        prefix = baseName.reverse.dropWhile(_.isDigit).reverse
+      }
+      if(prefix == "") {
+        prefix = DEFAULT_NAME
+      }
+      var postFix = 1
+      Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
+    }
   }
 
   private var mGameView: GameView = null

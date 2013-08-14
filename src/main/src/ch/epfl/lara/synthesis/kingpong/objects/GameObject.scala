@@ -167,6 +167,12 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     properties += (name -> p)
     p
   }
+  
+  def getCopy(name : String): GameObject = {
+    val m = makecopy(name)
+    m.setCategory(this.category)
+  }
+  protected def makecopy(name: String): GameObject
 }
 
 trait Rectangular { self: GameObject =>

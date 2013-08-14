@@ -162,7 +162,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     if(game == null) return;
     game.objects foreach { o => o match {
       case r: Rectangle =>
-        paint.setColor(0xFF000000) // TODO r.color
+        paint.setColor(r.color.get) // TODO r.color
         if(!r.visible.get)
           paint.setAlpha(0x80)
 
@@ -172,13 +172,13 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         canvas.restore()
 
       case c: Circle => 
-        paint.setColor(0xFF000000) // TODO c.color
+        paint.setColor(c.color.get) // TODO c.color
         if(!c.visible.get)
           paint.setAlpha(0x80)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
 
       case b: Box[_] => 
-        paint.setColor(0xFF000000) // TODO c.color
+        paint.setColor(b.color.get) // TODO c.color
         paint.setTextSize(b.height.get)
         canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
 
@@ -253,9 +253,12 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       //TODO
   }
 
-  def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
-    matrix.postTranslate(to.x - from.x, to.y - from.y)
-    matrix.invert(matrixI)
+  def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
+    case Running => 
+      game.onOneFingerMove(mapVectorI(from), mapVectorI(to))
+    case Editing =>
+      matrix.postTranslate(to.x - from.x, to.y - from.y)
+      matrix.invert(matrixI)
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {
@@ -281,6 +284,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   }
 
   /** pixels to meters */
+  // TODO: perfom the change on the same vector, not a new one.
   def mapVectorI(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrixI.mapPoints(toMap)
@@ -369,8 +373,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       val y = accAlpha * accLast.y + (1 - accAlpha) * event.values(1)
       
       val rotation = activity.getWindowManager.getDefaultDisplay.getRotation
-
-      rotation match {
+      /*rotation match {
         case Surface.ROTATION_0 =>
           onAccelerometerChanged(accLast.set(-x, y))
         case Surface.ROTATION_90 =>
@@ -380,7 +383,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         case Surface.ROTATION_270 =>
           onAccelerometerChanged(accLast.set(y, -x))
         case _ =>
-      }
+      }*/ /// TODO : reuse later for performance reasons.
     }
 
     private val last = Array.fill(FINGERS)(Vec2(0, 0))

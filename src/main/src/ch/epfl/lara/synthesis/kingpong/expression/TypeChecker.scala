@@ -34,8 +34,9 @@ trait TypeChecker {
       typeCheck(rhs, prop.getPongType)
       stat
       
-    case Copy(name, o) =>
+    case Copy(name, o, block) =>
       typeCheck(o, TObject)
+      typeCheck(block)
       stat
       
     case Reset(prop) =>

@@ -19,8 +19,9 @@ object Category{
       friction: Expr = 0.2,
       restitution: Expr = 0.5,
       fixedRotation: Expr = true,
+      color: Expr = 0xFF000000,
       tpe: BodyType = BodyType.DYNAMIC): Category = {
-    new Category(name)(angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, tpe)
+    new Category(name)(angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, tpe)
   }
   
 }
@@ -37,6 +38,7 @@ class Category(name: String)(val angle: Expr = 0,
   val friction: Expr = 0.2,
   val restitution: Expr = 0.5,
   val fixedRotation: Expr = true,
+  val color: Expr = 0xFF000000,
   val tpe: BodyType = BodyType.DYNAMIC) { self =>
 
   private val _children = MSet.empty[GameObject]

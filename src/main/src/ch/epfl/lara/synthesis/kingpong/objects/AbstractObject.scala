@@ -12,7 +12,8 @@ abstract class AbstractObject(init_name: Expr,
                               init_x: Expr,
                               init_y: Expr,
                               init_angle: Expr,
-                              init_visible: Expr
+                              init_visible: Expr, 
+                              init_color: Expr
                              ) extends GameObject(init_name) {
   
   val x = simpleProperty[Float]("x", init_x)
@@ -22,15 +23,16 @@ abstract class AbstractObject(init_name: Expr,
 }
 
 
-class Box[T : PongType](init_name: Expr, 
+case class Box[T : PongType](init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
                         init_angle: Expr,
                         init_width: Expr, 
                         init_height: Expr, 
                         init_value: Expr,
-                        init_visible: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible)
+                        init_visible: Expr,
+                        init_color: Expr
+                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
                          with Rectangular {
   
   // --------------------------------------------------------------------------
@@ -52,4 +54,8 @@ class Box[T : PongType](init_name: Expr,
   }
 
   def contains(pos: Vec2) = getAABB.contains(pos)
+  
+  def makecopy(name: String): GameObject = {
+    this.copy[T](init_name=StringIsExpr(name))
+  }
 }
