@@ -19,7 +19,8 @@ abstract class AbstractObject(init_name: Expr,
   val x = simpleProperty[Float]("x", init_x)
   val y = simpleProperty[Float]("y", init_y)
   val angle = simpleProperty[Float]("angle", init_angle)
-  val visible = simpleProperty[Boolean]("visible", init_visible)  
+  val visible = simpleProperty[Boolean]("visible", init_visible)
+  val color = simpleProperty[Int]("color", init_color)
 }
 
 
@@ -59,3 +60,53 @@ case class Box[T : PongType](init_name: Expr,
     this.copy[T](init_name=StringIsExpr(name))
   }
 }
+
+case class Cell2D(init_name: Expr) extends GameObject(init_name) {
+  var left: Cell2D = null
+  var top: Cell2D = null
+  var right: Cell2D = null
+  var bottom: Cell2D = null
+  var content: GameObject = null
+  
+   def angle: Property[Float] = ???
+   def contains(pos: Vec2): Boolean = ???
+   def getAABB(): AABB = ???
+   protected def makecopy(name: String): GameObject = ???
+   def visible: 
+ Property[Boolean] = ???
+ def x: 
+ Property[Float] = ???
+ def y: 
+ Property[Float] = ???
+}
+
+case class Array2D(init_name: Expr,
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_height: Expr,
+    init_value: Expr,
+    init_visible: Expr,
+    init_color: Expr,
+    init_size: Expr
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) {
+  val size = simpleProperty[Int]("size", init_size)
+ def contains(pos: 
+ Vec2): Boolean = ???
+ def getAABB(): 
+ AABB = ???
+ protected def makecopy(name: String): 
+ GameObject = ???
+}
+
+
+
+
+
+
+
+
+
+
+
+

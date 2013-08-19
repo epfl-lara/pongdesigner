@@ -3,6 +3,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
+import android.util.Log
 
 case class TypeCheckException(msg: String) extends Exception(msg)
 
@@ -31,11 +32,14 @@ trait TypeChecker {
       stat
 
     case Assign(prop, rhs) =>
+      Log.d("Assign", s"$prop")
       typeCheck(rhs, prop.getPongType)
       stat
       
     case Copy(name, o, block) =>
       typeCheck(o, TObject)
+      // To typecheck the rest, we replaces occurences of name with the previous object o.
+      block.setBinding(name, o.obj)
       typeCheck(block)
       stat
       

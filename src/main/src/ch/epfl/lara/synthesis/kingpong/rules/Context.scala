@@ -51,4 +51,6 @@ trait Context extends Any {
   }
   
   def getNewName(s: String): String
+  
+  def add(c: GameObject)
 }

@@ -7,6 +7,7 @@ import common.JBox2DInterface._
 import rules.Context
 import rules.Events._
 import objects.GameObject
+import android.util.Log
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -40,7 +41,7 @@ trait Interpreter {
       eval(c) match {
         case BooleanV(true)  => eval(s1)
         case BooleanV(false) => eval(s2)
-        case v => throw InterpreterException(s"The If condition $c is not a boolean but is $v.")
+        case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
     case Assign(prop, rhs) =>
@@ -49,7 +50,9 @@ trait Interpreter {
     case Copy(name, ref, block) =>
       if(ref.obj != null) {
         val realname = context.getNewName(name)
-        val c = ref.obj.getCopy(name=realname)
+        val c = ref.obj.getCopy(name=realname, this)
+        c.flush()
+        context add c
         block.setBinding(name, c)
         eval(block)
         // TODO : record the copy to the events
@@ -59,7 +62,9 @@ trait Interpreter {
     case NOP => //Do nothing
   }
 
-  def eval(expr: Expr)(implicit context: Context): Value = expr match {
+  def eval(expr: Expr)(implicit context: Context): Value = {
+    //Log.d("Eval", s"Evaluating $expr")
+    expr match {
     case ref: PropertyRefRef => eval(ref.expr)
     case ref: PropertyRef => ref.get
     case IntegerLiteral(v) => IntV(v)
@@ -231,22 +236,21 @@ trait Interpreter {
       var fromy = 0f
       var tox = 0f
       var toy = 0f
+      var first = true
       var n = 0
       if(!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
-        n += 0
       }
       context.fingerMoves(_.obj.exists(_ == o.obj)) foreach {
-        event => fromx += event.from.x
-           fromy += event.from.y
-           tox += event.to.x
-           toy += event.to.y
-           n += 1
+        event => if(first) {
+          fromx = event.from.x
+          fromy = event.from.y
+          first = false
+        }
+        tox = event.to.x
+        toy = event.to.y
+        n += 1
       }
       var result = if(n != 0) {
-        fromx = fromx/n
-        fromy = fromy/n
-        tox = tox/n
-        toy = toy/n
         context.set("from", Vec2V(fromx, fromy))
         context.set("to", Vec2V(tox, toy))
         true
@@ -280,6 +284,7 @@ trait Interpreter {
       eval(cond) // TODO : Check that this is true until the condition is false, for any pair.
     case Once(cond) =>
       eval(cond) // TODO : Check that it happens only once.
+    }
   }
   
   private def error(expr: Expr): Nothing = {

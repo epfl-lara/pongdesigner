@@ -93,8 +93,15 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
 
   /** Reset all properties to their initial values.
    */
-  def reset(interpreter: Interpreter)(implicit context: Context) = 
+  def reset(interpreter: Interpreter)(implicit context: Context) = {
     properties.values.foreach {_.reset(interpreter)}
+  }
+  
+  /** Reset all properties to their initial values.
+   */
+  def copyPropertiesFrom(other: GameObject, interpreter: Interpreter)(implicit context: Context) = {
+    (properties.values zip other.properties.values).foreach {case (v1, v2) => v1.set(v2.getPongValue)}
+  }
 
   /**
    * Retrieves a property or anything else.
@@ -168,8 +175,9 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     p
   }
   
-  def getCopy(name : String): GameObject = {
+  def getCopy(name : String, interpreter: Interpreter)(implicit context: Context): GameObject = {
     val m = makecopy(name)
+    m.copyPropertiesFrom(this, interpreter)
     m.setCategory(this.category)
   }
   protected def makecopy(name: String): GameObject

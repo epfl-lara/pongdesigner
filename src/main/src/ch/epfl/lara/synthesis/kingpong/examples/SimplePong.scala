@@ -36,7 +36,7 @@ class SimplePong() extends Game {
   rectangle(borders)(name="Border1", x=2.5, y=0, width=4.8, height=0.1)
   rectangle(borders)(name="Border2", x=0, y=5, width=0.1, height=10)
   rectangle(borders)(name="Border3", x=5, y=5, width=0.1, height=10)
-  rectangle(duplicators)(name="BallDuplicator1", x=1.5, y=1.5, width=1, height=1, color=red)
+  rectangle(duplicators)(name="BallDuplicator1", x=2.5, y=6, width=1, height=1, color=red)
   val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=1, height=0.2)
   for(j <- 0 until 4) { // Appears as for (i, j) in [0,4]x[0,3]:
     for(i <- 0 until 3) { // 
@@ -115,7 +115,7 @@ class SimplePong() extends Game {
       obj("ball").copy("ball2")(Seq(
         obj("ball2")("x") += 0.25,
         obj("ball")("x") -= 0.25,
-        obj("duplicator").delete()
+        obj("duplicator")("visible") = false
       ))
     )}
   }
@@ -124,5 +124,5 @@ class SimplePong() extends Game {
   register(r2)
   register(r3)
   register(r4)
-  //register(r5)
+  register(r5)
 }

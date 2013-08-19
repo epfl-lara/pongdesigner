@@ -48,6 +48,10 @@ object GameView {
   val BOX2D_RATIO = 100
 
   val FINGERS = 10
+  
+  object V {
+    def unapply(v: Vec2): Option[(Float, Float)] = Some((v.x, v.y))
+  }
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
@@ -61,7 +65,31 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def setGame(g: Game) = game = g
   def getGame() = game
   def hasGame(): Boolean = game != null
-  def initialize() = {}
+  private var mWidth = 0
+  private var mHeight = 0
+  def initialize() = {
+    // Find lower and upper bounds of the game, and set the viewing matrix to it.
+    layoutResize()
+  }
+  
+  def layoutResize() = {
+    if(game != null) {
+      val a = (Array(0f, 0f, 0f, 0f) /: game.objects) { case (a, obj) =>
+        val aabb = obj.getAABB()
+        val V(xmin, ymin) = aabb.lowerBound
+        val V(xmax, ymax) = aabb.upperBound
+        if(a(0) > xmin) a(0) = xmin
+        if(a(1) > ymin) a(1) = ymin
+        if(a(2) < xmax) a(2) = xmax
+        if(a(3) < ymax) a(3) = ymax
+        a
+      }
+      val before = new RectF(a(0), a(1), a(2), a(3))
+      val after = new RectF(0, 0, mWidth, mHeight)
+      matrix.setRectToRect (before, after, Matrix.ScaleToFit.CENTER)
+      push(matrix)
+    }
+  }
 
   /** The main game loop that calls `update()` and `render()`. */
   private var gameLoop: Option[GameLoop] = None
@@ -123,6 +151,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def toEditing(): Unit = if (state == Running) {
     Log.d("kingpong", "toEditing()")
     state = Editing
+    layoutResize()
   }
 
   /** Change the current state to Running. */
@@ -164,7 +193,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       case r: Rectangle =>
         paint.setColor(r.color.get) // TODO r.color
         if(!r.visible.get)
-          paint.setAlpha(0x80)
+          paint.setAlpha(0x00)
 
         canvas.save()
         canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
@@ -174,7 +203,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
       case c: Circle => 
         paint.setColor(c.color.get) // TODO c.color
         if(!c.visible.get)
-          paint.setAlpha(0x80)
+          paint.setAlpha(0x00)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
 
       case b: Box[_] => 
@@ -213,6 +242,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
     Log.d("kingpong", "surfaceChanged()")
+    mWidth = width
+    mHeight = height
     computeTransformationMatrices()
   }
 
@@ -252,13 +283,18 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     case Editing =>
       //TODO
   }
+  
+  def push(m: Matrix) = {
+    m.invert(matrixI)
+    if(game != null) game.FINGER_SIZE = matrixI.mapRadius(20)
+  }
 
   def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
     case Running => 
       game.onOneFingerMove(mapVectorI(from), mapVectorI(to))
     case Editing =>
       matrix.postTranslate(to.x - from.x, to.y - from.y)
-      matrix.invert(matrixI)
+      push(matrix)
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {
@@ -273,7 +309,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
     matrix.postTranslate((to1.x + to2.x)/2 - (from1.x + from2.x)/2, (to1.y + to2.y)/2 - (from1.y + from2.y)/2)
     matrix.postScale(scale, scale, from1.x * p + from2.x * (1-p), from1.y * p + from2.y * (1-p))
-    matrix.invert(matrixI)
+    push(matrix)
   }
 
   /** meters to pixels */
@@ -303,7 +339,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     matrix.reset() // identity matrix
     //matrix.postScale(1, -1); // upside-down
     matrix.postScale(BOX2D_RATIO, BOX2D_RATIO)
-    matrix.invert(matrixI)
+    push(matrix)
   }
 
   /** Stop the thread loop. */
@@ -387,6 +423,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     }
 
     private val last = Array.fill(FINGERS)(Vec2(0, 0))
+    
     def onTouchEvent(me: MotionEvent): Unit = {
       val action = me.getAction()
       (action & MotionEvent.ACTION_MASK) match {
@@ -401,27 +438,30 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
           if (me.getPointerCount() == 1) {
-            val pointer = Math.min(me.getPointerId(0), FINGERS - 1)
-            val from = last(pointer)
+            val pointerIndex = Math.min(me.getPointerId(0), FINGERS - 1)
+            val from = last(pointerIndex)
             val to = Vec2(me.getX(0), me.getY(0))
+            Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
             onOneFingerMove(from, to)
-            last(pointer).set(to)
+            last(pointerIndex).set(to)
             
           } else if (me.getPointerCount() == 2) {
-            val pointer1 = Math.min(me.getPointerId(0), FINGERS - 1)
-            val pointer2 = Math.min(me.getPointerId(1), FINGERS - 1)
-            val from1 = last(pointer1)
-            val from2 = last(pointer2)
+            val pointerIndex1 = Math.min(me.getPointerId(0), FINGERS - 1)
+            val pointerIndex2 = Math.min(me.getPointerId(1), FINGERS - 1)
+            val from1 = last(pointerIndex1)
+            val from2 = last(pointerIndex2)
             val to1 = Vec2(me.getX(0), me.getY(0))
             val to2 = Vec2(me.getX(1), me.getY(1))
             onTwoFingersMove(from1, to1, from2, to2)
-            last(pointer1).set(to1)
-            last(pointer2).set(to2)
+            last(pointerIndex1).set(to1)
+            last(pointerIndex2).set(to2)
           }
 
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
+          if(last(pointerIndex).x != point.x || last(pointerIndex).y != point.y)
+            onOneFingerMove(last(pointerIndex), point)
           onFingerUp(point)
           last(pointerIndex).set(point)
 

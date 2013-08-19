@@ -1,20 +1,18 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-import org.jbox2d.dynamics.Body
-import org.jbox2d.dynamics.BodyType
-import org.jbox2d.dynamics.World
-import org.jbox2d.dynamics.BodyDef
-import org.jbox2d.dynamics.FixtureDef
-import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
+import org.jbox2d.collision.shapes.PolygonShape
+import org.jbox2d.dynamics.Body
+import org.jbox2d.dynamics.BodyDef
+import org.jbox2d.dynamics.BodyType
+import org.jbox2d.dynamics.FixtureDef
+import org.jbox2d.dynamics.World
 
-import android.util.Log
-
+import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.Game
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 abstract class PhysicalObject(init_name: Expr, 
@@ -32,7 +30,7 @@ abstract class PhysicalObject(init_name: Expr,
                              ) extends GameObject(init_name) { self =>
   
   protected def game: Game
-  protected def body: Body 
+  def body: Body 
   protected def fixture = body.getFixtureList()
   
   /** The body mass. */
@@ -70,6 +68,8 @@ abstract class PhysicalObject(init_name: Expr,
   } { () =>
     body.getLinearVelocity()
   }
+  
+  val color = simpleProperty[Int]("color", init_color)
 
   val angularVelocity = property[Float]("angular-velocity", init_angularVelocity) { av =>
     body.setAngularVelocity(av)

@@ -21,6 +21,9 @@ import org.jbox2d.dynamics.BodyDef
 import scala.Dynamic
 import scala.language.dynamics
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
+import org.jbox2d.collision.shapes.CircleShape
+import org.jbox2d.pooling.IWorldPool
+import scala.collection.mutable.ListBuffer
 
 trait Game extends TypeChecker with Interpreter with ColorConstants { self => 
 
@@ -129,7 +132,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
              color: Expr = category.color.copy,
              tpe: BodyType = category.tpe): Circle = {
     val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
-                       density, friction, restitution, fixedRotation, tpe)
+                       density, friction, restitution, fixedRotation, color, tpe)
     if(category != null) c.setCategory(category)
     c.reset(this)(EventHistory)
     c.flush()
@@ -153,7 +156,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
                 color: Expr = category.color.copy,
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                         density, friction, restitution, fixedRotation, tpe)
+                         density, friction, restitution, fixedRotation, color, tpe)
     //val r = new Rectangle
     if(category != null) r.setCategory(category)
     r.reset(this)(EventHistory)
@@ -171,7 +174,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
              height: Expr = category.height.copy,
              visible: Expr = category.visible.copy,
              color: Expr = category.color.copy): Box[Int] = {
-    val box = new Box[Int](name, x, y, angle, width, height, value, visible)
+    val box = new Box[Int](name, x, y, angle, width, height, value, visible, color)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
     this add box
@@ -198,10 +201,30 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
   def on(cond: Expr): Expr = {
     On(cond)
   }
+  
+  var FINGER_SIZE = 20f // TODO : finds the right finger size with the matrix.
+  private val circle = new CircleShape()
+  val id = new org.jbox2d.common.Transform()
+  id.setIdentity()
+  
+  private[kingpong] def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
+    circle.m_p.set(pos.x, pos.y)
+    circle.m_radius = FINGER_SIZE
 
-  private[kingpong] def objectAt(pos: Vec2): Option[GameObject] = {
-    val objects_containing_pos = objects.filter(_.contains(pos))
-    objects_containing_pos.headOption
+    def collidesCircle(obj: GameObject): Boolean = {
+      obj match {
+        case p:PhysicalObject =>
+          world.world.getPool().getCollision().testOverlap(p.body.getFixtureList().getShape(), 0, circle, 0, p.body.getTransform(), id)
+        case e:AbstractObject =>
+          //world.world.getPool().getCollision().testOverlap(e.getAABB(), 0, circle, 0)
+          false // TODO: make the collision
+        case _ =>
+          false
+      }
+    }
+    
+    val objects_containing_pos = objects.filter(collidesCircle(_))
+    objects_containing_pos
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
@@ -209,16 +232,16 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
   }
 
   private[kingpong] def onFingerDown(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerDown(pos, objectAt(pos)))
+    EventHistory.addEvent(FingerDown(pos, objectFingerAt(pos).headOption))
   }
 
   private[kingpong] def onFingerUp(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerUp(pos, objectAt(pos)))
+    EventHistory.addEvent(FingerUp(pos, objectFingerAt(pos).headOption))
   }
 
   private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
-    val obj = objectAt(from)
-    EventHistory.addEvent(FingerMove(from, to, obj))
+    val obj = objectFingerAt(from)
+    EventHistory.addEvent(FingerMove(from, to, obj.headOption))
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
@@ -241,7 +264,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
     // Oldest first (head), more recent at the end (last). Both in O(1).
     private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
-    private val crtEvents = MSet.empty[Event]
+    private var crtEvents = ListBuffer[Event]()
 
     /** Time for the last fully completed step. */
     def time = recording_time - 1
@@ -251,18 +274,20 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
       if (time >= 0 && time <= max_time) {
         recording_time = t + 1
         crtEvents.clear()
+        //crtEvents = Nil
       }
     }
 
     /* Advance the time and store the current events in the history. */
-    def step(): Unit = crtEvents.synchronized {
+    def step(): Unit = {
+      val c = crtEvents
       recording_time += 1
       
       if (max_time < time)
         max_time = time
 
       if (crtEvents.nonEmpty) {
-        history += (time, crtEvents.toSeq)
+        history += (time, c.toSeq)
         crtEvents.clear()
       }
     }
@@ -285,13 +310,13 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
     def addEvent(e: Event): Unit = crtEvents.synchronized {
       e match {
         case AccelerometerChanged(_) => 
-          crtEvents.retain{
+          crtEvents = crtEvents.filter{
             case _ : AccelerometerChanged => false
             case _ => true
           }
-          crtEvents add e
+          crtEvents += e
         case _ => 
-          crtEvents add e
+          crtEvents += e
       }      
     }
 
@@ -324,6 +349,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
       var postFix = 1
       Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
     }
+    
+    def add(c: GameObject) = self add c
   }
 
   private var mGameView: GameView = null
