@@ -32,8 +32,13 @@ trait TypeChecker {
       stat
 
     case Assign(prop, rhs) =>
-      Log.d("Assign", s"$prop")
-      typeCheck(rhs, prop.getPongType)
+      //Log.d("Assign", s"$prop")
+      prop match {
+        case prop:PropertyRef => typeCheck(rhs, prop.getPongType)
+        case prop:PropertyIndirect =>
+          val t = typeCheck(prop).getType
+          typeCheck(rhs, t)
+      }
       stat
       
     case Copy(name, o, block) =>
@@ -50,7 +55,22 @@ trait TypeChecker {
   }
 
   def typeCheck(expr: Expr): Expr = expr match {
-    case ref: PropertyRefTrait => ref.setType(ref.getPongType)
+    case c@Choose(prop, constraint) =>
+      // At this point, the objects have been determined.
+      if(c.evaluatedProgram == null) {
+        // Any setBindings have already been called.
+        c.evaluatedProgram = c.solve(c.constraint)
+      }
+      typeCheck(c.evaluatedProgram)
+    case IfFunc(cond, ifTrue, ifFalse) =>
+      typeCheck(cond, TBoolean)
+      val t= typeCheck(ifFalse).getType
+      typeCheck(ifTrue, t)
+      expr.setType(t)
+    case ref: PropertyRef => ref.setType(ref.getPongType)
+    case ref: PropertyIndirect =>
+      val t = typeCheck(ref.expr).getType
+      ref.setType(t)
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)

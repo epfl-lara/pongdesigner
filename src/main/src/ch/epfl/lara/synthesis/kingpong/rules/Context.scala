@@ -12,7 +12,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.Value
 trait Context extends Any {
 
   def events: Iterable[Event]
-
+  def addEvent(e: Event): Unit
+  
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
     case e: FingerDown if f(e) => e
   }

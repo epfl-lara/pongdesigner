@@ -10,13 +10,16 @@ object Events {
 
   sealed trait Event
 
-  case class FingerDown(p: Vec2, obj: Option[GameObject]) extends Event
-  case class FingerUp(p: Vec2, obj: Option[GameObject]) extends Event
-  case class FingerMove(from: Vec2, to: Vec2, obj: Option[GameObject]) extends Event
+  case class FingerDown(p: Vec2, obj: Iterable[GameObject]) extends Event
+  case class FingerUp(p: Vec2, obj: Iterable[GameObject]) extends Event
+  case class FingerMove(from: Vec2, to: Vec2, obj: Iterable[GameObject]) extends Event
 
   case class BeginContact(contact: Contact) extends Event
   case class CurrentContact(contact: Contact) extends Event
   case class EndContact(contact: Contact) extends Event
 
   case class AccelerometerChanged(vector: Vec2) extends Event
+  
+  case class GameObjectCreated(o: GameObject) extends Event
+  case class GameObjectDeleted(o: GameObject) extends Event
 }

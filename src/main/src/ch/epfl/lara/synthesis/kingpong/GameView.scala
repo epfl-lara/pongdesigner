@@ -1,14 +1,12 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import scala.util.Try
-
 import android.app.Activity
 import android.view.SurfaceView
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.Surface
 import android.widget.SeekBar
-
 import android.graphics.Canvas
 import android.content.Context
 import android.graphics.Bitmap
@@ -21,22 +19,19 @@ import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuff.Mode
 import android.graphics.drawable.Drawable
-
 import android.util.Log
 import android.util.AttributeSet
-
 import android.os.Handler
 import android.os.Vibrator
 import android.hardware.SensorManager
 import android.hardware.Sensor
 import android.hardware.SensorEventListener
 import android.hardware.SensorEvent
-
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-
 import org.jbox2d.common.MathUtils
+import android.widget.TextView
 
 object GameView {
 
@@ -54,11 +49,17 @@ object GameView {
   }
 }
 
+trait GameViewInterface {
+  
+  
+}
+
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
-                                                      with SurfaceHolder.Callback  {
+                                                      with SurfaceHolder.Callback with GameViewInterface  {
   import GameView._
 
   private var activity: Activity = null
+  private var codeview: TextView = null
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -70,6 +71,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
+    updateCodeView()
   }
   
   def layoutResize() = {
@@ -118,6 +120,9 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def setActivity(activity: Activity): Unit = {
     this.activity = activity
     EventHolder.setSensorManager(activity.getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager])
+  }
+  def setCodeDisplay(code: TextView): Unit = {
+    this.codeview = code
   }
 
   /** Called by the activity when the game has to sleep deeply. 
@@ -191,7 +196,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     if(game == null) return;
     game.objects foreach { o => o match {
       case r: Rectangle =>
-        paint.setColor(r.color.get) // TODO r.color
+        paint.setColor(r.color.get)
         if(!r.visible.get)
           paint.setAlpha(0x00)
 
@@ -201,18 +206,22 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         canvas.restore()
 
       case c: Circle => 
-        paint.setColor(c.color.get) // TODO c.color
+        paint.setColor(c.color.get)
         if(!c.visible.get)
           paint.setAlpha(0x00)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
 
       case b: Box[_] => 
-        paint.setColor(b.color.get) // TODO c.color
+        paint.setColor(b.color.get) 
         paint.setTextSize(b.height.get)
         canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
 
     }}
-
+    
+    if(fingerIsDown) {
+      paint.setColor(0xAAFF0000)
+      canvas.drawCircle(currentFingerPos.x, currentFingerPos.y, game.FINGER_SIZE, paint)
+    }
     /*
     game.world.beginContacts foreach { c =>
       paint.setColor(0xFFFF0000)
@@ -269,29 +278,57 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         //TODO
     } 
   }
+  
+  var currentFingerPos: Vec2 = null
+  var fingerIsDown = false
 
   def onFingerDown(pos: Vec2): Unit = state match {
     case Running => 
-      game.onFingerDown(mapVectorI(pos))
+      val res = mapVectorI(pos)
+      game.onFingerDown(res)
+      currentFingerPos = res
+      fingerIsDown = true
     case Editing =>
       //TODO
   }
 
   def onFingerUp(pos: Vec2): Unit = state match {
     case Running => 
-      game.onFingerUp(mapVectorI(pos))
+      val res = mapVectorI(pos)
+      game.onFingerUp(res)
+      fingerIsDown = false
+      currentFingerPos = res
     case Editing =>
+      // Select an object below if any and display the corresponding code
+      val res = mapVectorI(pos)
+      val rules = expression.PrettyPrinter.print(game.getRulesbyObject(game.objectFingerAt(res)))
+      codeview.setText(rules)
       //TODO
+  }
+  
+  def updateCodeView() = {
+    val code = expression.PrettyPrinter.print(game.rules)
+    codeview.setText(code)
+    
+    val prev_code =("for ball in Balls:" + "\n" +
+"V paddle \u2208 Paddles." + "\n" +
+"V score \u2208 Scores." + "\n" +
+"  ball below paddle ->" + "\n" +
+"    decrease score.value by 1" + "\n" +
+"    reset ball.x" + "\n" +
+"    reset ball.y")
   }
   
   def push(m: Matrix) = {
     m.invert(matrixI)
-    if(game != null) game.FINGER_SIZE = matrixI.mapRadius(20)
+    if(game != null) game.FINGER_SIZE = matrixI.mapRadius(35)
   }
 
   def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
     case Running => 
-      game.onOneFingerMove(mapVectorI(from), mapVectorI(to))
+      val res = mapVectorI(to)
+      game.onOneFingerMove(mapVectorI(from), res)
+      currentFingerPos = res
     case Editing =>
       matrix.postTranslate(to.x - from.x, to.y - from.y)
       push(matrix)
@@ -336,10 +373,13 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def radToDegree(r: Float): Float = r * MathUtils.RAD2DEG
 
   private def computeTransformationMatrices() = {
-    matrix.reset() // identity matrix
-    //matrix.postScale(1, -1); // upside-down
-    matrix.postScale(BOX2D_RATIO, BOX2D_RATIO)
-    push(matrix)
+    if(game != null) layoutResize()
+    else {
+      matrix.reset() // identity matrix
+      //matrix.postScale(1, -1); // upside-down
+      matrix.postScale(BOX2D_RATIO, BOX2D_RATIO)
+      push(matrix)
+    }
   }
 
   /** Stop the thread loop. */

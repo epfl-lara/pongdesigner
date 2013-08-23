@@ -32,10 +32,11 @@ class SimplePong() extends Game {
   val duplicators = Category("duplicators")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC)
   val scores = Category("Scores")()
   val cat2 = Category("Static objects")()
+  val states = Category("states")()
 
-  rectangle(borders)(name="Border1", x=2.5, y=0, width=4.8, height=0.1)
-  rectangle(borders)(name="Border2", x=0, y=5, width=0.1, height=10)
-  rectangle(borders)(name="Border3", x=5, y=5, width=0.1, height=10)
+  val Border1 = rectangle(borders)(name="Border1", x=2.5, y=0, width=4.8, height=0.1)
+  val Border2 = rectangle(borders)(name="Border2", x=0, y=5, width=0.1, height=10)
+  val Border3 = rectangle(borders)(name="Border3", x=5, y=5, width=0.1, height=10)
   rectangle(duplicators)(name="BallDuplicator1", x=2.5, y=6, width=1, height=1, color=red)
   val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=1, height=0.2)
   for(j <- 0 until 4) { // Appears as for (i, j) in [0,4]x[0,3]:
@@ -44,15 +45,18 @@ class SimplePong() extends Game {
     }
   }
 
-  circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -5.0f))
+  val Ball1 = circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -5.0f))
 
-  val score = intbox(scores)("Score1", x=2, y=5, value = 0, width=1, height=1)
+  val score = intbox(scores)("Score1", x=2, y=5, value = 0, width=1, height=0.5)
+  
+  var started = booleanbox(states)("Score1", x=2, y=6, value=false, height=0.5)
   
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
   val r1 = foreach(balls)("ball"){
-    whenever(on(paddle1("bottom") < obj("ball")("top"))) { Seq(
+    whenever(on(obj("ball") below paddle1)) { Seq(
       score("value") -= 1,
+      started("value") := false,
       obj("ball")("x").reset(),
       obj("ball")("y").reset()
     )}
@@ -97,14 +101,20 @@ class SimplePong() extends Game {
 
   val r2 = foreach(balls, blocks)("ball", "block") {
     whenever(Collision(obj("ball"), obj("block"))) { Seq(
-      score("value") += 1, // TODO operator that takes constants.
+      score("value") += 1,
+      obj("ball")("color") := obj("block")("color"),
       obj("block")("visible") = false
     )}  
   }
+  val r22 = foreach(balls, borders)("ball", "border") {
+    whenever(Collision(obj("ball"), obj("border"))) { Seq(
+      obj("border")("color") := obj("ball")("color")
+    )}  
+  }
 
-  val r3 = foreach(balls)("ball") { whenever(FingerDownOver(obj("ball"))) { Seq(
+  /*val r3 = foreach(balls)("ball") { whenever(FingerDownOver(obj("ball"))) { Seq(
     obj("ball")("radius") += 0.1
-  )}}
+  )}}*/
   
   val r4 = whenever(FingerMoveOver(paddle1)){ Seq(
     paddle1("x") += Val("dx")
@@ -112,17 +122,44 @@ class SimplePong() extends Game {
   
   val r5 = foreach(duplicators, balls)("duplicator", "ball"){
     whenever(Collision(obj("duplicator"), obj("ball"))){ Seq(
-      obj("ball").copy("ball2")(Seq(
-        obj("ball2")("x") += 0.25,
+      obj("ball").copy("copy")(Seq(
+        obj("copy")("x") += 0.25,
+        obj("copy")("velocity") += Vec2(0, 5f),
         obj("ball")("x") -= 0.25,
         obj("duplicator")("visible") = false
       ))
     )}
   }
+  
+  val r6 = foreach(balls)("ball"){
+     whenever(!started("value")) { Seq(
+    obj("ball")("x") := paddle1("x"),
+    obj("ball")("y") := Choose(obj("ball")("y"), obj("ball")("bottom") =:= paddle1("top"))
+    // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
+  )}
+  }
+  
+  val r7 = foreach(balls)("ball"){
+    whenever(!started("value") && FingerUpOver(paddle1)) { Seq(
+    started("value") := true,
+    obj("ball")("velocity") := Vec2(0, -5.0f)
+  )}
+  }
+  
+  // TODO : He should make the choose with the newly computed one, not the old one. Constraint solving
+  val r8 = whenever(true) { Seq(
+     paddle1("x") := Choose(paddle1("x"),
+            (paddle1 toRightOf Border2)
+         && (paddle1 toLeftOf Border3))
+  )}
 
   register(r1)
   register(r2)
-  register(r3)
-  register(r4)
+  register(r22)
+  //register(r3)
+  register(r8)
   register(r5)
+  register(r6)
+  register(r7)
+  register(r4)
 }

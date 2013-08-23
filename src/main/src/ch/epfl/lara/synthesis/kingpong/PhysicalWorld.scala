@@ -30,7 +30,11 @@ class PhysicalWorld(g: Vec2) {
   def step() = {
     begin_contacts.clear()
     end_contacts.clear()
-    world.step(GameLoop.FRAME_PERIOD_S, 3, 2)
+    try {
+      world.step(GameLoop.FRAME_PERIOD_S, 3, 2)
+    } catch {
+      case e: java.lang.ArrayIndexOutOfBoundsException => if(e != null) e.printStackTrace()
+    }
   }
   
   def clear(): Unit = {

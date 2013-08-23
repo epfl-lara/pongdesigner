@@ -34,7 +34,6 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def y: Property[Float]
   def angle: Property[Float]
   def visible: Property[Boolean]
-
   // --------------------------------------------------------------------------
   // Category
   // --------------------------------------------------------------------------
@@ -111,25 +110,25 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
       property match {
         case "bottom" => 
           this match {
-            case r: Rectangle => this("y") + this("height") / 2
+            case r: Rectangular => this("y") + this("height") / 2
             case c: Circle => this("y") + this("radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "top" =>
           this match {
-            case r: Rectangle => this("y") - this("height") / 2
+            case r: Rectangular => this("y") - this("height") / 2
             case c: Circle => this("y") - this("radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "left" =>
           this match {
-            case r: Rectangle => this("x") - this("width") / 2
+            case r: Rectangular => this("x") - this("width") / 2
             case c: Circle => this("x") - this("radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "right" =>
           this match {
-            case r: Rectangle => this("x") + this("width") / 2
+            case r: Rectangular => this("x") + this("width") / 2
             case c: Circle => this("x") + this("radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
@@ -140,6 +139,45 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
       }
     }
   }
+  
+  /**
+   * Abstract this object property to turn a call to method bottom to an expression reusable for other shapes.
+   */
+  def structurally(c: PropertyIndirect, property: String): Expr = {
+    if(properties contains property) PropertyIndirect(c.name, c.obj, property) else {
+      property match {
+        case "bottom" => 
+          this match {
+            case _: Rectangular => PropertyIndirect(c.name, c.obj, "y") + PropertyIndirect(c.name, c.obj, "height") / 2
+            case _: Circle => PropertyIndirect(c.name, c.obj, "y") + PropertyIndirect(c.name, c.obj, "radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "top" =>
+          this match {
+            case _: Rectangular => PropertyIndirect(c.name, c.obj, "y") - PropertyIndirect(c.name, c.obj, "height") / 2
+            case _: Circle => PropertyIndirect(c.name, c.obj, "y") - PropertyIndirect(c.name, c.obj, "radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "left" =>
+          this match {
+            case _: Rectangular => PropertyIndirect(c.name, c.obj, "x") - PropertyIndirect(c.name, c.obj, "width") / 2
+            case _: Circle => PropertyIndirect(c.name, c.obj, "x") - PropertyIndirect(c.name, c.obj, "radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "right" =>
+          this match {
+            case _: Rectangular => PropertyIndirect(c.name, c.obj, "x") + PropertyIndirect(c.name, c.obj, "width") / 2
+            case _: Circle => PropertyIndirect(c.name, c.obj, "x") + PropertyIndirect(c.name, c.obj, "radius")
+            case _ => throw new Exception(s"$this does not have a $property method")
+          }
+        case "center" =>
+          Vec2Expr(PropertyIndirect(c.name, c.obj, "x"), PropertyIndirect(c.name, c.obj, "y"))
+        case _ =>
+          throw new Exception(s"$this does not have a $property method")
+      }
+    }
+  }
+  
   //def selectDynamic(methodName: String): PropertyRefTrait = properties(methodName).ref
   //def updateDynamic(property: String)(arg: Expr): Stat = update(property, arg)
   def update(property: String, arg: Expr): Stat = properties(property).ref := arg

@@ -1,42 +1,55 @@
 package ch.epfl.lara.synthesis.kingpong
 
-import scala.collection.mutable.{Set => MSet, Map => MMap}
-import scala.math.Numeric$DoubleIsFractional$
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import scala.Dynamic
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{Set => MSet}
+import scala.language.dynamics
+
+import org.jbox2d.collision.shapes.CircleShape
+import org.jbox2d.dynamics.BodyType
+
+import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
-import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Rules._
-import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import org.jbox2d.dynamics.BodyType
-import android.util.Log
-import org.jbox2d.dynamics.FixtureDef
-import org.jbox2d.collision.shapes.PolygonShape
-import org.jbox2d.dynamics.BodyDef
-import scala.Dynamic
-import scala.language.dynamics
-import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
-import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.pooling.IWorldPool
-import scala.collection.mutable.ListBuffer
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 
-trait Game extends TypeChecker with Interpreter with ColorConstants { self => 
+trait RuleManager {
+  private val _rules = ListBuffer[RuleIterator]()
+  private val _rulesByObject = MMap.empty[GameObject, MSet[RuleIterator]]
+  
+  /** All the rules iterators in this game. */
+  def rules: Iterable[RuleIterator] = _rules
+  def getRules(): Iterable[RuleIterator] = _rules
+  def getRulesbyObject(o: GameObject):  Iterable[RuleIterator] = _rulesByObject.getOrElse(o, List())
+  def addRule(r: RuleIterator) = {
+    r traverse {
+      case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+      case c: PropertyIndirect if c.obj != null =>  _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+      case _ =>
+    }
+    _rules += r
+  }
+  def getRulesbyObject(o: Iterable[GameObject]): Iterable[RuleIterator] = (o flatMap getRulesbyObject)
+}
+
+trait Game extends TypeChecker with Interpreter with ColorConstants with RuleManager { self => 
 
   val world: PhysicalWorld
 
   private val _objects = MSet.empty[GameObject]
-  private val _rules = MSet.empty[RuleIterator]
+  
 
   /** All objects in this game. */
   def objects: Iterable[GameObject] = _objects
-
-  /** All the rules iterators in this game. */
-  def rules: Iterable[RuleIterator] = _rules
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
@@ -84,7 +97,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
     }
     
     EventHistory.step()                                /// Opens saving for new coordinates
-    rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules
+    rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules using the previous events
     objects foreach {_.validate()}                     /// Store new computed values
     objects foreach {_.flush()}                        /// push values to physical world
     world.step()                                       /// One step forward in the world
@@ -98,19 +111,22 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
 
   }
 
-  def add(o: GameObject) = _objects add o
+  def add(o: GameObject) = {
+    _objects add o
+    EventHistory.set(o.name.get, GameObjectV(o))
+  }
 
   /** Register this rule iterator in this game engine. */
   def register(iterator: RuleIterator) {
     typeCheck(iterator)
-    _rules add iterator
+    addRule(iterator)
   }
 
   /** Register this rule in this game engine. */
   def register(rule: Rule) {
     val iterator = new NoCategory(rule)
     typeCheck(iterator)
-    _rules add iterator
+    addRule(iterator)
   }
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
@@ -180,6 +196,23 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
     this add box
     box
   }
+  
+  def booleanbox(category: Category)(name: Expr,
+             x: Expr,
+             y: Expr,
+             value: Expr = category.value.copy,
+             angle: Expr = category.angle.copy,
+             width: Expr = category.width.copy,
+             height: Expr = category.height.copy,
+             visible: Expr = category.visible.copy,
+             color: Expr = category.color.copy): Box[Boolean] = {
+    val box = new Box[Boolean](name, x, y, angle, width, height, value, visible, color)
+    if(category != null) box.setCategory(category)
+    box.reset(this)(EventHistory)
+    this add box
+    box
+  }
+
 
   def foreach(category: Category)(nameBinding: String)(rule: Rule): RuleIterator = {
     new Foreach1(category, nameBinding, rule)
@@ -207,7 +240,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
   
-  private[kingpong] def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
+  /*private[kingpong] */def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
     circle.m_p.set(pos.x, pos.y)
     circle.m_radius = FINGER_SIZE
 
@@ -215,6 +248,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
       obj match {
         case p:PhysicalObject =>
           world.world.getPool().getCollision().testOverlap(p.body.getFixtureList().getShape(), 0, circle, 0, p.body.getTransform(), id)
+          //world.world.getPool().getCollision().
+          //obj.name.get == "Paddle1"
         case e:AbstractObject =>
           //world.world.getPool().getCollision().testOverlap(e.getAABB(), 0, circle, 0)
           false // TODO: make the collision
@@ -223,7 +258,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
       }
     }
     
-    val objects_containing_pos = objects.filter(collidesCircle(_))
+    val objects_containing_pos = objects filter collidesCircle
     objects_containing_pos
   }
 
@@ -232,16 +267,15 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
   }
 
   private[kingpong] def onFingerDown(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerDown(pos, objectFingerAt(pos).headOption))
+    EventHistory.addEvent(FingerDown(pos, null))
   }
 
   private[kingpong] def onFingerUp(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerUp(pos, objectFingerAt(pos).headOption))
+    EventHistory.addEvent(FingerUp(pos, null))
   }
 
   private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
-    val obj = objectFingerAt(from)
-    EventHistory.addEvent(FingerMove(from, to, obj.headOption))
+    EventHistory.addEvent(FingerMove(from, to, null))
   }
 
   private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
@@ -287,17 +321,28 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
         max_time = time
 
       if (crtEvents.nonEmpty) {
-        history += (time, c.toSeq)
+        // Here we find the objects under the finger events.
+        val history_events = c.toSeq.map {
+          case FingerMove(from, to, null) =>
+            FingerMove(from, to, objectFingerAt(from))
+          case FingerDown(pos, null) =>
+            FingerDown(pos, objectFingerAt(pos))
+          case FingerUp(pos, null) =>
+            FingerUp(pos, objectFingerAt(pos))
+          case e => e
+        }
+        
+        history += (time, history_events)
         crtEvents.clear()
       }
     }
 
     /** Return the events from the last fully completed time step. 
      *  Should not be called by another thread than the one who 
-     *  call `step()`.
+     *  calls `step()`.
      */
     def events: Seq[Event] = {
-      if (history.isEmpty || history.last._1 != time ) {
+      if(history.isEmpty || history.last._1 != time ) {
         Seq.empty
       } else {
         history.last._2
@@ -353,8 +398,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
     def add(c: GameObject) = self add c
   }
 
-  private var mGameView: GameView = null
-  def setGameEngine(g: GameView) = {
+  private var mGameView: GameViewInterface = null
+  def setGameEngine(g: GameViewInterface) = {
     mGameView = g
   }
   // Abstract to implement
@@ -375,7 +420,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants { self =>
 class EmptyGame() extends Game {
   val world = new PhysicalWorld(Vec2(0, 1.5f))
 
-  val cat = new Category("Moving objects")()
+  val cat = Category("Moving objects")()
 
   rectangle(cat)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
   rectangle(cat)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
@@ -383,9 +428,9 @@ class EmptyGame() extends Game {
   circle(cat)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
   val c2 = circle(cat)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
   
-  val score = intbox(new Category("scores")())("Score", 1, 1, value = 0)
+  val score = intbox(Category("scores")())("Score", 1, 1, value = 0)
 
-  val cat2 = new Category("Static objects")()
+  val cat2 = Category("Static objects")()
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 

@@ -6,7 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import org.jbox2d.dynamics._
 
-object Category{
+object Category {
   def apply(name: String)(angle: Expr = 0,
       width: Expr = 1,
       height: Expr = 1,
@@ -21,12 +21,11 @@ object Category{
       fixedRotation: Expr = true,
       color: Expr = 0xFF000000,
       tpe: BodyType = BodyType.DYNAMIC): Category = {
-    new Category(name)(angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, tpe)
+    new Category(name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, tpe)
   }
-  
 }
 
-class Category(name: String)(val angle: Expr = 0,
+class Category(val name: String = "", val angle: Expr = 0,
   val width: Expr = 1,
   val height: Expr = 1,
   val radius: Expr = 0.5,
@@ -69,5 +68,5 @@ class Category(name: String)(val angle: Expr = 0,
 }
 
 object DefaultCategory {
-  def apply(o: GameObject): Category = new Category(o.name.get)().add(o)
+  def apply(o: GameObject): Category = Category(o.name.get)().add(o)
 }

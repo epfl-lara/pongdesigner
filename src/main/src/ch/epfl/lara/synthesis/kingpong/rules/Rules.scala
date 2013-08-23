@@ -35,7 +35,7 @@ object Rules {
   }
 
   sealed trait RuleIterator extends History {
-
+    
     private var state: Map[Keys, Boolean] = Map.empty.withDefaultValue(false)
     
     /** Contains the history. The head corresponds to the most recent value. */
@@ -62,6 +62,18 @@ object Rules {
     def typeCheck(typechecker: TypeChecker): Unit = {
       (keys map generator) foreach typechecker.typeCheck
     }
+    
+    def traverse(f: Tree => Unit) = {
+      val c = keys
+      c foreach { key =>
+        generator(key) match {
+          case Whenever(cond, action) =>
+            cond.traverse(f)
+            action.traverse(f)
+        }
+      }
+    }
+
 
     /** Evaluate the rules according to the previous evaluations flags. */
     def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
@@ -113,19 +125,19 @@ object Rules {
 
   }
 
-  class NoCategory(rule: Rule) extends RuleIterator {
+  case class NoCategory(rule: Rule) extends RuleIterator {
     protected type Keys = Seq[(String, GameObject)]
     protected def keys = List(List[(String, GameObject)](("", null: GameObject)))
     protected def generator = new UniqueGenerator(rule)
   }
 
-  class Foreach1(category: Category, nameBinding: String, protected val rule: Rule) extends RuleIterator {
+  case class Foreach1(category: Category, nameBinding: String, protected val rule: Rule) extends RuleIterator {
     protected type Keys = Seq[(String, GameObject)]
     protected def keys = category.objects.map(o => List((nameBinding, o)))
     def generator: BindingGenerator = rule
   }
 
-  class Foreach2(category1: Category,
+  case class Foreach2(category1: Category,
                  category2: Category,
                  binding1: String,
                  binding2: String,

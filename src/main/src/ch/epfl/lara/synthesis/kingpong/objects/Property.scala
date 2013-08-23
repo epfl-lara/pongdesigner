@@ -65,6 +65,7 @@ abstract class Property[T : PongType]() extends History with Snap { self =>
 }
 
 abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) extends Property[T] {
+  override def toString = s"ConcreteProperty($name)"
   
   protected var _crt: T = _
   protected var _next: T = _  
@@ -127,6 +128,8 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 abstract class PhysicalProperty[T : PongType](name: String, init: Expr) 
   extends ConcreteProperty[T](name, init) {
   
+  override def toString = s"PhysicalProperty($name)"
+  
   def flush() = {
     if (loader() != _crt) {
       flusher(_crt)
@@ -145,6 +148,8 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr)
 
 abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr) 
   extends ConcreteProperty[T](name, init) {
+  
+  override def toString = s"SimplePhysicalProperty($name)"
   
   private var _lastFlushed: T = _
 
@@ -167,6 +172,31 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr)
 }
 
 class SimpleProperty[T : PongType](name: String, init: Expr) extends ConcreteProperty[T](name, init) {
+  override def toString = s"SimpleProperty($name)"
   def flush() = this
   def load() = this
 }
+
+/**
+ * Derivated properties such as dxLeft, dxRight, dyTop, dyBottom
+ * They are not computed and cannot be resetted, but they can be overriden.
+ */
+/*class DerivatedProperty[T: PongType](val name: String, original: Property[T], transformation: T => T) extends Property[T] { self =>
+  // Members declared in ch.epfl.lara.synthesis.kingpong.common.History
+  def clear(): Unit  = {}
+  def restore(t: Long): Unit = {}
+  def save(t: Long): Unit = {}
+  // Members declared in Property
+  def flush(): self.type = this
+  def get: T = transformation(original.get)
+  def load(): self.type = this
+  def next: T = transformation(original.next)
+  def reset(interpreter: Interpreter)(implicit context: Context):self.type = this
+  def set(v: T):self.type = this
+  def setInit(e: Expr): self.type = this
+  def setNext(v: T): self.type = this
+  def validate(): self.type = this
+  // Members declared in ch.epfl.lara.synthesis.kingpong.common.Snap
+  def revert(): Unit = {}
+  def snapshot(): Unit = {}
+}*/

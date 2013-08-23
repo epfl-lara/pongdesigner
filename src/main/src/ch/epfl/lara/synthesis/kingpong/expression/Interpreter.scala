@@ -1,13 +1,13 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
-import ch.epfl.lara.synthesis.kingpong._
-import expression.Types._
-import expression.Trees._
-import common.JBox2DInterface._
-import rules.Context
-import rules.Events._
-import objects.GameObject
 import android.util.Log
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.objects.GameObject
+import ch.epfl.lara.synthesis.kingpong.rules.Context
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -45,7 +45,16 @@ trait Interpreter {
       }
 
     case Assign(prop, rhs) =>
-      prop.setNext(eval(rhs))
+      prop match {
+        case prop:PropertyRef => prop.setNext(eval(rhs))
+        case prop:PropertyIndirect => prop.expr match {
+          case prop:PropertyRef => prop.setNext(eval(rhs))
+          
+          
+          case e => throw InterpreterException(s"$e is not an assignable property")
+        }
+      }
+      
 
     case Copy(name, ref, block) =>
       if(ref.obj != null) {
@@ -55,17 +64,28 @@ trait Interpreter {
         context add c
         block.setBinding(name, c)
         eval(block)
-        // TODO : record the copy to the events
+        context.addEvent(GameObjectCreated(c))
       }
     case Reset(prop) =>
-      prop.property.reset(this)
+      prop match {
+        case prop:PropertyRef => prop.property.reset(this)
+        case prop:PropertyIndirect => prop.expr match {
+          case prop:PropertyRef => prop.property.reset(this)
+          case _ => throw InterpreterException(s"$prop is not a resetable property")
+        }
+      }
+      
     case NOP => //Do nothing
   }
 
   def eval(expr: Expr)(implicit context: Context): Value = {
     //Log.d("Eval", s"Evaluating $expr")
     expr match {
-    case ref: PropertyRefRef => eval(ref.expr)
+    case c@Choose(prop, constraint) =>
+      eval(c.evaluatedProgram)
+    case IfFunc(cond, ifTrue, ifFalse) => val BooleanV(c) = eval(cond)
+      if(c) eval(ifTrue) else eval(ifFalse)
+    case ref: PropertyIndirect => eval(ref.expr)
     case ref: PropertyRef => ref.get
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
@@ -239,6 +259,7 @@ trait Interpreter {
       var first = true
       var n = 0
       if(!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
+        n *= 2
       }
       context.fingerMoves(_.obj.exists(_ == o.obj)) foreach {
         event => if(first) {
@@ -284,6 +305,9 @@ trait Interpreter {
       eval(cond) // TODO : Check that this is true until the condition is false, for any pair.
     case Once(cond) =>
       eval(cond) // TODO : Check that it happens only once.
+    case null =>
+      Log.d("Interpreter", "Erreur while evaluating null")
+      throw new InterpreterException("Error while evaluating null")
     }
   }
   
