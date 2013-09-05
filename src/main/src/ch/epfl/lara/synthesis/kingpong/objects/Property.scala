@@ -9,7 +9,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
-abstract class Property[T : PongType]() extends History with Snap { self => 
+abstract class Property[T : PongType](val parent: GameObject) extends History with Snap { self => 
   
   def name: String
 
@@ -64,7 +64,7 @@ abstract class Property[T : PongType]() extends History with Snap { self =>
   def tpe = implicitly[PongType[T]]
 }
 
-abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) extends Property[T] {
+abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, parent: GameObject) extends Property[T](parent) {
   override def toString = s"ConcreteProperty($name)"
   
   protected var _crt: T = _
@@ -115,7 +115,8 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
   def restore(t: Long): Unit = {
     _history.findLast(_._1 <= t) match {
       case Some((time, value)) => set(value)
-      case None => sys.error(s"The timestamp $t doesn't exist in the history.")
+      case None => //set(_history.head._2)
+        println("Property.scala", s"The timestamp $t doesn't exist in the history.")
     }
   }
 
@@ -125,8 +126,8 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr) exte
 
 }
 
-abstract class PhysicalProperty[T : PongType](name: String, init: Expr) 
-  extends ConcreteProperty[T](name, init) {
+abstract class PhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
+  extends ConcreteProperty[T](name, init, parent) {
   
   override def toString = s"PhysicalProperty($name)"
   
@@ -146,8 +147,8 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr)
   val loader: () => T
 }
 
-abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr) 
-  extends ConcreteProperty[T](name, init) {
+abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
+  extends ConcreteProperty[T](name, init, parent) {
   
   override def toString = s"SimplePhysicalProperty($name)"
   
@@ -171,7 +172,7 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr)
   val flusher: T => Unit
 }
 
-class SimpleProperty[T : PongType](name: String, init: Expr) extends ConcreteProperty[T](name, init) {
+class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject) extends ConcreteProperty[T](name, init, parent) {
   override def toString = s"SimpleProperty($name)"
   def flush() = this
   def load() = this

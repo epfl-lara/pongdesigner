@@ -46,16 +46,15 @@ object Trees {
     override def setBindingReplace(n: String, obj: GameObject): Stat
   }
 
-  case class Assign(prop: MaybeAssignable, rhs: Expr) extends Stat {
-    def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); rhs.setBinding(n, o); this}
+  case class Assign(props: List[MaybeAssignable], rhs: Expr) extends Stat {
+    def setBinding(n: String, o: GameObject) = { props.map(_.setBinding(n, o)); rhs.setBinding(n, o); this}
     def setBindingReplace(n: String, o: GameObject): Assign = {
-      prop.setBindingReplace(n, o) match {
-        case c:MaybeAssignable => Assign(c, rhs.setBindingReplace(n, o))
+      props.map(_.setBindingReplace(n, o)) match {
+        case c if c.forall(_.isInstanceOf[MaybeAssignable]) => Assign(c.asInstanceOf[List[MaybeAssignable]], rhs.setBindingReplace(n, o))
         case c => throw new Exception(s"$c cannot be assigned $rhs.")
       }
-      
     }
-    def children = prop :: rhs
+    def children = rhs :: props
   }
   case class Reset(prop: MaybeAssignable) extends Stat {
     def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); this}
@@ -81,6 +80,10 @@ object Trees {
     def setBindingReplace(n: String, obj: GameObject): Copy = Copy(name, o.setBindingReplace(n, obj), b.setBindingReplace(n, obj))
     def children = o :: b
   }
+  case class Delete(name: String, o: GameObjectRef) extends Stat { def setBinding(n: String, obj: GameObject) = { o.setBinding(n, obj); this } 
+    def setBindingReplace(n: String, obj: GameObject): Delete = Delete(name, o.setBindingReplace(n, obj))
+    def children = List(o)
+  }
   case object NOP extends Stat with NoBinding with NoReplaceStatBinding
 
   case class IfFunc(cond: Expr, s1: Expr, s2: Expr) extends Expr { def setBinding(n: String, o: GameObject) = { cond.setBinding(n, o); s1.setBinding(n, o); s2.setBinding(n, o); this }
@@ -91,10 +94,62 @@ object Trees {
   /** Expressions, without side-effect. */
   sealed trait Expr extends Tree with Typed {
     override def setBindingReplace(n: String, o: GameObject): Expr
-    def +(e: Expr): Expr = Plus(this, e)
-    def -(e: Expr): Expr = Minus(this, e)
-    def *(e: Expr): Expr = Times(this, e)
-    def /(e: Expr): Expr = Div(this, e)
+    def +(e: Expr): Expr = e match {
+      case IntegerLiteral(0) | FloatLiteral(0) => this
+      case IntegerLiteral(i) => this match {
+        case IntegerLiteral(j) => IntegerLiteral(i + j)
+        case FloatLiteral(j) => FloatLiteral(i + j)
+        case _ => Plus(this, e)
+      }
+      case FloatLiteral(i) => this match {
+        case IntegerLiteral(j) => FloatLiteral(i + j)
+        case FloatLiteral(j) => FloatLiteral(i + j)
+        case _ => Plus(this, e)
+      }
+      case _ => this match {
+        case IntegerLiteral(0) | FloatLiteral(0) => e
+        case _ => Plus(this, e)
+      }
+    }
+    def -(e: Expr): Expr = e match {
+      case IntegerLiteral(0) | FloatLiteral(0) => this
+      case _ => Minus(this, e)
+    }
+    def *(e: Expr): Expr = e match {
+      case IntegerLiteral(0) | FloatLiteral(0) => e
+      case IntegerLiteral(1) | FloatLiteral(1) => this
+      case IntegerLiteral(-1) | FloatLiteral(-1) => this match {
+        case IntegerLiteral(i) => IntegerLiteral(-i)
+        case FloatLiteral(i) => FloatLiteral(-i)
+        case _ => Times(this, e)
+      }
+      case FloatLiteral(i) => this match {
+        case IntegerLiteral(j) => FloatLiteral(j*i)
+        case FloatLiteral(j) => FloatLiteral(j*i)
+        case _ => Times(this, e)
+      }
+      case _ => this match {
+        case IntegerLiteral(0) | FloatLiteral(0) => this
+        case _ => Times(this, e)
+      }
+    }
+    def /(e: Expr): Expr = e match {
+      case IntegerLiteral(1) | FloatLiteral(1) => this
+      case IntegerLiteral(-1) | FloatLiteral(-1) => this match {
+        case IntegerLiteral(i) => IntegerLiteral(-i)
+        case FloatLiteral(i) => FloatLiteral(-i)
+        case _ => Div(this, e)
+      }
+      case FloatLiteral(i) => this match {
+        case IntegerLiteral(j) => FloatLiteral(j/i)
+        case FloatLiteral(j) => FloatLiteral(j/i)
+        case _ => Div(this, e)
+      }
+      case _ => this match {
+        case IntegerLiteral(0) | FloatLiteral(0) => this
+        case _ => Div(this, e)
+      }
+    }
     def %(e: Expr): Expr = Mod(this, e)
     def &&(e: Expr): Expr = And(this, e)
     def ||(e: Expr): Expr = Or(this, e)
@@ -112,6 +167,7 @@ object Trees {
 
     def :=(expr: Expr): Stat = {
       this match {
+        case p@VecExpr(l) => Assign(l collect { case m: MaybeAssignable => m }, expr)
         case p:MaybeAssignable => p := expr
         case Plus(p:MaybeAssignable, part) => p := expr - part
         case Minus(p:MaybeAssignable, part) => p := expr + part
@@ -135,12 +191,21 @@ object Trees {
     
     def copy: Expr = this // TODO: to change in the future
   }
+  
+  sealed trait ListBinding[T <: Expr] extends Expr {
+    val l: List[Expr]
+    def setBinding(n: String, o: GameObject) = { l.foreach(_.setBinding(n, o)); this }
+    override def setBindingReplace(n: String, o: GameObject): T = constructor(l.map(_.setBindingReplace(n, o)))
+    def constructor: (List[Expr]) => T
+    def children = l
+  }
 
   case class IntegerLiteral(value: Int) extends Expr with NoBinding with NoReplaceExprBinding
   case class FloatLiteral(value: Float) extends Expr with NoBinding with NoReplaceExprBinding
   case class StringLiteral(value: String) extends Expr with NoBinding with NoReplaceExprBinding
   case class BooleanLiteral(value: Boolean) extends Expr with NoBinding with NoReplaceExprBinding
-  case class Vec2Expr(x: Expr, y: Expr) extends Expr with NoBinding with NoReplaceExprBinding
+  case class VecExpr(l: List[Expr]) extends Expr with ListBinding[VecExpr]  { def constructor = VecExpr.apply }
+  case class Vec2Expr(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Vec2Expr.apply }
   case class Vec2Literal(x: Float, y: Float) extends Expr with NoBinding with NoReplaceExprBinding
   case object UnitLiteral extends Expr with NoBinding with NoReplaceExprBinding
   case class Val(name: String) extends Expr with NoBinding with NoReplaceExprBinding
@@ -197,10 +262,18 @@ object Trees {
       thecopy
     }*/
     def delete() = this("deleted") := BooleanLiteral(true)
-    def toLeftOf(other:GameObjectRef) = this("right") <= other("left")
-    def toRightOf(other:GameObjectRef) = this("left") >= other("right")
+    def toLeftOfAtMost(other:GameObjectRef) = this("right") <= other("left")
+    def toRightOfAtMost(other:GameObjectRef) = this("left") >= other("right")
+    def toLeftOf(other:GameObjectRef) = this("right") =:= other("left")
+    def toRightOf(other:GameObjectRef) = this("left") =:= other("right")
     def above(other:GameObjectRef) = this("bottom") <= other("top")
     def below(other:GameObjectRef) = this("top") >=  other("bottom")
+    def justAbove(other:GameObjectRef) = this("bottom") =:= other("top")
+    def justBelow(other:GameObjectRef) = this("top") =:=  other("bottom")
+    def alignLeft(other: GameObjectRef) = this("left") =:= other("left")
+    def alignRight(other: GameObjectRef) = this("right") =:= other("right")
+    
+    def collides(other: GameObjectRef) = Collision(this, other)
   }
   case class FingerMoveOver(o: GameObjectRef) extends Expr with OBinding { override def setBindingReplace(n: String, obj: GameObject): Expr = FingerMoveOver(o.setBindingReplace(n, obj)) }
   case class FingerDownOver(o: GameObjectRef) extends Expr with OBinding { override def setBindingReplace(n: String, obj: GameObject): Expr = FingerDownOver(o.setBindingReplace(n, obj)) }
@@ -213,11 +286,11 @@ object Trees {
     Collision.apply(a.asInstanceOf[GameObjectRef], b.asInstanceOf[GameObjectRef])} }
   
   sealed trait MaybeAssignable extends Expr {
-    override def :=(expr: Expr): Stat = Assign(this, expr)
-    def +=(expr: Expr): Stat = Assign(this, Plus(this, expr))
-    def -=(expr: Expr): Stat = Assign(this, Minus(this, expr))
-    def *=(expr: Expr): Stat = Assign(this, Times(this, expr))
-    def /=(expr: Expr): Stat = Assign(this, Div(this, expr))
+    override def :=(expr: Expr): Stat = Assign(List(this), expr)
+    def +=(expr: Expr): Stat = Assign(List(this), Plus(this, expr))
+    def -=(expr: Expr): Stat = Assign(List(this), Minus(this, expr))
+    def *=(expr: Expr): Stat = Assign(List(this), Times(this, expr))
+    def /=(expr: Expr): Stat = Assign(List(this), Div(this, expr))
     override def setBindingReplace(n: String, o: GameObject): Expr
   }
   /** Reference to a property. */
@@ -273,17 +346,20 @@ object Trees {
     }
   }
   
-  case class Choose(prop: Expr, var constraint: Expr) extends Expr {
+  case class Choose(prop: VecExpr, constraint: Expr) extends Expr {
     def children = if(evaluatedProgram == null) List() else List(evaluatedProgram)
     var evaluatedProgram: Expr = null
-    prop match {
+    prop.l foreach { _ match {
       case p: MaybeAssignable => 
       case _ => throw new Exception(s"$prop is not a property but it should")
-    }
+    }}
+    
+    var expandedConstraint: Expr = null
+    def getContraintForSolving = if(expandedConstraint == null) constraint else expandedConstraint
     // Call to Comfusy or Leon?
     // Simple solver for linear constraints
 
-    def solve(constraint: Expr, default: MaybeAssignable => Expr = p => p): Expr = {
+    /*def solve(constraint: Expr, default: MaybeAssignable => Expr = p => p): Expr = {
       constraint match {
         case LessEq(lhs: MaybeAssignable, rhs) if lhs == prop => IfFunc(constraint, default(lhs), rhs)
         case LessEq(Plus(lhs: MaybeAssignable, rhs1), rhs2) if lhs == prop => IfFunc(constraint, default(lhs), rhs2-rhs1)
@@ -301,16 +377,16 @@ object Trees {
         case Equals(Minus(lhs: MaybeAssignable, rhs1), rhs2) if lhs == prop => rhs2 + rhs1
         case Equals(lhs: MaybeAssignable, rhs) if lhs == prop => rhs
         case And(lhs, rhs) => solve(lhs, p => solve(rhs)) // Solve the first constraint. If first constraint satisfied, solve the second constraint.
-        case _ => Log.d("Trees.scala", s"Unable to solve constraint $constraint")
+        case _ => //Log.d("Trees.scala", s"Unable to solve constraint $constraint")
           prop
       }
-    }
+    }*/
     def setBinding(n: String, o: GameObject): this.type = {
       //if(evaluatedProgram != null) evaluatedProgram.setBinding(n, o)
       //else { // First time there is a binding, it will help us to solve the equations.
       if(evaluatedProgram == null) {// Set the binding 
         prop.setBinding(n, o)
-        constraint = constraint.setBindingReplace(n, o)
+        expandedConstraint = constraint.setBindingReplace(n, o)
       }
       this
     }

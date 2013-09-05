@@ -34,6 +34,10 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def y: Property[Float]
   def angle: Property[Float]
   def visible: Property[Boolean]
+  
+  val creation_time: Property[Int] = simpleProperty[Int]("creation_time", 0)
+  def deletion_time: Property[Int] = simpleProperty[Int]("deletion_time", Int.MaxValue)
+  
   // --------------------------------------------------------------------------
   // Category
   // --------------------------------------------------------------------------
@@ -191,13 +195,13 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // --------------------------------------------------------------------------  
 
   protected def simpleProperty[T : PongType](name: String, init: Expr): Property[T] = {
-    val p = new SimpleProperty[T](name, init)
+    val p = new SimpleProperty[T](name, init, this)
     properties += (name -> p)
     p
   }
 
   protected def simplePhysicalProperty[T : PongType](name: String, init: Expr)(f: T => Unit): Property[T] = {
-    val p = new SimplePhysicalProperty[T](name, init) {
+    val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
     properties += (name -> p)
@@ -205,7 +209,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   }
 
   protected def property[T : PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): Property[T] = {
-    val p = new PhysicalProperty[T](name, init) {
+    val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f
       val loader = l
     }

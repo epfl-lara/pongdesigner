@@ -37,7 +37,10 @@ object Types {
     override def accept(tpe: Type) = tpe == this
     override def toString = "Object"
   }
-  
+  case class TTuple(types: List[Type]) extends Type {
+    override def accept(tpe: Type) = tpe == this
+    override def toString = types.toString.substring(4)
+  }
   case object TUnit extends Type {
     override def accept(tpe: Type) = tpe match {
       case TUntyped | TError => false

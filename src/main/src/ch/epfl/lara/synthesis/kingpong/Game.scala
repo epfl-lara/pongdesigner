@@ -308,6 +308,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
       if (time >= 0 && time <= max_time) {
         recording_time = t + 1
         crtEvents.clear()
+        // TODO : Add or remove objects
+        
         //crtEvents = Nil
       }
     }

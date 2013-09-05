@@ -34,20 +34,23 @@ trait TypeChecker {
     case Assign(prop, rhs) =>
       //Log.d("Assign", s"$prop")
       prop match {
-        case prop:PropertyRef => typeCheck(rhs, prop.getPongType)
-        case prop:PropertyIndirect =>
-          val t = typeCheck(prop).getType
+        case Nil => typeCheck(rhs, TUnit)
+        case a::Nil => val t = typeCheck(a).getType
+          typeCheck(rhs, t)
+        case u => val t = TTuple(u.map(typeCheck(_).getType))
           typeCheck(rhs, t)
       }
       stat
       
     case Copy(name, o, block) =>
       typeCheck(o, TObject)
-      // To typecheck the rest, we replaces occurences of name with the previous object o.
+      // To typecheck the rest, we replace occurrences of name with the previous object o.
       block.setBinding(name, o.obj)
       typeCheck(block)
       stat
-      
+    case Delete(name, ref) =>
+      typeCheck(ref, TObject)
+      stat
     case Reset(prop) =>
       stat
       
@@ -55,11 +58,14 @@ trait TypeChecker {
   }
 
   def typeCheck(expr: Expr): Expr = expr match {
+    case VecExpr(l) =>
+      val l2 = l.map(typeCheck(_))
+      expr.setType(TTuple(l2.map(_.getType)))
     case c@Choose(prop, constraint) =>
       // At this point, the objects have been determined.
       if(c.evaluatedProgram == null) {
         // Any setBindings have already been called.
-        c.evaluatedProgram = c.solve(c.constraint)
+        c.evaluatedProgram = ComfusySolver.solve(c.prop, c.getContraintForSolving)
       }
       typeCheck(c.evaluatedProgram)
     case IfFunc(cond, ifTrue, ifFalse) =>
@@ -69,8 +75,12 @@ trait TypeChecker {
       expr.setType(t)
     case ref: PropertyRef => ref.setType(ref.getPongType)
     case ref: PropertyIndirect =>
-      val t = typeCheck(ref.expr).getType
-      ref.setType(t)
+      if(ref.expr != null) {
+        val t = typeCheck(ref.expr).getType
+        ref.setType(t)
+      } else {
+        throw new TypeCheckException(s"This expression cannot be type checked: $ref")
+      }
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)

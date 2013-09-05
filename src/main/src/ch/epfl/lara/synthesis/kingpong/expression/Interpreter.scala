@@ -20,6 +20,7 @@ case class BooleanV(value: Boolean) extends AnyVal with Value
 case class Vec2V(x: Float, y: Float) extends Value
 case object UnitV extends Value
 case class GameObjectV(value: GameObject) extends AnyVal with Value
+case class TupleV(value: List[Value]) extends AnyVal with Value
 
 object NumericV {
   def unapply(value: Value): Option[Float] = value match {
@@ -45,21 +46,34 @@ trait Interpreter {
       }
 
     case Assign(prop, rhs) =>
-      prop match {
-        case prop:PropertyRef => prop.setNext(eval(rhs))
+      def setValue(prop: Expr, v: Value) = 
+        prop match {
+        case prop:PropertyRef => prop.setNext(v)
         case prop:PropertyIndirect => prop.expr match {
-          case prop:PropertyRef => prop.setNext(eval(rhs))
-          
-          
+          case prop:PropertyRef => prop.setNext(v)
           case e => throw InterpreterException(s"$e is not an assignable property")
         }
+        case _ => throw InterpreterException(s"$prop is not an assignable property")
       }
-      
+      val v = eval(rhs)
+      v match {
+        case TupleV(l) => 
+          if(l.size == prop.size) {
+            (prop zip l) foreach { case (p, r) => setValue(p, r) }
+          } else {
+            throw InterpreterException(s"$prop is assigned not the same number of variables from $rhs")
+          }
+        case e => prop match {
+          case p::Nil => setValue(p, e)
+          case _ => throw InterpreterException(s"$prop is assigned not the same number variables from $rhs")
+        }
+      }
 
     case Copy(name, ref, block) =>
       if(ref.obj != null) {
         val realname = context.getNewName(name)
         val c = ref.obj.getCopy(name=realname, this)
+        c.creation_time.set(context.time.toInt)
         c.flush()
         context add c
         block.setBinding(name, c)
@@ -74,13 +88,20 @@ trait Interpreter {
           case _ => throw InterpreterException(s"$prop is not a resetable property")
         }
       }
-      
+    case Delete(name, ref) =>
+      if(ref.obj != null) {
+        //val realname = context.getNewName(name)
+        //val c = ref.obj.getCopy(name=realname, this)
+        ref.obj.deletion_time.set(context.time.toInt)
+        context.addEvent(GameObjectDeleted(ref.obj))
+      }
     case NOP => //Do nothing
   }
 
   def eval(expr: Expr)(implicit context: Context): Value = {
     //Log.d("Eval", s"Evaluating $expr")
     expr match {
+      case v@VecExpr(l) => TupleV(l map (eval(_)))
     case c@Choose(prop, constraint) =>
       eval(c.evaluatedProgram)
     case IfFunc(cond, ifTrue, ifFalse) => val BooleanV(c) = eval(cond)

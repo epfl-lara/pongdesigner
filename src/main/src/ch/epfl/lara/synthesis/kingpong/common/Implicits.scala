@@ -16,6 +16,13 @@ object Implicits {
   implicit def StringIsExpr(s: String): Expr = StringLiteral(s)
   implicit def BooleanIsExpr(b: Boolean): Expr = BooleanLiteral(b)
   implicit def Vec2IsExpr(v: Vec2): Expr = Vec2Literal(v.x, v.y)
+  implicit def ListIsExpr(v: List[Expr]): VecExpr = VecExpr(v)
+  implicit class ListAssignableIsExpr(v: List[MaybeAssignable]) {
+    def :=(other: Expr) = Assign(v, other)
+  }
+  implicit class TupleAssignableIsExpr(v: (MaybeAssignable, MaybeAssignable)) {
+    def :=(other: Expr) = Assign(List(v._1, v._2), other)
+  }
 
   implicit object IntegerIsPongType extends PongType[Int] {
     def getPongType = TInt
@@ -90,5 +97,4 @@ object Implicits {
 
     def clone(v: Vec2) = v.clone
   }
-
 }

@@ -40,6 +40,8 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.widget.LinearLayout
 import android.text.method.ScrollingMovementMethod
+import android.widget.ImageView
+import android.view.ViewGroup
 
 object KingPong {
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -183,12 +185,11 @@ object KingPong {
          onPostExecute(game)
        }
      }
-     
   }
 }
 
 class KingPong extends Activity 
-               with SeekBar.OnSeekBarChangeListener with ActivityUtil with SensorEventListener { self =>
+               with ActivityUtil with SensorEventListener { self =>
   import R.id._
   import R.layout._
   import R.drawable._
@@ -199,6 +200,7 @@ class KingPong extends Activity
   private lazy val mSeekBar: SeekBar   = time_bar
   private lazy val mLayout1: LinearLayout = R.id.layout1
   private lazy val mLayout2: LinearLayout = R.id.layout2
+  private lazy val mCodeViewResizer: ImageView = R.id.codeviewResizer
   
   // Renaming
   private val timeButtonPause = timebutton
@@ -216,6 +218,7 @@ class KingPong extends Activity
     //setContentView(R.layout.activity_main)
     mGameView.setActivity(this)
     mGameView.setCodeDisplay(mCodeView)
+    mGameView.setProgressBar(mSeekBar)
     
     task = getLastNonConfigurationInstance().asInstanceOf[LoadSaveGameTask]
     
@@ -231,10 +234,10 @@ class KingPong extends Activity
     //mGameView.enterEditMode()
     mGameView.setKeepScreenOn(true)
     
-    time_bar.setMax(History.MAX_HISTORY_SIZE)
-    time_bar.setProgress(0)
-    time_bar.setSecondaryProgress(0)
-    time_bar.setOnSeekBarChangeListener(this)
+    mSeekBar.setMax(History.MAX_HISTORY_SIZE)
+    mSeekBar.setProgress(0)
+    mSeekBar.setSecondaryProgress(0)
+    //mSeekBar.setOnSeekBarChangeListener(this)
     mGameView.requestFocus()
 
     time_button.onClicked(onTimeButtonClick)
@@ -245,12 +248,25 @@ class KingPong extends Activity
           //Log.d("KingPong","onDown: " + event.toString());
           return true
       }
+      override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
+        //val m = mCodeView.getLayoutParams()
+        //m.width = m.width - distanceX.toInt
+        //mCodeView.setLayoutParams(m)
+        if(mCodeViewResizer != null) {
+          //val m = mCodeView.getLayoutParams()
+          //m.width = m.width - distanceX.toInt
+          //mCodeView.setLayoutParams(m)
+        }
+        false
+      }
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
       def onDoubleTap(x$1: MotionEvent): Boolean = {
-        val params = mLayout2.getLayoutParams().asInstanceOf[LinearLayout.LayoutParams]
-        params.weight = 4.5f - params.weight
-        mLayout2.getParent().requestLayout()
+        if(mLayout2 != null) {
+          val params = mLayout2.getLayoutParams().asInstanceOf[LinearLayout.LayoutParams]
+          params.weight = 4.5f - params.weight
+          mLayout2.getParent().requestLayout()
+        }
         //mCodeView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
         //mGameView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
         //mGameView.getParent().recomputeViewAttributes(mCodeView)
@@ -261,8 +277,32 @@ class KingPong extends Activity
       def onSingleTapConfirmed(x$1: android.view.MotionEvent): Boolean  = return true
     });
     
-    mSeekBar.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
+    //mSeekBar.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
     mCodeView.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
+    if(mCodeViewResizer != null) {
+      var xprev = 0f
+      mCodeViewResizer.setOnTouchListener{ (v: View, event: MotionEvent) =>
+        val action = event.getAction()
+        (action & MotionEvent.ACTION_MASK) match {
+          case MotionEvent.ACTION_DOWN =>
+            xprev = event.getX()
+            true
+          // A finger moves
+          case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
+            if(mLayout2 != null) {
+              val x = event.getX()
+              val params = mLayout2.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+              params.width = params.width - (x - xprev).toInt
+              mLayout2.getParent().requestLayout()
+              //xprev = x
+            }
+            true
+          case _ =>
+            false
+        }
+      }
+    }
+    
     //mCodeView.setMovementMethod(new ScrollingMovementMethod())
     mSensorManager = getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager]
     mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -364,14 +404,14 @@ class KingPong extends Activity
   }
 
   /** When the progress bar changes from the user. */
-  def onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) = {
+  /*def onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) = {
     if (fromUser) {
       mGameView.onProgressBarChanged(progress)
     }
   }
 
   def onStartTrackingTouch(seekBar: SeekBar) {}
-  def onStopTrackingTouch(seekBar: SeekBar) {}
+  def onStopTrackingTouch(seekBar: SeekBar) {}*/
   
   configurationObject {
     if(task != null) {

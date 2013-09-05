@@ -12,6 +12,7 @@ import android.widget.TextView
 import scala.collection.mutable.Map
 import android.view.MotionEvent
 import android.widget.LinearLayout
+import android.widget.ImageView
 
 trait Implicits {
   implicit def toOnclickListener(f: ()=>Unit):View.OnClickListener = {
@@ -77,7 +78,8 @@ trait ActivityUtil extends Activity with Implicits { self =>
 
   implicit def findView(id: Int): View = findViewById(id)
   private implicit val vMap = Map[Int, View]()
-  private implicit val ibMap = Map[Int, ImageButton]()
+  //private implicit val ibMap = Map[Int, ImageButton]()
+  private implicit val ivMap = Map[Int, ImageView]()
   private implicit val sbMap = Map[Int, SeekBar]()
   private implicit val tvMap = Map[Int, TextView]()
   private implicit val gvMap = Map[Int, GameView]()
@@ -87,7 +89,8 @@ trait ActivityUtil extends Activity with Implicits { self =>
   def findView[A <: View](id: Int)(implicit v: Map[Int, A]): A = v.getOrElseUpdate(id, findViewById(id).asInstanceOf[A])
   def findDrawable[A <: Drawable](id: Int)(implicit v: Map[Int, A]): A = v.getOrElseUpdate(id, getResources().getDrawable(id).asInstanceOf[A])
 
-  implicit def findViewImageButton(id: Int): ImageButton = findView[ImageButton](id)
+  //implicit def findViewImageButton(id: Int): ImageButton = findView[ImageButton](id)
+  implicit def findViewImageView(id: Int): ImageView = findView[ImageView](id)
   implicit def findViewSeekBar(id: Int): SeekBar = findView[SeekBar](id)
   implicit def findViewTextView(id: Int): TextView = findView[TextView](id)
   implicit def findViewGameView(id: Int): GameView = findView[GameView](id)

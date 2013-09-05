@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/Black" >
+
+    <LinearLayout
+        android:id="@+id/layout2"
+        android:layout_width="200dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true" >
+
+        <include
+            android:id="@+id/codeview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            layout="@layout/code_view" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_gravity="right"
+        android:layout_toLeftOf="@+id/layout2" >
+
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@color/Black"
+            android:contentDescription="@string/dummy"
+            android:scaleType="fitCenter"
+            android:src="@drawable/back" />
+
+        <SeekBar
+            android:id="@+id/time_bar"
+            style="@style/TimeSeekBar"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:progress="60"
+            android:secondaryProgress="70" />
+
+        <ImageButton
+            android:id="@+id/time_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@color/Black"
+            android:contentDescription="@string/dummy"
+            android:scaleType="fitCenter"
+            android:src="@drawable/timebutton2" />
+    </LinearLayout>
+
+    <ch.epfl.lara.synthesis.kingpong.GameView
+        android:id="@+id/gameview"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_above="@+id/buttons"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_gravity="top"
+        android:layout_toLeftOf="@+id/layout2" />
+
+    <ImageView
+        android:id="@+id/codeviewResizer"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="0dp"
+        android:layout_toLeftOf="@+id/layout2"
+        android:src="@android:drawable/stat_notify_more"
+        android:contentDescription="@string/dummy"/>
+
+</RelativeLayout>

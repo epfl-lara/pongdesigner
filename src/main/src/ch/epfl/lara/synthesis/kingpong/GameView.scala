@@ -50,16 +50,37 @@ object GameView {
 }
 
 trait GameViewInterface {
+}
+
+trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
+  private var progressBar: SeekBar = null
+  def setProgressBar(progressBar: SeekBar): Unit = {
+    this.progressBar = progressBar
+    if(progressBar != null) {
+      progressBar.setMax(common.History.MAX_HISTORY_SIZE)
+      progressBar.setProgress(0)
+      progressBar.setSecondaryProgress(0)
+      progressBar.setOnSeekBarChangeListener(this)
+    }
+  }
+  def setTime(t: Int) = {
+    progressBar.setProgress(t)
+    progressBar.setSecondaryProgress(t)
+  }
   
-  
+  def onStartTrackingTouch(seekBar: SeekBar):Unit = {
+  }
+  def onStopTrackingTouch(seekBar: SeekBar):Unit = {
+  }
 }
 
 class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
-                                                      with SurfaceHolder.Callback with GameViewInterface  {
+                                                      with SurfaceHolder.Callback with GameViewInterface with ProgressBarHandler  {
   import GameView._
 
   private var activity: Activity = null
   private var codeview: TextView = null
+  
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -124,6 +145,20 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def setCodeDisplay(code: TextView): Unit = {
     this.codeview = code
   }
+  
+  /** When the progress changes from the user. */
+  def onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) = {
+    if(fromUser && state == Editing) {
+      if(seekBar.getProgress() > seekBar.getSecondaryProgress()) {
+        seekBar.setProgress(seekBar.getSecondaryProgress())
+      }
+      val t = game.maxTime + progress - seekBar.getSecondaryProgress()
+      Log.d("GameView",s"OnProgress up to $t")
+      game.restore(t)
+      //game.returnToTime(game.maxTime + seekBar.getProgress() - seekBar.getSecondaryProgress())
+    }
+  }
+  
 
   /** Called by the activity when the game has to sleep deeply. 
    *  The state is changed to `Editing` and the game loop is stoped.
@@ -178,7 +213,9 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   def update(): Unit = {
     state match {
       case Running =>
+        
         game.update()
+        setTime(game.time.toInt)
       case Editing =>
         //TODO
     }
@@ -481,7 +518,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
             val pointerIndex = Math.min(me.getPointerId(0), FINGERS - 1)
             val from = last(pointerIndex)
             val to = Vec2(me.getX(0), me.getY(0))
-            Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
+            //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
             onOneFingerMove(from, to)
             last(pointerIndex).set(to)
             
