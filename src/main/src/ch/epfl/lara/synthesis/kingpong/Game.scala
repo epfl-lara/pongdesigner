@@ -96,16 +96,16 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
       EventHistory addEvent EndContact(_)
     }
     
-    objects.foreach {o => o.setExistenceAt(time.toInt) }
     EventHistory.step()                                /// Opens saving for new coordinates
     rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules using the previous events
     objects foreach {_.validate()}                     /// Store new computed values
+    //objects.foreach {o => o.setExistenceAt(time.toInt) }
     objects foreach {_.flush()}                        /// push values to physical world
     world.step()                                       /// One step forward in the world
     objects foreach {_.load()}                         /// Load values from world
     objects foreach {_.save(time)}                     /// Save the values to history
     rules foreach {_.save(time)}                       /// Save "on" and "once" values.
-
+    
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
   }
@@ -360,6 +360,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
             case _ : AccelerometerChanged => false
             case _ => true
           }
+          crtEvents += e
+        case e@BeginContact(_) =>
           crtEvents += e
         case _ => 
           crtEvents += e

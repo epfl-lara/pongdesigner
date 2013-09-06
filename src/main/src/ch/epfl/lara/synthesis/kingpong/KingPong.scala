@@ -248,31 +248,37 @@ class KingPong extends Activity
       var yprev = 0f
       mCodeViewResizer.setOnTouchListener{ (v: View, event: MotionEvent) =>
         val action = event.getAction()
-        (action & MotionEvent.ACTION_MASK) match {
-          case MotionEvent.ACTION_DOWN =>
-            xprev = event.getX()
-            yprev = event.getY()
-            true
-          // A finger moves
-          case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
-            if(mLayoutcodehorizontal != null) {
-              val x = event.getX()
-              val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-              params.width = params.width - (x - xprev).toInt
-              mLayoutcodehorizontal.getParent().requestLayout()
-              //xprev = x
-            }
-            if(mLayoutcodevertical != null) {
-              val y = event.getY()
-              val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-              params.height = params.height - (y - yprev).toInt
-              mLayoutcodehorizontal.getParent().requestLayout()
-              //yprev = y
-            }
-            true
-          case _ =>
-            false
-        }
+        if(v == mCodeViewResizer) {
+          (action & MotionEvent.ACTION_MASK) match {
+            case MotionEvent.ACTION_DOWN =>
+              xprev = event.getX()
+              yprev = event.getY()
+              true
+            // A finger moves
+            case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
+              if(mLayoutcodehorizontal != null) {
+                val x = event.getX()
+                val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+                val dx = - (x - xprev).toInt
+                params.width = params.width +dx
+                Log.d("Test", s"The layout moves dx=$dx")
+                mLayoutcodehorizontal.getParent().requestLayout()
+                //xprev = x
+              }
+              if(mLayoutcodevertical != null) {
+                val y = event.getY()
+                val params = mLayoutcodevertical.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+                val dy = - (y - yprev).toInt
+                params.height = params.height + dy
+                Log.d("Test", s"The layout moves dy=$dy")
+                mLayoutcodevertical.getParent().requestLayout()
+                //yprev = y
+              }
+              true
+            case _ =>
+              false
+          }
+        } else false
       }
     }
     
