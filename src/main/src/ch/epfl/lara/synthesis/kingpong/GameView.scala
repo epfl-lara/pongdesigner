@@ -231,7 +231,9 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
 
     paint.setStrokeWidth(mapRadiusI(1))
     if(game == null) return;
-    game.objects foreach { o => o match {
+    game.objects foreach { o => 
+      if(o.existsAt(game.time)) {
+      o match {
       case r: Rectangle =>
         paint.setColor(r.color.get)
         if(!r.visible.get)
@@ -253,7 +255,7 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         paint.setTextSize(b.height.get)
         canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
 
-    }}
+    }}}
     
     if(fingerIsDown) {
       paint.setColor(0xAAFF0000)

@@ -35,8 +35,10 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def angle: Property[Float]
   def visible: Property[Boolean]
   
-  val creation_time: Property[Int] = simpleProperty[Int]("creation_time", 0)
-  def deletion_time: Property[Int] = simpleProperty[Int]("deletion_time", Int.MaxValue)
+  def setExistenceAt(time: Long) = {}
+  def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
+  val creation_time: Property[Int] = simpleProperty[Int]("creation_time", -1)
+  val deletion_time: Property[Int] = simpleProperty[Int]("deletion_time", Int.MaxValue)
   
   // --------------------------------------------------------------------------
   // Category

@@ -5,7 +5,7 @@
     android:background="@color/Black" >
 
     <LinearLayout
-        android:id="@+id/layout2"
+        android:id="@+id/layoutcodehorizontal"
         android:layout_width="200dp"
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
@@ -26,7 +26,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_gravity="right"
-        android:layout_toLeftOf="@+id/layout2" >
+        android:layout_toLeftOf="@+id/layoutcodehorizontal" >
 
         <ImageButton
             android:id="@+id/back_button"
@@ -65,7 +65,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_gravity="top"
-        android:layout_toLeftOf="@+id/layout2" />
+        android:layout_toLeftOf="@+id/layoutcodehorizontal" />
 
     <ImageView
         android:id="@+id/codeviewResizer"
@@ -73,7 +73,7 @@
         android:layout_height="48dp"
         android:layout_alignParentTop="true"
         android:layout_marginTop="0dp"
-        android:layout_toLeftOf="@+id/layout2"
+        android:layout_toLeftOf="@+id/layoutcodehorizontal"
         android:src="@android:drawable/stat_notify_more"
         android:contentDescription="@string/dummy"/>
 

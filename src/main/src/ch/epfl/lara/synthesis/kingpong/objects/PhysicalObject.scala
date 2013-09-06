@@ -29,9 +29,34 @@ abstract class PhysicalObject(init_name: Expr,
                               init_color: Expr
                              ) extends GameObject(init_name) { self =>
   
+  def body: Body = mBody
+  
   protected def game: Game
-  def body: Body 
+  private var mBody: Body = null
+  private def setBody(b: Body) = mBody = b
+  protected def body_def: BodyDef
+  protected def fixture_def: FixtureDef
   protected def fixture = body.getFixtureList()
+  private var bodyRemovedFromWorld = false
+  private def removeFromWorld() = {
+    game.world.world.destroyBody(body)
+    bodyRemovedFromWorld = true // We keep the old body for flushing and loading properties.
+  }
+  protected def addToWorld() = {
+    val body = game.world.world.createBody(body_def)
+    body.createFixture(fixture_def)
+    setBody(body)
+    bodyRemovedFromWorld = false
+  }
+  override def setExistenceAt(time: Long) = {
+    val exists = existsAt(time)
+    if(bodyRemovedFromWorld && exists) {
+      addToWorld()
+    }
+    if(!bodyRemovedFromWorld && !exists) {
+      removeFromWorld()
+    }
+  }
   
   /** The body mass. */
   def mass = body.getMass()
@@ -150,16 +175,18 @@ case class Rectangle (protected val game: Game,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
                   with Rectangular {
 
-  val body = {
+  protected val body_def = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
     body_def.`type` = init_tpe
-    
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
     //}
-
+    body_def
+  }
+  
+  protected val fixture_def = {
     val shape = new PolygonShape()
     shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
                    game.typeCheckAndEvaluate[Float](init_height)/2)
@@ -169,13 +196,10 @@ case class Rectangle (protected val game: Game,
     fixture_def.density = game.typeCheckAndEvaluate[Float](init_density)
     fixture_def.friction = game.typeCheckAndEvaluate[Float](init_friction)
     fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
-    
-    val body = game.world.world.createBody(body_def)
-    val fixture = body.createFixture(fixture_def)
-    body.setUserData(this)
-
-    body
+    fixture_def
   }
+  
+  addToWorld()
 
   protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
@@ -213,7 +237,7 @@ case class Circle(protected val game: Game,
                                      init_density, init_friction, init_restitution, init_fixedRotation, init_color) {
 	
   // Create the physical JBox2D body with a circle shape.
-  final val body = {
+  protected val body_def = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
@@ -222,7 +246,10 @@ case class Circle(protected val game: Game,
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
     //}
-    
+    body_def
+  }
+  
+  protected val fixture_def = {
     val shape = new CircleShape()
     shape.m_radius = game.typeCheckAndEvaluate[Float](init_radius)
   
@@ -231,13 +258,10 @@ case class Circle(protected val game: Game,
     fixture_def.density = game.typeCheckAndEvaluate[Float](init_density)
     fixture_def.friction = game.typeCheckAndEvaluate[Float](init_friction)
     fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
-    
-    val body = game.world.world.createBody(body_def)
-    val fixture = body.createFixture(fixture_def)
-    body.setUserData(this)
-
-    body
+    fixture_def
   }
+  
+  addToWorld()
 
   val radius = simplePhysicalProperty[Float]("radius", init_radius) { r =>
     fixture.getShape().m_radius = r

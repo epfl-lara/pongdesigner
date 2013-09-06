@@ -102,7 +102,7 @@ trait PrettyPrinterTypical {
    * Prints a rule
    */
   def print(r: Rule): CharSequence = r match {
-    case Whenever(cond, action) => s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF + print(NO_INDENT, action)
+    case Whenever(cond, action) => s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF + print(INDENT, action)
   }
   
   //def print(s: Tree, indent: String = ""): CharSequence = {

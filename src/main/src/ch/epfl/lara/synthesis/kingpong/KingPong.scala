@@ -70,44 +70,7 @@ object KingPong {
   
   final val PREFS_NAME = "MyPrefsFile"
     
-  trait AutoShutOff {
-    def fromPrevious(previous: AutoShutOff) {
-      record = previous.record
-      previous.record = null
-      previous.finishRecording = null
-      previous.willShutDown = false
-    }
-     var record: MediaRecorder = _
-     var finishRecording: Thread = _
-     var willShutDown: Boolean = false
-     def cancelShutDown() = willShutDown = false
-     def startTimerDown() = {
-       if(finishRecording != null) {
-         willShutDown = false
-         Thread.sleep(100)
-       }
-       finishRecording = new Thread(new Runnable{
-         override def run() = {
-           willShutDown = true
-           val init_time = System.currentTimeMillis
-           while(System.currentTimeMillis - init_time < 10000 && willShutDown) {
-             Thread.sleep(10)
-           }
-           if(willShutDown) {
-             if(record != null) {
-               record.stop()
-               record.release()
-               record = null
-             }
-           }
-           finishRecording = null
-         }
-       })
-       if(finishRecording != null) finishRecording.start()
-     }
-  }
-    
-  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: Game = null) extends MyAsyncTask[String, (String, Int, Int), Game] with AutoShutOff {
+  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: Game = null) extends MyAsyncTask[String, (String, Int, Int), Game] with common.AutoShutOff {
     var max=100
     var prog =0
     var filename: String = ""
@@ -199,7 +162,8 @@ class KingPong extends Activity
   private lazy val mCodeView: TextView = code
   private lazy val mSeekBar: SeekBar   = time_bar
   private lazy val mLayout1: LinearLayout = R.id.layout1
-  private lazy val mLayout2: LinearLayout = R.id.layout2
+  private lazy val mLayoutcodehorizontal: LinearLayout = R.id.layoutcodehorizontal
+  private lazy val mLayoutcodevertical: LinearLayout = R.id.layoutcodevertical
   private lazy val mCodeViewResizer: ImageView = R.id.codeviewResizer
   
   // Renaming
@@ -262,10 +226,10 @@ class KingPong extends Activity
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
       def onDoubleTap(x$1: MotionEvent): Boolean = {
-        if(mLayout2 != null) {
-          val params = mLayout2.getLayoutParams().asInstanceOf[LinearLayout.LayoutParams]
-          params.weight = 4.5f - params.weight
-          mLayout2.getParent().requestLayout()
+        if(mLayoutcodehorizontal != null) {
+          //val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[LinearLayout.LayoutParams]
+          //params.weight = 4.5f - params.weight
+          //mLayoutcodehorizontal.getParent().requestLayout()
         }
         //mCodeView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
         //mGameView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
@@ -281,20 +245,29 @@ class KingPong extends Activity
     mCodeView.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
     if(mCodeViewResizer != null) {
       var xprev = 0f
+      var yprev = 0f
       mCodeViewResizer.setOnTouchListener{ (v: View, event: MotionEvent) =>
         val action = event.getAction()
         (action & MotionEvent.ACTION_MASK) match {
           case MotionEvent.ACTION_DOWN =>
             xprev = event.getX()
+            yprev = event.getY()
             true
           // A finger moves
           case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
-            if(mLayout2 != null) {
+            if(mLayoutcodehorizontal != null) {
               val x = event.getX()
-              val params = mLayout2.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+              val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
               params.width = params.width - (x - xprev).toInt
-              mLayout2.getParent().requestLayout()
+              mLayoutcodehorizontal.getParent().requestLayout()
               //xprev = x
+            }
+            if(mLayoutcodevertical != null) {
+              val y = event.getY()
+              val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+              params.height = params.height - (y - yprev).toInt
+              mLayoutcodehorizontal.getParent().requestLayout()
+              //yprev = y
             }
             true
           case _ =>
