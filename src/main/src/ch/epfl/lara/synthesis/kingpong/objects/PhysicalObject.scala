@@ -45,6 +45,7 @@ abstract class PhysicalObject(init_name: Expr,
   protected def addToWorld() = {
     val body = game.world.world.createBody(body_def)
     body.createFixture(fixture_def)
+    body.setUserData(this)
     setBody(body)
     bodyRemovedFromWorld = false
   }

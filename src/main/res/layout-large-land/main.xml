@@ -69,12 +69,13 @@
 
     <ImageView
         android:id="@+id/codeviewResizer"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="80dp"
+        android:layout_height="63dp"
+        android:layout_toLeftOf="@+id/layoutcodehorizontal"
         android:layout_alignParentTop="true"
         android:layout_marginTop="0dp"
-        android:layout_toLeftOf="@+id/layoutcodehorizontal"
-        android:src="@android:drawable/stat_notify_more"
-        android:contentDescription="@string/dummy"/>
+        android:contentDescription="@string/dummy"
+        android:scaleType="fitXY"
+        android:src="@drawable/scrollbar_handle_accelerated_anim_horizontal2" />
 
 </RelativeLayout>
