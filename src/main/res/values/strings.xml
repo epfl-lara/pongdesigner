@@ -54,6 +54,7 @@
     <string name="savedGame8">Pong Balloon</string>
     <string name="savedGame9">Brick breaker 3 players</string>
     <string name="brickbreaker">Brick breaker</string>
+    <string name="supermario">Super Maria</string>
     <string name="saveFileAs">Save game as:</string>
     <string name="exportFileAs">Save and export game as:</string>
     <string name="export">Export</string>
@@ -119,6 +120,7 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+    <string name="addshapegroup">+</string>
     
     <string name="codeviewhint">Code of the game</string>
 

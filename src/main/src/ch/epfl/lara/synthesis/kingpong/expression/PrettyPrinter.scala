@@ -14,13 +14,13 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 
 object PrettyPrinter extends PrettyPrinterTypical {
-  override val FOR_SYMBOL = "**for**"
-  override val IN_SYMBOL = "**in**"
-  override val FINGER_MOVE_SYMBOL = "**movedOn** "
-  override val FINGER_DOWN_SYMBOL = "**downOn** "
-  override val FINGER_UP_SYMBOL = "**upOn** "
-  override val COLLIDES_SYMBOL = "**collides**"
-  override val IF_SYMBOL = "**if**"
+  override val FOR_SYMBOL = "for"
+  override val IN_SYMBOL = "in"
+  override val FINGER_MOVE_SYMBOL = "movedOn "
+  override val FINGER_DOWN_SYMBOL = "downOn "
+  override val FINGER_UP_SYMBOL = "upOn "
+  override val COLLIDES_SYMBOL = "collides"
+  override val IF_SYMBOL = "if"
 }
 
 trait PrettyPrinterTypical {
@@ -41,31 +41,20 @@ trait PrettyPrinterTypical {
   val FINGER_UP_SYMBOL = "\u21E7"
   val ARROW_FUNC_SYMBOL = "\u21D2"
   val IF_SYMBOL = "if"
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)
   
- def setSpanBetweenTokens(text: CharSequence, token: String, cs: (()=>CharacterStyle)*): CharSequence = {
-    // Start and end refer to the points where the span will apply
-    val tokenLen = token.length()
-    val stringText = text.toString
-    var start = 0
-    var end = 0
-    var finished = false
-    var offset = tokenLen
-    val stringWOtext = stringText.replaceAllLiterally(token, "")
-    var thetext:Spannable = new SpannableString(stringWOtext)
-
-    do{
-      start = stringText.indexOf(token, start) + tokenLen
-      end = stringText.indexOf(token, start)
-      if (start > tokenLen-1 && end > -1) {
-        for (c <- cs) thetext.setSpan(c(), start - offset, end - offset, 1);
-        // Delete the tokens before and after the span
-        finished = false
-      } else finished = true
-      start = end + tokenLen // We removed the token length
-      offset += tokenLen * 2
-    }while(!finished)
-    return thetext
-}
+   def setSpanOnKeywords(text: CharSequence, keywords: Seq[String], cs: (()=>CharacterStyle)*): CharSequence = {
+      // Start and end refer to the points where the span will apply
+      val stringText = text.toString
+      val stringWOtext = stringText
+      var thetext:Spannable = new SpannableString(stringWOtext)
+  
+      val keywordpattern = ("\\b("+keywords.reduceLeft(_ + "|" + _)+")\\b").r
+      for(m <- keywordpattern findAllMatchIn stringWOtext) {
+        for (c <- cs) thetext.setSpan(c(), m.start, m.end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+      }
+      return thetext
+  }
     
   import Rules._
   
@@ -74,7 +63,7 @@ trait PrettyPrinterTypical {
    */
   implicit class ToSpannableString(result: CharSequence) {
     def makeStyle: CharSequence = {
-      val result1 = setSpanBetweenTokens(result, "**", () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
+      val result1 = setSpanOnKeywords(result, LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
       result1
     }
   }
@@ -85,7 +74,7 @@ trait PrettyPrinterTypical {
   def print(s: Iterable[RuleIterator]): CharSequence = {
     val seq = s map (print(_))
     if(seq.isEmpty) "" else seq reduceLeft (_ + LF +  _)
-  } makeStyle
+  }.makeStyle
   
   /**
    * Prints a RuleIterator

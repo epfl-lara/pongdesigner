@@ -15,7 +15,7 @@ trait Context extends Any {
   def addEvent(e: Event): Unit
   
   def time: Long
-  
+  def addAssignment(a: Assign, p: PropertyRef)
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
     case e: FingerDown if f(e) => e
   }

@@ -2,7 +2,7 @@ package ch.epfl.lara.synthesis.kingpong
 
 import scala.Dynamic
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{HashMap => MMap}
 import scala.collection.mutable.{Set => MSet}
 import scala.language.dynamics
 
@@ -99,7 +99,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     EventHistory.step()                                /// Opens saving for new coordinates
     rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules using the previous events
     objects foreach {_.validate()}                     /// Store new computed values
-    //objects.foreach {o => o.setExistenceAt(time.toInt) }
+    objects.foreach {o => o.setExistenceAt(time.toInt) }
     objects foreach {_.flush()}                        /// push values to physical world
     world.step()                                       /// One step forward in the world
     objects foreach {_.load()}                         /// Load values from world
@@ -189,7 +189,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
              height: Expr = category.height.copy,
              visible: Expr = category.visible.copy,
              color: Expr = category.color.copy): Box[Int] = {
-    val box = new Box[Int](name, x, y, angle, width, height, value, visible, color)
+    val box = new Box[Int](this, name, x, y, angle, width, height, value, visible, color)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
     this add box
@@ -205,7 +205,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
              height: Expr = category.height.copy,
              visible: Expr = category.visible.copy,
              color: Expr = category.color.copy): Box[Boolean] = {
-    val box = new Box[Boolean](name, x, y, angle, width, height, value, visible, color)
+    val box = new Box[Boolean](this, name, x, y, angle, width, height, value, visible, color)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
     this add box
@@ -234,12 +234,21 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     On(cond)
   }
   
+  def gc() = {
+    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
+      true
+    } else {
+      obj.setExistenceAt(time)
+      false
+    }) // TODO: remove those who are too old to be resurrected.
+  }
+  
   var FINGER_SIZE = 20f // TODO : finds the right finger size with the matrix.
   private val circle = new CircleShape()
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
   
-  /*private[kingpong] */def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
+  def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
     circle.m_p.set(pos.x, pos.y)
     circle.m_radius = FINGER_SIZE
 
@@ -250,8 +259,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
           //world.world.getPool().getCollision().
           //obj.name.get == "Paddle1"
         case e:AbstractObject =>
-          //world.world.getPool().getCollision().testOverlap(e.getAABB(), 0, circle, 0)
-          false // TODO: make the collision
+          world.world.getPool().getCollision().testOverlap(e.getShape, 0, circle, 0, id, id)
         case _ =>
           false
       }
@@ -337,6 +345,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
         crtEvents.clear()
       }
     }
+    
+    private var currentAssignments = MMap[Assign, List[PropertyRef]]()
+    def addAssignment(a: Assign, p: PropertyRef) = currentAssignments(a) = p::currentAssignments.getOrElseUpdate(a, Nil)
+    def resetAssignments() = currentAssignments = MMap[Assign, List[PropertyRef]]()
 
     /** Return the events from the last fully completed time step. 
      *  Should not be called by another thread than the one who 

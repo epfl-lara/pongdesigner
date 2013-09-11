@@ -5,17 +5,17 @@
     android:scrollbars="vertical" 
     android:visibility="visible"
     android:background="@color/White">
-<EditText
+
+<ch.epfl.lara.synthesis.kingpong.EditTextCursorWatcher
     android:id="@+id/code"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:textColor="#000000"
     android:background="@color/White"
-    android:typeface="monospace"
-    android:scrollbars="vertical"
     android:fadingEdge="vertical"
-    android:inputType="textMultiLine"
     android:hint="@string/codeviewhint"
-    android:text="@string/app_name" >
-</EditText>
+    android:inputType="textMultiLine|textNoSuggestions"
+    android:scrollbars="vertical"
+    android:text="@string/app_name"
+    android:textColor="#000000"
+    android:typeface="monospace"/>
 </ScrollView>

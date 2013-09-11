@@ -31,7 +31,6 @@ abstract class PhysicalObject(init_name: Expr,
   
   def body: Body = mBody
   
-  protected def game: Game
   private var mBody: Body = null
   private def setBody(b: Body) = mBody = b
   protected def body_def: BodyDef
@@ -176,6 +175,8 @@ case class Rectangle (protected val game: Game,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
                   with Rectangular {
 
+  def className = "Rect"
+  
   protected val body_def = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
@@ -236,7 +237,7 @@ case class Circle(protected val game: Game,
              init_tpe: BodyType = BodyType.DYNAMIC
             ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
                                      init_density, init_friction, init_restitution, init_fixedRotation, init_color) {
-	
+	def className = "Circ"
   // Create the physical JBox2D body with a circle shape.
   protected val body_def = {
     val body_def = new BodyDef()

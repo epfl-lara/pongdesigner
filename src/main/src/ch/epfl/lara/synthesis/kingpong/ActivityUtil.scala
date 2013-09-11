@@ -9,10 +9,11 @@ import android.widget.SeekBar
 import android.widget.ImageButton
 import android.graphics.drawable.Drawable
 import android.widget.TextView
-import scala.collection.mutable.Map
+import scala.collection.mutable.{HashMap => MMap}
 import android.view.MotionEvent
 import android.widget.LinearLayout
 import android.widget.ImageView
+import android.widget.ListView
 
 trait Implicits {
   implicit def toOnclickListener(f: ()=>Unit):View.OnClickListener = {
@@ -77,22 +78,24 @@ trait ActivityUtil extends Activity with Implicits { self =>
   override def onRetainNonConfigurationInstance(): Object = customOnRetainNonConfigurationInstance()
 
   implicit def findView(id: Int): View = findViewById(id)
-  private implicit val vMap = Map[Int, View]()
-  //private implicit val ibMap = Map[Int, ImageButton]()
-  private implicit val ivMap = Map[Int, ImageView]()
-  private implicit val sbMap = Map[Int, SeekBar]()
-  private implicit val tvMap = Map[Int, TextView]()
-  private implicit val gvMap = Map[Int, GameView]()
-  private implicit val dMap = Map[Int, Drawable]()
-  private implicit val lMap = Map[Int, LinearLayout]()
+  private implicit val vMap = MMap[Int, View]()
+  //private implicit val ibMap = MMap[Int, ImageButton]()
+  private implicit val ivMap = MMap[Int, ImageView]()
+  private implicit val sbMap = MMap[Int, SeekBar]()
+  private implicit val tvMap = MMap[Int, TextView]()
+  private implicit val gvMap = MMap[Int, GameView]()
+  private implicit val dMap = MMap[Int, Drawable]()
+  private implicit val lMap = MMap[Int, LinearLayout]()
+  private implicit val LWMap = MMap[Int, ListView]()
   
-  def findView[A <: View](id: Int)(implicit v: Map[Int, A]): A = v.getOrElseUpdate(id, findViewById(id).asInstanceOf[A])
-  def findDrawable[A <: Drawable](id: Int)(implicit v: Map[Int, A]): A = v.getOrElseUpdate(id, getResources().getDrawable(id).asInstanceOf[A])
+  def findView[A <: View](id: Int)(implicit v: MMap[Int, A]): A = v.getOrElseUpdate(id, findViewById(id).asInstanceOf[A])
+  def findDrawable[A <: Drawable](id: Int)(implicit v: MMap[Int, A]): A = v.getOrElseUpdate(id, getResources().getDrawable(id).asInstanceOf[A])
 
   //implicit def findViewImageButton(id: Int): ImageButton = findView[ImageButton](id)
   implicit def findViewImageView(id: Int): ImageView = findView[ImageView](id)
   implicit def findViewSeekBar(id: Int): SeekBar = findView[SeekBar](id)
   implicit def findViewTextView(id: Int): TextView = findView[TextView](id)
+  implicit def findViewListView(id: Int): ListView = findView[ListView](id)
   implicit def findViewGameView(id: Int): GameView = findView[GameView](id)
   implicit def findDrawableTop(id: Int): Drawable = findDrawable[Drawable](id)
   implicit def findLinearLayout(id: Int): LinearLayout = findView[LinearLayout](id)

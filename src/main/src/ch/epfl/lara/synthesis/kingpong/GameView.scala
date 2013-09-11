@@ -32,6 +32,14 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import org.jbox2d.common.MathUtils
 import android.widget.TextView
+import android.text.style.BackgroundColorSpan
+import ch.epfl.lara.synthesis.kingpong.expression._
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import android.text.style.StyleSpan
+import android.graphics.Typeface
+import android.text.style.ForegroundColorSpan
+import android.widget.ExpandableListView
+import android.widget.ExpandableListAdapter
 
 object GameView {
 
@@ -52,6 +60,9 @@ object GameView {
 trait GameViewInterface {
 }
 
+/**
+ * Handling the time bar
+ */
 trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   private var progressBar: SeekBar = null
   def setProgressBar(progressBar: SeekBar): Unit = {
@@ -74,12 +85,29 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   }
 }
 
-class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(context, attrs) 
-                                                      with SurfaceHolder.Callback with GameViewInterface with ProgressBarHandler  {
+
+trait ActionBarHandler extends common.ContextUtils {
+  private var actionBar: ExpandableListView = _
+  private var actionBarAdapter: ExpandableListAdapter = _
+  def setActionBar(actionBar: ExpandableListView): Unit = {
+    this.actionBar = actionBar
+    if(actionBar != null) {
+      //actionBar.setAdapter(actionBarAdapter)
+    }
+  }
+}
+
+class GameView(val context: Context, attrs: AttributeSet)
+  extends SurfaceView(context, attrs) 
+  with SurfaceHolder.Callback
+  with GameViewInterface
+  with ProgressBarHandler
+  with ActionBarHandler
+  with common.ContextUtils {
   import GameView._
 
   private var activity: Activity = null
-  private var codeview: TextView = null
+  private var codeview: EditTextCursorWatcher = null
   
 
   /** The game model currently rendered. */
@@ -142,8 +170,38 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     this.activity = activity
     EventHolder.setSensorManager(activity.getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager])
   }
-  def setCodeDisplay(code: TextView): Unit = {
+  
+  // Testing section
+  var obj_to_highlight: Set[GameObject] = Set.empty
+  var codeMapping = Map[Int, Tree]()   // TODO add the mapping and highlight the corresponding objects.
+  def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
+    codeview.setOnSelectionChangedListener({ case (start, end) =>
+      if(codeMapping != null) {
+        codeMapping.get(start) match {
+          case Some(t@ GameObjectRef(name, obj)) =>
+            if(name == null) {
+              obj_to_highlight = Set(obj)
+            } else {
+              obj_to_highlight = obj.category.objects.toSet
+            }
+          case Some(t@ PropertyRef(prop)) =>
+            obj_to_highlight = Set(prop.parent)
+          case Some(t@ PropertyIndirect(ref, obj, name)) =>
+            if(ref == null) {
+              obj_to_highlight = Set(obj)
+            } else {
+              obj_to_highlight = obj.category.objects.toSet
+            }
+          case Some(_) =>
+            obj_to_highlight = Set.empty
+          case None =>
+            obj_to_highlight = Set.empty
+            
+        }
+      }
+      
+    })
   }
   
   /** When the progress changes from the user. */
@@ -197,6 +255,8 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   /** Change the current state to Running. */
   def toRunning(): Unit = if (state == Editing) {
     Log.d("kingpong", "toRunning()")
+    // Remove objects that have been created after the date.
+    game.gc()
     state = Running
   }
 
@@ -225,11 +285,15 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
   private val rectF = new RectF()
   private val paint = new Paint()
   paint.setAntiAlias(true)
+  private val paintSelected = new Paint(paint)
+  paintSelected.setStyle(Paint.Style.STROKE)
+  paintSelected.setColor(color(R.color.selection))
   def render(canvas: Canvas): Unit = {
     canvas.setMatrix(matrix)
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
 
     paint.setStrokeWidth(mapRadiusI(1))
+    paintSelected.setStrokeWidth(mapRadiusI(1))
     if(game == null) return;
     game.objects foreach { o => 
       if(o.existsAt(game.time)) {
@@ -239,9 +303,11 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         if(!r.visible.get)
           paint.setAlpha(0x00)
 
+
         canvas.save()
         canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
         canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
+        if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
         canvas.restore()
 
       case c: Circle => 
@@ -249,11 +315,15 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
         if(!c.visible.get)
           paint.setAlpha(0x00)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
-
+        if(obj_to_highlight contains c) canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
+        
       case b: Box[_] => 
         paint.setColor(b.color.get) 
+        if(b == obj_to_highlight) paint.setAlpha(0x88)
         paint.setTextSize(b.height.get)
-        canvas.drawText(b.value.get.toString, b.x.get, b.y.get, paint)
+        val value = b.value.get.toString
+        canvas.drawText(value, b.x.get, b.y.get, paint)
+        if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
 
     }}}
     
@@ -340,7 +410,21 @@ class GameView(context: Context, attrs: AttributeSet) extends SurfaceView(contex
     case Editing =>
       // Select an object below if any and display the corresponding code
       val res = mapVectorI(pos)
-      val rules = expression.PrettyPrinter.print(game.getRulesbyObject(game.objectFingerAt(res)))
+      val objectsTouched = game.objectFingerAt(res)
+      val header = PrettyPrinterExtended.printGameObjectDef(objectsTouched)
+      val all = PrettyPrinterExtended.print(game.getRulesbyObject(objectsTouched), header)
+      val r: CharSequence = all.c
+      val mapping = all.map
+      val mObjects = mapping.mObjects
+      codeMapping = mapping.mPos
+      var rules = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
+      objectsTouched.foreach { obj =>
+        //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
+        mObjects.get(obj.category) match {
+          case Some(l) => l foreach { case (start, end) => rules = SyntaxColoring.setSpanOnBounds(rules, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
+          case None => // No objects to color
+        }
+      }
       codeview.setText(rules)
       //TODO
   }

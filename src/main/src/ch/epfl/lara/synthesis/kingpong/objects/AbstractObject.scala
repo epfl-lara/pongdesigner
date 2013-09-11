@@ -7,6 +7,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import scala.Dynamic
 import scala.language.dynamics
+import org.jbox2d.collision.shapes.PolygonShape
+import org.jbox2d.collision.shapes.Shape
 
 abstract class AbstractObject(init_name: Expr, 
                               init_x: Expr,
@@ -21,10 +23,13 @@ abstract class AbstractObject(init_name: Expr,
   val angle = simpleProperty[Float]("angle", init_angle)
   val visible = simpleProperty[Boolean]("visible", init_visible)
   val color = simpleProperty[Int]("color", init_color)
+  
+  def getShape: Shape
 }
 
 
-case class Box[T : PongType](init_name: Expr, 
+case class Box[T : PongType](protected val game: Game,
+                        init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
                         init_angle: Expr,
@@ -36,6 +41,7 @@ case class Box[T : PongType](init_name: Expr,
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
                          with Rectangular {
   
+  def className = s"Box"
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------
@@ -53,6 +59,15 @@ case class Box[T : PongType](init_name: Expr,
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
+  
+  private val shape = new PolygonShape()
+  shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
+                 game.typeCheckAndEvaluate[Float](init_height)/2)
+
+  def getShape = {
+    shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
+    shape
+  }
 
   def contains(pos: Vec2) = getAABB.contains(pos)
   
@@ -61,13 +76,15 @@ case class Box[T : PongType](init_name: Expr,
   }
 }
 
-case class Cell2D(init_name: Expr) extends GameObject(init_name) {
+case class Cell2D(protected val game: Game, init_name: Expr) extends GameObject(init_name) {
   var left: Cell2D = null
   var top: Cell2D = null
   var right: Cell2D = null
   var bottom: Cell2D = null
   var content: GameObject = null
-  
+
+  def className = "Cell2D"
+
    def angle: Property[Float] = ???
    def contains(pos: Vec2): Boolean = ???
    def getAABB(): AABB = ???
@@ -80,7 +97,7 @@ case class Cell2D(init_name: Expr) extends GameObject(init_name) {
  Property[Float] = ???
 }
 
-case class Array2D(init_name: Expr,
+case class Array2D(protected val game: Game, init_name: Expr,
     init_x: Expr,
     init_y: Expr,
     init_angle: Expr,
@@ -90,9 +107,12 @@ case class Array2D(init_name: Expr,
     init_color: Expr,
     init_size: Expr
     ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) {
+ 
+ def className = "Array2D"
+ def getShape = ???
+  
   val size = simpleProperty[Int]("size", init_size)
- def contains(pos: 
- Vec2): Boolean = ???
+ def contains(pos:  Vec2): Boolean = ???
  def getAABB(): 
  AABB = ???
  protected def makecopy(name: String): 

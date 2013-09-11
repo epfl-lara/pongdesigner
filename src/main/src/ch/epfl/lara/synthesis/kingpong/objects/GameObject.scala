@@ -1,7 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-import scala.collection.mutable.{Map => MMap}
-
+import scala.collection.mutable.{HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -12,9 +11,11 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import scala.Dynamic
 import scala.language.dynamics
+import ch.epfl.lara.synthesis.kingpong.Game
 
 abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
-  
+  protected def game: Game
+
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
 
@@ -28,8 +29,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   private[this] var mName: Property[String] = simpleProperty[String]("name", init_name)  
   def name: Property[String] = mName
   
-  private[this] var mDeleted: Property[Boolean] = simpleProperty[Boolean]("deleted", false)
-  
+  def className: String
   def x: Property[Float]
   def y: Property[Float]
   def angle: Property[Float]
@@ -37,6 +37,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   
   def setExistenceAt(time: Long) = {}
   def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
+  def doesNotYetExist(time: Long) = time.toInt < creation_time.get
   val creation_time: Property[Int] = simpleProperty[Int]("creation_time", -1)
   val deletion_time: Property[Int] = simpleProperty[Int]("deletion_time", Int.MaxValue)
   

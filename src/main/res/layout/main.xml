@@ -81,8 +81,16 @@
         android:layout_height="80dp"
         android:layout_above="@+id/layoutcodevertical"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="0dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="195dp"
         android:contentDescription="@string/dummy"
         android:src="@drawable/scrollbar_handle_accelerated_anim2" />
 
+    <ExpandableListView
+        android:id="@+id/actions"
+        android:layout_width="63dp"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/codeviewResizer"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true" />
 </RelativeLayout>

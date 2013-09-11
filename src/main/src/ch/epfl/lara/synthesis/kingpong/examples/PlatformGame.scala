@@ -17,13 +17,12 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import scala.Dynamic
 import scala.language.dynamics
-
 //TODO remove when useless
 import org.jbox2d.dynamics.BodyType
 
 import android.util.Log
 
-class SimplePong() extends Game {
+class PlatformGame extends Game {
   val world = new PhysicalWorld(Vec2(0, 0f))
 
   val borders = Category("Borders")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC)

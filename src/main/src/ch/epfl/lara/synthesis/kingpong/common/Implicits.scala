@@ -23,6 +23,10 @@ object Implicits {
   implicit class TupleAssignableIsExpr(v: (MaybeAssignable, MaybeAssignable)) {
     def :=(other: Expr) = Assign(List(v._1, v._2), other)
   }
+  implicit class toDelimiter(s: String) {
+    def andThen(other: String) = StringDelimiter(s, other)
+    def followedBy(other: String) = StringDelimiter(s, other)
+  }
 
   implicit object IntegerIsPongType extends PongType[Int] {
     def getPongType = TInt

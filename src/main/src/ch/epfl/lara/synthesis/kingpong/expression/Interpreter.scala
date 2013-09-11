@@ -45,12 +45,14 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case Assign(prop, rhs) =>
+    case a@Assign(prop, rhs) =>
       def setValue(prop: Expr, v: Value) = 
         prop match {
         case prop:PropertyRef => prop.setNext(v)
+          context.addAssignment(a, prop)
         case prop:PropertyIndirect => prop.expr match {
           case prop:PropertyRef => prop.setNext(v)
+          context.addAssignment(a, prop)
           case e => throw InterpreterException(s"$e is not an assignable property")
         }
         case _ => throw InterpreterException(s"$prop is not an assignable property")

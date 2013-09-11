@@ -15,7 +15,10 @@
 	    <item android:id="@+id/brickbreaker"
           android:title="@string/brickbreaker"
           android:showAsAction="ifRoom"/>
-        <item android:id="@+id/tutorial_game"
+        <item android:id="@+id/supermario"
+          android:title="@string/supermario"
+          android:showAsAction="ifRoom"/>
+	    <item android:id="@+id/tutorial_game"
           android:title="@string/tutorial"
           android:showAsAction="ifRoom"/>
         </menu>

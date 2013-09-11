@@ -42,6 +42,8 @@ import android.widget.LinearLayout
 import android.text.method.ScrollingMovementMethod
 import android.widget.ImageView
 import android.view.ViewGroup
+import android.widget.ListView
+import android.widget.ExpandableListView
 
 object KingPong {
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -53,8 +55,10 @@ object KingPong {
   final val PONGGAMETUTORIAL_FILE = "Tutorial"
   
   final val PONGNAME_SIMPLEBRICKBREAKER = "BrickBreaker"
+  final val PONGNAME_SUPERMARIO = "Mario"  
   private var mapgames: Map[String,()=>Game] = Map.empty
-  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new SimplePong()))
+  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
+  mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -158,13 +162,14 @@ class KingPong extends Activity
   import R.drawable._
   import KingPong._
 
-  private lazy val mGameView: GameView = gameview
-  private lazy val mCodeView: TextView = code
+  private lazy val mGameView: GameView = R.id.gameview
+  private lazy val mCodeView: EditTextCursorWatcher = (code: TextView).asInstanceOf[EditTextCursorWatcher]
   private lazy val mSeekBar: SeekBar   = time_bar
   private lazy val mLayout1: LinearLayout = R.id.layout1
   private lazy val mLayoutcodehorizontal: LinearLayout = R.id.layoutcodehorizontal
   private lazy val mLayoutcodevertical: LinearLayout = R.id.layoutcodevertical
   private lazy val mCodeViewResizer: ImageView = R.id.codeviewResizer
+  private lazy val mActions: ExpandableListView = (R.id.actions : ListView).asInstanceOf[ExpandableListView]
   
   // Renaming
   private val timeButtonPause = timebutton
@@ -183,6 +188,7 @@ class KingPong extends Activity
     mGameView.setActivity(this)
     mGameView.setCodeDisplay(mCodeView)
     mGameView.setProgressBar(mSeekBar)
+    mGameView.setActionBar(mActions)
     
     task = getLastNonConfigurationInstance().asInstanceOf[LoadSaveGameTask]
     
@@ -251,29 +257,33 @@ class KingPong extends Activity
         if(v == mCodeViewResizer) {
           (action & MotionEvent.ACTION_MASK) match {
             case MotionEvent.ACTION_DOWN =>
-              xprev = event.getX()
-              yprev = event.getY()
+              xprev = event.getRawX()
+              yprev = event.getRawY()
               true
             // A finger moves
             case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
               if(mLayoutcodehorizontal != null) {
-                val x = event.getX()
+                val x = event.getRawX()
                 val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
                 val dx = - (x - xprev).toInt
                 params.width = params.width +dx
+                mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
                 Log.d("Test", s"The layout moves dx=$dx")
                 mLayoutcodehorizontal.getParent().requestLayout()
                 //xprev = x
               }
               if(mLayoutcodevertical != null) {
-                val y = event.getY()
+                val y = event.getRawY()
                 val params = mLayoutcodevertical.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
                 val dy = - (y - yprev).toInt
                 params.height = params.height + dy
                 Log.d("Test", s"The layout moves dy=$dy")
+                mCodeViewResizer.setY(mCodeViewResizer.getY - dy)
                 mLayoutcodevertical.getParent().requestLayout()
                 //yprev = y
               }
+              xprev = event.getRawX()
+              yprev = event.getRawY()
               true
             case _ =>
               false
@@ -319,6 +329,9 @@ class KingPong extends Activity
             true
           case R.id.brickbreaker =>
             self ! Messages.FileLoad(PONGNAME_SIMPLEBRICKBREAKER)
+            true
+          case R.id.supermario =>
+            self ! Messages.FileLoad(PONGNAME_SUPERMARIO)
             true
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
