@@ -41,6 +41,9 @@ class SimplePong() extends Game {
   val Border4 = rectangle(borders)(name="Border4", x=2.5, y= -0.1, width=4.8, height=0.1)
   rectangle(duplicators)(name="BallDuplicator1", x=2.5, y=6, width=1, height=1, color=red)
   val paddle1 = rectangle(paddles)(name="Paddle1", x=2.5, y=9.5, width=1, height=0.2)
+  
+  //Put this into an expression.
+  
   for(j <- 0 until 4) { // Appears as for (i, j) in [0,4]x[0,3]:
     for(i <- 0 until 3) { // 
       rectangle(blocks)(name=s"Block${i}_$j", x = 1.5+i, y=2.5+0.5*j, width = 0.9, height = 0.45, color=colorful(j))
@@ -49,9 +52,9 @@ class SimplePong() extends Game {
 
   val Ball1 = circle(balls)(name="Ball1", x=2.5, y=8.5, radius = 0.25, velocity=Vec2(0, -5.0f))
 
-  val score = intbox(scores)("Score1", x=2, y=5, value = 0, width=1, height=0.5)
+  val score = intbox(scores)("Score1", x=1, y=8, value = 0, width=1, height=0.5)
   
-  var started = booleanbox(states)("Started", x=2, y=6, value=false, height=0.5)
+  var started = booleanbox(states)("Started", x=1, y=9, value=false, height=0.5)
   
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 

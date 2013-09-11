@@ -41,7 +41,7 @@ trait PrettyPrinterExtendedTypical {
   import Rules._
   
   object Mappings {
-    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, Tree](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
+    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, Category](), Map[Int, Tree](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
   }
   
   /**
@@ -51,18 +51,29 @@ trait PrettyPrinterExtendedTypical {
    * mProperties : Mapping from each property to a set of positions in the code
    * mComment    : Mapping from each position of the code to the corresponding comment
    */
-  case class Mappings(mObjects: Map[Category, List[(Int, Int)]], mPos: Map[Int, Tree], mProperties: Map[Property[_], List[(Int, Int)]], mComment: Map[Int, String]) {
+  case class Mappings(mObjects: Map[Category, List[(Int, Int)]], mPosCategories: Map[Int, Category], mPos: Map[Int, Tree], mProperties: Map[Property[_], List[(Int, Int)]], mComment: Map[Int, String]) {
     def add(obj: GameObject, start: Int, end: Int): Mappings = {
       add(obj.category, start, end)
     }
     def add(obj: Category, start: Int, end: Int): Mappings = {
-      this.copy(mObjects=mObjects + (obj -> ((start, end)::mObjects.getOrElse(obj, Nil))))
+      this.copy(mObjects=mObjects + (obj -> ((start, end)::mObjects.getOrElse(obj, Nil))), mPosCategories = addPositions(obj, start, end, mPosCategories))
     }
     def add(obj: Property[_], start: Int, end: Int): Mappings = {
       this.copy(mProperties = mProperties + (obj -> ((start, end)::mProperties.getOrElse(obj, Nil))))
     }
     def add(s: Tree, start: Int, end: Int): Mappings = {
-      new Mappings(addIfCategory(s, start, end, mObjects), addPositions(s, start, end, mPos), addIfProperty(s, start, end, mProperties), mComment)
+      val p1 = s match {
+        case GameObjectRef(_, o) => Some(o.category)
+        case PropertyRef(prop) => Some(prop.parent.category)
+        case PropertyIndirect(ref, obj, prop) if obj != null => Some(obj.category)
+        case _ =>  None
+      }
+      val posCategories = p1 match {
+        case Some(category) => addPositions(category, start, end, mPosCategories)
+        case None => mPosCategories
+      }
+      
+      Mappings(addIfCategory(s, start, end, mObjects), posCategories, addPositions(s, start, end, mPos), addIfProperty(s, start, end, mProperties), mComment)
     }
     def add(comment: String, start: Int, end: Int): Mappings = {
       this.copy(mComment=addComment(comment, start, end, mComment))
@@ -75,7 +86,7 @@ trait PrettyPrinterExtendedTypical {
         case _ => mm
       }
     }
-    def addPositions(s: Tree, start: Int, end: Int, mm: Map[Int, Tree]): Map[Int, Tree] = {
+    def addPositions[T](s: T, start: Int, end: Int, mm: Map[Int, T]): Map[Int, T] = {
       (mm /: (start to end)) { case (map, i) =>
         map.get(i) match {
           case Some(t) => map
@@ -125,10 +136,10 @@ trait PrettyPrinterExtendedTypical {
     def +!(other: String, s: Category): StringMaker = {
       StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
     }
-    def +~(other: Tree): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
+    def +(other: Tree): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
       print(this, NO_INDENT, other)
     }
-    def +(other: Category): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
+    def +(other: Category): StringMaker = {
       +!(other.name, other)
     }
     def +(other: Tree, newIndentation: String = NO_INDENT): StringMaker = { // Care about this new expression by storing its position.
@@ -284,7 +295,7 @@ trait PrettyPrinterExtendedTypical {
         case a::l => 
           ((c + indent + INDENT +< a) /: l) { case (c, stat) => c + LF + indent + INDENT + stat} +>
       }
-    case If(cond: Expr, s1: Stat, s2: Stat) => 
+    case If(cond: Expr, s1: Stat, s2: Stat) =>
       val g = c +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = if(s1 != NOP) g + (s1, indent + INDENT) else g
       val end = if(s2 != NOP) h + indent + s"else:$LF" + (s2, indent + INDENT) else h
@@ -313,11 +324,12 @@ trait PrettyPrinterExtendedTypical {
     case FingerCoordY1 => c + indent +! "y1"
     case FingerCoordX2 => c + indent +! "x2"
     case FingerCoordY2 => c + indent +! "y2"
-    case PropertyIndirect(ref, obj, p) => c + indent +< s"$ref.$p" +>
+    case PropertyIndirect(ref, obj, p) if obj != null => c + indent +! (obj.name.get, obj.category) + "." +< "$p" +>
+    case PropertyIndirect(ref, obj, p) => c + indent + s"$ref." +< "$p" +>
     case PropertyRef(p) => p.name match {
       case "value" => c + indent +< p.parent.name.get +>  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
       case "velocity" => c + indent +< p.parent.name.get + ".velocity" +>
-      case _ => c + indent +< p.parent.name.get + "." + p.name +>
+      case _ => c + indent +! (p.parent.name.get, p.parent.category) + "."  +< p.name +>
     }
     case Choose(prop, expr) => c + indent +< "choose(" + prop + s" $ARROW_FUNC_SYMBOL " + expr + ")" +>
   }}

@@ -173,26 +173,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   // Testing section
   var obj_to_highlight: Set[GameObject] = Set.empty
-  var codeMapping = Map[Int, Tree]()   // TODO add the mapping and highlight the corresponding objects.
+  var codeMapping = Map[Int, Category]()   // TODO add the mapping and highlight the corresponding objects.
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
       if(codeMapping != null) {
         codeMapping.get(start) match {
-          case Some(t@ GameObjectRef(name, obj)) =>
-            if(name == null) {
-              obj_to_highlight = Set(obj)
-            } else {
-              obj_to_highlight = obj.category.objects.toSet
-            }
-          case Some(t@ PropertyRef(prop)) =>
-            obj_to_highlight = Set(prop.parent)
-          case Some(t@ PropertyIndirect(ref, obj, name)) =>
-            if(ref == null) {
-              obj_to_highlight = Set(obj)
-            } else {
-              obj_to_highlight = obj.category.objects.toSet
-            }
+          case Some(category) if category != null =>
+            obj_to_highlight = category.objects.toSet
           case Some(_) =>
             obj_to_highlight = Set.empty
           case None =>
@@ -416,7 +404,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       val r: CharSequence = all.c
       val mapping = all.map
       val mObjects = mapping.mObjects
-      codeMapping = mapping.mPos
+      codeMapping = mapping.mPosCategories
       var rules = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
       objectsTouched.foreach { obj =>
         //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
