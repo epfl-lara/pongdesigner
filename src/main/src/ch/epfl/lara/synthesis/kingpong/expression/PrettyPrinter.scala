@@ -24,6 +24,8 @@ object PrettyPrinter extends PrettyPrinterTypical {
 }
 
 trait PrettyPrinterTypical {
+  import Rules._
+
   final val NO_INDENT = ""
   final val INDENT = "  "
   final val LF = "\n"
@@ -47,16 +49,15 @@ trait PrettyPrinterTypical {
       // Start and end refer to the points where the span will apply
       val stringText = text.toString
       val stringWOtext = stringText
-      var thetext:Spannable = new SpannableString(stringWOtext)
+      val thetext:Spannable = new SpannableString(stringWOtext)
   
       val keywordpattern = ("\\b("+keywords.reduceLeft(_ + "|" + _)+")\\b").r
       for(m <- keywordpattern findAllMatchIn stringWOtext) {
         for (c <- cs) thetext.setSpan(c(), m.start, m.end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
       }
-      return thetext
+      thetext
   }
     
-  import Rules._
   
   /**
    * Gives certain styles to keywords
@@ -71,28 +72,28 @@ trait PrettyPrinterTypical {
   /**
    * Prints a set of RuleIterator
    */
-  def print(s: Iterable[RuleIterator]): CharSequence = {
-    val seq = s map (print(_))
-    if(seq.isEmpty) "" else seq reduceLeft (_ + LF +  _)
+  def print(s: Iterable[Stat]): CharSequence = {
+    val seq = s map (print(NO_INDENT, _))
+    if(seq.isEmpty) "" else seq reduceLeft { (l: CharSequence, r: CharSequence) => l + LF +  r }
   }.makeStyle
   
   /**
    * Prints a RuleIterator
    */
-  def print(r: RuleIterator): CharSequence = r match {
-    case NoCategory(rule) => print(rule)
-    case Foreach1(cat, name, rule) => s"$FOR_SYMBOL $name $IN_SYMBOL ${cat.name}:$LF" + print(rule)
+  /*def print(r: RuleIterator): CharSequence = r match {
+    case NoCategory(rule) => print(NO_INDENT, rule)
+    case Foreach1(cat, name, rule) => s"$FOR_SYMBOL $name $IN_SYMBOL ${cat.name}:$LF" + print(NO_INDENT, rule)
     case Foreach2(cat1, cat2, name1, name2, rule) =>
       s"$FOR_SYMBOL $name1 $IN_SYMBOL ${cat1.name}:$LF"+ 
-      s"$FOR_SYMBOL $name2 $IN_SYMBOL ${cat2.name}:$LF"+ print(rule)
+      s"$FOR_SYMBOL $name2 $IN_SYMBOL ${cat2.name}:$LF"+ print(NO_INDENT, rule)
     
-  }
+  }*/
   /**
    * Prints a rule
    */
-  def print(r: Rule): CharSequence = r match {
+  /*def print(r: Rule): CharSequence = r match {
     case Whenever(cond, action) => s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF + print(INDENT, action)
-  }
+  }*/
   
   //def print(s: Tree, indent: String = ""): CharSequence = {
   //  val result = print(indent, s)

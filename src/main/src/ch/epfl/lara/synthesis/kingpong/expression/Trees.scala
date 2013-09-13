@@ -6,6 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import android.util.Log
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 object Trees {
   trait Writer {
@@ -44,7 +45,115 @@ object Trees {
   /** Statement, can have side-effect. */
   sealed trait Stat extends Tree {
     override def setBindingReplace(n: String, obj: GameObject): Stat
+    def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
+      interpreter.eval(this)
+    }
   }
+  
+  sealed trait RuleIterator extends Stat /*extends History*/ {
+    
+    //private var state: Map[Keys, Boolean] = Map.empty.withDefaultValue(false)
+    
+    /** Contains the history. The head corresponds to the most recent value. */
+    //private val history: RingBuffer[(Long, Map[Keys, Boolean])] = new RingBuffer(History.MAX_HISTORY_SIZE)
+ 
+    trait BindingGenerator extends (Keys => Stat) {
+      def apply(keys: Keys): Stat
+    }
+    implicit class BindingGeneratorIterator(r: Stat) extends BindingGenerator {
+      def apply(keys: Keys): Stat = {
+        keys foreach { case (name, obj) =>
+          r.setBinding(name, obj)
+        }
+        r
+      }
+    }
+    class UniqueGenerator(r: Stat) extends BindingGenerator {
+      def apply(keys: Keys): Stat = r
+    }
+    protected type Keys <: Iterable[(String, GameObject)]
+    protected def generator: BindingGenerator
+    protected def keys: Iterable[Keys]
+
+    def typeCheck(typechecker: TypeChecker): Unit = {
+      (keys map generator) foreach typechecker.typeCheck
+    }
+    
+    def children = (keys map generator).toSeq
+    
+    /*def traverse(f: Tree => Unit) = {
+      val c = keys
+      c foreach { key =>
+        generator(key).traverse(f)
+      }
+    }*/
+
+
+    /** Evaluate the rules according to the previous evaluations flags. */
+    override def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
+      val c = keys
+      c foreach { key =>
+        interpreter.eval(generator(key))
+      }
+        /*match {
+          
+          case Whenever(cond, action) =>
+            if (interpreter.eval(cond).as[Boolean]) {
+              interpreter.eval(action)
+            }*/
+/*
+          case On(cond, action) =>
+            val b = interpreter.eval(cond).as[Boolean]
+            if (!state(key) && b) {
+              interpreter.eval(action)
+              state += key -> true
+            } else if (!b) {
+              state += key -> false
+            }
+
+          case Once(cond, action) =>
+            if (!state(key) && interpreter.eval(cond).as[Boolean]) {
+              interpreter.eval(action)
+              state += key -> true
+            }
+          
+            */
+      //  }
+      //}
+    }
+
+    /** Reset the rules evaluation flags. */
+    //def reset(): Unit = state = Map.empty.withDefaultValue(false)
+
+    /*def save(t: Long): Unit = {
+      if (history.isEmpty || history.last._2 != state) {
+        history += (t, state)
+      }
+    }*/
+
+    /*def restore(t: Long): Unit = {
+      history.findLast(_._1 <= t) match {
+        case Some((_, s)) => state = s
+        case None => sys.error(s"The timestamp $t doesn't exist in the history.")
+      }
+    }*/
+
+    //def clear(): Unit = history.clear()
+
+  }
+  
+  case class Foreach1(category: Category, nameBinding: String, protected val rule: Stat) extends RuleIterator {
+    protected type Keys = Seq[(String, GameObject)]
+    protected def keys = category.objects.map(o => List((nameBinding, o)))
+    def generator: BindingGenerator = rule
+    
+    def setBinding(n: String, o: GameObject) = { if(nameBinding != n) rule.setBinding(n, o); this}
+    def setBindingReplace(n: String, o: GameObject): RuleIterator = {
+      if(nameBinding != n) Foreach1(category, nameBinding, rule.setBindingReplace(n, o)) else this
+    }
+    /*def children = rule :: Nil*/
+  }
+  
 
   case class Assign(props: List[MaybeAssignable], rhs: Expr) extends Stat {
     def setBinding(n: String, o: GameObject) = { props.map(_.setBinding(n, o)); rhs.setBinding(n, o); this}
@@ -160,6 +269,9 @@ object Trees {
     def >=(e: Expr): Expr = GreaterEq(this, e)
     def unary_! : Expr = Not(this)
     
+    def x = NValue(this, 0)
+    def y = NValue(this, 1)
+    
     /*def above(e: Expr): Expr = this < e
     def below(e: Expr): Expr = this > e
     def toLeftOf(e: Expr): Expr = this < e
@@ -199,14 +311,15 @@ object Trees {
     def constructor: (List[Expr]) => T
     def children = l
   }
-
+  case class NValue(o: Expr, index: Int) extends Expr with OBinding { override def setBindingReplace(n: String, obj: GameObject): NValue = NValue(o.setBindingReplace(n, obj), index) }
+  case class Count(category: Category) extends Expr with NoBinding with NoReplaceExprBinding
   case class IntegerLiteral(value: Int) extends Expr with NoBinding with NoReplaceExprBinding
   case class FloatLiteral(value: Float) extends Expr with NoBinding with NoReplaceExprBinding
   case class StringLiteral(value: String) extends Expr with NoBinding with NoReplaceExprBinding
   case class BooleanLiteral(value: Boolean) extends Expr with NoBinding with NoReplaceExprBinding
   case class VecExpr(l: List[Expr]) extends Expr with ListBinding[VecExpr]  { def constructor = VecExpr.apply }
   case class Vec2Expr(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Vec2Expr.apply }
-  case class Vec2Literal(x: Float, y: Float) extends Expr with NoBinding with NoReplaceExprBinding
+  case class Vec2Literal(lhs: Float, rhs: Float) extends Expr with NoBinding with NoReplaceExprBinding
   case object UnitLiteral extends Expr with NoBinding with NoReplaceExprBinding
   case class Val(name: String) extends Expr with NoBinding with NoReplaceExprBinding
 
@@ -248,7 +361,7 @@ object Trees {
     val visible: ch.epfl.lara.synthesis.kingpong.objects.Property[Boolean] = if(obj != null) obj.visible else null
     //def x: Property[Float] = if(obj != null) obj.x else null
     //def y: Property[Float] = if(obj != null) obj.y else null
-    def apply(property: String): Expr = if(ref == null && obj != null) obj(property) else PropertyIndirect(ref, obj, property)
+    def apply(property: String): Expr = if(ref == null && obj != null) obj.get(property) else PropertyIndirect(ref, obj, property)
     def update(property: String, arg: Expr): Stat = apply(property) := arg
    
     def category = if(obj != null) obj.category else null
@@ -314,13 +427,13 @@ object Trees {
    *  name: Name of the object
    **/
   case class PropertyIndirect(name: String, var obj: GameObject, prop: String) extends Expr with MaybeAssignable {
-    var expr: Expr = if(obj != null) obj(prop) else null
+    var expr: Expr = if(obj != null) obj.get(prop) else null
     var previous_obj: GameObject = obj // Caching mechanism to have expr computed only once.
 
     def setBinding(n: String, o: GameObject): this.type = {
       if(n == name && o != previous_obj) {
         obj = o
-        expr = obj(prop) // Can be of any type, like PropertyRef(x), PropertyRef(x)+PropertyRef(width)/2, etc.
+        expr = obj.get(prop) // Can be of any type, like PropertyRef(x), PropertyRef(x)+PropertyRef(width)/2, etc.
         // TODO : Change the binding
         
         previous_obj = obj

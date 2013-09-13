@@ -35,7 +35,19 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def angle: Property[Float]
   def visible: Property[Boolean]
   
-  def setExistenceAt(time: Long) = {}
+  protected var attachedToCategory = true
+  def setExistenceAt(time: Long): Boolean = {
+    val exists = existsAt(time)
+    if(!exists && attachedToCategory) {
+      category.remove(this)
+      attachedToCategory = false
+    }
+    else if(exists && !attachedToCategory) {
+      category.add(this)
+      attachedToCategory = true
+    }
+    exists
+  }
   def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
   def doesNotYetExist(time: Long) = time.toInt < creation_time.get
   val creation_time: Property[Int] = simpleProperty[Int]("creation_time", -1)
@@ -112,7 +124,8 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   /**
    * Retrieves a property or anything else.
    */
-  def apply(property: String): Expr = { //PropertyRefTrait
+  def get(property: String) = this(property)
+  protected def apply(property: String): Expr = { //PropertyRefTrait
     if(properties contains property) properties(property).ref else {
       property match {
         case "bottom" => 
@@ -197,12 +210,14 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // Protected functions
   // --------------------------------------------------------------------------  
 
+  // Property with no relationship with the physical world
   protected def simpleProperty[T : PongType](name: String, init: Expr): Property[T] = {
     val p = new SimpleProperty[T](name, init, this)
     properties += (name -> p)
     p
   }
 
+  // Property that can be pushed to the physical world
   protected def simplePhysicalProperty[T : PongType](name: String, init: Expr)(f: T => Unit): Property[T] = {
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
@@ -211,6 +226,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     p
   }
 
+  // Property that can be both pushed to the physical world and retrieved
   protected def property[T : PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): Property[T] = {
     val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f

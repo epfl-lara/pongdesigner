@@ -92,6 +92,12 @@ trait ActionBarHandler extends common.ContextUtils {
   def setActionBar(actionBar: ExpandableListView): Unit = {
     this.actionBar = actionBar
     if(actionBar != null) {
+      
+      //val menus = obtainIdArray(R.array.menu_arrays)
+      //val submenus = menus.map{ obtainDrawableArray}
+      // TODO : a lot of work here.
+      
+      //actionBarAdapter = new adapters.ActionsAdapter(context, )
       //actionBar.setAdapter(actionBarAdapter)
     }
   }
@@ -120,7 +126,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
-    updateCodeView()
+    updateCodeView(game.rules, game.objects)
   }
   
   def layoutResize() = {
@@ -281,7 +287,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
 
     paint.setStrokeWidth(mapRadiusI(1))
-    paintSelected.setStrokeWidth(mapRadiusI(1))
+    paintSelected.setStrokeWidth(mapRadiusI(3))
     if(game == null) return;
     game.objects foreach { o => 
       if(o.existsAt(game.time)) {
@@ -307,12 +313,28 @@ class GameView(val context: Context, attrs: AttributeSet)
         
       case b: Box[_] => 
         paint.setColor(b.color.get) 
-        if(b == obj_to_highlight) paint.setAlpha(0x88)
+        //if(b == obj_to_highlight) paint.setAlpha(0x88)
         paint.setTextSize(b.height.get)
         val value = b.value.get.toString
         canvas.drawText(value, b.x.get, b.y.get, paint)
         if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
-
+      case j: Joystick =>
+        paint.setColor(j.color.get) 
+        paint.setAlpha(0x20)
+        canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paint)
+        paint.setAlpha(0x40)
+        canvas.drawCircle(j.x.get + j.relative_x.get, j.y.get + j.relative_y.get, j.radius.get/2, paint)
+        if(obj_to_highlight contains j) canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paintSelected)
+      case r: Character =>
+        paint.setColor(r.color.get)
+        if(!r.visible.get)
+          paint.setAlpha(0x00)
+        canvas.save()
+        canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
+        canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
+        if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
+        canvas.restore()
+      case _ =>
     }}}
     
     if(fingerIsDown) {
@@ -399,35 +421,26 @@ class GameView(val context: Context, attrs: AttributeSet)
       // Select an object below if any and display the corresponding code
       val res = mapVectorI(pos)
       val objectsTouched = game.objectFingerAt(res)
-      val header = PrettyPrinterExtended.printGameObjectDef(objectsTouched)
-      val all = PrettyPrinterExtended.print(game.getRulesbyObject(objectsTouched), header)
-      val r: CharSequence = all.c
-      val mapping = all.map
-      val mObjects = mapping.mObjects
-      codeMapping = mapping.mPosCategories
-      var rules = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
-      objectsTouched.foreach { obj =>
-        //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
-        mObjects.get(obj.category) match {
-          case Some(l) => l foreach { case (start, end) => rules = SyntaxColoring.setSpanOnBounds(rules, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
-          case None => // No objects to color
-        }
-      }
-      codeview.setText(rules)
-      //TODO
+      val rulesConcerned = game.getRulesbyObject(objectsTouched)
+      updateCodeView(rulesConcerned, objectsTouched)
   }
   
-  def updateCodeView() = {
-    val code = expression.PrettyPrinter.print(game.rules)
-    codeview.setText(code)
-    
-    val prev_code =("for ball in Balls:" + "\n" +
-"V paddle \u2208 Paddles." + "\n" +
-"V score \u2208 Scores." + "\n" +
-"  ball below paddle ->" + "\n" +
-"    decrease score.value by 1" + "\n" +
-"    reset ball.x" + "\n" +
-"    reset ball.y")
+  def updateCodeView(rules: Iterable[Stat], objects: Iterable[GameObject]) = {
+    val header = PrettyPrinterExtended.printGameObjectDef(objects)
+    val all = PrettyPrinterExtended.print(rules, header)
+    val r: CharSequence = all.c
+    val mapping = all.map
+    val mObjects = mapping.mObjects
+    codeMapping = mapping.mPosCategories
+    var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
+    objects.foreach { obj =>
+      //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
+      mObjects.get(obj.category) match {
+        case Some(l) => l foreach { case (start, end) => rulesString = SyntaxColoring.setSpanOnBounds(rulesString, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
+        case None => // No objects to color
+      }
+    }
+    codeview.setText(rulesString)
   }
   
   def push(m: Matrix) = {

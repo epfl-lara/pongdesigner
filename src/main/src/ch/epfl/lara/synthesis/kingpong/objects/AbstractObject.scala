@@ -8,7 +8,10 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import scala.Dynamic
 import scala.language.dynamics
 import org.jbox2d.collision.shapes.PolygonShape
+import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.Shape
+import ch.epfl.lara.synthesis.kingpong.rules.Context
+import ch.epfl.lara.synthesis.kingpong.rules.Events
 
 abstract class AbstractObject(init_name: Expr, 
                               init_x: Expr,
@@ -75,6 +78,107 @@ case class Box[T : PongType](protected val game: Game,
     this.copy[T](init_name=StringIsExpr(name))
   }
 }
+
+trait InputManager {
+  
+  def collectInput(from: Context)
+
+}
+
+/**
+ * Input class already defining some methods
+ */
+case class Joystick(protected val game: Game,
+                        init_name: Expr, 
+                        init_x: Expr,
+                        init_y: Expr,
+                        init_angle: Expr,
+                        init_radius: Expr, 
+                        init_visible: Expr,
+                        init_color: Expr
+                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) with InputManager{
+  
+  def className = s"Joystick"
+  // --------------------------------------------------------------------------
+  // Properties
+  // --------------------------------------------------------------------------
+  
+  val radius = simpleProperty[Float]("radius", init_radius)
+  val relative_x = simpleProperty[Float]("relative_x", 0)
+  val relative_y = simpleProperty[Float]("relative_y", 0)
+  val jump = simpleProperty[Boolean]("jump", false)
+  val right = simpleProperty[Boolean]("right", false)
+  val left = simpleProperty[Boolean]("left", false)
+  
+  def collectInput(from: Context) = {
+    import Events._
+    
+    def updateRelativeCoords(dx: Float, dy: Float) = {
+      relative_x.set(dx)
+      relative_y.set(dy)
+      jump.set(dy < -radius.get / 2)
+      right.set(dx > radius.get / 2)
+      left.set(dx < -radius.get / 2)
+    }
+    def updateAbsoluteCoords(at: Vec2) = {
+      updateRelativeCoords( at.x - x.get, at.y - y.get)
+    }    
+    from.events foreach {
+      case FingerMove(_, at, objs) if objs contains this =>
+        if(contains(at)) updateAbsoluteCoords(at) else updateRelativeCoords(0, 0)
+      case FingerDown(at, objs) if objs contains this => updateAbsoluteCoords(at)
+      case FingerUp(at, objs) if objs contains this => updateRelativeCoords(0, 0)
+      case _ =>
+    }
+  } 
+
+  // --------------------------------------------------------------------------
+  // Utility functions
+  // --------------------------------------------------------------------------  
+  
+  def getAABB = {
+    val center = Vec2(x.get, y.get)
+    val bottomLeft = center add Vec2(-radius.get, -radius.get)
+    val upperRight = center add Vec2(radius.get, radius.get)
+    new org.jbox2d.collision.AABB(bottomLeft, upperRight)
+  }
+  
+  private val shape = new CircleShape()
+  shape.setRadius(game.typeCheckAndEvaluate[Float](init_radius))
+
+  def getShape = {
+    shape.m_p.set(x.get, y.get)
+    shape
+  }
+
+  def contains(pos: Vec2) = getAABB.contains(pos)
+  
+  def makecopy(name: String): GameObject = {
+    this.copy(init_name=StringIsExpr(name))
+  }
+}
+
+
+case class PathMovement(protected val game: Game,
+                        init_name: Expr, 
+                        init_x: Expr,
+                        init_y: Expr,
+                        init_angle: Expr,
+                        init_visible: Expr,
+                        init_color: Expr
+                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) {
+  
+
+  def className = "Movement"
+  
+  
+
+  def contains(pos: Vec2): Boolean = false
+  def getAABB(): AABB = ???
+  protected def makecopy(name: String): GameObject = ???
+  def getShape: Shape = ???
+}
+
 
 case class Cell2D(protected val game: Game, init_name: Expr) extends GameObject(init_name) {
   var left: Cell2D = null

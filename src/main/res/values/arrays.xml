@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    
+    <array name="menu_arrays">
+        <item>@array/menu_add</item>
+        <item>@array/menu_constraint</item>
+        <item>@array/menu_categories</item>
+    </array>
+    
+    <array name="menu_add">
+        <item>@drawable/menu_add_rect</item>
+        <item>@drawable/menu_add_circle</item>
+        <item>@drawable/menu_add_digit</item>
+        <item>@drawable/menu_add_text</item>
+        <item>@drawable/menu_add_boolean</item>
+        <item>@drawable/menu_add_array</item>
+    </array>
+    <array name="menu_constraint">
+        <item>@drawable/menu_rule_maker</item>
+    </array>
+    <array name="menu_categories">
+        <item>@drawable/menu_add_accelerometer</item>
+        <item>@drawable/menu_add_force_field</item>
+        <item>@drawable/menu_camera</item>
+    </array>
+    
     <string-array name="rename_rectangles">
         <item>custom&#8230;</item>
         <item>wall</item>

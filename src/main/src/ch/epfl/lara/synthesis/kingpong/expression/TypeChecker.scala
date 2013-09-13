@@ -4,23 +4,27 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 import android.util.Log
+import ch.epfl.lara.synthesis.kingpong.objects.Category
 
 case class TypeCheckException(msg: String) extends Exception(msg)
 
 trait TypeChecker {
   
-  def typeCheck(iterator: RuleIterator): RuleIterator = {
+  /*def typeCheck(iterator: RuleIterator): RuleIterator = {
     iterator.typeCheck(this)
     iterator
-  }
+  }*/
 
-  def typeCheck(rule: Rule): Rule = {
+  /*def typeCheck(rule: Rule): Rule = {
     typeCheck(rule.cond, TBoolean)
     typeCheck(rule.action)
     rule
-  } 
+  }*/
 
   def typeCheck(stat: Stat): Stat = stat match {
+    case i @ Foreach1(cat, name, rule) =>
+      i.typeCheck(this)
+      i
     case Block(stats)  => 
       stats foreach typeCheck
       stat
@@ -58,6 +62,14 @@ trait TypeChecker {
   }
 
   def typeCheck(expr: Expr): Expr = expr match {
+    case NValue(v, index) =>
+      if(index > 1 || index < 0) {
+        throw new TypeCheckException(s"Inconsistent index in NValue $expr: $index")
+      }
+      typeCheck(v, TVec2)
+      expr.setType(TFloat)
+    case Count(category: Category) =>
+      expr.setType(TInt)
     case VecExpr(l) =>
       val l2 = l.map(typeCheck(_))
       expr.setType(TTuple(l2.map(_.getType)))

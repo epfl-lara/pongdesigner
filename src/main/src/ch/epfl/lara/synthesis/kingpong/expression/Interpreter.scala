@@ -35,6 +35,9 @@ case class InterpreterException(msg: String) extends Exception(msg)
 trait Interpreter {
   
   def eval(stat: Stat)(implicit context: Context): Unit = stat match {
+    
+    case f @ Foreach1(cat, name, r) =>
+      f.evaluate(this)
     case Block(stats) => 
       stats map eval
 
@@ -103,6 +106,12 @@ trait Interpreter {
   def eval(expr: Expr)(implicit context: Context): Value = {
     //Log.d("Eval", s"Evaluating $expr")
     expr match {
+      case NValue(v, index) =>
+        eval(v) match {
+          case Vec2V(x, y) => if(index == 0) FloatV(x) else FloatV(y)
+          case _ => error(expr)
+        }
+      case Count(c) => IntV(c.objects.size)
       case v@VecExpr(l) => TupleV(l map (eval(_)))
     case c@Choose(prop, constraint) =>
       eval(c.evaluatedProgram)

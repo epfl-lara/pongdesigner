@@ -23,14 +23,14 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 
 trait RuleManager {
-  private val _rules = ListBuffer[RuleIterator]()
-  private val _rulesByObject = MMap.empty[GameObject, MSet[RuleIterator]]
+  private val _rules = ListBuffer[Stat]()
+  private val _rulesByObject = MMap.empty[GameObject, MSet[Stat]]
   
   /** All the rules iterators in this game. */
-  def rules: Iterable[RuleIterator] = _rules
-  def getRules(): Iterable[RuleIterator] = _rules
-  def getRulesbyObject(o: GameObject):  Iterable[RuleIterator] = _rulesByObject.getOrElse(o, List())
-  def addRule(r: RuleIterator) = {
+  def rules: Iterable[Stat] = _rules
+  def getRules(): Iterable[Stat] = _rules
+  def getRulesbyObject(o: GameObject):  Iterable[Stat] = _rulesByObject.getOrElse(o, List())
+  def addRule(r: Stat) = {
     r traverse {
       case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
       case c: PropertyIndirect if c.obj != null =>  _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
@@ -38,7 +38,7 @@ trait RuleManager {
     }
     _rules += r
   }
-  def getRulesbyObject(o: Iterable[GameObject]): Iterable[RuleIterator] = (o flatMap getRulesbyObject)
+  def getRulesbyObject(o: Iterable[GameObject]): Iterable[Stat] = (o flatMap getRulesbyObject)
 }
 
 trait Game extends TypeChecker with Interpreter with ColorConstants with RuleManager { self => 
@@ -49,7 +49,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   
 
   /** All objects in this game. */
-  def objects: Iterable[GameObject] = _objects
+  def objects: MSet[GameObject] = _objects
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
@@ -67,7 +67,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   private[kingpong] def restore(t: Long): Unit = {
     if (t >= 0 && t <= maxTime) {
       objects.foreach(_.restore(t))
-      rules.foreach(_.restore(t))
+      //rules.foreach(_.restore(t))
       EventHistory.restore(t)
       world.clear()
     }
@@ -76,8 +76,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   private[kingpong] def reset(): Unit = {
     objects.foreach(_.reset(this)(EventHistory))
     objects.foreach(_.clear())
-    rules.foreach(_.reset())
-    rules.foreach(_.clear())
+    //rules.foreach(_.reset())
+    //rules.foreach(_.clear())
     world.clear()
     EventHistory.clear()
   }
@@ -97,14 +97,17 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     }
     
     EventHistory.step()                                /// Opens saving for new coordinates
+    
     rules foreach {_.evaluate(this)(EventHistory)}     /// Evaluate all rules using the previous events
     objects foreach {_.validate()}                     /// Store new computed values
     objects.foreach {o => o.setExistenceAt(time.toInt) }
     objects foreach {_.flush()}                        /// push values to physical world
     world.step()                                       /// One step forward in the world
     objects foreach {_.load()}                         /// Load values from world
+    objects foreach { case i: InputManager =>          /// Maps the previous events to the input mechanisms.
+      i.collectInput(EventHistory) case _ => }
     objects foreach {_.save(time)}                     /// Save the values to history
-    rules foreach {_.save(time)}                       /// Save "on" and "once" values.
+    //rules foreach {_.save(time)}                       /// Save "on" and "once" values.
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
@@ -122,10 +125,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   }
 
   /** Register this rule in this game engine. */
-  def register(rule: Rule) {
-    val iterator = new NoCategory(rule)
-    typeCheck(iterator)
-    addRule(iterator)
+  def register(rule: Stat) {
+    //val iterator = new NoCategory(rule)
+    typeCheck(rule)
+    addRule(rule)
   }
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
@@ -145,9 +148,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
              restitution: Expr = category.restitution.copy,
              fixedRotation: Expr = category.fixedRotation.copy,
              color: Expr = category.color.copy,
+             sensor: Expr = category.sensor.copy,
              tpe: BodyType = category.tpe): Circle = {
     val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
-                       density, friction, restitution, fixedRotation, color, tpe)
+                       density, friction, restitution, fixedRotation, color, sensor, tpe)
     if(category != null) c.setCategory(category)
     c.reset(this)(EventHistory)
     c.flush()
@@ -169,9 +173,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
                 restitution: Expr = category.restitution.copy,
                 fixedRotation: Expr = category.fixedRotation.copy,
                 color: Expr = category.color.copy,
+                sensor: Expr = category.sensor.copy,
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                         density, friction, restitution, fixedRotation, color, tpe)
+                         density, friction, restitution, fixedRotation, color, sensor, tpe)
     //val r = new Rectangle
     if(category != null) r.setCategory(category)
     r.reset(this)(EventHistory)
@@ -211,28 +216,66 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     this add box
     box
   }
+  
+  def joystick(category: Category)(name: Expr,
+             x: Expr,
+             y: Expr,
+             angle: Expr = category.angle.copy,
+             radius: Expr = category.radius.copy,
+             visible: Expr = category.visible.copy,
+             color: Expr = category.color.copy): Joystick = {
+    val joystick = new Joystick(this, name, x, y, angle, radius, visible, color)
+    if(category != null) joystick.setCategory(category)
+    joystick.reset(this)(EventHistory)
+    this add joystick
+    joystick
+  }
+  
+  def character(category: Category)(name: Expr,
+                x: Expr,
+                y: Expr,
+                angle: Expr = category.angle.copy,
+                width: Expr = category.width.copy,
+                height: Expr = category.height.copy,
+                visible: Expr = category.visible.copy,
+                velocity: Expr = category.velocity.copy,
+                angularVelocity: Expr = category.angularVelocity.copy,
+                density: Expr = category.density.copy,
+                friction: Expr = category.friction.copy,
+                restitution: Expr = category.restitution.copy,
+                fixedRotation: Expr = category.fixedRotation.copy,
+                color: Expr = category.color.copy,
+                tpe: BodyType = category.tpe): Character = {
+    val r = new Character(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
+                          density, friction, restitution, fixedRotation, color, tpe)
+    //val r = new Rectangle
+    if(category != null) r.setCategory(category)
+    r.reset(this)(EventHistory)
+    r.flush()
+    this add r
+    r
+  }
 
-
-  def foreach(category: Category)(nameBinding: String)(rule: Rule): RuleIterator = {
-    new Foreach1(category, nameBinding, rule)
+  def foreach(category: Category)(nameBinding: String)(rule: Stat): RuleIterator = {
+    Foreach1(category, nameBinding, rule)
   }
 
   def foreach(category1: Category, category2: Category)(name1: String, name2: String)
-             (rule: Rule): RuleIterator = {
-    new Foreach2(category1, category2, name1, name2, rule)
+             (rule: Stat): RuleIterator = {
+    Foreach1(category1, name1, Foreach1(category2, name2, rule))
   }
 
-  def whenever(cond: Expr)(actions: Seq[Stat]): Rule = {
-    new Whenever(cond, toSingleStat(actions))
+  def whenever(cond: Expr)(actions: Seq[Stat]): Stat = {
+    If(cond, toSingleStat(actions), NOP)
   }
 
-  def once(cond: Expr): Expr = {
+  /*def once(cond: Expr): Expr = {
     Once(cond)
   }
 
   def on(cond: Expr): Expr = {
     On(cond)
-  }
+  }*/
   
   def gc() = {
     _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
@@ -248,7 +291,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
   
-  def objectFingerAt(pos: Vec2): Iterable[GameObject] = {
+  def objectFingerAt(pos: Vec2): MSet[GameObject] = {
     circle.m_p.set(pos.x, pos.y)
     circle.m_radius = FINGER_SIZE
 
@@ -436,12 +479,13 @@ class EmptyGame() extends Game {
   val world = new PhysicalWorld(Vec2(0, 1.5f))
 
   val cat = Category("Moving objects")()
+  val catAdd = Category("Moving objects2")()
 
   rectangle(cat)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
   rectangle(cat)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
 
   circle(cat)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
-  val c2 = circle(cat)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
+  val c2 = circle(catAdd)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
   
   val score = intbox(Category("scores")())("Score", 1, 1, value = 0)
 
@@ -449,22 +493,23 @@ class EmptyGame() extends Game {
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
-  val r1 = foreach(cat)("o"){
-    whenever(base("y") < obj("o")("y")) { Seq(
+  val r1 = foreach(cat)("o"){ foreach(base.category)("base") {
+    whenever(obj("base")("y") < obj("o")("y")) { Seq(
       obj("o")("y") := 0, 
       obj("o")("velocity") := Vec2(0, 0)
     )}
-  }
+  }}
 
-  val r2 = foreach(cat, cat2)("o1", "o2") {
-    whenever(once(Collision(obj("o1"), obj("o2")))) { Seq(
-      score("value") += 1
+  val r2 = foreach(cat, cat2)("o1", "o2") { foreach(score.category)("score") {
+    whenever(Collision(obj("o1"), obj("o2"))) { Seq(
+      obj("score")("value") += 1
     )}  
-  }
+  }}
 
-  val r3 = whenever(FingerDownOver(c2)) { Seq(
-    c2("radius") += 0.1
-  )}
+  val r3 = foreach(catAdd)("c2") {
+    whenever(FingerDownOver(obj("c2"))) { Seq(
+    obj("c2")("radius") += 0.1
+  )}}
 
 
   register(r1)

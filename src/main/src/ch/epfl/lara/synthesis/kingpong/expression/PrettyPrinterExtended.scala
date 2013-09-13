@@ -182,10 +182,10 @@ trait PrettyPrinterExtendedTypical {
       val start = mOpen.getOrElse(t, size)
       StringMaker(c, size, map.add(t, start, size), mOpen - t, mCommentOpen)
     }
-    def +(other: Rule): StringMaker = {
+    /*def +(other: Rule): StringMaker = {
       print(this, other)
-    }
-    def +(other: RuleIterator): StringMaker = {
+    }*/
+    def +(other: Stat): StringMaker = {
       print(this, other)
     }
   }
@@ -193,20 +193,24 @@ trait PrettyPrinterExtendedTypical {
   /**
    * External printing function
    */
-  def print(s: Iterable[RuleIterator], c: StringMaker = StringMaker()): StringMaker = {
-    val res = printIterable[RuleIterator](c, s, print)
+  def print(s: Iterable[Stat], c: StringMaker = StringMaker()): StringMaker = {
+    val res = printIterable[Stat](c, s, print)
     res
   }
   
   /**
    * Print the definition of a set of game objects.
    */
+  val accepted_properties = Set[String]() + "x" + "y" + "radius" + "width" + "height" + "color" + "visible" + "velocity"
   def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker()) = {
     printIterable[GameObject](c, objects, { case (c, obj) =>
       val e = c + obj.className + "(" + obj.category + ")("
-      val delimiter = "" andThen ","
+      val delimiter = "" andThen LF
       val e1 = (e /: obj.properties) { case (e, (name, prop)) =>
+        if(accepted_properties contains name)
         e + delimiter.get + name + "=" +< (prop.get.toString, prop) +>(prop)
+        else
+        e
         // or  e +#< name +< (prop.get.toString, prop) +>(prop) +#>
       }
       e1 + ")"
@@ -217,18 +221,14 @@ trait PrettyPrinterExtendedTypical {
    * Prints a set of functions printable with a function.
    */
   def printIterable[T](c: StringMaker, s: Iterable[T], f: (StringMaker, T) => StringMaker): StringMaker = {
-    var e = c
-    var first = true
-    for(r <- s) { if(!first) e = e + LF else first = false
-      e = f(e, r)
-    }
-    e
+    val delimiter = "" andThen LF
+    (c /: s) { case (e, r) => f(e + delimiter.get, r) }
   }
   
   /**
-   * Prints a RuleIterator
+   * Prints a Stat
    */
-  def print(c: StringMaker, r: RuleIterator): StringMaker = r match {
+  /*def print(c: StringMaker, r: RuleIterator): StringMaker = r match {
     case NoCategory(rule) => c + rule
     case Foreach1(cat, name, rule) => 
       c + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + rule
@@ -238,22 +238,29 @@ trait PrettyPrinterExtendedTypical {
       c +
       (FOR_SYMBOL+" ") +! (name1, cat1) + (" " + IN_SYMBOL + " ") + cat1 + (":" + LF) +
       (FOR_SYMBOL+" ") +! (name2, cat2) + (" " + IN_SYMBOL + " ") + cat2 + (":" + LF) + rule
-  }
+  }*/
   /**
    * Prints a rule
    */
-  def print(c: StringMaker, r: Rule): StringMaker = {
+  /*def print(c: StringMaker, r: Rule): StringMaker = {
     //implicit val s_implicit = r
     r match {
       case Whenever(cond, action) => c + s"$IF_SYMBOL " + cond + s":$LF" + (action, INDENT)
     }
-  }
+  }*/
+  private def print(c: StringMaker, s: Tree): StringMaker = print(c, NO_INDENT, s)
   
   private def print(c: StringMaker, indent: String, s: Tree): StringMaker = {
     implicit val s_implicit = s
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
     s match {
+      case NValue(expr, index) =>
+        c + indent + expr + "." + (if(index == 0) "x" else "y")
+      case Foreach1(cat, name, rule) if cat.objects.size == 1 =>
+        c /*+ indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF)*/ + rule
+      case Foreach1(cat, name, rule) =>
+        c + indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + rule
     case Delete(null, ref) => c + indent +! s"Delete(${ref.name.get})"
     case Delete(name, ref) => c + indent +! s"Delete($name)"
     case Vec2Expr(lhs, rhs) => c + indent +< "(" + lhs + "," + rhs + ")" +>
@@ -324,11 +331,11 @@ trait PrettyPrinterExtendedTypical {
     case FingerCoordY1 => c + indent +! "y1"
     case FingerCoordX2 => c + indent +! "x2"
     case FingerCoordY2 => c + indent +! "y2"
-    case PropertyIndirect(ref, obj, p) if obj != null => c + indent +! (obj.name.get, obj.category) + "." +< "$p" +>
-    case PropertyIndirect(ref, obj, p) => c + indent + s"$ref." +< "$p" +>
+    case PropertyIndirect(ref, obj, p) if obj != null => c + indent +! (obj.name.get, obj.category) + "." +< p +>
+    case PropertyIndirect(ref, obj, p) => c + indent + s"$ref." +< p +>
     case PropertyRef(p) => p.name match {
       case "value" => c + indent +< p.parent.name.get +>  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
-      case "velocity" => c + indent +< p.parent.name.get + ".velocity" +>
+      //case "velocity" => c + indent +< p.parent.name.get + ".velocity" +>
       case _ => c + indent +! (p.parent.name.get, p.parent.category) + "."  +< p.name +>
     }
     case Choose(prop, expr) => c + indent +< "choose(" + prop + s" $ARROW_FUNC_SYMBOL " + expr + ")" +>

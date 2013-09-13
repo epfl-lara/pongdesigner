@@ -105,7 +105,7 @@ class QuadDemo extends Applet {
         dbDragging = -1
         solver.endEdit
       } catch {
-        case ex: LinearEquation => ex.printStackTrace
+        case ex: CLException => ex.printStackTrace
       }
       repaint()
     }
@@ -117,7 +117,7 @@ class QuadDemo extends Applet {
       try {
         solver.suggestValue(db(dbDragging).x, x).suggestValue(db(dbDragging).y, y).resolve
       } catch {
-        case ex: LinearEquation => ex.printStackTrace
+        case ex: CLException => ex.printStackTrace
       }
       repaint()
     }

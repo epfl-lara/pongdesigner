@@ -6,10 +6,9 @@
     android:gravity="center"
     android:padding="0dp" >
  
-    <TextView
-        android:id="@+id/laptop"
+    <ImageView
+        android:id="@+id/menugroupdrawable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/addshapegroup"
-        android:paddingLeft="0dp"/>
+        android:contentDescription="@string/app_name"/>
 </LinearLayout>

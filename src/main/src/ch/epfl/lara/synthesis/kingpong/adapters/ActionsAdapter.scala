@@ -1,8 +1,10 @@
 package ch.epfl.lara.synthesis.kingpong.adapters
 
 import java.util.List
-import java.util.Map
+import scala.collection.mutable.{HashMap => Map}
 import ch.epfl.lara.synthesis.kingpong.R
+import ch.epfl.lara.synthesis.kingpong.Implicits
+
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
@@ -18,91 +20,72 @@ import android.widget.ImageView
 import android.widget.TextView;
 import android.graphics.drawable.Drawable
 
-class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[Drawable]]) extends BaseExpandableListAdapter {
+class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[String]], val bitmaps: Map[String, Drawable], val callbacks: String => Unit) extends BaseExpandableListAdapter with Implicits {
 
   def getChild(groupPosition: Int, childPosition: Int) = {
-    actionsCollection.get(actions(groupPosition))(childPosition);
+    actionsCollection(actions(groupPosition))(childPosition);
   }
 
   def getChildId(groupPosition: Int, childPosition: Int) = childPosition
-  def getChildView(final int groupPosition, final int childPosition,
-boolean isLastChild, View convertView, ViewGroup parent) {
-final String laptop = (String) getChild(groupPosition, childPosition);
-LayoutInflater inflater = context.getLayoutInflater();
+  
+  def getChildView(groupPosition: Int, childPosition: Int,
+        isLastChild: Boolean, convertView: View, parent: ViewGroup): View = {
+    val action = getChild(groupPosition, childPosition)
+    val inflater = LayoutInflater.from(context)
+    
+    val view = if (convertView == null) {
+      inflater.inflate(R.layout.actions_itemview, null)
+    } else convertView
 
-if (convertView == null) {
-convertView = inflater.inflate(R.layout.child_item, null);
-}
+    val item = view.findViewById(R.id.menudrawable).asInstanceOf[ImageView]
+    
+    item.onClicked{ v: View =>
+      // TODO
+    }
+    bitmaps.get(action) match {
+      case Some(drawable) => item.setImageDrawable(drawable)
+      case None =>
+    }
+    view
+  }
 
-TextView item = (TextView) convertView.findViewById(R.id.laptop);
+  def getChildrenCount(groupPosition: Int): Int = {
+    actionsCollection(actions(groupPosition)).size
+  }
 
-ImageView delete = (ImageView) convertView.findViewById(R.id.delete);
-delete.setOnClickListener(new OnClickListener() {
+  def getGroup(groupPosition: Int): Object = {
+    actions(groupPosition)
+  }
 
-public void onClick(View v) {
-AlertDialog.Builder builder = new AlertDialog.Builder(context);
-builder.setMessage("Do you want to remove?");
-builder.setCancelable(false);
-builder.setPositiveButton("Yes",
-new DialogInterface.OnClickListener() {
-public void onClick(DialogInterface dialog, int id) {
-List<String> child =
-laptopCollections.get(laptops.get(groupPosition));
-child.remove(childPosition);
-notifyDataSetChanged();
-}
-});
-builder.setNegativeButton("No",
-new DialogInterface.OnClickListener() {
-public void onClick(DialogInterface dialog, int id) {
-dialog.cancel();
-}
-});
-AlertDialog alertDialog = builder.create();
-alertDialog.show();
-}
-});
+  def getGroupCount(): Int = {
+    return actions.size
+  }
 
-item.setText(laptop);
-return convertView;
-}
+  def getGroupId(groupPosition: Int): Long = {
+    groupPosition
+  }
 
-public int getChildrenCount(int groupPosition) {
-return laptopCollections.get(laptops.get(groupPosition)).size();
-}
+  def getGroupView(groupPosition: Int, isExpanded: Boolean,
+      convertView: View, parent: ViewGroup): View = {
+    val action = getGroup(groupPosition).asInstanceOf[String]
+    val view = if (convertView == null) {
+      val infalInflater = LayoutInflater.from(context)
+      infalInflater.inflate(R.layout.actions_groupview, null)
+    } else convertView
+    
+    val item = convertView.findViewById(R.id.menugroupdrawable).asInstanceOf[ImageView]
+    bitmaps.get(action) match {
+      case Some(drawable) => item.setImageDrawable(drawable)
+      case None =>
+    }
+    view
+  }
 
-public Object getGroup(int groupPosition) {
-return laptops.get(groupPosition);
-}
+  def hasStableIds(): Boolean = {
+    true
+  }
 
-public int getGroupCount() {
-return laptops.size();
-}
-
-public long getGroupId(int groupPosition) {
-return groupPosition;
-}
-
-public View getGroupView(int groupPosition, boolean isExpanded,
-View convertView, ViewGroup parent) {
-String laptopName = (String) getGroup(groupPosition);
-if (convertView == null) {
-LayoutInflater infalInflater = (LayoutInflater) context
-.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-convertView = infalInflater.inflate(R.layout.group_item,
-null);
-}
-TextView item = (TextView) convertView.findViewById(R.id.laptop);
-item.setTypeface(null, Typeface.BOLD);
-item.setText(laptopName);
-return convertView;
-}
-
-public boolean hasStableIds() {
-return true;
-}
-
-public boolean isChildSelectable(int groupPosition, int childPosition) {
-return true;
-}
+  def isChildSelectable(groupPosition: Int, childPosition: Int): Boolean = {
+    true
+  }
 }

@@ -59,7 +59,7 @@ class SimplePong() extends Game {
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
   val r1 = foreach(balls)("ball"){
-    whenever(on(obj("ball") below paddle1)) { Seq(
+    whenever(obj("ball") below paddle1) { Seq(
       score("value") -= 1,
       started("value") := false,
       obj("ball")("x").reset(),
@@ -110,12 +110,16 @@ class SimplePong() extends Game {
    *     x' = max(x+3, 10)
    */
 
-  val r2 = foreach(balls, blocks)("ball", "block") {
-    whenever(Collision(obj("ball"), obj("block"))) { Seq(
-      score("value") += 1,
-      obj("ball")("color") := obj("block")("color"),
-      obj("block")("visible") = false
-    )}  
+  val r2 = foreach(balls)("ball"){
+    foreach(blocks)("block") {
+    foreach(scores)("score") {
+      whenever(Collision(obj("ball"), obj("block"))) { Seq(
+        obj("score")("value") += 1,
+        obj("ball")("color") := obj("block")("color"),
+        obj("block")("visible") = false
+      )}
+    }
+    }
   }
   val r22 = foreach(balls, borders)("ball", "border") {
     whenever(Collision(obj("ball"), obj("border"))) { Seq(

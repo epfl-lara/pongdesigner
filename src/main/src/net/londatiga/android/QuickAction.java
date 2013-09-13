@@ -204,7 +204,7 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 		if (mOrientation == HORIZONTAL && mChildPos != 0) {
             View separator = mInflater.inflate(R.layout.horiz_separator, null);
             
-            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.FILL_PARENT);
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
             
             separator.setLayoutParams(params);
             separator.setPadding(5, 0, 5, 0);
@@ -263,8 +263,10 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 			rootWidth		= mRootView.getMeasuredWidth();
 		}
 		
-		int screenWidth 	= mWindowManager.getDefaultDisplay().getWidth();
-		int screenHeight	= mWindowManager.getDefaultDisplay().getHeight();
+		@SuppressWarnings("deprecation")
+    int screenWidth 	= mWindowManager.getDefaultDisplay().getWidth();
+		@SuppressWarnings("deprecation")
+    int screenHeight	= mWindowManager.getDefaultDisplay().getHeight();
 		
 		//automatically get X coord of popup (top left)
 		if ((anchorRect.left + rootWidth) > screenWidth || forceNextLeft) {

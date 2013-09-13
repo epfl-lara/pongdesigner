@@ -23,7 +23,6 @@ trait Implicits {
     new View.OnTouchListener() {
       def onTouch(v: View, event: MotionEvent): Boolean = {
           f(v, event)
-          true
       }
   }}
   

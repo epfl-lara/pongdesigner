@@ -1,6 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-import scala.collection.mutable.{Set => MSet, Map => MMap}
+import scala.collection.mutable.{HashSet => MSet, HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -20,8 +20,9 @@ object Category {
       restitution: Expr = 0.5,
       fixedRotation: Expr = true,
       color: Expr = 0xFF000000,
+      sensor: Expr = false,
       tpe: BodyType = BodyType.DYNAMIC): Category = {
-    new Category(name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, tpe)
+    new Category(name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe)
   }
 }
 
@@ -38,6 +39,7 @@ class Category(val name: String = "", val angle: Expr = 0,
   val restitution: Expr = 0.5,
   val fixedRotation: Expr = true,
   val color: Expr = 0xFF000000,
+  val sensor: Expr = false,
   val tpe: BodyType = BodyType.DYNAMIC) { self =>
 
   private val _children = MSet.empty[GameObject]

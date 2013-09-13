@@ -215,8 +215,28 @@ class KingPong extends Activity
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
       override def onDown(event: MotionEvent): Boolean = { 
-          //Log.d("KingPong","onDown: " + event.toString());
-          return true
+         Log.d("KingPong","onDown: " + event.toString());
+        val x = event.getX()
+        val y = event.getY()
+        var closest_pos = 0
+        var distance = 1897865f
+        val layout = mCodeView.getLayout();
+        for(pos <- 0 to (mCodeView.getText().length()-1)) {
+          val line = layout.getLineForOffset(pos)
+          val baseline = layout.getLineBaseline(line)
+          val ascent = layout.getLineAscent(line)
+          val xpos = layout.getPrimaryHorizontal(pos)
+          val ypos = baseline + ascent
+          if(y >= ypos && y <= baseline) {
+            val dist = Math.abs(x - xpos)
+            if(dist < distance) {
+              distance = dist
+              closest_pos = pos
+            }
+          }
+        }
+        mCodeView.setSelection(closest_pos)
+        return true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
         //val m = mCodeView.getLayoutParams()
