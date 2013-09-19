@@ -7,8 +7,37 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import android.util.Log
 import ch.epfl.lara.synthesis.kingpong.rules.Context
+import util.control.Breaks._
 
 object Trees {
+  /**
+   * How the tree is traversed:
+   * - ContinueWithChildren: After the function is applied to the node,
+   *   the same function is applied to the children of this node.
+   * - ContinueSiblings: After the function is applied to the node, the
+   *   function is not applied to the children, but to its siblings
+   * - Stopsiblings: After the function is applied to the node, it
+   *   is not applied to the siblings, but to its uncles and children.
+   * - Interrupt: Interrups the whole traversing
+   */
+  object TraverseMode extends Enumeration {
+    type TraverseMode = Value
+    val ContinueWithChildren, ContinueSiblings, StopSiblings, Interrupt = Value
+  }
+  /**
+   * How the traverse ended:
+   * - ContinueChildrenReturn: Indicate that the function can traverse other children
+   * - ContinueSiblingsReturn: Indicates that the functions cannot traverse other children,
+   *   but can traverse the parent's children
+   * - InterruptReturn: Indicates that the function cannot traverse anymore.
+   */
+  object TraverseReturnMode extends Enumeration {
+    type TraverseReturnMode = Value
+    val ContinueChildrenReturn, ContinueSiblingsReturn, InterruptReturn = Value
+  }
+  import TraverseMode.{Value => _, _}
+  import TraverseReturnMode.{Value => _, _}
+  
   trait Writer {
     def add(s: CharSequence): Unit
   }
@@ -21,10 +50,35 @@ object Trees {
     def setBinding(n: String, o: GameObject): this.type
     def setBindingReplace(n: String, o: GameObject): Tree // Same as setBinding, but replaces the object indirect properties with real formulas.
     def children: Seq[Tree]
-    def traverse[B](f: Tree => B): Unit = {
-      f(this)
-      children.foreach(_.traverse(f))
+    /** Continue to traverse the tree depending on the result, it continues to traverse the children.*/
+    def traverse(nodeTraverser: Tree => TraverseMode): TraverseReturnMode = {
+      nodeTraverser(this) match {
+        case ContinueWithChildren =>
+          children.foreach{ child =>
+            child.traverse(nodeTraverser) match {
+              case ContinueChildrenReturn =>
+              case ContinueSiblingsReturn => return ContinueChildrenReturn
+              case InterruptReturn =>  return InterruptReturn
+            }
+          }
+          ContinueSiblingsReturn
+        case ContinueSiblings => ContinueChildrenReturn
+        case StopSiblings     => ContinueSiblingsReturn
+        case Interrupt        => InterruptReturn
+      }
     }
+    /*def traverseReplace(nodeTraverser: Tree => (Tree, List[Stat])): (Tree, TraverseReturnMode) = {
+      nodeTraverser(this) match {
+        case (t, ifFalseStats, ContinueWithChildren) =>
+          
+        case (t, ifFalseStats, ContinueSiblings) =>
+        
+        case (t, ifFalseStats, StopSiblings) =>
+          
+        case (t, ifFalseStats, Interrupt) =>
+          
+      }
+    }*/
   }
   sealed trait NoBinding extends Tree {
      def setBinding(n: String, o: GameObject) = { this }
@@ -41,12 +95,63 @@ object Trees {
     def setBinding(n: String, ob: GameObject) = { o.setBinding(n, ob); this }
     def children = List(o)
   }
+  
+  sealed trait Prioritized extends Tree {
+    private var mPriority = 0f
+    def setPriority(p: Float): this.type = { mPriority = p ; this }
+    def priority = mPriority
+  }
+  
+  object Expr {
+    def recursiveFlattenStat(l: Stat): Stat = {
+      l match {
+        case Block(a) => recursiveFlattenBlock(a.toList) match {
+          case Nil => NOP
+          case a::Nil => a
+          case l => Block(l)
+        }
+        case ParExpr(a) => ParExpr(recursiveFlattenParallel(a))
+        case _ => l
+      }
+    }
+    def recursiveFlattenBlock(l: List[Stat]): List[Stat] = {
+      l match {
+        case Nil => Nil
+        case (p@ParExpr(a))::q => recursiveFlattenStat(p)::recursiveFlattenBlock(q)
+        case Block(a)::q => recursiveFlattenBlock((a ++ q).toList)
+        case If(condition, codeIfTrue, codeIfFalse)::q =>
+          If(condition, recursiveFlattenStat(codeIfTrue), recursiveFlattenStat(codeIfFalse))::recursiveFlattenBlock(q)
+        case a::q => a::recursiveFlattenBlock(q)
+      }
+    }
+    def recursiveFlattenParallel(l: List[Stat]): List[Stat] = {
+      l match {
+        case Nil => Nil
+        case (b@Block(l))::q => recursiveFlattenStat(b) :: recursiveFlattenParallel(q)
+        case ParExpr(l)::q => recursiveFlattenParallel(l ++ q)
+        case If(condition, codeIfTrue, codeIfFalse)::q =>
+          If(condition, recursiveFlattenStat(codeIfTrue) , recursiveFlattenStat(codeIfFalse))::recursiveFlattenParallel(q)
+        case a::q => a::recursiveFlattenParallel(q)
+      }
+    } // Ensures that none of the elements of the resulting list is a ParallelExpression
+  }
 
   /** Statement, can have side-effect. */
-  sealed trait Stat extends Tree {
+  sealed trait Stat extends Tree with Prioritized {
     override def setBindingReplace(n: String, obj: GameObject): Stat
     def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
       interpreter.eval(this)
+    }
+    def Else(ifFalse: Stat) = {
+      this match {
+        case If(cond, ifTrue, NOP) =>
+          If(cond, ifTrue, ifFalse)
+        case _ => this
+      }
+    }
+    def toList() = this match {
+      case NOP => Nil
+      case e => List(e)
     }
   }
   
@@ -80,14 +185,6 @@ object Trees {
     }
     
     def children = (keys map generator).toSeq
-    
-    /*def traverse(f: Tree => Unit) = {
-      val c = keys
-      c foreach { key =>
-        generator(key).traverse(f)
-      }
-    }*/
-
 
     /** Evaluate the rules according to the previous evaluations flags. */
     override def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
@@ -95,31 +192,6 @@ object Trees {
       c foreach { key =>
         interpreter.eval(generator(key))
       }
-        /*match {
-          
-          case Whenever(cond, action) =>
-            if (interpreter.eval(cond).as[Boolean]) {
-              interpreter.eval(action)
-            }*/
-/*
-          case On(cond, action) =>
-            val b = interpreter.eval(cond).as[Boolean]
-            if (!state(key) && b) {
-              interpreter.eval(action)
-              state += key -> true
-            } else if (!b) {
-              state += key -> false
-            }
-
-          case Once(cond, action) =>
-            if (!state(key) && interpreter.eval(cond).as[Boolean]) {
-              interpreter.eval(action)
-              state += key -> true
-            }
-          
-            */
-      //  }
-      //}
     }
 
     /** Reset the rules evaluation flags. */
@@ -165,6 +237,7 @@ object Trees {
     }
     def children = rhs :: props
   }
+  // TODO : delete reset.
   case class Reset(prop: MaybeAssignable) extends Stat {
     def setBinding(n: String, o: GameObject) = { prop.setBinding(n, o); this}
     def setBindingReplace(n: String, o: GameObject): Reset = {
@@ -200,6 +273,12 @@ object Trees {
     def children = cond :: s1 :: s2
   }
   
+  case class ParExpr(exprs: List[Stat]) extends Stat {
+    def setBinding(n: String, o: GameObject) = { exprs.foreach(_.setBinding(n, o)); this }
+    def setBindingReplace(n: String, o: GameObject): ParExpr = ParExpr(exprs.map(_.setBindingReplace(n, o)))
+    def children = exprs
+  }
+  
   /** Expressions, without side-effect. */
   sealed trait Expr extends Tree with Typed {
     override def setBindingReplace(n: String, o: GameObject): Expr
@@ -223,6 +302,11 @@ object Trees {
     def -(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => this
       case _ => Minus(this, e)
+    }
+    def unary_- : Expr = this match {
+      case IntegerLiteral(j) => IntegerLiteral(-j)
+      case FloatLiteral(j) => FloatLiteral(-j)
+      case _ => Minus(IntegerLiteral(0), this)
     }
     def *(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => e
@@ -348,6 +432,9 @@ object Trees {
   case class On(o: Expr) extends Expr with OBinding { override def setBindingReplace(n: String, obj: GameObject): Expr = On(o.setBindingReplace(n, obj)) }
   case class Once(o: Expr) extends Expr with OBinding { override def setBindingReplace(n: String, obj: GameObject): Expr = Once(o.setBindingReplace(n, obj)) }
 
+  object GameObjectRef {
+    def apply(o: GameObject): GameObjectRef = GameObjectRef(null, o)
+  }
   case class GameObjectRef(ref: String, var obj: GameObject) extends Expr {
     def setBinding(n: String, o: GameObject): this.type = {
       if(n == ref) obj = o
@@ -405,6 +492,20 @@ object Trees {
     def *=(expr: Expr): Stat = Assign(List(this), Times(this, expr))
     def /=(expr: Expr): Stat = Assign(List(this), Div(this, expr))
     override def setBindingReplace(n: String, o: GameObject): Expr
+    def isProperty: Boolean = this match {
+      case PropertyRef(_) => true
+      case e @ PropertyIndirect(_, _, _) => e.expr match {
+        case PropertyRef(_) => true
+        case _ => false
+      }
+    }
+    def getProperty: Option[Property[_]] = this match {
+      case PropertyRef(property) => Some(property)
+      case e @ PropertyIndirect(_, _, _) => e.expr match {
+        case PropertyRef(property) => Some(property)
+        case _ => None
+      }
+    }
   }
   /** Reference to a property. */
   case class PropertyRef(val property: Property[_]) extends Expr with NoBinding with MaybeAssignable {

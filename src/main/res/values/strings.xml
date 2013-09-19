@@ -43,7 +43,7 @@
     <string name="trigger_collision_1">Let me edit the effects of the collision.</string>
     <string name="trigger_collision_2">Cancel any collision. %1$s and %2$s do not collide at all.</string>
     <string name="trigger_collision_3">%1$s and %2$s should go through each other but the collision is recorded.</string>
-    <string name="loadExternal">Load external game...</string>
+    <string name="loadExternal">Load external game…</string>
     <string name="savedGame1">Fibonacci</string>
     <string name="savedGame2">Syracuse</string>
     <string name="savedGame3">2-player Pong</string>
@@ -62,11 +62,11 @@
     <string name="loadFileAs">Load game:</string>
     <string name="importFileAs">Import:</string>
     <string name="share_game_via">Share game via:</string>
-    <string name="loading_game">Loading. Please wait...</string>
-    <string name="saving_game">Saving. Please wait...</string>
+    <string name="loading_game">Loading. Please wait…</string>
+    <string name="saving_game">Saving. Please wait…</string>
     <string name="tutorial">Tutorial</string>
     <string name="tutorial_0">Do not show this tooltip next time.</string>
-    <string name="tutorial_1">Show the complete tutorial...</string>
+    <string name="tutorial_1">Show the complete tutorial…</string>
     <string name="tutorial_continue">Next</string>
     <string name="init_help">To start the game, press on this button.</string>
     <string name="tutorial_2">This bar shows the time elapsing.</string>
@@ -83,10 +83,20 @@
     <string name="tutorial_13">Apply the rule once.</string>
     <string name="tutorial_14">You can also modify some code portions.</string>
     <string name="tutorial_end">The tutorial is finished. You can open an existing game to test it.</string>
+    
+    <string name="menu_add_shape_hint">Adds a shape to the game</string>
+    <string name="menu_add_constraint_hint">Add or edit a constraint/rule to the game</string>
+    <string name="menu_add_category_hint">Add or modify a category to the game</string>
+    
     <string name="add_rectangle_hint">Adds a rectangle to the game</string>
     <string name="add_circle_hint">Adds a circle to the game</string>
     <string name="add_integerbox_hint">Adds a integer to the game</string>
     <string name="add_textbox_hint">Adds a text to the game</string>
+    <string name="add_boolbox_hint">Adds a boolean to the game</string>
+    <string name="add_arraybox_hint">Adds a 2D array to the game</string>
+    
+    <string name="add_rule_hint">Adds a rule to the game</string>
+    
     <string name="select_accelerometer_hint">Enables selecting objects affected by the accelerometer</string>
     <string name="select_gravity2d_hint">Enables selecting objects affected by the 2D gravity</string>
     <string name="select_camera_hint">Enables selecting an object followed by the camera, and changing the camera\'s properties</string>

@@ -43,11 +43,11 @@ trait Context extends Any {
   def get(value: String): Option[Value]
   def set(value: String, v: Value)
   
-  def getOrElse(value: String, orElse: Value): Value = get(value) match {
+  def getOrElse(value: String, orElse: =>Value): Value = get(value) match {
     case Some(v) => v
     case None => orElse
   }
-  def getOrElseUpdate(value: String, orElse: Value): Value = get(value) match {
+  def getOrElseUpdate(value: String, orElse: =>Value): Value = get(value) match {
     case Some(v) => v
     case None => set(value, orElse)
       orElse

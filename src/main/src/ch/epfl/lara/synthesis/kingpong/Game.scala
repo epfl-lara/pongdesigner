@@ -33,8 +33,11 @@ trait RuleManager {
   def addRule(r: Stat) = {
     r traverse {
       case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+        TraverseMode.ContinueSiblings
       case c: PropertyIndirect if c.obj != null =>  _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+        TraverseMode.ContinueSiblings
       case _ =>
+        TraverseMode.ContinueWithChildren
     }
     _rules += r
   }

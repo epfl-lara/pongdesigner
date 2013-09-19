@@ -22,6 +22,12 @@ trait TypeChecker {
   }*/
 
   def typeCheck(stat: Stat): Stat = stat match {
+    case ParExpr(a::l) =>
+      val t = typeCheck(a)
+      l foreach typeCheck
+      stat
+    case ParExpr(Nil) =>
+      stat
     case i @ Foreach1(cat, name, rule) =>
       i.typeCheck(this)
       i

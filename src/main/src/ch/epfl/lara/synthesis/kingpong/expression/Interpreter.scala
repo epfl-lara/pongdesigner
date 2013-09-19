@@ -35,7 +35,9 @@ case class InterpreterException(msg: String) extends Exception(msg)
 trait Interpreter {
   
   def eval(stat: Stat)(implicit context: Context): Unit = stat match {
-    
+    case ParExpr(a::l) =>
+      eval(a)
+    case ParExpr(Nil) =>
     case f @ Foreach1(cat, name, r) =>
       f.evaluate(this)
     case Block(stats) => 
@@ -53,9 +55,11 @@ trait Interpreter {
         prop match {
         case prop:PropertyRef => prop.setNext(v)
           context.addAssignment(a, prop)
+          //context.set(prop.property.fullname, v)
         case prop:PropertyIndirect => prop.expr match {
           case prop:PropertyRef => prop.setNext(v)
           context.addAssignment(a, prop)
+          ///context.set(prop.property.fullname, v)
           case e => throw InterpreterException(s"$e is not an assignable property")
         }
         case _ => throw InterpreterException(s"$prop is not an assignable property")
@@ -118,7 +122,9 @@ trait Interpreter {
     case IfFunc(cond, ifTrue, ifFalse) => val BooleanV(c) = eval(cond)
       if(c) eval(ifTrue) else eval(ifFalse)
     case ref: PropertyIndirect => eval(ref.expr)
-    case ref: PropertyRef => ref.get
+    case ref: PropertyRef => 
+      ref.get
+      //context.getOrElse(ref.fullname, ref.get)
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
@@ -140,13 +146,9 @@ trait Interpreter {
     case Vec2Literal(x, y) => Vec2V(x, y)
     case UnitLiteral => UnitV
     case Val("dx") =>
-      val Vec2V(fromx, fromy) = context.getOrElse("from", Vec2V(0, 0))
-      val Vec2V(tox, toy) = context.getOrElse("to", Vec2V(0, 0))
-      FloatV(tox - fromx)
+      context.getOrElse("dx", FloatV(0))
     case Val("dy") =>
-      val Vec2V(fromx, fromy) = context.getOrElse("from", Vec2V(0, 0))
-      val Vec2V(tox, toy) = context.getOrElse("to", Vec2V(0, 0))
-      FloatV(toy - fromy)
+      context.getOrElse("dy", FloatV(0))
     case Val(s) => context.getOrElse(s, FloatV(0))
     case Plus(lhs, rhs) => eval(lhs) match {
       case IntV(v1) => eval(rhs) match {
@@ -306,6 +308,8 @@ trait Interpreter {
       var result = if(n != 0) {
         context.set("from", Vec2V(fromx, fromy))
         context.set("to", Vec2V(tox, toy))
+        context.set("dx", FloatV(tox-fromx))
+        context.set("dy", FloatV(toy-fromy))
         true
       } else false
       

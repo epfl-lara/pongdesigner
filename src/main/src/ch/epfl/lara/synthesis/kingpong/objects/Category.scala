@@ -40,7 +40,7 @@ class Category(val name: String = "", val angle: Expr = 0,
   val fixedRotation: Expr = true,
   val color: Expr = 0xFF000000,
   val sensor: Expr = false,
-  val tpe: BodyType = BodyType.DYNAMIC) { self =>
+  val tpe: BodyType = BodyType.DYNAMIC) extends NotNull { self =>
 
   private val _children = MSet.empty[GameObject]
   
@@ -71,4 +71,5 @@ class Category(val name: String = "", val angle: Expr = 0,
 
 object DefaultCategory {
   def apply(o: GameObject): Category = Category(o.name.get)().add(o)
+  def apply(o: String): Category = Category(o)()
 }

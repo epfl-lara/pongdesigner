@@ -44,7 +44,7 @@ case class Box[T : PongType](protected val game: Game,
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
                          with Rectangular {
   
-  def className = s"Box"
+  def className = "Box[" + implicitly[PongType[T]].getPongType.toString() + "]"
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------
@@ -199,6 +199,7 @@ case class Cell2D(protected val game: Game, init_name: Expr) extends GameObject(
  Property[Float] = ???
  def y: 
  Property[Float] = ???
+ def color: Property[Int] = ???
 }
 
 case class Array2D(protected val game: Game, init_name: Expr,

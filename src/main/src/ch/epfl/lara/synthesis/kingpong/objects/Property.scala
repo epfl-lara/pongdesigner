@@ -12,6 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 abstract class Property[T : PongType](val parent: GameObject) extends History with Snap { self => 
   
   def name: String
+  lazy val fullname = parent.name.get + name
 
   /** Current value. */
   def get: T
@@ -62,8 +63,40 @@ abstract class Property[T : PongType](val parent: GameObject) extends History wi
 
   /** The PongType implicit used for conversions. */
   def tpe = implicitly[PongType[T]]
+  
+  /** Get an equivalent ephemeral copy. */
+  def copyEphemeral(new_name: String): EphemeralProperty[T] = {
+    new EphemeralProperty[T](new_name, parent)
+  }
 }
 
+/**
+ * Property which will not be persistent and is only for one-turn computation.
+ * Its value is disregarded afterwards
+ */
+class EphemeralProperty[T: PongType](val name: String, parent: GameObject) extends Property[T](parent) { self =>
+  private var value: T = _
+  def clear(): Unit  = {}
+  def restore(t: Long): Unit = {}
+  def save(t: Long): Unit = {}
+  // Members declared in  ch.epfl.lara.synthesis.kingpong.objects.Property
+  def flush() = self
+  def get: T = value
+  def load() = self
+  def next: T = value
+  def reset(interpreter: Interpreter)(implicit context: Context): self.type  = self
+  def set(v: T): self.type = {value = v; self }
+  def setInit(e:  Expr):  self.type = self
+  def setNext(v: T):  self.type = { value = v; self }
+  def validate():  self.type = self
+  // Members declared in  ch.epfl.lara.synthesis.kingpong.common.Snap
+  def revert(): Unit = {}
+  def snapshot(): Unit = {}
+}
+
+/**
+ * Property with some history
+ */
 abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, parent: GameObject) extends Property[T](parent) {
   override def toString = s"ConcreteProperty($name)"
   
@@ -177,27 +210,3 @@ class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject)
   def flush() = this
   def load() = this
 }
-
-/**
- * Derivated properties such as dxLeft, dxRight, dyTop, dyBottom
- * They are not computed and cannot be resetted, but they can be overriden.
- */
-/*class DerivatedProperty[T: PongType](val name: String, original: Property[T], transformation: T => T) extends Property[T] { self =>
-  // Members declared in ch.epfl.lara.synthesis.kingpong.common.History
-  def clear(): Unit  = {}
-  def restore(t: Long): Unit = {}
-  def save(t: Long): Unit = {}
-  // Members declared in Property
-  def flush(): self.type = this
-  def get: T = transformation(original.get)
-  def load(): self.type = this
-  def next: T = transformation(original.next)
-  def reset(interpreter: Interpreter)(implicit context: Context):self.type = this
-  def set(v: T):self.type = this
-  def setInit(e: Expr): self.type = this
-  def setNext(v: T): self.type = this
-  def validate(): self.type = this
-  // Members declared in ch.epfl.lara.synthesis.kingpong.common.Snap
-  def revert(): Unit = {}
-  def snapshot(): Unit = {}
-}*/

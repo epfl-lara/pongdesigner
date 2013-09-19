@@ -1,7 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.adapters
 
 import java.util.List
-import scala.collection.mutable.{HashMap => Map}
+import scala.collection.mutable.{HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.R
 import ch.epfl.lara.synthesis.kingpong.Implicits
 
@@ -39,8 +39,9 @@ class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val 
 
     val item = view.findViewById(R.id.menudrawable).asInstanceOf[ImageView]
     
-    item.onClicked{ v: View =>
-      // TODO
+    view.setOnClickListener{
+      val str = actionsCollection(actions(groupPosition))(childPosition)
+      () => callbacks(str)
     }
     bitmaps.get(action) match {
       case Some(drawable) => item.setImageDrawable(drawable)
@@ -73,7 +74,10 @@ class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val 
       infalInflater.inflate(R.layout.actions_groupview, null)
     } else convertView
     
-    val item = convertView.findViewById(R.id.menugroupdrawable).asInstanceOf[ImageView]
+    val item = view.findViewById(R.id.menugroupdrawable).asInstanceOf[ImageView]
+    //item.onClicked{ v: View =>
+    //  callbacks(actions(groupPosition))
+    //}
     bitmaps.get(action) match {
       case Some(drawable) => item.setImageDrawable(drawable)
       case None =>

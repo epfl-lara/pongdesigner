@@ -89,16 +89,23 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
 trait ActionBarHandler extends common.ContextUtils {
   private var actionBar: ExpandableListView = _
   private var actionBarAdapter: ExpandableListAdapter = _
+  def menuCallBacks: String => Unit
+  
   def setActionBar(actionBar: ExpandableListView): Unit = {
     this.actionBar = actionBar
     if(actionBar != null) {
       
-      //val menus = obtainIdArray(R.array.menu_arrays)
-      //val submenus = menus.map{ obtainDrawableArray}
-      // TODO : a lot of work here.
+      val menuLabels: IndexedSeq[String] = getStringArray(R.array.menu_arrays_hint)
+      val menuDrawables = getArray(R.array.menu_arrays_drawable) map getDrawable
+      val submenusDrawables = getArray(R.array.menu_arrays) map getDrawableArray
+      val submenusLabels = getArray(R.array.menu_arrays_strings) map getStringArray map {u: Array[String] => u:IndexedSeq[String]}
       
-      //actionBarAdapter = new adapters.ActionsAdapter(context, )
-      //actionBar.setAdapter(actionBarAdapter)
+      val actions: IndexedSeq[String] = menuLabels
+      val actionsCollection: Map[String, IndexedSeq[String]] = (menuLabels zip submenusLabels).toMap
+      val bitmaps: Map[String, Drawable] = ((menuLabels ++ submenusLabels.flatten) zip (menuDrawables ++ submenusDrawables.flatten)).toMap
+      val callbacks: String => Unit = menuCallBacks
+      actionBarAdapter = new adapters.ActionsAdapter(context, actions, actionsCollection, bitmaps, callbacks)
+      actionBar.setAdapter(actionBarAdapter)
     }
   }
 }
@@ -111,10 +118,15 @@ class GameView(val context: Context, attrs: AttributeSet)
   with ActionBarHandler
   with common.ContextUtils {
   import GameView._
+  import common.Implicits._
 
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
   
+  
+  def menuCallBacks: String => Unit = { s =>
+    game.rectangle(DefaultCategory("test"))(name="test", x=0, y=0, width=10, height=5)
+  }
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -126,7 +138,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
-    updateCodeView(game.rules, game.objects)
+    //updateCodeView(game.rules, game.objects)
+    codeview.setText("")
   }
   
   def layoutResize() = {
@@ -427,7 +440,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   def updateCodeView(rules: Iterable[Stat], objects: Iterable[GameObject]) = {
     val header = PrettyPrinterExtended.printGameObjectDef(objects)
-    val all = PrettyPrinterExtended.print(rules, header)
+    val all = PrettyPrinterExtended.print(rules, header + "\n")
     val r: CharSequence = all.c
     val mapping = all.map
     val mObjects = mapping.mObjects

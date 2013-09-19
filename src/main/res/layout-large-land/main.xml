@@ -80,7 +80,7 @@
 
     <ExpandableListView
         android:id="@+id/actions"
-        android:layout_width="match_parent"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/gameview"
         android:layout_alignLeft="@+id/codeviewResizer"

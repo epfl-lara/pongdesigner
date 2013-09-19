@@ -6,7 +6,21 @@
         <item>@array/menu_constraint</item>
         <item>@array/menu_categories</item>
     </array>
-    
+    <array name="menu_arrays_drawable">
+        <item>@drawable/menu_add_rect</item>
+        <item>@drawable/menu_rule_maker</item>
+        <item>@drawable/menu_add_force_field</item>
+    </array>
+    <array name="menu_arrays_hint">
+        <item>@string/menu_add_shape_hint</item>
+        <item>@string/menu_add_constraint_hint</item>
+        <item>@string/menu_add_category_hint</item>
+    </array>
+    <array name="menu_arrays_strings">
+        <item>@array/menu_add_string</item>
+        <item>@array/menu_constraint_string</item>
+        <item>@array/menu_categories_string</item>
+    </array>
     <array name="menu_add">
         <item>@drawable/menu_add_rect</item>
         <item>@drawable/menu_add_circle</item>
@@ -15,13 +29,29 @@
         <item>@drawable/menu_add_boolean</item>
         <item>@drawable/menu_add_array</item>
     </array>
+    <array name="menu_add_string">
+        <item>@string/add_rectangle_hint</item>
+        <item>@string/add_circle_hint</item>
+        <item>@string/add_integerbox_hint</item>
+        <item>@string/add_textbox_hint</item>
+        <item>@string/add_boolbox_hint</item>
+        <item>@string/add_arraybox_hint</item>
+    </array>
     <array name="menu_constraint">
         <item>@drawable/menu_rule_maker</item>
+    </array>
+    <array name="menu_constraint_string">
+        <item>@string/add_rule_hint</item>
     </array>
     <array name="menu_categories">
         <item>@drawable/menu_add_accelerometer</item>
         <item>@drawable/menu_add_force_field</item>
         <item>@drawable/menu_camera</item>
+    </array>
+    <array name="menu_categories_string">
+        <item>@string/select_accelerometer_hint</item>
+        <item>@string/select_gravity2d_hint</item>
+        <item>@string/select_camera_hint</item>
     </array>
     
     <string-array name="rename_rectangles">
