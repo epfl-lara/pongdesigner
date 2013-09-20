@@ -133,7 +133,7 @@ object ComfusySolver {
     case IntegerLiteral(f) => Sum(f, Nil)
     case On(e) => canonize(e)
     case Once(e) => canonize(e)
-    case PropertyIndirect(name, obj, prop) => val n = name + "."  + prop
+    case PropertyIndirect(GameObjectRef(name, obj), prop) => val n = name + "."  + prop
       context(n) = expr
       Sum(0, List((n, 1)))
     case PropertyRef(prop) => val n = prop.parent.name.get + "."  + prop.name

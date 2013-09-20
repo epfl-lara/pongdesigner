@@ -251,6 +251,8 @@ trait Interpreter {
         case (StringV(v1), StringV(v2)) => BooleanV(v1 equals v2)
         case (BooleanV(v1), BooleanV(v2)) => BooleanV(v1 equals v2)
         case (Vec2V(x1, y1), Vec2V(x2, y2)) => BooleanV((x1 equals x2) && (y1 equals y2))
+        case (GameObjectV(o1), GameObjectV(o2)) => BooleanV(o1 equals o2)
+        case (TupleV(l1), TupleV(l2)) => BooleanV(l1.size == l2.size && (true /: (l1 zip l2)){ case (b, (t1, t2)) => b && (t1 equals t2) })
         case (UnitV, UnitV) => BooleanV(true)
         case _ => BooleanV(false)
       }

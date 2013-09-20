@@ -161,7 +161,7 @@ trait PrettyPrinterTypical {
     case FingerCoordY1 => indent + "y1"
     case FingerCoordX2 => indent + "x2"
     case FingerCoordY2 => indent + "y2"
-    case PropertyIndirect(ref, obj, p) => indent + ref + "." + p
+    case PropertyIndirect(GameObjectRef(ref, obj), p) => indent + ref + "." + p
     case PropertyRef(p) => p.name match {
       case "value" => indent + p.parent.name.get  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
       case "velocity" => indent + p.parent.name.get + ".velocity"

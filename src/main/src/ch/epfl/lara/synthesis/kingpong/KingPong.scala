@@ -239,28 +239,11 @@ class KingPong extends Activity
         return true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
-        //val m = mCodeView.getLayoutParams()
-        //m.width = m.width - distanceX.toInt
-        //mCodeView.setLayoutParams(m)
-        if(mCodeViewResizer != null) {
-          //val m = mCodeView.getLayoutParams()
-          //m.width = m.width - distanceX.toInt
-          //mCodeView.setLayoutParams(m)
-        }
         false
       }
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
       def onDoubleTap(x$1: MotionEvent): Boolean = {
-        if(mLayoutcodehorizontal != null) {
-          //val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[LinearLayout.LayoutParams]
-          //params.weight = 4.5f - params.weight
-          //mLayoutcodehorizontal.getParent().requestLayout()
-        }
-        //mCodeView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
-        //mGameView.setVisibility(if(mCodeView.getVisibility() == View.GONE) View.VISIBLE else View.GONE)
-        //mGameView.getParent().recomputeViewAttributes(mCodeView)
-        
         true
       }
       def onDoubleTapEvent(x$1: android.view.MotionEvent): Boolean = return true
@@ -288,6 +271,7 @@ class KingPong extends Activity
                 val dx = - (x - xprev).toInt
                 params.width = params.width +dx
                 mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
+                if(mActions != null) mActions.setX(mCodeViewResizer.getX)
                 Log.d("Test", s"The layout moves dx=$dx")
                 mLayoutcodehorizontal.getParent().requestLayout()
                 //xprev = x

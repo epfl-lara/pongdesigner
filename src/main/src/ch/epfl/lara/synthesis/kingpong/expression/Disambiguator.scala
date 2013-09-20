@@ -4,6 +4,7 @@ import scala.collection.mutable.{HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.objects.Property
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ListBuffer
+import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 
 /***
  * Objects used to disambiguate trees.
@@ -146,7 +147,8 @@ object Disambiguator {
   /**
    * Returns (PropertyHavingBeenAssigned -> Assignments with # of conflict, PropertyDuplicated -> ConflictingAssignments with # of conflict (in disorder) )
    */
-  /*def findDuplicatesMapNumber(t: Stat): (Map[Property[_], List[(Assign, Int)]], Map[Property[_], List[(Assign, Int)]]) = {
+  /*def 
+   * (t: Stat): (Map[Property[_], List[(Assign, Int)]], Map[Property[_], List[(Assign, Int)]]) = {
     t match {
       case Block(stats) =>
         ((Map[Property[_], List[(Assign, Int)]](), Map[Property[_], List[(Assign, Int)]]()) /: stats) {
@@ -197,93 +199,149 @@ object Disambiguator {
    *                 else
    *                   x' = x2
    */
-  def apply(t: Stat) = {
-    // Assume the format For(if(...)else(...))
-    val alreadyAssigned = MMap[Property[_], List[Assign]]()
-    val duplicationProblems = MMap[Property[_], List[Assign]]() // subset of alreadyAssign where values are of size 2 or more.
-    
-    def addPropertyAssigned(prop: Property[_], newAssign: Assign) = {
-      if(alreadyAssigned contains prop) {
-        alreadyAssigned(prop) = newAssign::alreadyAssigned.getOrElse(prop, Nil)
-        duplicationProblems(prop) = alreadyAssigned(prop)
-      } else {
-        alreadyAssigned(prop) = newAssign::alreadyAssigned.getOrElse(prop, Nil)
-      }
+  def apply(t: Stat)(implicit interface: Property[_] => MergeMode)= {
+    val (_, duplicates) = findDuplicates(t)
+    (t /: duplicates) { case (tree, prop) =>
+      val mergeMode = interface(prop)
+      modifyCode(tree, prop, mergeMode)
     }
-    // TODO : use the findDuplicatesMap to solve the ambiguities.
-    
-    // Find in order which properties are being written over others.
-    t.traverse{ _ match {
-      case a@Assign(propertyreflist, expr) => 
-        propertyreflist foreach {
-          case PropertyRef(prop) =>
-            addPropertyAssigned(prop, a)
-          case p@PropertyIndirect(name, obj, prop) =>
-            p.expr match {
-              case PropertyRef(prop) => 
-                addPropertyAssigned(prop, a)
-              case _ => // Nothing to handle
-            }
-          case _ =>
-        }
-        ContinueSiblings
-      case _  => 
-        ContinueWithChildren
-    }}
-    /*duplicationProblems.foreach {
-      case (p, (a::b::Nil)) =>
-        
-      case (p, (a::b::q)) =>
-        
-      case _ =>
-        
-    }*/
   }
   
   /**
    * Interface returns a list of pair of assignments, where the first assign should replace the old one,
    * and the second assigned should be applied in the else section of the containing IF if it exists. 
    */
-  /*def modifyCode(t: Stat, duplicationProblems: MMap[Property[_], List[Assign]],
-      interface: (Property[_], List[Assign]) => MergeMode)
-  ): Stat = {
-    var tree = t
-    duplicationProblems.foreach { problem =>
-      val (prop, oldAssigns) = problem
-      val (newAssigns, mergeMode) = interface.tupled(problem)
-      val mapAssigns = (oldAssigns zip newAssigns).toMap
-      /**
-       * Returns the replaced tree, and a list of states to add to any branches which can be dependent.
-       */
-      /*def replace(t: Tree)(implicit map: Map[Assign, (Assign, Assign)]): (Tree, List[Stat]) = t match {
-        case Block(stats) =>
-          val res = stats.map(replace(_))
-          
-        case If(cond, ifTrue, ifFalse) =>
-          // Cond does not change. ifTrue might.
-          val (newIfTrue, toPutInIfFalse) = replace(ifTrue)
-          val (newIfFalse, toPutInIfTrue) = replace(ifFalse)
-          
-          If(cond, newIfTrue, newIfFalse)
-          
-          (If(cond, ifTrueReplaced, ifFalseReplaced), listFalse, ContinueSiblings)
-        case a@Assign(props, expr) => if(mapAssigns contains a) {
-          val (ifTrueAssign, ifFalseAssign) = mapAssigns(a)
-          
-          (ifTrueAssign, List(ifFalseAssign), ContinueSiblings)
-          //replace with ifTrueAssign
-          //return ifFalseAssign to add to all parent 'else' statements.
-          
-        } else {
-          (a, Nil, ContinueSiblings)
-        }
-        ContinueWithChildren
-        case e =>
-          (e, Nil, ContinueWithChildren) // Return this expression
-          ContinueWithChildren
-      }
-      tree = tree.traverseReplace(replace _)*/
+  def modifyCode(t: Stat, p: Property[_], mode: MergeMode): Stat = {
+    mode match {
+      case MergeMode.SequentialMerge =>
+        modifyCodeSequential(t, p)
+      case MergeMode.ForceSecond =>
+        modifyCodeForceSecond(t, p)
     }
-    tree
-  }*/
+  }
+  
+  def modifyCodeForceSecond[T](t: Stat, p_original: Property[T]): Stat = {
+    t // Not implemented yet/
+  }
+  
+  /**
+   * Sequential substitution
+   */
+  def modifyCodeSequential[T](t: Stat, p_original: Property[T]): Stat = {
+    // Retrieve a property's number. x => 0, x1 => 1, x2 => 2 ...
+    def numProperty(p: Property[T]): Int = {
+      p.name match {
+        case GameObject.EphemeralEndings(prefix, num) => num.toInt
+        case _ => 0
+      }
+    }
+    // Retrieve a property given a number and the original: 0 => x, 1 => x1, 2 => x2, ....
+    def propertyNumGet(p: Property[T], num: Int): Property[T] = {
+      val prefixName = p.name match {
+        case GameObject.EphemeralEndings(prefix, num) => prefix
+        case _ => p.name
+      }
+      val requestedName = prefixName + num
+      p.parent.ephemeralProperties.getOrElse(requestedName, p.copyEphemeral(requestedName)).asInstanceOf[Property[T]]
+    }
+    // Retrieve the successor of a property.
+    def newProp(p: Property[T]): Property[T] = {
+      propertyNumGet(p, numProperty(p) + 1)
+    }
+    
+    // do it in reverse
+    def rec(stat: Stat, p: Property[T], replaceAssigned: Property[T], replaceEvaluated: Property[T]): (Stat, Property[T], Property[T]) = {
+      stat match {
+        case ParExpr(l) =>
+          val pars = l map { a => rec(a, p, replaceAssigned, replaceEvaluated) } // Should all be the same
+          pars match {
+            case Nil => (NOP, replaceAssigned, replaceEvaluated)
+            case a::Nil => a
+            case a::q => (ParExpr(pars.map(_._1)), a._2, a._3)
+          }
+        case Block(stats) =>
+          val (stats2, res1, res2) = ((List[Stat](), replaceAssigned, replaceEvaluated) /: stats.reverse) { case ((statList, r1, r2), newStat) =>
+            val (s, rr1, rr2) = rec(newStat, p, r1, r2)
+            (s::statList, rr1, rr2)
+          }
+          (Block(stats2), res1, res2)
+        case If(cond, ifTrue, ifFalse) =>
+          val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
+          val (ifFalse2, ifr, ife) = rec(ifFalse, p, replaceAssigned, replaceEvaluated)
+          if(itr == ifr && ite == ife) { // Ifs are balanced.
+            (If(cond, ifTrue2, ifFalse2), itr, ite)
+          } else { // Need to introduce new variables
+            val i = numProperty(itr)
+            val j = numProperty(ifr)
+            if(i < j) { // More variables in ifFalse2
+              /* Case 
+               * if A:
+               *   itr  ite
+               *   x1 = x2 + 3  (i == 1)   => need to pre-add the assignment  x2 = x3  (ite = ife)
+               * else
+               *   ifr  ife
+               *   x2 = x3 + 6  (i == 2)
+               *   x1 = x2 * 3
+               */
+              (If(cond, Assign(List(ite.ref), ife.ref) :: ifTrue2, ifFalse2), ifr, ife)
+            } else if(i > j) {
+              /* Case 
+               * if A:
+               *   itr  ite
+               *   x2 = x3 + 6  (i == 2)
+               *   x1 = x2 + 3  (i == 1)
+               * else
+               *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
+               *   x1 = x2 * 3
+               */
+              (If(cond, ifTrue2, Assign(List(ife.ref), ite.ref) :: ifFalse2), itr, ite)
+            } else {
+              throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
+            }
+          }
+        case f@Foreach1(category, name, rule) =>
+          f.children.foreach { stat =>
+            val (s, newAssigned, newEvaluated) = rec(stat, p, replaceAssigned, replaceEvaluated)
+            if(newAssigned != replaceAssigned) // There has been a replacement with if-like structure. Keep it
+              return (Foreach1(category, name, s), newAssigned, newEvaluated)
+          }
+          (t, replaceAssigned, replaceEvaluated) // No replacement
+        case Copy(name, obj, stat) =>
+          (t, replaceAssigned, replaceEvaluated) // No replacement for the moment.
+        case a @ Assign(props, expr) =>
+          //  x' = f(x, ...) => replaced by xReplacedAssigned = f(xReplaceEvaluated)
+          // where the two variables are shifted from the previous assignments
+          // If x' is hard-coded, we replace it normally
+          // If x' is soft-coded, we add an If condition.
+          val (assign, npa, npe) = if(props exists { case p => p.getProperty == Some(p_original) }) {
+            val newPropAssigned = replaceEvaluated
+            val newPropEvaluated = newProp(replaceEvaluated)
+            val res = Assign(props.map{
+              case p if p.getProperty == Some(p_original) => newPropAssigned.ref
+              case p => p
+            }, expr.replace(p_original, newPropEvaluated))
+            (res, newPropAssigned, newPropEvaluated)
+          } else {
+            (Assign(props, expr.replace(p_original, replaceEvaluated)), replaceAssigned, replaceEvaluated)
+          }
+          props find {case p => p.getProperty == Some(p_original)} match {
+            case Some(p: PropertyIndirect) =>
+              //val exprReplaced = expr.replace(p_original, replaceEvaluated)
+              (If(p.indirectObject =:= p_original.parent.ref,
+                  assign,
+                  Assign(props, expr)), npa, npe)
+            case _ =>
+              (assign, npa, npe)
+          }
+        case Delete(name, o) =>
+          (t, replaceAssigned, replaceEvaluated)
+        case NOP =>
+          (t, replaceAssigned, replaceEvaluated)
+        case Reset(prop) =>
+          (t, replaceAssigned, replaceEvaluated)
+      }
+    }
+    val (result, replaceAssigned, replaceEvaluated) = rec(t, p_original, p_original, p_original)
+    Assign(List(replaceEvaluated.ref), p_original.ref)::result
+  }
 }

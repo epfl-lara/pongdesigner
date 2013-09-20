@@ -192,7 +192,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   // Testing section
   var obj_to_highlight: Set[GameObject] = Set.empty
-  var codeMapping = Map[Int, Category]()   // TODO add the mapping and highlight the corresponding objects.
+  var codeMapping = Map[Int, Category]() 
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
@@ -407,7 +407,6 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Running => 
         game.onAccelerometerChanged(vector.clone)
       case Editing =>
-        //TODO
     } 
   }
   
@@ -421,7 +420,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       currentFingerPos = res
       fingerIsDown = true
     case Editing =>
-      //TODO
+      //TODO: Add menus handling ?
   }
 
   def onFingerUp(pos: Vec2): Unit = state match {
@@ -434,6 +433,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       // Select an object below if any and display the corresponding code
       val res = mapVectorI(pos)
       val objectsTouched = game.objectFingerAt(res)
+      obj_to_highlight = objectsTouched.toSet
       val rulesConcerned = game.getRulesbyObject(objectsTouched)
       updateCodeView(rulesConcerned, objectsTouched)
   }
@@ -494,7 +494,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   /** pixels to meters */
-  // TODO: perfom the change on the same vector, not a new one.
   def mapVectorI(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrixI.mapPoints(toMap)

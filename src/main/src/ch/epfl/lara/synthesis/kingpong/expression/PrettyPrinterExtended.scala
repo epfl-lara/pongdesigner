@@ -63,9 +63,10 @@ trait PrettyPrinterExtendedTypical {
     }
     def add(s: Tree, start: Int, end: Int): Mappings = {
       val p1 = s match {
+        case GameObjectRef(ref, null) => None
         case GameObjectRef(_, o) => Some(o.category)
         case PropertyRef(prop) => Some(prop.parent.category)
-        case PropertyIndirect(ref, obj, prop) if obj != null => Some(obj.category)
+        case PropertyIndirect(GameObjectRef(ref, obj), prop) if obj != null => Some(obj.category)
         case _ =>  None
       }
       val posCategories = p1 match {
@@ -80,9 +81,9 @@ trait PrettyPrinterExtendedTypical {
     }
     def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[Category, List[(Int, Int)]]): Map[Category, List[(Int, Int)]] = {
       s match {
-        case GameObjectRef(_, o) => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
+        case GameObjectRef(_, o) if o != null => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
         case PropertyRef(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
-        case PropertyIndirect(ref, obj, prop) if obj != null=> mm + (obj.category -> ((start, end)::mm.getOrElse(obj.category, List())))
+        case PropertyIndirect(GameObjectRef(ref, obj), prop) if obj != null=> mm + (obj.category -> ((start, end)::mm.getOrElse(obj.category, List())))
         case _ => mm
       }
     }
@@ -305,7 +306,7 @@ trait PrettyPrinterExtendedTypical {
     case If(cond: Expr, s1: Stat, s2: Stat) =>
       val g = c +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = if(s1 != NOP) g + (s1, indent + INDENT) else g
-      val end = if(s2 != NOP) h + indent + s"else:$LF" + (s2, indent + INDENT) else h
+      val end = if(s2 != NOP) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
       end +>
     case Copy(name: String, o: GameObjectRef, b: Block) =>
       c + indent +< s"$name = ${o.obj.name.get}.copy$LF" +(b, indent + INDENT) +>
@@ -322,8 +323,8 @@ trait PrettyPrinterExtendedTypical {
     case Not(expr: Expr)  => c + indent +< NOT_SYMBOL + expr +>
     case On(cond: Expr)   => c + indent +< "on " + cond +>
     case Once(cond: Expr) => c + indent +< "once " + cond +>
-    case GameObjectRef(ref: String, _) => c + indent +! ref
     case GameObjectRef(null, obj) => c + indent +! obj.name.get
+    case GameObjectRef(ref: String, _) => c + indent +! ref
     case FingerMoveOver(o: GameObjectRef) => c + indent +< FINGER_MOVE_SYMBOL + o +>
     case FingerDownOver(o: GameObjectRef) => c + indent +< FINGER_DOWN_SYMBOL + o +>
     case FingerUpOver(o: GameObjectRef) => c + indent +< FINGER_UP_SYMBOL + o +>
@@ -331,8 +332,8 @@ trait PrettyPrinterExtendedTypical {
     case FingerCoordY1 => c + indent +! "y1"
     case FingerCoordX2 => c + indent +! "x2"
     case FingerCoordY2 => c + indent +! "y2"
-    case PropertyIndirect(ref, obj, p) if obj != null => c + indent +! (obj.name.get, obj.category) + "." +< p +>
-    case PropertyIndirect(ref, obj, p) => c + indent + s"$ref." +< p +>
+    case PropertyIndirect(GameObjectRef(null, obj), p) => c + indent +! (obj.name.get, obj.category) + "." +< p +>
+    case PropertyIndirect(GameObjectRef(ref, obj), p) => c + indent + s"$ref." +< p +>
     case PropertyRef(p) => p.name match {
       case "value" => c + indent +< p.parent.name.get +>  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
       //case "velocity" => c + indent +< p.parent.name.get + ".velocity" +>

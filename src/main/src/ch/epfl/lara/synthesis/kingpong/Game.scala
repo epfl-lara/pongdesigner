@@ -142,16 +142,16 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def circle(category: Category)(name: Expr,
              x: Expr,
              y: Expr,
-             radius: Expr = category.radius.copy, //TODO centralized default values
-             visible: Expr = category.visible.copy,
-             velocity: Expr = category.velocity.copy,
-             angularVelocity: Expr = category.angularVelocity.copy,
-             density: Expr = category.density.copy,
-             friction: Expr = category.friction.copy,
-             restitution: Expr = category.restitution.copy,
-             fixedRotation: Expr = category.fixedRotation.copy,
-             color: Expr = category.color.copy,
-             sensor: Expr = category.sensor.copy,
+             radius: Expr = category.radius, //TODO centralized default values
+             visible: Expr = category.visible,
+             velocity: Expr = category.velocity,
+             angularVelocity: Expr = category.angularVelocity,
+             density: Expr = category.density,
+             friction: Expr = category.friction,
+             restitution: Expr = category.restitution,
+             fixedRotation: Expr = category.fixedRotation,
+             color: Expr = category.color,
+             sensor: Expr = category.sensor,
              tpe: BodyType = category.tpe): Circle = {
     val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
                        density, friction, restitution, fixedRotation, color, sensor, tpe)
@@ -165,18 +165,18 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def rectangle(category: Category)(name: Expr,
                 x: Expr,
                 y: Expr,
-                angle: Expr = category.angle.copy,
-                width: Expr = category.width.copy,
-                height: Expr = category.height.copy,
-                visible: Expr = category.visible.copy,
-                velocity: Expr = category.velocity.copy,
-                angularVelocity: Expr = category.angularVelocity.copy,
-                density: Expr = category.density.copy,
-                friction: Expr = category.friction.copy,
-                restitution: Expr = category.restitution.copy,
-                fixedRotation: Expr = category.fixedRotation.copy,
-                color: Expr = category.color.copy,
-                sensor: Expr = category.sensor.copy,
+                angle: Expr = category.angle,
+                width: Expr = category.width,
+                height: Expr = category.height,
+                visible: Expr = category.visible,
+                velocity: Expr = category.velocity,
+                angularVelocity: Expr = category.angularVelocity,
+                density: Expr = category.density,
+                friction: Expr = category.friction,
+                restitution: Expr = category.restitution,
+                fixedRotation: Expr = category.fixedRotation,
+                color: Expr = category.color,
+                sensor: Expr = category.sensor,
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                          density, friction, restitution, fixedRotation, color, sensor, tpe)
@@ -191,12 +191,12 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def intbox(category: Category)(name: Expr,
              x: Expr,
              y: Expr,
-             value: Expr = category.value.copy,
-             angle: Expr = category.angle.copy,
-             width: Expr = category.width.copy,
-             height: Expr = category.height.copy,
-             visible: Expr = category.visible.copy,
-             color: Expr = category.color.copy): Box[Int] = {
+             value: Expr = category.value,
+             angle: Expr = category.angle,
+             width: Expr = category.width,
+             height: Expr = category.height,
+             visible: Expr = category.visible,
+             color: Expr = category.color): Box[Int] = {
     val box = new Box[Int](this, name, x, y, angle, width, height, value, visible, color)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
@@ -207,12 +207,12 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def booleanbox(category: Category)(name: Expr,
              x: Expr,
              y: Expr,
-             value: Expr = category.value.copy,
-             angle: Expr = category.angle.copy,
-             width: Expr = category.width.copy,
-             height: Expr = category.height.copy,
-             visible: Expr = category.visible.copy,
-             color: Expr = category.color.copy): Box[Boolean] = {
+             value: Expr = category.value,
+             angle: Expr = category.angle,
+             width: Expr = category.width,
+             height: Expr = category.height,
+             visible: Expr = category.visible,
+             color: Expr = category.color): Box[Boolean] = {
     val box = new Box[Boolean](this, name, x, y, angle, width, height, value, visible, color)
     if(category != null) box.setCategory(category)
     box.reset(this)(EventHistory)
@@ -223,10 +223,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def joystick(category: Category)(name: Expr,
              x: Expr,
              y: Expr,
-             angle: Expr = category.angle.copy,
-             radius: Expr = category.radius.copy,
-             visible: Expr = category.visible.copy,
-             color: Expr = category.color.copy): Joystick = {
+             angle: Expr = category.angle,
+             radius: Expr = category.radius,
+             visible: Expr = category.visible,
+             color: Expr = category.color): Joystick = {
     val joystick = new Joystick(this, name, x, y, angle, radius, visible, color)
     if(category != null) joystick.setCategory(category)
     joystick.reset(this)(EventHistory)
@@ -237,17 +237,17 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def character(category: Category)(name: Expr,
                 x: Expr,
                 y: Expr,
-                angle: Expr = category.angle.copy,
-                width: Expr = category.width.copy,
-                height: Expr = category.height.copy,
-                visible: Expr = category.visible.copy,
-                velocity: Expr = category.velocity.copy,
-                angularVelocity: Expr = category.angularVelocity.copy,
-                density: Expr = category.density.copy,
-                friction: Expr = category.friction.copy,
-                restitution: Expr = category.restitution.copy,
-                fixedRotation: Expr = category.fixedRotation.copy,
-                color: Expr = category.color.copy,
+                angle: Expr = category.angle,
+                width: Expr = category.width,
+                height: Expr = category.height,
+                visible: Expr = category.visible,
+                velocity: Expr = category.velocity,
+                angularVelocity: Expr = category.angularVelocity,
+                density: Expr = category.density,
+                friction: Expr = category.friction,
+                restitution: Expr = category.restitution,
+                fixedRotation: Expr = category.fixedRotation,
+                color: Expr = category.color,
                 tpe: BodyType = category.tpe): Character = {
     val r = new Character(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                           density, friction, restitution, fixedRotation, color, tpe)

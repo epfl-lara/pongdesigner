@@ -13,8 +13,13 @@ import scala.Dynamic
 import scala.language.dynamics
 import ch.epfl.lara.synthesis.kingpong.Game
 
+object GameObject {
+final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
+}
+
 abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
   protected def game: Game
+  def ref = GameObjectRef(null, this)
 
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
@@ -129,8 +134,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   /**
    * Retrieves a property or anything else.
    */
-  private val EphemeralEndings = "([a-zA-Z0-9_]+)(_[0-9]+)$".r
-  def ephemeralProperties = MMap[String, EphemeralProperty[_]]()
+  var ephemeralProperties = MMap[String, EphemeralProperty[_]]()
   def get(property: String) = this(property)
   protected def apply(property: String): Expr = { //PropertyRefTrait
     if (properties contains property) properties(property).ref else {
@@ -167,7 +171,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
             ephemeralProperties(property).ref
           } else {
             property match {
-              case EphemeralEndings(propertyName) if properties contains propertyName =>
+              case GameObject.EphemeralEndings(propertyName, extension) if properties contains propertyName =>
                 // Create a new ephemeral
                 val res = properties(propertyName).copyEphemeral(property)
                 ephemeralProperties(property) = res
@@ -184,34 +188,34 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
    * Abstract this object property to turn a call to method bottom to an expression reusable for other shapes.
    */
   def structurally(c: PropertyIndirect, property: String): Expr = {
-    if (properties contains property) PropertyIndirect(c.name, c.obj, property) else {
+    if (properties contains property) PropertyIndirect(GameObjectRef(c.name, c.obj), property) else {
       property match {
         case "bottom" =>
           this match {
-            case _: Rectangular => PropertyIndirect(c.name, c.obj, "y") + PropertyIndirect(c.name, c.obj, "height") / 2
-            case _: Circle => PropertyIndirect(c.name, c.obj, "y") + PropertyIndirect(c.name, c.obj, "radius")
+            case _: Rectangular => PropertyIndirect(GameObjectRef(c.name, c.obj), "y") + PropertyIndirect(GameObjectRef(c.name, c.obj), "height") / 2
+            case _: Circle => PropertyIndirect(GameObjectRef(c.name, c.obj), "y") + PropertyIndirect(GameObjectRef(c.name, c.obj), "radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "top" =>
           this match {
-            case _: Rectangular => PropertyIndirect(c.name, c.obj, "y") - PropertyIndirect(c.name, c.obj, "height") / 2
-            case _: Circle => PropertyIndirect(c.name, c.obj, "y") - PropertyIndirect(c.name, c.obj, "radius")
+            case _: Rectangular => PropertyIndirect(GameObjectRef(c.name, c.obj), "y") - PropertyIndirect(GameObjectRef(c.name, c.obj), "height") / 2
+            case _: Circle => PropertyIndirect(GameObjectRef(c.name, c.obj), "y") - PropertyIndirect(GameObjectRef(c.name, c.obj), "radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "left" =>
           this match {
-            case _: Rectangular => PropertyIndirect(c.name, c.obj, "x") - PropertyIndirect(c.name, c.obj, "width") / 2
-            case _: Circle => PropertyIndirect(c.name, c.obj, "x") - PropertyIndirect(c.name, c.obj, "radius")
+            case _: Rectangular => PropertyIndirect(GameObjectRef(c.name, c.obj), "x") - PropertyIndirect(GameObjectRef(c.name, c.obj), "width") / 2
+            case _: Circle => PropertyIndirect(GameObjectRef(c.name, c.obj), "x") - PropertyIndirect(GameObjectRef(c.name, c.obj), "radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "right" =>
           this match {
-            case _: Rectangular => PropertyIndirect(c.name, c.obj, "x") + PropertyIndirect(c.name, c.obj, "width") / 2
-            case _: Circle => PropertyIndirect(c.name, c.obj, "x") + PropertyIndirect(c.name, c.obj, "radius")
+            case _: Rectangular => PropertyIndirect(GameObjectRef(c.name, c.obj), "x") + PropertyIndirect(GameObjectRef(c.name, c.obj), "width") / 2
+            case _: Circle => PropertyIndirect(GameObjectRef(c.name, c.obj), "x") + PropertyIndirect(GameObjectRef(c.name, c.obj), "radius")
             case _ => throw new Exception(s"$this does not have a $property method")
           }
         case "center" =>
-          Vec2Expr(PropertyIndirect(c.name, c.obj, "x"), PropertyIndirect(c.name, c.obj, "y"))
+          Vec2Expr(PropertyIndirect(GameObjectRef(c.name, c.obj), "x"), PropertyIndirect(GameObjectRef(c.name, c.obj), "y"))
         case _ =>
           throw new Exception(s"$this does not have a $property method")
       }
