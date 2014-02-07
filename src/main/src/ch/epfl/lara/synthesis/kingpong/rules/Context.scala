@@ -42,6 +42,8 @@ trait Context extends Any {
   
   def get(value: String): Option[Value]
   def set(value: String, v: Value)
+  def addMethod(name: String, methodDecl: MethodDecl): Unit
+   def getMethod(name: String): MethodDecl
   
   def getOrElse(value: String, orElse: =>Value): Value = get(value) match {
     case Some(v) => v

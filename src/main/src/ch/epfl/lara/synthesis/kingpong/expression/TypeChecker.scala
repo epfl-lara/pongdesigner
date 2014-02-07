@@ -5,6 +5,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Rules._
 import android.util.Log
 import ch.epfl.lara.synthesis.kingpong.objects.Category
+import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 case class TypeCheckException(msg: String) extends Exception(msg)
 
@@ -21,7 +22,7 @@ trait TypeChecker {
     rule
   }*/
 
-  def typeCheck(stat: Stat): Stat = stat match {
+  def typeCheck(stat: Stat)(implicit context: Context): Stat = stat match {
     case ParExpr(a::l) =>
       val t = typeCheck(a)
       l foreach typeCheck
@@ -38,7 +39,7 @@ trait TypeChecker {
     case If(c, s1, s2) => 
       typeCheck(c, TBoolean)
       typeCheck(s1)
-      typeCheck(s2)
+      if(s2 != None) typeCheck(s2.get)
       stat
 
     case Assign(prop, rhs) =>
@@ -67,7 +68,13 @@ trait TypeChecker {
     case NOP => stat//Do nothing, it typechecks
   }
 
-  def typeCheck(expr: Expr): Expr = expr match {
+  def typeCheck(expr: Expr)(implicit context: Context): Expr = expr match {
+    case MethodCall(name, args) =>
+      val m = context.getMethod(name)
+      (args zip m.args) foreach {
+        case (arg, Formal(t, _)) => typeCheck(arg, t)
+      }
+      expr.setType(m.retType)
     case NValue(v, index) =>
       if(index > 1 || index < 0) {
         throw new TypeCheckException(s"Inconsistent index in NValue $expr: $index")
@@ -77,8 +84,11 @@ trait TypeChecker {
     case Count(category: Category) =>
       expr.setType(TInt)
     case VecExpr(l) =>
-      val l2 = l.map(typeCheck(_))
-      expr.setType(TTuple(l2.map(_.getType)))
+      val l2 = l.map(typeCheck(_).getType)
+      l2 match {
+        case List(TFloat | TInt, TFloat | TInt) => expr.setType(TVec2)
+        case _ => expr.setType(TTuple(l2))
+      }
     case c@Choose(prop, constraint) =>
       // At this point, the objects have been determined.
       if(c.evaluatedProgram == null) {
@@ -96,12 +106,27 @@ trait TypeChecker {
       if(ref.expr != null) {
         val t = typeCheck(ref.expr).getType
         ref.setType(t)
+      } else if(ref.obj != null) {
+        val t = typeCheck(ref.obj.get(ref.prop)).getType
+        ref.setType(t)
       } else {
-        throw new TypeCheckException(s"This expression cannot be type checked: $ref")
+        typeCheck(ref.indirectObject, TObject)
+        ref.prop match {
+          case "x" | "y" | "radius" | "angle" | "width" | "height" => expr.setType(TFloat)
+          case "velocity" => expr.setType(TVec2)
+          case "color" => expr.setType(TInt)
+          case "picture" => expr.setType(TString)
+          case "visible" => expr.setType(TBoolean)
+          case "value" => expr.setType(TInt)
+          case _ =>
+        }
+        ref
+        //throw new TypeCheckException(s"This expression cannot be type checked: $ref")
       }
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
+    case ObjectLiteral(_) => expr.setType(TObject)
     case BooleanLiteral(_) => expr.setType(TBoolean)
     case Vec2Literal(_, _) => expr.setType(TVec2)
     case UnitLiteral => expr.setType(TUnit)
@@ -109,20 +134,10 @@ trait TypeChecker {
     case FingerCoordX2 => expr.setType(TFloat)
     case FingerCoordY1 => expr.setType(TFloat)
     case FingerCoordY2 => expr.setType(TFloat)
-    case GameObjectRef(_, _) => expr.setType(TObject)
+    case GameObjectRef(_) => expr.setType(TObject)
     case On(_) => expr.setType(TBoolean)
     case Once(_) => expr.setType(TBoolean)
     case Val(_) => expr.setType(TFloat)
-    case Vec2Expr(lhs, rhs) =>
-      (typeCheck(lhs, TInt, TFloat): @unchecked) match {
-        case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
-          case TInt => expr.setType(TVec2)
-          case TFloat => expr.setType(TVec2)
-        }
-        case TFloat => 
-          typeCheck(rhs, TInt, TFloat)
-          expr.setType(TVec2)
-      }
     case Plus(lhs, rhs) =>
       (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
         case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {
@@ -233,7 +248,7 @@ trait TypeChecker {
     case Collision(c1, c2) => expr.setType(TBoolean)
   }
   
-  def typeCheck(expr: Expr, exp: Type*): Type = {
+  def typeCheck(expr: Expr, exp: Type*)(implicit context: Context): Type = {
     val t = typeCheck(expr).getType
     if (exp.forall(!_.accept(t))) {
       expr.setType(TError)

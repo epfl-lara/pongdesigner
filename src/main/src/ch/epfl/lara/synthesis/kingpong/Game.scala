@@ -32,9 +32,9 @@ trait RuleManager {
   def getRulesbyObject(o: GameObject):  Iterable[Stat] = _rulesByObject.getOrElse(o, List())
   def addRule(r: Stat) = {
     r traverse {
-      case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+      case p: PropertyRef => _rulesByObject.getOrElseUpdate(p.property.parent, MSet()) += r
         TraverseMode.ContinueSiblings
-      case c: PropertyIndirect if c.obj != null =>  _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
+      case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
         TraverseMode.ContinueSiblings
       case _ =>
         TraverseMode.ContinueWithChildren
@@ -45,7 +45,7 @@ trait RuleManager {
 }
 
 trait Game extends TypeChecker with Interpreter with ColorConstants with RuleManager { self => 
-
+  implicit val seflImplicit = self
   val world: PhysicalWorld
 
   private val _objects = MSet.empty[GameObject]
@@ -115,6 +115,19 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
   }
+  
+  /**
+   * setInstantProperties sets all properties to instant mode.
+   * If true, this means that when calling setNext() on properties, it will also set up current()
+   * if false, it is deactivated.
+   */
+  def setInstantProperties(activate: Boolean) = {
+    objects foreach { o =>
+      o.properties.foreach[Unit] { case ((name: String, prop: Property[_])) =>
+        prop.setInstant(activate)
+      }
+    }
+  }
 
   def add(o: GameObject) = {
     _objects add o
@@ -123,23 +136,26 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
 
   /** Register this rule iterator in this game engine. */
   def register(iterator: RuleIterator) {
-    typeCheck(iterator)
+    typeCheck(iterator)(EventHistory)
     addRule(iterator)
   }
 
   /** Register this rule in this game engine. */
   def register(rule: Stat) {
     //val iterator = new NoCategory(rule)
-    typeCheck(rule)
+    typeCheck(rule)(EventHistory)
     addRule(rule)
   }
 
   def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
-    typeCheck(e, implicitly[PongType[T]].getPongType)
+    typeCheck(e, implicitly[PongType[T]].getPongType)(EventHistory)
     eval(e)(EventHistory).as[T]
   }
+  def evaluate(e: Stat): Unit = {
+    eval(e)(EventHistory)
+  }
 
-  def circle(category: Category)(name: Expr,
+  def circle(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
              radius: Expr = category.radius, //TODO centralized default values
@@ -161,8 +177,23 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     this add c
     c
   }
+  
+  def activeBox(category: CategoryObject)(name: Expr,
+             x: Expr,
+             y: Expr,
+             angle: Expr = category.angle,
+             radius: Expr = category.radius,
+             visible: Expr = category.visible,
+             color: Expr = category.color,
+             picture: Expr = StringLiteral("")): ActiveBox = {
+    val b = new ActiveBox(this, name, x, y, angle, radius, visible, color, picture)
+    if(category != null) b.setCategory(category)
+    b.reset(this)(EventHistory)
+    this add b
+    b
+  }
 
-  def rectangle(category: Category)(name: Expr,
+  def rectangle(category: CategoryObject)(name: Expr,
                 x: Expr,
                 y: Expr,
                 angle: Expr = category.angle,
@@ -188,7 +219,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     r
   }
 
-  def intbox(category: Category)(name: Expr,
+  def intbox(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
              value: Expr = category.value,
@@ -204,7 +235,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     box
   }
   
-  def booleanbox(category: Category)(name: Expr,
+  def booleanbox(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
              value: Expr = category.value,
@@ -220,7 +251,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     box
   }
   
-  def joystick(category: Category)(name: Expr,
+  def joystick(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
              angle: Expr = category.angle,
@@ -234,7 +265,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     joystick
   }
   
-  def character(category: Category)(name: Expr,
+  def character(category: CategoryObject)(name: Expr,
                 x: Expr,
                 y: Expr,
                 angle: Expr = category.angle,
@@ -268,9 +299,12 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     Foreach1(category1, name1, Foreach1(category2, name2, rule))
   }
 
-  def whenever(cond: Expr)(actions: Seq[Stat]): Stat = {
-    If(cond, toSingleStat(actions), NOP)
+  def whenever(cond: Expr)(actions: Stat*): Stat = {
+    If(cond, toSingleStat(actions.toSeq), None)
   }
+  //def whenever(cond: Expr)(actions: Seq[Stat]): Stat = {
+  //  If(cond, toSingleStat(actions), None)
+  //}
 
   /*def once(cond: Expr): Expr = {
     Once(cond)
@@ -286,10 +320,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     } else {
       obj.setExistenceAt(time)
       false
-    }) // TODO: remove those who are too old to be resurrected.
+    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
   
-  var FINGER_SIZE = 20f // TODO : finds the right finger size with the matrix.
+  var FINGER_SIZE = 20f
   private val circle = new CircleShape()
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
@@ -343,7 +377,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
    *  the evaluation of rules needs to be aware of events from the 
    *  last fully completed time step.
    */
-  private object EventHistory extends Context {
+  protected object EventHistory extends Context {
 
     private var recording_time: Long = 0
     private var max_time: Long = 0
@@ -438,6 +472,10 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     def get(value: String): Option[Value] = ctx.get(value)
     def set(value: String, v: Value): Unit = ctx(value) = v
     
+    val methods: MMap[String, MethodDecl] = MMap[String, MethodDecl]()
+    def addMethod(name: String, methodDecl: MethodDecl) = methods(name) = methodDecl
+    def getMethod(name: String): MethodDecl = methods(name)
+    
     final val DEFAULT_NAME: String = "SHAPE"
     /**
      * Computes a new name based on the context and the given baseName
@@ -459,20 +497,20 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     def add(c: GameObject) = self add c
   }
 
-  private var mGameView: GameViewInterface = null
-  def setGameEngine(g: GameViewInterface) = {
-    mGameView = g
-  }
+  //private var mGameView: GameViewInterface = null
+  //def setGameEngine(g: GameViewInterface) = {
+  //  mGameView = g
+  //}
   // Abstract to implement
   def storeInitialState(overwrite: Boolean)= {
     // TODO
   }
   
   /// Unnamed constant pointer always pointing to the game object
-  implicit def gameObjectToGameObjectRef(g: GameObject): GameObjectRef = GameObjectRef(null, g)
+  implicit def gameObjectToGameObjectRef(g: GameObject): GameObjectRef = GameObjectRef(ObjectLiteral(g))
 
   /// Pointer having a name but pointing to nothing yet.
-  def obj(s: String): GameObjectRef = GameObjectRef(s, null)
+  def obj(s: String): GameObjectRef = GameObjectRef(s)
   
   def relative_dx: Expr = FingerCoordX2 - FingerCoordX1
   def relative_dy: Expr = FingerCoordY2 - FingerCoordY1
@@ -497,22 +535,22 @@ class EmptyGame() extends Game {
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
   val r1 = foreach(cat)("o"){ foreach(base.category)("base") {
-    whenever(obj("base")("y") < obj("o")("y")) { Seq(
+    whenever(obj("base")("y") < obj("o")("y"))(
       obj("o")("y") := 0, 
       obj("o")("velocity") := Vec2(0, 0)
-    )}
+    )
   }}
 
   val r2 = foreach(cat, cat2)("o1", "o2") { foreach(score.category)("score") {
-    whenever(Collision(obj("o1"), obj("o2"))) { Seq(
+    whenever(Collision(obj("o1"), obj("o2"))) (
       obj("score")("value") += 1
-    )}  
+    )
   }}
 
   val r3 = foreach(catAdd)("c2") {
-    whenever(FingerDownOver(obj("c2"))) { Seq(
+    whenever(FingerDownOver(obj("c2")))(
     obj("c2")("radius") += 0.1
-  )}}
+  )}
 
 
   register(r1)

@@ -128,21 +128,25 @@ object ComfusySolver {
     case FingerMoveOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerMoveOver")
     case FingerUpOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerUpOver")
     case FloatLiteral(f) => Sum(f, Nil)
-    case GameObjectRef(_, _) => throw new Error(s"$expr cannot be canonized because it contains a GameObjectRef")
+    case GameObjectRef(_) => throw new Error(s"$expr cannot be canonized because it contains a GameObjectRef")
     case IfFunc(_, _, _) => throw new Error(s"$expr cannot be canonized because it contains a IfFunc")
     case IntegerLiteral(f) => Sum(f, Nil)
     case On(e) => canonize(e)
     case Once(e) => canonize(e)
-    case PropertyIndirect(GameObjectRef(name, obj), prop) => val n = name + "."  + prop
+    case PropertyIndirect(g@GameObjectRef(StringLiteral(name)), prop) => val n = name + "."  + prop
       context(n) = expr
       Sum(0, List((n, 1)))
+    case PropertyIndirect(g@GameObjectRef(ObjectLiteral(obj)), prop) => val n = obj.name.get + "."  + prop
+      context(n) = expr
+      Sum(0, List((n, 1)))
+    case PropertyIndirect(_, prop) => throw new Error(s"$expr cannot be canonized because it is not well formed")
     case PropertyRef(prop) => val n = prop.parent.name.get + "."  + prop.name
       context(n) = expr
       Sum(0, List((n, 1)))
     case StringLiteral(_) => throw new Error(s"$expr cannot be canonized because it contains a String")
     case UnitLiteral => throw new Error(s"$expr cannot be canonized because it contains a UnitLiteral")
     case Val(f) => Sum(0, List((f, 1)))
-    case Vec2Expr(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Expr")
+    //case Vec2Expr(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Expr")
     case Vec2Literal(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Literal")
     case VecExpr(_) => throw new Error(s"$expr cannot be canonized because it contains a VecExpr")
   }

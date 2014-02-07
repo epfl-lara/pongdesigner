@@ -18,7 +18,7 @@ class SimpleGameSuite extends FunSuite with BeforeAndAfter {
     game = new Game {
       val world = new PhysicalWorld(Vec2(0, 0))
       
-      val cat = new Category("Category 1")
+      val cat = DefaultCategory("Category 1", this)
       val c1 = circle(cat)(name="Circle 1", x=200, y=50, radius = 50)
       val c2 = circle(cat)(name="Circle 2", x=40, y=50, radius = 40)
       

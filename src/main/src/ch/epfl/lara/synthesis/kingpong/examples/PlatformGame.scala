@@ -62,23 +62,23 @@ class PlatformGame extends Game {
   
   val j = joystick(io)(name="joystick", x=3, y=17, radius=2.5, color=white)
   
-  val r1 = whenever(j("jump") && player("grounded")){ Seq(
-      player("velocity") = Vec2Expr(player("velocity").x, -12)
-  )}
+  val r1 = whenever(j("jump") && player("grounded"))(
+      player("velocity") = VecExpr(player("velocity").x, -12)
+  )
   
-  val r2 = whenever(j("right")){ Seq(
-      player("velocity") = Vec2Expr(3, player("velocity").y),
+  val r2 = whenever(j("right"))(
+      player("velocity") = VecExpr(3, player("velocity").y),
       player("friction") = 0f
-  )}
+  )
   
-  val r3 = whenever(j("left")){ Seq(
-      player("velocity") = Vec2Expr(-3, player("velocity").y),
+  val r3 = whenever(j("left"))(
+      player("velocity") = VecExpr(-3, player("velocity").y),
       player("friction") = 0f
-  )}
+  )
   
-  val r4 = whenever(!j("left") && !j("right")){ Seq(
+  val r4 = whenever(!j("left") && !j("right"))(
       player("friction") = 1f
-  )}
+  )
   
   register(r1)
   register(r2)

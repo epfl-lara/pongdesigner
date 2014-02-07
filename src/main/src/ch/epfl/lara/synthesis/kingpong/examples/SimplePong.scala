@@ -59,18 +59,18 @@ class SimplePong() extends Game {
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
   val r1 = foreach(balls)("ball"){
-    whenever(obj("ball") below paddle1) { Seq(
+    whenever(obj("ball") below paddle1) (
       score("value") -= 1,
       started("value") := false,
       obj("ball")("x").reset(),
       obj("ball")("y").reset()
-    )}
+    )
   }
   
   val r1bis = foreach(balls)("ball"){
-    whenever(obj("ball") collides paddle1) { Seq(
-      obj("ball")("velocity") += Vec2Expr((obj("ball")("x") - paddle1("x"))*5, 0)
-    )}
+    whenever(obj("ball") collides paddle1) (
+      obj("ball")("velocity") += VecExpr((obj("ball")("x") - paddle1("x"))*5, 0)
+    )
   }
   
   /** In the game, it appears as a python-like language:
@@ -113,62 +113,61 @@ class SimplePong() extends Game {
   val r2 = foreach(balls)("ball"){
     foreach(blocks)("block") {
     foreach(scores)("score") {
-      whenever(Collision(obj("ball"), obj("block"))) { Seq(
+      whenever(Collision(obj("ball"), obj("block"))) (
         obj("score")("value") += 1,
         obj("ball")("color") := obj("block")("color"),
         obj("block")("visible") = false
-      )}
+      )
     }
     }
   }
   val r22 = foreach(balls, borders)("ball", "border") {
-    whenever(Collision(obj("ball"), obj("border"))) { Seq(
+    whenever(Collision(obj("ball"), obj("border"))) (
       obj("border")("color") := obj("ball")("color")
-    )}  
+    )  
   }
 
-  /*val r3 = foreach(balls)("ball") { whenever(FingerDownOver(obj("ball"))) { Seq(
+  /*val r3 = foreach(balls)("ball") { whenever(FingerDownOver(obj("ball"))) (
     obj("ball")("radius") += 0.1
-  )}}*/
+  )}*/
   
-  val r4 = whenever(FingerMoveOver(paddle1)){ Seq(
+  val r4 = whenever(FingerMoveOver(paddle1))(
     paddle1("x") += Val("dx")
-  )}
+  )
   
   val r5 = foreach(duplicators, balls)("duplicator", "ball"){
-    whenever(Collision(obj("duplicator"), obj("ball"))){ Seq(
+    whenever(Collision(obj("duplicator"), obj("ball")))(
       obj("ball").copy("copy")(Seq(
         obj("copy")("x") += 0.25,
         obj("copy")("velocity") += Vec2(0.5f, 1f),
         obj("ball")("x") -= 0.25,
         obj("duplicator")("visible") = false
       ))
-    )}
+    )
   }
   
   val r6 = foreach(balls)("ball"){
-     whenever(!started("value")) { Seq(
+     whenever(!started("value")) (
     obj("ball")("x") := paddle1("x"),
     obj("ball")("y") := Choose(List(obj("ball")("y")), obj("ball")("bottom") =:= paddle1("top")),
     obj("ball")("velocity") := Vec2(0, 0f)
     // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
-  )}
+  )
   }
   
   val r7 = foreach(balls)("ball"){
-    whenever(!started("value") && FingerUpOver(paddle1)) { Seq(
+    whenever(!started("value") && FingerUpOver(paddle1)) (
     started("value") := true,
     obj("ball")("velocity") := Vec2(0, -5.0f)
-  )}
+  )
   }
   
-  // TODO : He should make the choose with the newly computed one, not the old one. Constraint solving
-  val r8 = whenever(true) { Seq(
+  val r8 = Block(
      paddle1("x") := Choose(List(paddle1("x")),
             (paddle1 toRightOfAtMost Border2)
          && (paddle1 toLeftOfAtMost Border3)),
      List(Border4("x"), Border4("width")) := Choose(List(Border4("x"), Border4("width")), (Border4 alignLeft Ball1) && (Border4 alignRight paddle1))
-  )}
+  )
 
   register(r1)
   register(r1bis)

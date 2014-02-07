@@ -32,16 +32,16 @@ class DisambiguatorSuite extends FlatSpec with ShouldMatchers  {
     val paddle1 = intbox(paddles)(name="paddle1", x=0f, y=0f)
     val expr1 = (paddle1 toRightOf Border2) && (paddle1 toLeftOf Border3)
     val rule1 = foreach(blocks)("o"){
-    whenever(paddle1("y") < obj("o")("y")) { Seq(
+    whenever(paddle1("y") < obj("o")("y"))(
       obj("o")("y") := 0, 
       obj("o")("velocity") := Vec2(0, 0)
-    )}
+    )
     }
     val rule2 = foreach(paddles)("paddle"){
-       whenever(true) { Seq(
+       whenever(true) (
          List(obj("paddle")("x"), obj("paddle")("width")) := Choose(List(obj("paddle")("x"), obj("paddle")("width")), obj("paddle")("left") =:= Border2("right") && obj("paddle")("right") =:= Ball1("x"))
       // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
-    )}
+    )
     }
   }
   

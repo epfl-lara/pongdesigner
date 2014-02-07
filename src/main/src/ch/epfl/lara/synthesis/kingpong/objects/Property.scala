@@ -50,8 +50,19 @@ abstract class Property[T : PongType](val parent: GameObject) extends History wi
   /** Set the next value to `v`.
    *  Call `validate()` to push this value to the current state.
    */
-  def setNext(v: T): self.type
+
+  def setNext(v: T): self.type = mSetNext(v)
   def setNext(v: Value): self.type = setNext(tpe.toScalaValue(v))
+  
+  protected def setNextInternal(v: T): self.type
+  
+  protected var mSetNext: T => self.type = setNextInternal _
+  
+  private var instant = false
+  def setInstant(activate: Boolean) = {
+    if(activate) mSetNext = set _
+    else mSetNext = setNextInternal _
+  }
 
   /** Interpret the initial expression and set the current value. */
   def reset(interpreter: Interpreter)(implicit context: Context): self.type
@@ -87,7 +98,7 @@ class EphemeralProperty[T: PongType](val name: String, parent: GameObject) exten
   def reset(interpreter: Interpreter)(implicit context: Context): self.type  = self
   def set(v: T): self.type = {value = v; self }
   def setInit(e:  Expr):  self.type = self
-  def setNext(v: T):  self.type = { value = v; self }
+  protected def setNextInternal(v: T):  self.type = { value = v; self }
   def validate():  self.type = self
   // Members declared in  ch.epfl.lara.synthesis.kingpong.common.Snap
   def revert(): Unit = {}
@@ -130,7 +141,7 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, pare
     this
   }
 
-  def setNext(v: T) = {
+  protected def setNextInternal(v: T) = {
     _next = v
     this
   }

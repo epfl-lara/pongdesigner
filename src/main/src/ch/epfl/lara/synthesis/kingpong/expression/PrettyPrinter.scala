@@ -102,7 +102,6 @@ trait PrettyPrinterTypical {
   private def print(indent: String, s: Tree): CharSequence = s match {
     case Delete(null, ref) => indent + s"Delete(${ref.name.get})"
     case Delete(name, ref) => indent + s"Delete($name)"
-    case Vec2Expr(lhs, rhs) => indent + s"(${print(NO_INDENT, lhs)},${print(NO_INDENT, rhs)})"
     case VecExpr(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
     case e:LeftRightBinding => val op = e match {
         case _:Plus => "+"
@@ -118,7 +117,6 @@ trait PrettyPrinterTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
-        case _:Vec2Expr => ","
       }
       print(indent, e.lhs) + " " + op + " " + print(NO_INDENT, e.rhs) // TODO : parenthesis
     case Assign(List(e), rhs: Expr) => indent + print(NO_INDENT, e) + "' = " + print(NO_INDENT, rhs)
@@ -131,10 +129,10 @@ trait PrettyPrinterTypical {
         case a::Nil => print(indent, a)
         case l => (l map (print(indent+INDENT, _)) reduceLeft (_ + LF + _))
       }
-    case If(cond: Expr, s1: Stat, s2: Stat) => 
+    case If(cond: Expr, s1: Stat, s2) => 
       val prem = s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF
-      val middle = if(s1 != NOP) print(indent + INDENT, s1) else ""
-      val end = if(s2 != NOP) indent + "else:" + LF + print(indent + INDENT, s2) else ""
+      val middle = print(indent + INDENT, s1)
+      val end = if(s2 != None) indent + "else:" + LF + print(indent + INDENT, s2.get) else ""
       prem + middle + end
     case Copy(name: String, o: GameObjectRef, b: Block) =>
       indent + name + " = " + o.obj.name.get + ".copy" + LF + print(indent, b)
@@ -147,13 +145,14 @@ trait PrettyPrinterTypical {
     case StringLiteral(value: String) => indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => indent + value.toString
     case Vec2Literal(x: Float, y: Float) => indent + "Vec2("+x+","+y+")"
+    case ObjectLiteral(o) => indent + o.name.get
     case UnitLiteral => indent + "()"
     case Val(name: String) => indent + name
     case Not(expr: Expr)  => indent + NOT_SYMBOL + print(NO_INDENT, expr)
     case On(cond: Expr)   => indent + "on " + print(NO_INDENT, cond)
     case Once(cond: Expr) => indent + "once " + print(NO_INDENT, cond)
-    case GameObjectRef(ref: String, _) => indent + ref
-    case GameObjectRef(null, obj) => indent + obj.name.get
+    case GameObjectRef(ObjectLiteral(obj)) => indent + obj.name.get
+    case GameObjectRef(ref) => indent + print(NO_INDENT, ref)
     case FingerMoveOver(o: GameObjectRef) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, o)
     case FingerDownOver(o: GameObjectRef) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
     case FingerUpOver(o: GameObjectRef) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
@@ -161,7 +160,7 @@ trait PrettyPrinterTypical {
     case FingerCoordY1 => indent + "y1"
     case FingerCoordX2 => indent + "x2"
     case FingerCoordY2 => indent + "y2"
-    case PropertyIndirect(GameObjectRef(ref, obj), p) => indent + ref + "." + p
+    case PropertyIndirect(indirectObject, p) => indent + print(NO_INDENT, indirectObject) + "." + p
     case PropertyRef(p) => p.name match {
       case "value" => indent + p.parent.name.get  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
       case "velocity" => indent + p.parent.name.get + ".velocity"

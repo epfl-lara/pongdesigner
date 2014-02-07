@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import scala.util.Try
+import scala.collection.mutable.ConcurrentMap
 import android.app.Activity
 import android.view.SurfaceView
 import android.view.MotionEvent
@@ -42,7 +43,6 @@ import android.widget.ExpandableListView
 import android.widget.ExpandableListAdapter
 
 object GameView {
-
   sealed trait GameState
   case object Running extends GameState
   case object Editing extends GameState
@@ -57,11 +57,8 @@ object GameView {
   }
 }
 
-trait GameViewInterface {
-}
-
 /**
- * Handling the time bar
+ * Handler for the time bar to change the time displayed on it.
  */
 trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   private var progressBar: SeekBar = null
@@ -74,7 +71,7 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
       progressBar.setOnSeekBarChangeListener(this)
     }
   }
-  def setTime(t: Int) = {
+  def setProgressTime(t: Int) = {
     progressBar.setProgress(t)
     progressBar.setSecondaryProgress(t)
   }
@@ -85,12 +82,15 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   }
 }
 
-
+/**
+ * Handler for the action bar to add shapes to the world.
+ */
 trait ActionBarHandler extends common.ContextUtils {
   private var actionBar: ExpandableListView = _
   private var actionBarAdapter: ExpandableListAdapter = _
   def menuCallBacks: String => Unit
   
+  var submenusLabels: IndexedSeq[IndexedSeq[String]] = _
   def setActionBar(actionBar: ExpandableListView): Unit = {
     this.actionBar = actionBar
     if(actionBar != null) {
@@ -98,7 +98,7 @@ trait ActionBarHandler extends common.ContextUtils {
       val menuLabels: IndexedSeq[String] = getStringArray(R.array.menu_arrays_hint)
       val menuDrawables = getArray(R.array.menu_arrays_drawable) map getDrawable
       val submenusDrawables = getArray(R.array.menu_arrays) map getDrawableArray
-      val submenusLabels = getArray(R.array.menu_arrays_strings) map getStringArray map {u: Array[String] => u:IndexedSeq[String]}
+      submenusLabels = getArray(R.array.menu_arrays_strings) map getStringArray map {u: Array[String] => u:IndexedSeq[String]}
       
       val actions: IndexedSeq[String] = menuLabels
       val actionsCollection: Map[String, IndexedSeq[String]] = (menuLabels zip submenusLabels).toMap
@@ -113,24 +113,90 @@ trait ActionBarHandler extends common.ContextUtils {
 class GameView(val context: Context, attrs: AttributeSet)
   extends SurfaceView(context, attrs) 
   with SurfaceHolder.Callback
-  with GameViewInterface
   with ProgressBarHandler
   with ActionBarHandler
-  with common.ContextUtils {
+  with common.ContextUtils
+  with Game
+  {
   import GameView._
+  import expression.Types._
   import common.Implicits._
 
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
-  
+  private var grid: Grid = new Grid(step=1, offset=0, stroke_width=1, color=0x88000000)
+  implicit val self: Game = this
   
   def menuCallBacks: String => Unit = { s =>
-    game.rectangle(DefaultCategory("test"))(name="test", x=0, y=0, width=10, height=5)
+    s match {
+      case Str(R.string.add_rectangle_hint) =>
+        game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
+      case Str(R.string.add_circle_hint) =>
+        game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
+      case _ =>
+    }
   }
+  
+  EventHistory.addMethod("toGame", MethodDecl(TVec2, Val("toGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+      (l: List[Value]) =>
+        mapVectorToGame(Vec2V(l))
+  ))
+  
+  EventHistory.addMethod("fromGame", MethodDecl(TVec2, Val("fromGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+      (l: List[Value]) =>
+        mapVectorFromGame(Vec2V(l))
+  ))
+  EventHistory.addMethod("snap", MethodDecl(TVec2, Val("snap"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+      (l: List[Value]) =>
+        l match {
+          case NumericV(i)::Nil => FloatV(grid.snap(i))
+          case (v@Vec2V(x, y))::Nil => grid.snap(v)
+          case NumericV(i)::NumericV(j)::Nil => grid.snap(Vec2V(i, j))
+          case _ => throw new InterpreterException(s"Unable to snap value $l to grid. Should be a FloatV x1 or x2, or a Vec2V")
+        }
+  ))
+  
+  def toGame(e: Expr): Expr = {
+    MethodCall("toGame", List(e))
+  }
+  
+  def fromGame(e: Expr): Expr = {
+    MethodCall("fromGame", List(e))
+  }
+  def snap(e: Expr): Expr = {
+    MethodCall("snap", List(e))
+  }
+  
+  /** All game stuff from the Game trait */
+  val world = new PhysicalWorld(Vec2(0, 0))
+  
+  val menus = Category("Menus")()
+  val FingerUps = CategoryInput("FingerUps", { case e: FingerUp => true case _ => false} )
+  val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
+  
+  val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
+  //val moveRule1 = Block(// need to disambiguate moveMenu("obj") := ObjectLiteral(null),
+  //    foreach(FingerUps)("fingerUp") {
+  //  moveMenu("obj") := obj("fingerUp")("obj")  // Objects of the GameView, that is none.
+  //})
+  val moveRule2 = whenever(FingerMoveOver(moveMenu))(
+    List(moveMenu("x"), moveMenu("y")) := List(moveMenu("x"), moveMenu("y")) + VecExpr(List(Val("dx"), Val("dy")))
+  )
+  // TODO : it currently updates their next state, not their current.
+  val moveRule2bis = whenever(moveMenu("obj") =!= NULL)(
+     List(moveMenu("obj")("x"), moveMenu("obj")("y")) := snap(toGame(List(moveMenu("x"), moveMenu("y"))))
+  )
+  
+  //register(moveRule1)
+  register(moveRule2)
+  register(moveRule2bis)
 
   /** The game model currently rendered. */
   private var game: Game = null
-  def setGame(g: Game) = game = g
+  def setGame(g: Game) = {
+    game = g
+    game.setInstantProperties(state == Editing)
+  }
   def getGame() = game
   def hasGame(): Boolean = game != null
   private var mWidth = 0
@@ -192,7 +258,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   // Testing section
   var obj_to_highlight: Set[GameObject] = Set.empty
-  var codeMapping = Map[Int, Category]() 
+  var codeMapping = Map[Int, Category]()
+  var propMapping = Map[Int, Property[_]]()
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
@@ -207,7 +274,18 @@ class GameView(val context: Context, attrs: AttributeSet)
             
         }
       }
-      
+      if(propMapping != null) {
+        propMapping.get(start) match {
+          case Some(p) => // Activate the menu corresponding to this kind of property;
+            p.name match {
+              case "x" | "y" => evaluate(Block(moveMenu("obj") := ObjectLiteral(p.parent),
+                  List(moveMenu("x"), moveMenu("y")) := fromGame(List(p.parent.x.ref, p.parent.y.ref)),
+                  moveMenu("visible") := true))
+              case _ =>
+            }
+          case _ =>
+        }
+      }
     })
   }
   
@@ -256,6 +334,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def toEditing(): Unit = if (state == Running) {
     Log.d("kingpong", "toEditing()")
     state = Editing
+    game.setInstantProperties(true)
     layoutResize()
   }
 
@@ -264,6 +343,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     Log.d("kingpong", "toRunning()")
     // Remove objects that have been created after the date.
     game.gc()
+    game.setInstantProperties(false)
     state = Running
   }
 
@@ -277,12 +357,12 @@ class GameView(val context: Context, attrs: AttributeSet)
     game = newGame
   }
 
-  def update(): Unit = {
+  override def update(): Unit = {
+    super.update()
     state match {
       case Running =>
-        
         game.update()
-        setTime(game.time.toInt)
+        setProgressTime(game.time.toInt)
       case Editing =>
         //TODO
     }
@@ -296,20 +376,21 @@ class GameView(val context: Context, attrs: AttributeSet)
   paintSelected.setStyle(Paint.Style.STROKE)
   paintSelected.setColor(color(R.color.selection))
   def render(canvas: Canvas): Unit = {
-    canvas.setMatrix(matrix)
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
-
+    if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
+    canvas.save()
+    canvas.setMatrix(matrix)
+    
     paint.setStrokeWidth(mapRadiusI(1))
     paintSelected.setStrokeWidth(mapRadiusI(3))
-    if(game == null) return;
-    game.objects foreach { o => 
+    
+    def drawObject(o: GameObject): Unit = {
       if(o.existsAt(game.time)) {
       o match {
       case r: Rectangle =>
         paint.setColor(r.color.get)
         if(!r.visible.get)
           paint.setAlpha(0x00)
-
 
         canvas.save()
         canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
@@ -325,12 +406,24 @@ class GameView(val context: Context, attrs: AttributeSet)
         if(obj_to_highlight contains c) canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
         
       case b: Box[_] => 
-        paint.setColor(b.color.get) 
+        paint.setColor(b.color.get)
         //if(b == obj_to_highlight) paint.setAlpha(0x88)
         paint.setTextSize(b.height.get)
-        val value = b.value.get.toString
-        canvas.drawText(value, b.x.get, b.y.get, paint)
-        if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
+        if(b.className == "Box[Boolean]") {
+          val c = b.value.get.asInstanceOf[Boolean]
+          canvas.drawText(b.name.get, b.x.get + b.height.get*3/2, b.y.get, paint)
+          canvas.drawRect(b.x.get, b.y.get, b.x.get + b.height.get, b.y.get + b.height.get, paint)
+          if(c) {
+            paint.setColor(0xFF00FF00)
+          } else {
+            paint.setColor(0xFFFF0000)
+          }
+          canvas.drawCircle(b.x.get - b.height.get/2, b.y.get - b.height.get/2, b.height.get/2, paint)
+        } else {
+          val value = b.name.get + ":" + b.value.get.toString
+          canvas.drawText(value, b.x.get, b.y.get, paint)
+          if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
+        }
       case j: Joystick =>
         paint.setColor(j.color.get) 
         paint.setAlpha(0x20)
@@ -338,6 +431,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         paint.setAlpha(0x40)
         canvas.drawCircle(j.x.get + j.relative_x.get, j.y.get + j.relative_y.get, j.radius.get/2, paint)
         if(obj_to_highlight contains j) canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paintSelected)
+        
       case r: Character =>
         paint.setColor(r.color.get)
         if(!r.visible.get)
@@ -347,8 +441,24 @@ class GameView(val context: Context, attrs: AttributeSet)
         canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
         if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
         canvas.restore()
-      case _ =>
+        
+      case r: ActiveBox =>
+        if(r.visible.get) {
+          canvas.save()
+          canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
+          retrieveDrawable(r.picture.get) match {
+            case Some(drawable) =>
+              drawable.setBounds((r.x.get - r.radius.get).toInt, (r.y.get - r.radius.get).toInt, (r.x.get + r.radius.get).toInt, (r.y.get + r.radius.get).toInt)
+              drawable.draw(canvas)
+            case None =>
+          }
+          canvas.restore()
+        }
     }}}
+    if(game == null) return;
+    game.objects foreach drawObject
+    canvas.restore()
+    this.objects foreach drawObject
     
     if(fingerIsDown) {
       paint.setColor(0xAAFF0000)
@@ -374,7 +484,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Some(e @ AccelerometerChanged(v)) =>
         paint.setStrokeWidth(mapRadiusI(2))
         paint.setColor(0xFFFF00FF)
-        val pos = mapVectorI(Vec2(100, 100))
+        val pos = mapVectorToGame(Vec2(100, 100))
         canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
       case _ => //Do nothing
     }
@@ -400,42 +510,47 @@ class GameView(val context: Context, attrs: AttributeSet)
     stopLoop()
   }
 
-  def onAccelerometerChanged(vector: Vec2): Unit = {
+  override def onAccelerometerChanged(vector: Vec2): Unit = {
     // do NOT touch the given vector! 
     // It is mutable for performance purposes.
     state match {
       case Running => 
         game.onAccelerometerChanged(vector.clone)
       case Editing =>
+        super.onAccelerometerChanged(vector.clone)
     } 
   }
   
   var currentFingerPos: Vec2 = null
   var fingerIsDown = false
 
-  def onFingerDown(pos: Vec2): Unit = state match {
-    case Running => 
-      val res = mapVectorI(pos)
-      game.onFingerDown(res)
-      currentFingerPos = res
-      fingerIsDown = true
-    case Editing =>
-      //TODO: Add menus handling ?
+  override def onFingerDown(pos: Vec2): Unit = {
+    state match {
+      case Running => 
+        val res = mapVectorToGame(pos)
+        game.onFingerDown(res)
+        currentFingerPos = res
+        fingerIsDown = true
+      case Editing =>
+        super.onFingerDown(pos)
+        //TODO: Add menus handling ?
+    }
   }
 
-  def onFingerUp(pos: Vec2): Unit = state match {
+  override def onFingerUp(pos: Vec2): Unit = state match {
     case Running => 
-      val res = mapVectorI(pos)
+      val res = mapVectorToGame(pos)
       game.onFingerUp(res)
       fingerIsDown = false
       currentFingerPos = res
     case Editing =>
       // Select an object below if any and display the corresponding code
-      val res = mapVectorI(pos)
+      val res = mapVectorToGame(pos)
       val objectsTouched = game.objectFingerAt(res)
       obj_to_highlight = objectsTouched.toSet
       val rulesConcerned = game.getRulesbyObject(objectsTouched)
       updateCodeView(rulesConcerned, objectsTouched)
+      super.onFingerUp(pos)
   }
   
   def updateCodeView(rules: Iterable[Stat], objects: Iterable[GameObject]) = {
@@ -445,6 +560,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     val mapping = all.map
     val mObjects = mapping.mObjects
     codeMapping = mapping.mPosCategories
+    propMapping = mapping.mPropertyPos
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
@@ -458,17 +574,20 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   def push(m: Matrix) = {
     m.invert(matrixI)
+    
+    grid = Grid(matrixI, width=mWidth, numSteps=15, stroke_width=1, color=0x88000000)
     if(game != null) game.FINGER_SIZE = matrixI.mapRadius(35)
   }
 
-  def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
+  override def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
     case Running => 
-      val res = mapVectorI(to)
-      game.onOneFingerMove(mapVectorI(from), res)
+      val res = mapVectorToGame(to)
+      game.onOneFingerMove(mapVectorToGame(from), res)
       currentFingerPos = res
     case Editing =>
-      matrix.postTranslate(to.x - from.x, to.y - from.y)
-      push(matrix)
+      //matrix.postTranslate(to.x - from.x, to.y - from.y)
+      //push(matrix)
+      super.onOneFingerMove(from, to)
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {
@@ -483,21 +602,38 @@ class GameView(val context: Context, attrs: AttributeSet)
 
     matrix.postTranslate((to1.x + to2.x)/2 - (from1.x + from2.x)/2, (to1.y + to2.y)/2 - (from1.y + from2.y)/2)
     matrix.postScale(scale, scale, from1.x * p + from2.x * (1-p), from1.y * p + from2.y * (1-p))
+    
     push(matrix)
   }
 
   /** meters to pixels */
-  def mapVector(p: Vec2): Vec2 = {
+  def mapVectorFromGame(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrix.mapPoints(toMap)
     Vec2(toMap(0), toMap(1))
   }
+  
+  /** meters to pixels */
+  def mapVectorFromGame(p: Vec2V): Vec2V = {
+    val toMap = Array(p.x, p.y)
+    matrix.mapPoints(toMap)
+    Vec2V(toMap(0), toMap(1))
+  }
+  
 
   /** pixels to meters */
-  def mapVectorI(p: Vec2): Vec2 = {
+  def mapVectorToGame(p: Vec2): Vec2 = {
     val toMap = Array(p.x, p.y)
     matrixI.mapPoints(toMap)
     Vec2(toMap(0), toMap(1))
+  }
+  
+  
+  /** meters to pixels */
+  def mapVectorToGame(p: Vec2V): Vec2V = {
+    val toMap = Array(p.x, p.y)
+    matrixI.mapPoints(toMap)
+    Vec2V(toMap(0), toMap(1))
   }
 
   /** meters to pixels */
@@ -609,7 +745,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           onFingerDown(point)
-          last(pointerIndex).set(point)
+          last(pointerIndex) = point
 
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
@@ -619,7 +755,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             val to = Vec2(me.getX(0), me.getY(0))
             //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
             onOneFingerMove(from, to)
-            last(pointerIndex).set(to)
+            last(pointerIndex) = to
             
           } else if (me.getPointerCount() == 2) {
             val pointerIndex1 = Math.min(me.getPointerId(0), FINGERS - 1)
@@ -629,8 +765,8 @@ class GameView(val context: Context, attrs: AttributeSet)
             val to1 = Vec2(me.getX(0), me.getY(0))
             val to2 = Vec2(me.getX(1), me.getY(1))
             onTwoFingersMove(from1, to1, from2, to2)
-            last(pointerIndex1).set(to1)
-            last(pointerIndex2).set(to2)
+            last(pointerIndex1) = to1
+            last(pointerIndex2) = to2
           }
 
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
@@ -639,7 +775,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(last(pointerIndex).x != point.x || last(pointerIndex).y != point.y)
             onOneFingerMove(last(pointerIndex), point)
           onFingerUp(point)
-          last(pointerIndex).set(point)
+          last(pointerIndex) = point
 
         case _ => //Do nothing
       }

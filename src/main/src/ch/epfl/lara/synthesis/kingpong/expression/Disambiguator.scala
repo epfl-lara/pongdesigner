@@ -34,7 +34,11 @@ object Disambiguator {
             val (newAssigned, newDuplicates) = findDuplicates(stat)
             (assigned union newAssigned, duplicates.union(assigned intersect newAssigned))
         }
-      case If(cond, ifTrue, ifFalse) =>
+      case If(cond, ifTrue, None) =>
+        val (trueAssigned, trueDuplicates) = findDuplicates(ifTrue)
+        //val (falseAssigned, falseDuplicates) = findDuplicates(ifFalse)
+        (trueAssigned, trueDuplicates)
+      case If(cond, ifTrue, Some(ifFalse)) =>
         val (trueAssigned, trueDuplicates) = findDuplicates(ifTrue)
         val (falseAssigned, falseDuplicates) = findDuplicates(ifFalse)
         (trueAssigned union falseAssigned, trueDuplicates union falseDuplicates)
@@ -95,7 +99,11 @@ object Disambiguator {
             val (newAssigned, newDuplicates) = findDuplicatesMap(stat)
             (assigned union newAssigned, duplicates union (assigned intersect newAssigned))
         }
-      case If(cond, ifTrue, ifFalse) =>
+      case If(cond, ifTrue, None) =>
+        val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
+        //val (falseAssigned, falseDuplicates) = findDuplicatesMap(ifFalse)
+        (trueAssigned, trueDuplicates)
+      case If(cond, ifTrue, Some(ifFalse)) =>
         val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
         val (falseAssigned, falseDuplicates) = findDuplicatesMap(ifFalse)
         (trueAssigned union falseAssigned, trueDuplicates union falseDuplicates)
@@ -265,11 +273,11 @@ object Disambiguator {
             (s::statList, rr1, rr2)
           }
           (Block(stats2), res1, res2)
-        case If(cond, ifTrue, ifFalse) =>
+        case If(cond, ifTrue, None) =>
           val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
-          val (ifFalse2, ifr, ife) = rec(ifFalse, p, replaceAssigned, replaceEvaluated)
+          val (ifFalse2, ifr, ife) = (None, replaceAssigned, replaceEvaluated)
           if(itr == ifr && ite == ife) { // Ifs are balanced.
-            (If(cond, ifTrue2, ifFalse2), itr, ite)
+            (If(cond, ifTrue2, None), itr, ite)
           } else { // Need to introduce new variables
             val i = numProperty(itr)
             val j = numProperty(ifr)
@@ -294,7 +302,41 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Assign(List(ife.ref), ite.ref) :: ifFalse2), itr, ite)
+              (If(cond, ifTrue2, Some(Assign(List(ife.ref), ite.ref))), itr, ite)
+            } else {
+              throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
+            }
+          }
+        case If(cond, ifTrue, Some(ifFalse)) =>
+          val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
+          val (ifFalse2, ifr, ife) = rec(ifFalse, p, replaceAssigned, replaceEvaluated)
+          if(itr == ifr && ite == ife) { // Ifs are balanced.
+            (If(cond, ifTrue2, Some(ifFalse2)), itr, ite)
+          } else { // Need to introduce new variables
+            val i = numProperty(itr)
+            val j = numProperty(ifr)
+            if(i < j) { // More variables in ifFalse2
+              /* Case 
+               * if A:
+               *   itr  ite
+               *   x1 = x2 + 3  (i == 1)   => need to pre-add the assignment  x2 = x3  (ite = ife)
+               * else
+               *   ifr  ife
+               *   x2 = x3 + 6  (i == 2)
+               *   x1 = x2 * 3
+               */
+              (If(cond, Assign(List(ite.ref), ife.ref) :: ifTrue2, Some(ifFalse2)), ifr, ife)
+            } else if(i > j) {
+              /* Case 
+               * if A:
+               *   itr  ite
+               *   x2 = x3 + 6  (i == 2)
+               *   x1 = x2 + 3  (i == 1)
+               * else
+               *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
+               *   x1 = x2 * 3
+               */
+              (If(cond, ifTrue2, Some(Assign(List(ife.ref), ite.ref) :: ifFalse2)), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -329,7 +371,7 @@ object Disambiguator {
               //val exprReplaced = expr.replace(p_original, replaceEvaluated)
               (If(p.indirectObject =:= p_original.parent.ref,
                   assign,
-                  Assign(props, expr)), npa, npe)
+                  Some(Assign(props, expr))), npa, npe)
             case _ =>
               (assign, npa, npe)
           }

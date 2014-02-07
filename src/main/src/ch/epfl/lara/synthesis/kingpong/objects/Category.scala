@@ -2,12 +2,15 @@ package ch.epfl.lara.synthesis.kingpong.objects
 
 import scala.collection.mutable.{HashSet => MSet, HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import org.jbox2d.dynamics._
+import ch.epfl.lara.synthesis.kingpong.Game
 
 object Category {
-  def apply(name: String)(angle: Expr = 0,
+  def apply(name: String)(
+      angle: Expr = 0,
       width: Expr = 1,
       height: Expr = 1,
       radius: Expr = 0.5,
@@ -21,12 +24,20 @@ object Category {
       fixedRotation: Expr = true,
       color: Expr = 0xFF000000,
       sensor: Expr = false,
-      tpe: BodyType = BodyType.DYNAMIC): Category = {
-    new Category(name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe)
+      tpe: BodyType = BodyType.DYNAMIC)(implicit game: Game): CategoryObject = {
+    new CategoryObject(game, name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe)
   }
 }
 
-class Category(val name: String = "", val angle: Expr = 0,
+trait Category {
+  def game: Game
+  def name: String
+  def objects: Iterable[GameObject]
+}
+
+class CategoryObject(val game: Game = null,
+  val name: String = "",
+  val angle: Expr = 0,
   val width: Expr = 1,
   val height: Expr = 1,
   val radius: Expr = 0.5,
@@ -40,7 +51,7 @@ class Category(val name: String = "", val angle: Expr = 0,
   val fixedRotation: Expr = true,
   val color: Expr = 0xFF000000,
   val sensor: Expr = false,
-  val tpe: BodyType = BodyType.DYNAMIC) extends NotNull { self =>
+  val tpe: BodyType = BodyType.DYNAMIC) extends NotNull with Category { self =>
 
   private val _children = MSet.empty[GameObject]
   
@@ -70,6 +81,29 @@ class Category(val name: String = "", val angle: Expr = 0,
 }
 
 object DefaultCategory {
-  def apply(o: GameObject): Category = Category(o.name.get)().add(o)
-  def apply(o: String): Category = Category(o)()
+  def apply(o: GameObject): CategoryObject = Category(o.name.get)()(o.game).add(o)
+  def apply(o: String, g: Game): CategoryObject = Category(o)()(g)
+}
+
+object CategoryInput {
+  def apply(name: String, selector: Event => Boolean)(implicit game: Game): CategoryInput = {
+    new CategoryInput(game, name, selector)
+  }
+}
+
+class CategoryInput(val game: Game,
+                    val name: String = "",
+                    val selector: Event => Boolean
+) extends Category {
+  private val inputMenu = new ObjRef(game, name, 0, 0)
+  override def objects: Iterable[GameObject] = {
+    val l = for(event <- game.events.iterator;
+                 if selector(event);
+                 obj <- event.obj.iterator
+             ) yield obj
+    l.map{ obj =>
+      inputMenu.obj.set(obj)
+      inputMenu
+    }.toIterable
+  }
 }

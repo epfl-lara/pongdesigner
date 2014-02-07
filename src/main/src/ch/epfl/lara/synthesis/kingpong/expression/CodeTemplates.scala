@@ -560,14 +560,14 @@ object CodeTemplates extends CodeHandler {
     var shiftAngle: Float = 0
     def result    = { shiftAngle = Math.round((shape.angle.next - shape.angle.get)/15)*15; (shape_ident("angle") := shape_ident("angle") - angle(shiftAngle)) }
     def priority = 8
-    def comment   = s"Change the speed direction of ${shape.name.next} by " + shiftAngle + "°"
+    def comment   = s"Change the speed direction of ${shape.name.next} by " + shiftAngle + "Â°"
   }
   object TAngleAbsolute extends Template[GameObject] {
     def condition = true
     var roundedAngle: Float = 0
     def result    = { roundedAngle = Math.round(shape.angle.next/15)*15; (shape_ident("angle") := angle(roundedAngle)) }
     def priority = 9
-    def comment   = s"Change the speed direction of ${shape.name.next} to " + roundedAngle + "°"
+    def comment   = s"Change the speed direction of ${shape.name.next} to " + roundedAngle + "Â°"
   }
   /*object TAngleOnCircle extends TemplateShapeOtherCircle {
     def condition = TOUCHMOVE_EVENT && Math.abs(Game.angle(other_shape.x.next, other_shape.y.next, xTo, yTo) - shape.angle.next) < 20

@@ -125,7 +125,7 @@ object KingPong {
      
      override protected def onPostExecute(game: Game) {
        if(activity != null && activity.mGameView != null && !saving) {
-         game.setGameEngine(activity.mGameView)
+         //game.setGameEngine(activity.mGameView)
          activity.mGameView.setGame(game)
          activity.mGameView.initialize()
        }
@@ -271,7 +271,10 @@ class KingPong extends Activity
                 val dx = - (x - xprev).toInt
                 params.width = params.width +dx
                 mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
-                if(mActions != null) mActions.setX(mCodeViewResizer.getX)
+                if(mActions != null) {
+                  //mActions.setX(mCodeViewResizer.getX)
+                  mActions.requestLayout()
+                }
                 Log.d("Test", s"The layout moves dx=$dx")
                 mLayoutcodehorizontal.getParent().requestLayout()
                 //xprev = x
@@ -283,6 +286,9 @@ class KingPong extends Activity
                 params.height = params.height + dy
                 Log.d("Test", s"The layout moves dy=$dy")
                 mCodeViewResizer.setY(mCodeViewResizer.getY - dy)
+                if(mActions != null) {
+                  mActions.requestLayout()
+                }
                 mLayoutcodevertical.getParent().requestLayout()
                 //yprev = y
               }

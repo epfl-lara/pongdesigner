@@ -21,7 +21,7 @@ object Rules {
   }*/
   
   object Whenever {
-    def apply(cond: Expr, action: Stat) = Trees.If(cond, action, NOP)
+    def apply(cond: Expr, action: Stat) = Trees.If(cond, action, None)
   }
 
   /*case class Whenever(cond: Expr, action: Stat) extends Rule {

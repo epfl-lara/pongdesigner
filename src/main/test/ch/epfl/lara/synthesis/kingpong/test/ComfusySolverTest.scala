@@ -1,4 +1,4 @@
-package ch.epfl.lara.synthesis.kingpong.test
+package ch.epfl.lara.synthesis.kingpong.test;
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers

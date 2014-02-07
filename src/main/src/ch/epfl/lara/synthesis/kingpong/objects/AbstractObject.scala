@@ -5,8 +5,6 @@ import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import scala.Dynamic
-import scala.language.dynamics
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.Shape
@@ -31,7 +29,7 @@ abstract class AbstractObject(init_name: Expr,
 }
 
 
-case class Box[T : PongType](protected val game: Game,
+case class Box[T : PongType](val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
@@ -88,7 +86,7 @@ trait InputManager {
 /**
  * Input class already defining some methods
  */
-case class Joystick(protected val game: Game,
+case class Joystick(val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
@@ -159,7 +157,7 @@ case class Joystick(protected val game: Game,
 }
 
 
-case class PathMovement(protected val game: Game,
+case class PathMovement(val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
@@ -180,7 +178,7 @@ case class PathMovement(protected val game: Game,
 }
 
 
-case class Cell2D(protected val game: Game, init_name: Expr) extends GameObject(init_name) {
+case class Cell2D(val game: Game, init_name: Expr) extends GameObject(init_name) {
   var left: Cell2D = null
   var top: Cell2D = null
   var right: Cell2D = null
@@ -202,7 +200,7 @@ case class Cell2D(protected val game: Game, init_name: Expr) extends GameObject(
  def color: Property[Int] = ???
 }
 
-case class Array2D(protected val game: Game, init_name: Expr,
+case class Array2D(val game: Game, init_name: Expr,
     init_x: Expr,
     init_y: Expr,
     init_angle: Expr,

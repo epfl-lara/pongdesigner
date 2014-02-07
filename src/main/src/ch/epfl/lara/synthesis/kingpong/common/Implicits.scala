@@ -101,4 +101,20 @@ object Implicits {
 
     def clone(v: Vec2) = v.clone
   }
+  
+  implicit object GameObjectIsPongType extends PongType[GameObject] {
+    def getPongType = TObject
+    def toPongValue(v: Any) = v match {
+      case null => GameObjectV(null)
+      case v: GameObject => GameObjectV(v)
+      case _ => throw InterpreterException(s"The value $v is incompatible with GameObject.")
+    }
+    def toScalaValue(v: Value) = v match {
+      case null => null
+      case GameObjectV(x) => x
+      case _ => throw InterpreterException(s"The value $v is incompatible with GameObject.")
+    }
+
+    def clone(v: GameObject) = v
+  }
 }

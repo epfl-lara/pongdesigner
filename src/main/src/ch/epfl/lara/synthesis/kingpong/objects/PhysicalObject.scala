@@ -159,7 +159,7 @@ abstract class PhysicalObject(init_name: Expr,
   
 }
 
-case class Rectangle (protected val game: Game,
+case class Rectangle (val game: Game,
                  init_name: Expr,
                  init_x: Expr,
                  init_y: Expr,
@@ -230,7 +230,7 @@ case class Rectangle (protected val game: Game,
   }
 }
 
-case class Character (protected val game: Game,
+case class Character (val game: Game,
                  init_name: Expr,
                  init_x: Expr,
                  init_y: Expr,
@@ -333,7 +333,7 @@ case class Character (protected val game: Game,
 
 
 
-case class Circle(protected val game: Game,
+case class Circle(val game: Game,
              init_name: Expr,
              init_x: Expr,
              init_y: Expr,

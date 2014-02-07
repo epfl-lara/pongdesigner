@@ -9,11 +9,13 @@ import scala.collection.mutable.{Set => MSet}
 
 object Events {
 
-  sealed trait Event
+  sealed trait Event {
+    def obj = MSet[GameObject]()
+  }
 
-  case class FingerDown(p: Vec2, obj: MSet[GameObject]) extends Event
-  case class FingerUp(p: Vec2, obj: MSet[GameObject]) extends Event
-  case class FingerMove(from: Vec2, to: Vec2, obj: MSet[GameObject]) extends Event
+  case class FingerDown(p: Vec2, override val obj: MSet[GameObject]) extends Event
+  case class FingerUp(p: Vec2, override val obj: MSet[GameObject]) extends Event
+  case class FingerMove(from: Vec2, to: Vec2, override val obj: MSet[GameObject]) extends Event
 
   case class BeginContact(contact: Contact) extends Event
   case class CurrentContact(contact: Contact) extends Event
@@ -21,6 +23,6 @@ object Events {
 
   case class AccelerometerChanged(vector: Vec2) extends Event
   
-  case class GameObjectCreated(o: GameObject) extends Event
-  case class GameObjectDeleted(o: GameObject) extends Event
+  case class GameObjectCreated(o: GameObject) extends Event { override def obj = MSet(o) }
+  case class GameObjectDeleted(o: GameObject) extends Event { override def obj = MSet(o) }
 }
