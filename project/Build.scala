@@ -1,73 +1,60 @@
 import sbt._
 import Keys._
-import AndroidKeys._
+import android.Keys._
 
 object General {
 
   // Parameters:
-  val buildName           = "kingpong_experiment"
+  val buildName           = "pong_designer_experimental"
   val buildOrganization   = "ch.epfl.lara.synthesis"
-  val buildScalaVersion   = "2.10.0"
-  val buildAndroidVersion = "15"
+  val buildScalaVersion   = "2.10.3"
+  val buildAndroidVersion = "16"
 
-  val settings = Defaults.defaultSettings ++ Seq (
-    
-    // version and versionCode are in the manifest. We could also put them 
-    // here and let the plugin update the manifest with `AndroidManifestGenerator`
+  val settings = Defaults.defaultSettings ++ 
+                 android.Plugin.androidBuild ++ Seq (
 
     name         := buildName,
     organization := buildOrganization,
     scalaVersion := buildScalaVersion,
-    
+    platformTarget in Android := "android-" + buildAndroidVersion,
+    proguardScala in Android := true,
+    proguardOptions in Android ++= Seq(
+      //"-keep public class * extends junit.framework.TestCase",
+      //"-keepclass class * extends junit.framework.TestCase { *; }",
+      "-dontwarn android.test.**",
+      "-dontwarn java.awt.**",
+      "-dontwarn java.applet.Applet"
+    ),
+
     // Jbox2d
     //libraryDependencies += "org.jbox2d" % "jbox2d-library" % "2.2.1.2",
     
     // ScalaTest
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M5b" % "test",
-    //javaHome := Some(file("c:\\Program Files\\Java\\jdk1.6.0_35")),
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test",
+    //libraryDependencies += "junit" % "junit" % "4.11",
+
+    // Android support
+    libraryDependencies += "com.android.support" % "support-v4" % "18.0.0",
     
     scalacOptions ++= Seq(
-        "-feature",                      // Enable language feature warnings
-        "-deprecation",                  // Enable detailed deprecation warnings 
-        "-unchecked",                    // Enable detailed unchecked warnings 
-        //"-language:experimental.macros", // Enable scala macros
-        "-language:implicitConversions"//, // Remove feature warning about implicit methods
-        //"-language:postfixOps"           // Remove feature warning about postfix operators
-      )
+      "-feature",                      // Enable language feature warnings
+      "-deprecation",                  // Enable detailed deprecation warnings 
+      "-unchecked",                    // Enable detailed unchecked warnings 
+      //"-language:experimental.macros", // Enable scala macros
+      "-language:implicitConversions"//, // Remove feature warning about implicit methods
+      //"-language:postfixOps"           // Remove feature warning about postfix operators
+    ),
+    javacOptions ++= Seq(
+      "-deprecation"
+    )
   )
 
-   lazy val androidSettings: Seq[Setting[_]] = inConfig(Android) (Seq(
-
-    platformName := "android-" + buildAndroidVersion,
-    keyalias := buildName,
-
-    useProguard := true,
-    proguardOption := """
-      -dontpreverify
-      -dontwarn scala.**
-      -repackageclasses ''
-      -allowaccessmodification
-      -optimizations !code/simplification/arithmetic
-      -keep class scala.Function1
-    """
-    //proguardOptimizations := Seq.empty
-  ))
-
-  lazy val fullAndroidSettings =
-    settings ++
-    AndroidProject.androidSettings ++
-    TypedResources.settings ++
-    androidSettings
-
-    // For more advance features:
-    //AndroidManifestGenerator.settings ++
-    //AndroidMarketPublish.settings ++ 
 }
 
 object AndroidBuild extends Build {
   lazy val main = Project (
     General.buildName,
     file("."),
-    settings = General.fullAndroidSettings
+    settings = General.settings
   )
 }
