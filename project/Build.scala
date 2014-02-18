@@ -18,12 +18,13 @@ object General {
     scalaVersion := buildScalaVersion,
     platformTarget in Android := "android-" + buildAndroidVersion,
     proguardScala in Android := true,
+    debugIncludesTests in Android := false,
+
     proguardOptions in Android ++= Seq(
       //"-keep public class * extends junit.framework.TestCase",
       //"-keepclass class * extends junit.framework.TestCase { *; }",
       "-dontwarn android.test.**",
-      "-dontwarn java.awt.**",
-      "-dontwarn java.applet.Applet"
+      "-dontwarn java.awt.**"
     ),
 
     // Jbox2d
@@ -41,8 +42,9 @@ object General {
       "-deprecation",                  // Enable detailed deprecation warnings 
       "-unchecked",                    // Enable detailed unchecked warnings 
       //"-language:experimental.macros", // Enable scala macros
-      "-language:implicitConversions"//, // Remove feature warning about implicit methods
-      //"-language:postfixOps"           // Remove feature warning about postfix operators
+      "-language:implicitConversions", // Remove feature warning about implicit methods
+      "-language:postfixOps",          // Remove feature warning about postfix operators
+      "-language:reflectiveCalls"      // Remove feature warning about reflective calls
     ),
     javacOptions ++= Seq(
       "-deprecation"
