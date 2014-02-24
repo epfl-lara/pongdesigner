@@ -32,7 +32,7 @@ object General {
     
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test",
-    libraryDependencies += "junit" % "junit" % "4.11",
+    //libraryDependencies += "junit" % "junit" % "4.11",
 
     // Android support
     libraryDependencies += "com.android.support" % "support-v4" % "18.0.0",
