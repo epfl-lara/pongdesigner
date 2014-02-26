@@ -10,28 +10,22 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 case class TypeCheckException(msg: String) extends Exception(msg)
 
 trait TypeChecker {
-  
-  /*def typeCheck(iterator: RuleIterator): RuleIterator = {
-    iterator.typeCheck(this)
-    iterator
-  }*/
-
-  /*def typeCheck(rule: Rule): Rule = {
-    typeCheck(rule.cond, TBoolean)
-    typeCheck(rule.action)
-    rule
-  }*/
 
   def typeCheck(stat: Stat)(implicit context: Context): Stat = stat match {
     case ParExpr(a::l) =>
+      //MIKAEL why variable `t` ? 
       val t = typeCheck(a)
       l foreach typeCheck
       stat
+      
     case ParExpr(Nil) =>
       stat
+      
     case i @ Foreach1(cat, name, rule) =>
+      //MIKAEL why inverse the typechecking only for this case ?
       i.typeCheck(this)
       i
+      
     case Block(stats)  => 
       stats foreach typeCheck
       stat
@@ -39,16 +33,19 @@ trait TypeChecker {
     case If(c, s1, s2) => 
       typeCheck(c, TBoolean)
       typeCheck(s1)
-      if(s2 != None) typeCheck(s2.get)
+      if (s2.isDefined) typeCheck(s2.get)
       stat
 
-    case Assign(prop, rhs) =>
+    case Assign(props, rhs) =>
       //Log.d("Assign", s"$prop")
-      prop match {
-        case Nil => typeCheck(rhs, TUnit)
-        case a::Nil => val t = typeCheck(a).getType
+      props match {
+        case Nil => 
+          typeCheck(rhs, TUnit)
+        case a::Nil => 
+          val t = typeCheck(a).getType
           typeCheck(rhs, t)
-        case u => val t = TTuple(u.map(typeCheck(_).getType))
+        case _ => 
+          val t = TTuple(props.map(typeCheck(_).getType))
           typeCheck(rhs, t)
       }
       stat
@@ -59,13 +56,16 @@ trait TypeChecker {
       block.setBinding(name, o.obj)
       typeCheck(block)
       stat
+      
     case Delete(name, ref) =>
       typeCheck(ref, TObject)
       stat
+      
     case Reset(prop) =>
       stat
       
-    case NOP => stat//Do nothing, it typechecks
+    case NOP => 
+      stat
   }
 
   def typeCheck(expr: Expr)(implicit context: Context): Expr = expr match {
@@ -75,33 +75,41 @@ trait TypeChecker {
         case (arg, Formal(t, _)) => typeCheck(arg, t)
       }
       expr.setType(m.retType)
+      
     case NValue(v, index) =>
-      if(index > 1 || index < 0) {
+      if (index > 1 || index < 0) {
         throw new TypeCheckException(s"Inconsistent index in NValue $expr: $index")
       }
       typeCheck(v, TVec2)
       expr.setType(TFloat)
+      
     case Count(category: Category) =>
       expr.setType(TInt)
-    case VecExpr(l) =>
-      val l2 = l.map(typeCheck(_).getType)
-      l2 match {
+      
+    case VecExpr(exprs) =>
+      val types = exprs.map(typeCheck(_).getType)
+      types match {
         case List(TFloat | TInt, TFloat | TInt) => expr.setType(TVec2)
-        case _ => expr.setType(TTuple(l2))
+        case _ => expr.setType(TTuple(types))
       }
-    case c@Choose(prop, constraint) =>
+      
+    case c @ Choose(prop, _) =>
       // At this point, the objects have been determined.
       if(c.evaluatedProgram == null) {
         // Any setBindings have already been called.
         c.evaluatedProgram = ComfusySolver.solve(c.prop, c.getContraintForSolving)
       }
       typeCheck(c.evaluatedProgram)
+      
     case IfFunc(cond, ifTrue, ifFalse) =>
       typeCheck(cond, TBoolean)
-      val t= typeCheck(ifFalse).getType
+      val t = typeCheck(ifFalse).getType
       typeCheck(ifTrue, t)
       expr.setType(t)
-    case ref: PropertyRef => ref.setType(ref.getPongType)
+      
+    case ref: PropertyRef => 
+      ref.setType(ref.getPongType)
+      
     case ref: PropertyIndirect =>
       if(ref.expr != null) {
         val t = typeCheck(ref.expr).getType
@@ -118,11 +126,11 @@ trait TypeChecker {
           case "picture" => expr.setType(TString)
           case "visible" => expr.setType(TBoolean)
           case "value" => expr.setType(TInt)
-          case _ =>
+          case _ => //MIKAEL really nothing here ? 
         }
         ref
-        //throw new TypeCheckException(s"This expression cannot be type checked: $ref")
       }
+      
     case IntegerLiteral(_) => expr.setType(TInt)
     case FloatLiteral(_) => expr.setType(TFloat)
     case StringLiteral(_) => expr.setType(TString)
@@ -138,6 +146,7 @@ trait TypeChecker {
     case On(_) => expr.setType(TBoolean)
     case Once(_) => expr.setType(TBoolean)
     case Val(_) => expr.setType(TFloat)
+    
     case Plus(lhs, rhs) =>
       (typeCheck(lhs, TInt, TFloat, TVec2): @unchecked) match {
         case TInt => (typeCheck(rhs, TInt, TFloat): @unchecked) match {

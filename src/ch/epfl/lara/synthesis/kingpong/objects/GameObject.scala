@@ -14,7 +14,7 @@ import scala.language.dynamics
 import ch.epfl.lara.synthesis.kingpong.Game
 
 object GameObject {
-final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
+  final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
 }
 
 abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
@@ -24,8 +24,19 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   /** Main point for this object. Here set to the position. */
   protected def point = Vec2(x.get, y.get)
 
-  private[this] var mProperties: MMap[String, Property[_]] = MMap.empty
-  def properties = mProperties
+  private val _properties = MMap.empty[String, Property[_]]
+  
+  /** All properties in an immutable map. */
+  def properties = _properties.toMap
+  
+  /**
+   * Retrieves a property or anything else.
+   * //MIKAEL comment
+   */
+  private val _ephemeralProperties = MMap.empty[String, EphemeralProperty[_]]
+  
+  /** All ephemeral properties in an immutable map. */
+  def ephemeralProperties = _ephemeralProperties.toMap
 
   // --------------------------------------------------------------------------
   // Properties
@@ -126,63 +137,58 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   }
 
   /**
-   * Reset all properties to their initial values.
+   * //MIKAEL add comment
    */
   def copyPropertiesFrom(other: GameObject, interpreter: Interpreter)(implicit context: Context) = {
+    //MIKAEL check if this is always correct
     (properties.values zip other.properties.values).foreach { case (v1, v2) => v1.set(v2.getPongValue) }
   }
 
-  /**
-   * Retrieves a property or anything else.
-   */
-  var ephemeralProperties = MMap[String, EphemeralProperty[_]]()
   def get(property: String) = this(property)
-  protected def apply(property: String): Expr = { //PropertyRefTrait
-    if (properties contains property) properties(property).ref else {
-      property match {
-        case "bottom" =>
-          this match {
-            case r: Rectangular => this("y") + this("height") / 2
-            case c: Circle => this("y") + this("radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "top" =>
-          this match {
-            case r: Rectangular => this("y") - this("height") / 2
-            case c: Circle => this("y") - this("radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "left" =>
-          this match {
-            case r: Rectangular => this("x") - this("width") / 2
-            case c: Circle => this("x") - this("radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "right" =>
-          this match {
-            case r: Rectangular => this("x") + this("width") / 2
-            case c: Circle => this("x") + this("radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "center" =>
-          VecExpr(List(this("x"), this("y")))
-        case property =>
-          // Maybe a temporary property.
-          if (ephemeralProperties contains property) {
-            ephemeralProperties(property).ref
-          } else {
-            property match {
-              case GameObject.EphemeralEndings(propertyName, extension) if properties contains propertyName =>
-                // Create a new ephemeral
-                val res = properties(propertyName).copyEphemeral(property)
-                ephemeralProperties(property) = res
-                res.ref
-              case _ =>
-                throw new Exception(s"$this does not have a $property method")
-            }
-          }
-      }
+  
+  protected def apply(property: String): Expr = property match {
+    case _ if properties contains property => 
+      properties(property).ref
+    
+    case "bottom" => this match {
+      case r: Rectangular => this("y") + this("height") / 2
+      case c: Circle => this("y") + this("radius")
+      case _ => throw new Exception(s"$this does not have a $property method")
     }
+    
+    case "top" => this match {
+      case r: Rectangular => this("y") - this("height") / 2
+      case c: Circle => this("y") - this("radius")
+      case _ => throw new Exception(s"$this does not have a $property method")
+    }
+    
+    case "left" => this match {
+      case r: Rectangular => this("x") - this("width") / 2
+      case c: Circle => this("x") - this("radius")
+      case _ => throw new Exception(s"$this does not have a $property method")
+    }
+    
+    case "right" => this match {
+      case r: Rectangular => this("x") + this("width") / 2
+      case c: Circle => this("x") + this("radius")
+      case _ => throw new Exception(s"$this does not have a $property method")
+    }
+    
+    case "center" =>
+      VecExpr(List(this("x"), this("y")))
+    
+    // Maybe a temporary property
+    case _ if ephemeralProperties contains property =>
+      ephemeralProperties(property).ref
+      
+    case GameObject.EphemeralEndings(propertyName, extension) if properties contains propertyName =>
+      // Create a new ephemeral
+      val res = properties(propertyName).copyEphemeral(property)
+      _ephemeralProperties(property) = res
+      res.ref
+    
+    case _ =>
+      throw new Exception(s"$this does not have a $property method")
   }
 
   /**
@@ -238,7 +244,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // Property with no relationship with the physical world
   protected def simpleProperty[T: PongType](name: String, init: Expr): Property[T] = {
     val p = new SimpleProperty[T](name, init, this)
-    properties += (name -> p)
+    _properties += (name -> p)
     p
   }
 
@@ -247,7 +253,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
-    properties += (name -> p)
+    _properties += (name -> p)
     p
   }
 
@@ -257,7 +263,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
       val flusher = f
       val loader = l
     }
-    properties += (name -> p)
+    _properties += (name -> p)
     p
   }
 

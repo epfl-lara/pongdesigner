@@ -50,7 +50,6 @@ abstract class Property[T : PongType](val parent: GameObject) extends History wi
   /** Set the next value to `v`.
    *  Call `validate()` to push this value to the current state.
    */
-
   def setNext(v: T): self.type = mSetNext(v)
   def setNext(v: Value): self.type = setNext(tpe.toScalaValue(v))
   

@@ -30,27 +30,32 @@ abstract class PhysicalObject(init_name: Expr,
                               init_color: Expr
                              ) extends GameObject(init_name) { self =>
   
-  def body: Body = mBody
+  private var _body: Body = null
+  def body: Body = _body
   
-  private var mBody: Body = null
-  private def setBody(b: Body) = mBody = b
-  protected def body_def: BodyDef
-  protected def fixture_def: Seq[FixtureDef]
+  protected def bodyDef: BodyDef
+  protected def fixtureDef: Seq[FixtureDef]
   protected def fixture = body.getFixtureList()
   private var bodyRemovedFromWorld = false
   protected var last_fixture: Fixture = null
+  
   private def removeFromWorld() = {
     game.world.world.destroyBody(body)
     bodyRemovedFromWorld = true // We keep the old body for flushing and loading properties.
   }
+  
+  //MIKAEL this method always uses the initial values, is it intended ? 
+  // bodyDef and fixtureDef should be functions that use the current values, or the initial for the first time
   protected def addToWorld() = {
-    val body = game.world.world.createBody(body_def)
-    fixture_def foreach { fixture_definition =>
-      last_fixture = body.createFixture(fixture_definition) }
+    val body = game.world.world.createBody(bodyDef)
+    fixtureDef foreach { fixture_definition =>
+      last_fixture = body.createFixture(fixture_definition) 
+    }
     body.setUserData(this)
-    setBody(body)
+    _body = body
     bodyRemovedFromWorld = false
   }
+  
   override def setExistenceAt(time: Long) = {
     val exists = super.setExistenceAt(time)
     if(bodyRemovedFromWorld && exists) {
@@ -182,7 +187,7 @@ case class Rectangle (val game: Game,
 
   def className = "Rect"
   
-  protected val body_def = {
+  protected val bodyDef = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
@@ -193,7 +198,7 @@ case class Rectangle (val game: Game,
     body_def
   }
   
-  protected val fixture_def = {
+  protected val fixtureDef = {
     val shape = new PolygonShape()
     shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
                    game.typeCheckAndEvaluate[Float](init_height)/2)
@@ -220,6 +225,7 @@ case class Rectangle (val game: Game,
     shape.setAsBox(width.get/2, h/2)
     body.resetMassData() // update the body mass
   }
+  
   val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor) { h =>
     body.getFixtureList().setSensor(h)
   }
@@ -252,7 +258,7 @@ case class Character (val game: Game,
 
   def className = "Rect"
   
-  protected val body_def = {
+  protected val bodyDef = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
@@ -267,7 +273,7 @@ case class Character (val game: Game,
   shapeSensor.m_radius = game.typeCheckAndEvaluate[Float](init_width)/2
   shapeSensor.m_p.set(0f, game.typeCheckAndEvaluate[Float](init_height)/2)
   
-  protected val fixture_def = {
+  protected val fixtureDef = {
     val shape = new PolygonShape()
     shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
                    game.typeCheckAndEvaluate[Float](init_height)/2)
@@ -350,9 +356,11 @@ case class Circle(val game: Game,
              init_tpe: BodyType = BodyType.DYNAMIC
             ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
                                      init_density, init_friction, init_restitution, init_fixedRotation, init_color) {
-	def className = "Circ"
+  
+  def className = "Circ"
+  
   // Create the physical JBox2D body with a circle shape.
-  protected val body_def = {
+  protected val bodyDef = {
     val body_def = new BodyDef()
     body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
                              game.typeCheckAndEvaluate[Float](init_y))
@@ -364,7 +372,7 @@ case class Circle(val game: Game,
     body_def
   }
   
-  protected val fixture_def = {
+  protected val fixtureDef = {
     val shape = new CircleShape()
     shape.m_radius = game.typeCheckAndEvaluate[Float](init_radius)
   
@@ -382,6 +390,7 @@ case class Circle(val game: Game,
     fixture.getShape().m_radius = r
     body.resetMassData() // update the body mass
   }
+  
   val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor) { h =>
     body.getFixtureList().setSensor(h)
   }

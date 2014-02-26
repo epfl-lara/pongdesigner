@@ -29,14 +29,11 @@ object Types {
     override def toString = "Boolean"
   }
 
-  /*case object TVec2 extends Type {
-    override def accept(tpe: Type) = tpe == this || tpe == TTuple(List(TFloat, TFloat))
-    override def toString = "Vec2"
-  }*/
   case object TObject extends Type {
     override def accept(tpe: Type) = tpe == this
     override def toString = "Object"
   }
+  
   case class TTuple(types: List[Type]) extends Type {
     override def accept(tpe: Type) = tpe == this || {
       (tpe, types) match {
@@ -44,9 +41,11 @@ object Types {
         case _ => false
       }
     }
-    override def toString = types.toString.substring(4)
+    override def toString = types.mkString("(", ", ", ")")
   }
-  final val TVec2 = TTuple(List(TFloat, TFloat))
+    
+  val TVec2 = TTuple(List(TFloat, TFloat))
+  
   case object TUnit extends Type {
     override def accept(tpe: Type) = tpe match {
       case TUntyped | TError => false

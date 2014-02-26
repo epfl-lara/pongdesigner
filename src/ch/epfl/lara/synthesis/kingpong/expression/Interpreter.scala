@@ -48,11 +48,15 @@ trait Interpreter {
   def eval(stat: Stat)(implicit context: Context): Unit = stat match {
     case ParExpr(a::l) =>
       eval(a)
+      
     case ParExpr(Nil) =>
+      // do nothing
+      
     case f @ Foreach1(cat, name, r) =>
       f.evaluate(this)
+      
     case Block(stats) => 
-      stats map eval
+      stats foreach eval
 
     case If(c, s1, s2) => 
       eval(c) match {
@@ -61,14 +65,15 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case a@Assign(prop, rhs) =>
-      def setValue(prop: Expr, v: Value): Unit = 
-        prop match {
-        case prop:PropertyRef => prop.setNext(v)
+    case a @ Assign(props, rhs) =>
+      def setValue(prop: Expr, v: Value): Unit = prop match {
+        case prop: PropertyRef => 
+          prop.setNext(v)
           //context.addAssignment(a, prop)
           //context.set(prop.property.fullname, v)
-        case prop:PropertyIndirect => prop.expr match {
-          case p:PropertyRef => p.setNext(v)
+        case prop: PropertyIndirect => prop.expr match {
+          case p: PropertyRef => 
+            p.setNext(v)
           //context.addAssignment(a, prop)
           ///context.set(prop.property.fullname, v)
           case null => eval(prop.indirectObject) match {
@@ -80,31 +85,33 @@ trait Interpreter {
         }
         case _ => throw InterpreterException(s"$prop is not an assignable property")
       }
-      val v = eval(rhs)
-      v match {
-        case TupleV(l) => 
-          if(l.size == prop.size) {
-            (prop zip l) foreach { case (p, r) => setValue(p, r) }
+      
+      eval(rhs) match {
+        case TupleV(values) => 
+          if (values.size == props.size) {
+            (props zip values) foreach { case (prop, value) => setValue(prop, value) }
           } else {
-            throw InterpreterException(s"$prop is assigned not the same number of variables from $rhs")
+            throw InterpreterException(s"$props is assigned not the same number of variables from $rhs")
           }
-        case c@Vec2V(x, y) =>
-          prop match {
-            case List(p1, p2) => setValue(p1, FloatV(x))
-                                 setValue(p2, FloatV(y))
-            case List(p1) => setValue(p1, c)
-            case _ => throw InterpreterException(s"$prop is assigned not the same number variables from $rhs")
-          }
-        case e => prop match {
-          case p::Nil => setValue(p, e)
-          case _ => throw InterpreterException(s"$prop is assigned not the same number variables from $rhs")
+        case c @ Vec2V(x, y) => props match {
+          case List(p1, p2) => 
+            setValue(p1, FloatV(x))
+            setValue(p2, FloatV(y))
+          case List(p1) => 
+            setValue(p1, c)
+          case _ => 
+            throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
+        }
+        case rhsValue => props match {
+          case p::Nil => setValue(p, rhsValue)
+          case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
         }
       }
 
     case Copy(name, ref, block) =>
-      if(ref.obj != null) {
+      if (ref.obj != null) {
         val realname = context.getNewName(name)
-        val c = ref.obj.getCopy(name=realname, this)
+        val c = ref.obj.getCopy(name = realname, this)
         c.creation_time.set(context.time.toInt)
         c.flush()
         context add c
@@ -112,91 +119,103 @@ trait Interpreter {
         eval(block)
         context.addEvent(GameObjectCreated(c))
       }
-    case Reset(prop) =>
-      prop match {
-        case prop:PropertyRef => prop.property.reset(this)
-        case prop:PropertyIndirect => prop.expr match {
-          case prop:PropertyRef => prop.property.reset(this)
-          case _ => throw InterpreterException(s"$prop is not a resetable property")
-        }
+      
+    case Reset(prop) => prop match {
+      case ref: PropertyRef => ref.property.reset(this)
+      case indirectRef: PropertyIndirect => indirectRef.expr match {
+        case ref: PropertyRef => ref.property.reset(this)
+        case _ => throw InterpreterException(s"$prop is not a resetable property")
       }
-    case Delete(name, ref) =>
-      if(ref.obj != null) {
-        //val realname = context.getNewName(name)
-        //val c = ref.obj.getCopy(name=realname, this)
-        ref.obj.deletion_time.set(context.time.toInt)
-        context.addEvent(GameObjectDeleted(ref.obj))
-      }
+    }
+      
+    case Delete(name, ref) => if (ref.obj != null) {
+      //val realname = context.getNewName(name)
+      //val c = ref.obj.getCopy(name=realname, this)
+      ref.obj.deletion_time.set(context.time.toInt)
+      context.addEvent(GameObjectDeleted(ref.obj))
+    }
+      
     case NOP => //Do nothing
   }
 
-  def eval(expr: Expr)(implicit context: Context): Value = {
-    //Log.d("Eval", s"Evaluating $expr")
-    expr match {
-      case m @ MethodCall(name, args) =>
-        val m = context.getMethod(name)
-        val lv = args.map(eval(_))
-        if(m.fastImplementation != null) {
-          m.fastImplementation(lv)
-        } else {
-          m.args zip lv foreach {
-            case (Formal(t, Val(name)), value) => context.set(name, value)
-          }
-          eval(m.stats)
-          eval(m.retExpr)
+  def eval(expr: Expr)(implicit context: Context): Value = expr match {
+    case m @ MethodCall(name, args) =>
+      val m = context.getMethod(name)
+      val lv = args map eval
+      if (m.fastImplementation != null) {
+        m.fastImplementation(lv)
+      } else {
+        m.args zip lv foreach {
+          case (Formal(t, Val(name)), value) => context.set(name, value)
         }
-      case ObjectLiteral(o) => GameObjectV(o)
-      case NValue(v, index) =>
-        eval(v) match {
-          case Vec2V(x, y) => if(index == 0) FloatV(x) else FloatV(y)
-          case _ => error(expr)
-        }
-      case Count(c) => IntV(c.objects.size)
-      case VecExpr2(lhs, rhs) =>
-        eval(lhs) match {
-        case IntV(v1) => eval(rhs) match {
-          case IntV(v2) => Vec2V(v1, v2)
-          case FloatV(v2) => Vec2V(v1, v2)
-          case e => TupleV(List(IntV(v1), e))
-        }
-        case FloatV(v1) => eval(rhs) match {
-          case IntV(v2) => Vec2V(v1, v2)
-          case FloatV(v2) => Vec2V(v1, v2)
-          case _ => error(expr)
-        }
+        eval(m.stats)
+        eval(m.retExpr)
+      }
+
+    case NValue(v, index) => eval(v) match {
+      case Vec2V(x, _) if (index == 0) => FloatV(x)
+      case Vec2V(_, y) if (index == 1) => FloatV(y)
+      case _ => error(expr)
+    }
+        
+    case Count(c) => 
+      IntV(c.objects.size)
+    
+    case VecExpr2(lhs, rhs) => eval(lhs) match {
+      case IntV(v1) => eval(rhs) match {
+        case NumericV(v2) => Vec2V(v1, v2)
+        case e => TupleV(List(IntV(v1), e))
+      }
+      case FloatV(v1) => eval(rhs) match {
+        case NumericV(v2) => Vec2V(v1, v2)
         case _ => error(expr)
       }
-      case v@VecExpr(l) => TupleV(l map (eval(_)))
-    case c@Choose(prop, constraint) =>
+      case _ => error(expr)
+    }
+      
+    case VecExpr(l) => 
+      TupleV(l map eval)
+    
+    case c: Choose =>
       eval(c.evaluatedProgram)
-    case IfFunc(cond, ifTrue, ifFalse) => val BooleanV(c) = eval(cond)
-      if(c) eval(ifTrue) else eval(ifFalse)
+      
+    case IfFunc(cond, ifTrue, ifFalse) => eval(cond) match {
+      case BooleanV(true)  => eval(ifTrue)
+      case BooleanV(false) => eval(ifFalse)
+    }
+      
     case ref: PropertyIndirect => 
-      if(ref.expr == null) {
+      if (ref.expr == null) {
         eval(ref.indirectObject) match {
-          case GameObjectV(null) =>
-            throw new InterpreterException(s"This property cannot be evaluated : $ref")
-          case GameObjectV(obj) => eval(obj.get(ref.prop))
+          case GameObjectV(obj) if obj != null => 
+            eval(obj.get(ref.prop))
           case _ => 
            throw new InterpreterException(s"This property cannot be evaluated : $ref")
         }
       } else {
         eval(ref.expr)
       }
+      
     case ref: PropertyRef => 
       ref.get
       //context.getOrElse(ref.fullname, ref.get)
+      
+    case ObjectLiteral(o) => GameObjectV(o)
     case IntegerLiteral(v) => IntV(v)
     case FloatLiteral(v) => FloatV(v)
     case StringLiteral(v) => StringV(v)
     case BooleanLiteral(v) => BooleanV(v)
     case Vec2Literal(x, y) => Vec2V(x, y)
     case UnitLiteral => UnitV
+    
+    //MIKAEL these 3 cases are the same no ?
     case Val("dx") =>
       context.getOrElse("dx", FloatV(0))
     case Val("dy") =>
       context.getOrElse("dy", FloatV(0))
-    case Val(s) => context.getOrElse(s, FloatV(0))
+    case Val(s) => 
+      context.getOrElse(s, FloatV(0))
+    
     case Plus(lhs, rhs) => eval(lhs) match {
       case IntV(v1) => eval(rhs) match {
         case IntV(v2) => IntV(v1 + v2)
@@ -345,11 +364,13 @@ trait Interpreter {
       var toy = 0f
       var first = true
       var n = 0
+      
       if(!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
         n *= 2
       }
-      context.fingerMoves(_.obj.exists(_ == o.obj)) foreach {
-        event => if(first) {
+      
+      context.fingerMoves(_.obj.exists(_ == o.obj)) foreach { event => 
+        if (first) {
           fromx = event.from.x
           fromy = event.from.y
           first = false
@@ -358,11 +379,12 @@ trait Interpreter {
         toy = event.to.y
         n += 1
       }
+      
       var result = if(n != 0) {
         context.set("from", Vec2V(fromx, fromy))
         context.set("to", Vec2V(tox, toy))
-        context.set("dx", FloatV(tox-fromx))
-        context.set("dy", FloatV(toy-fromy))
+        context.set("dx", FloatV(tox - fromx))
+        context.set("dy", FloatV(toy - fromy))
         true
       } else false
       
@@ -375,11 +397,13 @@ trait Interpreter {
       BooleanV(context.fingerUps(_.obj.exists(_ == o.obj)).nonEmpty)
 
     case Collision(o1, o2) =>
-      val v = context.beginContacts{ c =>
+      //MIKAEL optimize this ?
+      val isCollision = context.beginContacts { c =>
         (c.contact.objectA == o1.obj && c.contact.objectB == o2.obj) ||
         (c.contact.objectA == o2.obj && c.contact.objectB == o1.obj)
       }.nonEmpty
-      BooleanV(v)
+      BooleanV(isCollision)
+      
     case FingerCoordX1 =>
       FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
     case FingerCoordX2 =>
@@ -388,28 +412,31 @@ trait Interpreter {
       FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].y)
     case FingerCoordY2 =>
       FloatV(context.getOrElse("to", Vec2V(0, 0)).asInstanceOf[Vec2V].y)
+    
     case g @ GameObjectRef(i) =>
-      if(g.obj != null) {
+      if (g.obj != null) {
         GameObjectV(g.obj)
       } else {
         eval(i) match {
-          case c @ GameObjectV(o) => g.obj = o
+          case c @ GameObjectV(o) => 
+            g.obj = o
             c
-          case s @ StringV(t) => context.get(t) match {
+          case StringV(t) => context.get(t) match {
             case Some(v) => v
             case None => throw new InterpreterException(s"$t is not a valid identifier")
           }
-          case _ => throw new InterpreterException("")
+          case _ => throw new InterpreterException("") //MIKAEL add error message
         }
       }
+    
     case On(cond) => // Seems to be useless / or to be used when a collision occurs once until it is removed.
       eval(cond) // TODO : Check that this is true until the condition is false, for any pair.
     case Once(cond) =>
       eval(cond) // TODO : Check that it happens only once.
+    
     case null =>
-      Log.d("Interpreter", "Erreur while evaluating null")
-      throw new InterpreterException("Error while evaluating null")
-    }
+      Log.d("kingpong", "Interpreter: Erreur while evaluating null")
+      error(expr)
   }
   
   private def error(expr: Expr): Nothing = {

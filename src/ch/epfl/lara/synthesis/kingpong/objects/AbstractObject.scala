@@ -62,6 +62,8 @@ case class Box[T : PongType](val game: Game,
   }
   
   private val shape = new PolygonShape()
+  
+  //MIKAEL we can remove this initialization, don't we ?
   shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
                  game.typeCheckAndEvaluate[Float](init_height)/2)
 
@@ -73,7 +75,7 @@ case class Box[T : PongType](val game: Game,
   def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
-    this.copy[T](init_name=StringIsExpr(name))
+    this.copy[T](init_name = name)
   }
 }
 
@@ -94,9 +96,11 @@ case class Joystick(val game: Game,
                         init_radius: Expr, 
                         init_visible: Expr,
                         init_color: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) with InputManager{
+                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+                         with InputManager {
   
-  def className = s"Joystick"
+  def className = "Joystick"
+  
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------
@@ -118,9 +122,11 @@ case class Joystick(val game: Game,
       right.set(dx > radius.get / 2)
       left.set(dx < -radius.get / 2)
     }
+    
     def updateAbsoluteCoords(at: Vec2) = {
       updateRelativeCoords( at.x - x.get, at.y - y.get)
-    }    
+    }
+    
     from.events foreach {
       case FingerMove(_, at, objs) if objs contains this =>
         if(contains(at)) updateAbsoluteCoords(at) else updateRelativeCoords(0, 0)
@@ -142,6 +148,7 @@ case class Joystick(val game: Game,
   }
   
   private val shape = new CircleShape()
+  // MIKAEL here we assume the radius will never change, is it ok ?
   shape.setRadius(game.typeCheckAndEvaluate[Float](init_radius))
 
   def getShape = {
@@ -149,10 +156,11 @@ case class Joystick(val game: Game,
     shape
   }
 
+  // MIKEAL shouldn't we use the shape instead of the AABB ?
   def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
-    this.copy(init_name=StringIsExpr(name))
+    this.copy(init_name = name)
   }
 }
 
@@ -168,8 +176,6 @@ case class PathMovement(val game: Game,
   
 
   def className = "Movement"
-  
-  
 
   def contains(pos: Vec2): Boolean = false
   def getAABB(): AABB = ???
@@ -221,15 +227,3 @@ case class Array2D(val game: Game, init_name: Expr,
  protected def makecopy(name: String): 
  GameObject = ???
 }
-
-
-
-
-
-
-
-
-
-
-
-
