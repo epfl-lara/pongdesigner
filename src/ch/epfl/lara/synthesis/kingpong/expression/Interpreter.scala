@@ -208,11 +208,6 @@ trait Interpreter {
     case Vec2Literal(x, y) => Vec2V(x, y)
     case UnitLiteral => UnitV
     
-    //MIKAEL these 3 cases are the same no ?
-    case Val("dx") =>
-      context.getOrElse("dx", FloatV(0))
-    case Val("dy") =>
-      context.getOrElse("dy", FloatV(0))
     case Val(s) => 
       context.getOrElse(s, FloatV(0))
     
@@ -397,7 +392,7 @@ trait Interpreter {
       BooleanV(context.fingerUps(_.obj.exists(_ == o.obj)).nonEmpty)
 
     case Collision(o1, o2) =>
-      //MIKAEL optimize this ?
+      //TODO optimize this ?
       val isCollision = context.beginContacts { c =>
         (c.contact.objectA == o1.obj && c.contact.objectB == o2.obj) ||
         (c.contact.objectA == o2.obj && c.contact.objectB == o1.obj)
@@ -425,7 +420,7 @@ trait Interpreter {
             case Some(v) => v
             case None => throw new InterpreterException(s"$t is not a valid identifier")
           }
-          case _ => throw new InterpreterException("") //MIKAEL add error message
+          case _ => error(expr)
         }
       }
     

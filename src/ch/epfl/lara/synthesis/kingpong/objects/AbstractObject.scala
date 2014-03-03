@@ -63,10 +63,6 @@ case class Box[T : PongType](val game: Game,
   
   private val shape = new PolygonShape()
   
-  //MIKAEL we can remove this initialization, don't we ?
-  shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
-                 game.typeCheckAndEvaluate[Float](init_height)/2)
-
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
@@ -148,10 +144,9 @@ case class Joystick(val game: Game,
   }
   
   private val shape = new CircleShape()
-  // MIKAEL here we assume the radius will never change, is it ok ?
-  shape.setRadius(game.typeCheckAndEvaluate[Float](init_radius))
 
   def getShape = {
+    shape.setRadius(radius.get)
     shape.m_p.set(x.get, y.get)
     shape
   }

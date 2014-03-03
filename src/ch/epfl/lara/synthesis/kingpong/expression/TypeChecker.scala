@@ -12,13 +12,8 @@ case class TypeCheckException(msg: String) extends Exception(msg)
 trait TypeChecker {
 
   def typeCheck(stat: Stat)(implicit context: Context): Stat = stat match {
-    case ParExpr(a::l) =>
-      //MIKAEL why variable `t` ? 
-      val t = typeCheck(a)
-      l foreach typeCheck
-      stat
-      
-    case ParExpr(Nil) =>
+    case ParExpr(stats) =>
+      stats foreach typeCheck
       stat
       
     case i @ Foreach1(cat, name, rule) =>
