@@ -66,17 +66,17 @@ class PlatformGame extends Game {
       player("velocity") = VecExpr(player("velocity").x, -12)
   )
   
-  val r2 = whenever(j("right"))(
+  val r2 = whenever(j("isRight"))(
       player("velocity") = VecExpr(3, player("velocity").y),
       player("friction") = 0f
   )
   
-  val r3 = whenever(j("left"))(
+  val r3 = whenever(j("isLeft"))(
       player("velocity") = VecExpr(-3, player("velocity").y),
       player("friction") = 0f
   )
   
-  val r4 = whenever(!j("left") && !j("right"))(
+  val r4 = whenever(!j("isLeft") && !j("isRight"))(
       player("friction") = 1f
   )
   

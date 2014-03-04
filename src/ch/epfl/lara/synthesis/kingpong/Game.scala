@@ -122,8 +122,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
    * if false, it is deactivated.
    */
   def setInstantProperties(activate: Boolean) = {
-    objects foreach { o =>
-      o.writableProperties.foreach { _.setInstant(activate) }
+    for (o <- objects; prop <- o.writableProperties) {
+      prop.setInstant(activate)
     }
   }
 
@@ -156,7 +156,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def circle(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
-             radius: Expr = category.radius, //TODO centralized default values
+             radius: Expr = category.radius,
              visible: Expr = category.visible,
              velocity: Expr = category.velocity,
              angularVelocity: Expr = category.angularVelocity,
@@ -209,7 +209,6 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                          density, friction, restitution, fixedRotation, color, sensor, tpe)
-    //val r = new Rectangle
     if(category != null) r.setCategory(category)
     r.reset(this)(EventHistory)
     r.flush()
@@ -280,7 +279,6 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
                 tpe: BodyType = category.tpe): Character = {
     val r = new Character(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                           density, friction, restitution, fixedRotation, color, tpe)
-    //val r = new Rectangle
     if(category != null) r.setCategory(category)
     r.reset(this)(EventHistory)
     r.flush()
@@ -300,17 +298,6 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   def whenever(cond: Expr)(actions: Stat*): Stat = {
     If(cond, toSingleStat(actions.toSeq), None)
   }
-  //def whenever(cond: Expr)(actions: Seq[Stat]): Stat = {
-  //  If(cond, toSingleStat(actions), None)
-  //}
-
-  /*def once(cond: Expr): Expr = {
-    Once(cond)
-  }
-
-  def on(cond: Expr): Expr = {
-    On(cond)
-  }*/
   
   def gc() = {
     _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
