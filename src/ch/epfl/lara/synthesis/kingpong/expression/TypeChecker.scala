@@ -103,14 +103,14 @@ trait TypeChecker {
       expr.setType(t)
       
     case ref: PropertyRef => 
-      ref.setType(ref.getPongType)
+      ref.setType(ref.property.getPongType)
       
     case ref: PropertyIndirect =>
       if(ref.expr != null) {
         val t = typeCheck(ref.expr).getType
         ref.setType(t)
       } else if(ref.obj != null) {
-        val t = typeCheck(ref.obj.get(ref.prop)).getType
+        val t = typeCheck(ref.obj(ref.prop)).getType
         ref.setType(t)
       } else {
         typeCheck(ref.indirectObject, TObject)

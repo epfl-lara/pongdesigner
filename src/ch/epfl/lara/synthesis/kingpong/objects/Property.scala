@@ -9,23 +9,50 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Value
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
-abstract class Property[T : PongType](val parent: GameObject) extends History with Snap { self => 
+abstract class Property[T : PongType]() { self => 
   
+  def parent: GameObject
   def name: String
   lazy val fullname = parent.name.get + name
 
   /** Current value. */
   def get: T
 
+  /** Get the current value converted into a Pong Type. */
   def getPongValue: Value = tpe.toPongValue(get)
 
   /** Next value after the end of this time slot. */
-  def next: T
+  def next: T  
+
+  /** Get the Pong type of this property. */
+  def getPongType: Type = tpe.getPongType
+
+  /** get this property as an Expression. */
+  def expr: Expr
+  
+  /** The PongType implicit used for conversions. */
+  def tpe = implicitly[PongType[T]]
+  
+  /** Get an equivalent ephemeral copy. */
+  def copyEphemeral(new_name: String): EphemeralProperty[T] = {
+    new EphemeralProperty[T](new_name, parent)
+  }
+}
+
+abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T] { self => 
+  
+}
+
+abstract class RWProperty[T : PongType]() extends Property[T] with History with Snap { self => 
+  
+  /** Get the reference of this property. */
+  lazy val ref = PropertyRef(this)
+  def expr = ref
   
   /** Validate the next value and replace the current value with it. 
    */
   def validate(): self.type
-
+  
   /** Write the current value to the underlying structure. The common case
    *  is to force this value to the physical world, but it could also do
    *  nothing.
@@ -65,26 +92,14 @@ abstract class Property[T : PongType](val parent: GameObject) extends History wi
 
   /** Interpret the initial expression and set the current value. */
   def reset(interpreter: Interpreter)(implicit context: Context): self.type
-
-  def getPongType: Type = tpe.getPongType
-
-  /** Get the reference of this property. */
-  lazy val ref = PropertyRef(this)
-
-  /** The PongType implicit used for conversions. */
-  def tpe = implicitly[PongType[T]]
   
-  /** Get an equivalent ephemeral copy. */
-  def copyEphemeral(new_name: String): EphemeralProperty[T] = {
-    new EphemeralProperty[T](new_name, parent)
-  }
 }
 
 /**
  * Property which will not be persistent and is only for one-turn computation.
  * Its value is disregarded afterwards
  */
-class EphemeralProperty[T: PongType](val name: String, parent: GameObject) extends Property[T](parent) { self =>
+class EphemeralProperty[T: PongType](val name: String, val parent: GameObject) extends RWProperty[T] { self =>
   private var value: T = _
   def clear(): Unit  = {}
   def restore(t: Long): Unit = {}
@@ -107,7 +122,7 @@ class EphemeralProperty[T: PongType](val name: String, parent: GameObject) exten
 /**
  * Property with some history
  */
-abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, parent: GameObject) extends Property[T](parent) {
+abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, val parent: GameObject) extends RWProperty[T] {
   override def toString = s"ConcreteProperty($name)"
   
   protected var _crt: T = _

@@ -123,9 +123,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
    */
   def setInstantProperties(activate: Boolean) = {
     objects foreach { o =>
-      o.properties.foreach { case (name, prop) =>
-        prop.setInstant(activate)
-      }
+      o.writableProperties.foreach { _.setInstant(activate) }
     }
   }
 

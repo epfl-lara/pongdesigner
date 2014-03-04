@@ -279,7 +279,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           case Some(p) => // Activate the menu corresponding to this kind of property;
             p.name match {
               case "x" | "y" => evaluate(Block(moveMenu("obj") := ObjectLiteral(p.parent),
-                  List(moveMenu("x"), moveMenu("y")) := fromGame(List(p.parent.x.ref, p.parent.y.ref)),
+                  List(moveMenu("x"), moveMenu("y")) := fromGame(List(p.parent.x.expr, p.parent.y.expr)),
                   moveMenu("visible") := true))
               case _ =>
             }

@@ -216,12 +216,12 @@ case class Rectangle (val game: Game,
 
   protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
-  val width: Property[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
+  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
     shape.setAsBox(w/2, height.get/2)
     body.resetMassData() // update the body mass
   }
 
-  val height: Property[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
+  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
     shape.setAsBox(width.get/2, h/2)
     body.resetMassData() // update the body mass
   }
@@ -329,7 +329,7 @@ case class Character (val game: Game,
     shape.setAsBox(width.get/2, h/2)
     body.resetMassData() // update the body mass
   }
-  val grounded: Property[Boolean] = simpleProperty[Boolean]("grounded", false)
+  val grounded = simpleProperty[Boolean]("grounded", false)
   
   def makecopy(name: String): GameObject = {
     val thecopy = this.copy(game=game, init_name=name)
@@ -355,7 +355,8 @@ case class Circle(val game: Game,
              init_sensor: Expr,
              init_tpe: BodyType = BodyType.DYNAMIC
             ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
-                                     init_density, init_friction, init_restitution, init_fixedRotation, init_color) {
+                                     init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+              with Circular {
   
   def className = "Circ"
   
@@ -394,7 +395,7 @@ case class Circle(val game: Game,
   val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor) { h =>
     body.getFixtureList().setSensor(h)
   }
-    
+  
   def makecopy(name: String): GameObject = {
     val thecopy = this.copy(game=game, init_name=name)
     thecopy

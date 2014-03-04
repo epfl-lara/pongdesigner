@@ -9,6 +9,7 @@ import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.objects.Property
+import ch.epfl.lara.synthesis.kingpong.objects.RWProperty
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -65,21 +66,18 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case a @ Assign(props, rhs) =>
+    case Assign(props, rhs) =>
       def setValue(prop: Expr, v: Value): Unit = prop match {
-        case prop: PropertyRef => 
-          prop.setNext(v)
-          //context.addAssignment(a, prop)
-          //context.set(prop.property.fullname, v)
-        case prop: PropertyIndirect => prop.expr match {
-          case p: PropertyRef => 
-            p.setNext(v)
-          //context.addAssignment(a, prop)
-          ///context.set(prop.property.fullname, v)
-          case null => eval(prop.indirectObject) match {
-            case GameObjectV(o) => setValue(o.get(prop.prop), v)
+        case PropertyRef(writableProperty: RWProperty[_]) =>
+          writableProperty.setNext(v)
+        case indirectProperty: PropertyIndirect => indirectProperty.expr match {
+          case PropertyRef(writableProperty: RWProperty[_]) =>
+            writableProperty.setNext(v)
+          case null => eval(indirectProperty.indirectObject) match {
+            case GameObjectV(o) => 
+              setValue(o(indirectProperty.prop), v)
             case e =>
-              throw InterpreterException(s"$e is not an object  with property ${prop.prop}")
+              throw InterpreterException(s"$e is not an object  with property ${indirectProperty.prop}")
           }
           case e => throw InterpreterException(s"$e is not an assignable property")
         }
@@ -103,7 +101,7 @@ trait Interpreter {
             throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
         }
         case rhsValue => props match {
-          case p::Nil => setValue(p, rhsValue)
+          case List(p) => setValue(p, rhsValue)
           case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
         }
       }
@@ -121,11 +119,12 @@ trait Interpreter {
       }
       
     case Reset(prop) => prop match {
-      case ref: PropertyRef => ref.property.reset(this)
-      case indirectRef: PropertyIndirect => indirectRef.expr match {
-        case ref: PropertyRef => ref.property.reset(this)
+      case PropertyRef(writableProperty: RWProperty[_]) => writableProperty.reset(this)
+      case indirectProperty: PropertyIndirect => indirectProperty.expr match {
+        case PropertyRef(writableProperty: RWProperty[_]) => writableProperty.reset(this)
         case _ => throw InterpreterException(s"$prop is not a resetable property")
       }
+      case _ => throw InterpreterException(s"$prop cannot be reset")
     }
       
     case Delete(name, ref) => if (ref.obj != null) {
@@ -188,7 +187,7 @@ trait Interpreter {
       if (ref.expr == null) {
         eval(ref.indirectObject) match {
           case GameObjectV(obj) if obj != null => 
-            eval(obj.get(ref.prop))
+            eval(obj(ref.prop))
           case _ => 
            throw new InterpreterException(s"This property cannot be evaluated : $ref")
         }
@@ -196,9 +195,8 @@ trait Interpreter {
         eval(ref.expr)
       }
       
-    case ref: PropertyRef => 
-      ref.get
-      //context.getOrElse(ref.fullname, ref.get)
+    case PropertyRef(property) => 
+      property.getPongValue
       
     case ObjectLiteral(o) => GameObjectV(o)
     case IntegerLiteral(v) => IntV(v)

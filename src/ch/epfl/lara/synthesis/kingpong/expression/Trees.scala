@@ -101,7 +101,7 @@ object Trees {
         case p @ PropertyIndirect(indirectObject, prop) =>
           if(n == p.name && o != indirectObject.obj) {
             indirectObject.obj = o
-            p.expr = o.get(prop)
+            p.expr = o(prop)
           }
           ContinueWithChildren
         case c @ Choose(prop, constraint) =>
@@ -165,7 +165,7 @@ object Trees {
     def recursiveFlattenBlock(l: List[Stat]): List[Stat] = {
       l match {
         case Nil => Nil
-        case (p@ParExpr(a))::q => recursiveFlattenStat(p)::recursiveFlattenBlock(q)
+        case (p @ ParExpr(a)) :: q => recursiveFlattenStat(p) :: recursiveFlattenBlock(q)
         case Block(a)::q => recursiveFlattenBlock((a ++ q).toList)
         case If(condition, codeIfTrue, codeIfFalse)::q =>
           If(condition, recursiveFlattenStat(codeIfTrue), codeIfFalse.map(recursiveFlattenStat(_)))::recursiveFlattenBlock(q)
@@ -670,7 +670,7 @@ object Trees {
     def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
     //def x: Property[Float] = if(obj != null) obj.x else null
     //def y: Property[Float] = if(obj != null) obj.y else null
-    override def apply(property: String): Expr = if(ref == null && obj != null) obj.get(property) else PropertyIndirect(this, property)
+    override def apply(property: String): Expr = if(ref == null && obj != null) obj(property) else PropertyIndirect(this, property)
     override def update(property: String, arg: Expr): Stat = apply(property) := arg
    
     def category = if(obj != null) obj.category else null
@@ -718,19 +718,7 @@ object Trees {
   
   /** Reference to a hard-coded property. */
   case class PropertyRef(property: Property[_]) extends Expr with NoBinding with MaybeAssignable {
-    
-    /** Return the internal type of this property. */
-    private[kingpong] def getPongType: Type = property.getPongType
-    
-    /** Set the next value if this property. */
-    private[kingpong] def setNext(v: Value) = {
-      property.setNext(v)
-      this
-    }
-    /** Get the current value of this property. */
-    private[kingpong] def get: Value = property.getPongValue
-    
-    override def replace[T](n: Property[T], m: Property[T]): PropertyRef = if(n == property) m.ref else this
+    override def replace[T](n: Property[T], m: Property[T]): Expr = if(n == property) m.expr else this
   }
   
   /** Reference to a property of a dynamically linked object.
@@ -739,14 +727,14 @@ object Trees {
   case class PropertyIndirect(indirectObject: GameObjectRef, prop: String) extends Expr with MaybeAssignable {
     def obj = indirectObject.obj
     def name = indirectObject.ref
-    var expr: Expr = if(obj != null) obj.get(prop) else null
+    var expr: Expr = if(obj != null) obj(prop) else null
 
     def children = List(indirectObject)
     
     override def replace[T](n: Property[T], m: Property[T]): Expr = expr match {
       case null => this
-      case p: MaybeAssignable if p.getProperty.get == n => 
-        m.ref
+      case p: MaybeAssignable if p.getProperty == Some(n) => 
+        m.expr
       case _ => 
         this     
     }

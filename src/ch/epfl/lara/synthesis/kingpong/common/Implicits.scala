@@ -40,7 +40,8 @@ object Implicits {
       case IntV(i)   => i
       case _ => throw InterpreterException(s"The value $v is incompatible with Int.")
     }
-
+    def toExpr(v: Int) = IntegerLiteral(v)
+    
     def clone(v: Int) = v
   }
 
@@ -56,7 +57,8 @@ object Implicits {
       case IntV(i)   => i.toFloat
       case _ => throw InterpreterException(s"The value $v is incompatible with Float.")
     }
-
+    def toExpr(v: Float) = FloatLiteral(v)
+    
     def clone(v: Float) = v
   }
 
@@ -70,6 +72,7 @@ object Implicits {
       case BooleanV(b) => b
       case _ => throw InterpreterException(s"The value $v is incompatible with Boolean.")
     }
+    def toExpr(v: Boolean) = BooleanLiteral(v)
 
     def clone(v: Boolean) = v
   }
@@ -84,6 +87,7 @@ object Implicits {
       case StringV(s) => s
       case _ => throw InterpreterException(s"The value $v is incompatible with String.")
     }
+    def toExpr(v: String) = StringLiteral(v)
 
     def clone(v: String) = v
   }
@@ -98,6 +102,7 @@ object Implicits {
       case Vec2V(x, y) => Vec2(x, y)
       case _ => throw InterpreterException(s"The value $v is incompatible with Vec2.")
     }
+    def toExpr(v: Vec2) = Vec2Literal(v.x, v.y)
 
     def clone(v: Vec2) = v.clone
   }
@@ -114,6 +119,7 @@ object Implicits {
       case GameObjectV(x) => x
       case _ => throw InterpreterException(s"The value $v is incompatible with GameObject.")
     }
+    def toExpr(v: GameObject) = ObjectLiteral(v)
 
     def clone(v: GameObject) = v
   }

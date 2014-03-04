@@ -250,8 +250,11 @@ object Disambiguator {
         case _ => p.name
       }
       val requestedName = prefixName + num
-      p.parent.ephemeralProperties.getOrElse(requestedName, p.copyEphemeral(requestedName)).asInstanceOf[Property[T]]
+      
+      val currentProperty = p.parent.getEphemeralProperty(requestedName).asInstanceOf[Option[Property[T]]]
+      currentProperty.getOrElse(p.copyEphemeral(requestedName))
     }
+    
     // Retrieve the successor of a property.
     def newProp(p: Property[T]): Property[T] = {
       propertyNumGet(p, numProperty(p) + 1)
@@ -291,7 +294,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite.ref), ife.ref) :: ifTrue2, ifFalse2), ifr, ife)
+              (If(cond, Assign(List(ite.expr), ife.expr) :: ifTrue2, ifFalse2), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -302,7 +305,7 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Some(Assign(List(ife.ref), ite.ref))), itr, ite)
+              (If(cond, ifTrue2, Some(Assign(List(ife.expr), ite.expr))), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -325,7 +328,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite.ref), ife.ref) :: ifTrue2, Some(ifFalse2)), ifr, ife)
+              (If(cond, Assign(List(ite.expr), ife.expr) :: ifTrue2, Some(ifFalse2)), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -336,7 +339,7 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Some(Assign(List(ife.ref), ite.ref) :: ifFalse2)), itr, ite)
+              (If(cond, ifTrue2, Some(Assign(List(ife.expr), ite.expr) :: ifFalse2)), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -359,7 +362,7 @@ object Disambiguator {
             val newPropAssigned = replaceEvaluated
             val newPropEvaluated = newProp(replaceEvaluated)
             val res = Assign(props.map{
-              case p if p.getProperty == Some(p_original) => newPropAssigned.ref
+              case p if p.getProperty == Some(p_original) => newPropAssigned.expr
               case p => p
             }, expr.replace(p_original, newPropEvaluated))
             (res, newPropAssigned, newPropEvaluated)
@@ -384,6 +387,6 @@ object Disambiguator {
       }
     }
     val (result, replaceAssigned, replaceEvaluated) = rec(t, p_original, p_original, p_original)
-    Assign(List(replaceEvaluated.ref), p_original.ref)::result
+    Assign(List(replaceEvaluated.expr), p_original.expr)::result
   }
 }

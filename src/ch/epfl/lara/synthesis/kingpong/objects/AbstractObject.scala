@@ -50,7 +50,7 @@ case class Box[T : PongType](val game: Game,
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
   val value = simpleProperty[T]("value", init_value)
-
+  
   // --------------------------------------------------------------------------
   // Utility functions
   // --------------------------------------------------------------------------  
@@ -93,6 +93,7 @@ case class Joystick(val game: Game,
                         init_visible: Expr,
                         init_color: Expr
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+                         with Circular
                          with InputManager {
   
   def className = "Joystick"
@@ -105,8 +106,8 @@ case class Joystick(val game: Game,
   val relative_x = simpleProperty[Float]("relative_x", 0)
   val relative_y = simpleProperty[Float]("relative_y", 0)
   val jump = simpleProperty[Boolean]("jump", false)
-  val right = simpleProperty[Boolean]("right", false)
-  val left = simpleProperty[Boolean]("left", false)
+  val isRight = simpleProperty[Boolean]("isRight", false)
+  val isLeft = simpleProperty[Boolean]("isLeft", false)
   
   def collectInput(from: Context) = {
     import Events._
@@ -115,8 +116,8 @@ case class Joystick(val game: Game,
       relative_x.set(dx)
       relative_y.set(dy)
       jump.set(dy < -radius.get / 2)
-      right.set(dx > radius.get / 2)
-      left.set(dx < -radius.get / 2)
+      isRight.set(dx > radius.get / 2)
+      isLeft.set(dx < -radius.get / 2)
     }
     
     def updateAbsoluteCoords(at: Vec2) = {
@@ -159,7 +160,7 @@ case class Joystick(val game: Game,
   }
 }
 
-
+/*
 case class PathMovement(val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
@@ -177,48 +178,73 @@ case class PathMovement(val game: Game,
   protected def makecopy(name: String): GameObject = ???
   def getShape: Shape = ???
 }
+*/
 
 
-case class Cell2D(val game: Game, init_name: Expr) extends GameObject(init_name) {
-  var left: Cell2D = null
-  var top: Cell2D = null
-  var right: Cell2D = null
-  var bottom: Cell2D = null
-  var content: GameObject = null
-
-  def className = "Cell2D"
-
-   def angle: Property[Float] = ???
-   def contains(pos: Vec2): Boolean = ???
-   def getAABB(): AABB = ???
-   protected def makecopy(name: String): GameObject = ???
-   def visible: 
- Property[Boolean] = ???
- def x: 
- Property[Float] = ???
- def y: 
- Property[Float] = ???
- def color: Property[Int] = ???
+object Array2D {
+  
+  val CELL_WIDTH = 1
+  val CELL_HEIGHT = 1
+  
 }
 
-case class Array2D(val game: Game, init_name: Expr,
+case class Array2D(
+    game: Game,
+    init_name: Expr,
     init_x: Expr,
     init_y: Expr,
-    init_angle: Expr,
-    init_height: Expr,
-    init_value: Expr,
     init_visible: Expr,
     init_color: Expr,
-    init_size: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) {
+    init_numColumns: Expr,
+    init_numRows: Expr
+    ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
+      with Rectangular {
  
- def className = "Array2D"
- def getShape = ???
+  val className = "Array2D"
   
-  val size = simpleProperty[Int]("size", init_size)
- def contains(pos:  Vec2): Boolean = ???
- def getAABB(): 
- AABB = ???
- protected def makecopy(name: String): 
- GameObject = ???
+  // Properties
+  val numRows = simpleProperty[Int]("numRows", init_numRows)
+  val numColumns = simpleProperty[Int]("numColumns", init_numColumns)
+    
+  // Attributes
+  
+  val width = readOnlyProperty[Float] (
+    name  = "width", 
+    getF  = numColumns.get * Array2D.CELL_WIDTH,
+    nextF = numColumns.next * Array2D.CELL_WIDTH,
+    exprF = numColumns.expr * Array2D.CELL_WIDTH
+  )
+  
+  val height = readOnlyProperty[Float] (
+    name  = "height", 
+    getF  = numRows.get * Array2D.CELL_HEIGHT,
+    nextF = numRows.next * Array2D.CELL_HEIGHT,
+    exprF = numRows.expr * Array2D.CELL_HEIGHT
+  )
+  
+  private val shape = new PolygonShape()
+  def getShape = {
+    shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
+    shape
+  }
+
+  def getAABB() = {
+    val bottomLeft = Vec2(x.get, y.get)
+    val upperRight = bottomLeft add Vec2(width.get, height.get)
+    new org.jbox2d.collision.AABB(bottomLeft, upperRight)
+  }
+    
+  def contains(pos: Vec2) = getAABB.contains(pos)
+  
+  protected def makecopy(name: String) = this.copy(init_name = name)
 }
+
+//case class Cell(
+//    array: Array2D,
+//    row: Int,
+//    column: Int
+//    ) extends GameObject(array.name.get + "[" + row + "," + column + "]") {
+//  
+//  def game = array.game
+//  
+//}

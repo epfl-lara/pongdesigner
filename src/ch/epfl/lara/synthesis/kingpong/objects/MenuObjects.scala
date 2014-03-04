@@ -22,7 +22,8 @@ case class ObjRef(override val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr 
-                       ) extends GameObject(init_name) {
+                       ) extends GameObject(init_name) 
+                         with Point {
 
   def className = s"InputMenu"
   // --------------------------------------------------------------------------
@@ -75,7 +76,9 @@ case class ActiveBox(override val game: Game,
                         init_visible: Expr,
                         init_color: Expr,
                         init_picture: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) with InputManager {
+                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+                         with Circular
+                         with InputManager {
 
   def className = s"ActiveBox"
   // --------------------------------------------------------------------------

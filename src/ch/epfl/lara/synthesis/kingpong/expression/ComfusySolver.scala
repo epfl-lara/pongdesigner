@@ -133,14 +133,18 @@ object ComfusySolver {
     case IntegerLiteral(f) => Sum(f, Nil)
     case On(e) => canonize(e)
     case Once(e) => canonize(e)
-    case PropertyIndirect(g@GameObjectRef(StringLiteral(name)), prop) => val n = name + "."  + prop
+    case PropertyIndirect(g@GameObjectRef(StringLiteral(name)), prop) => 
+      val n = name + "."  + prop
       context(n) = expr
       Sum(0, List((n, 1)))
-    case PropertyIndirect(g@GameObjectRef(ObjectLiteral(obj)), prop) => val n = obj.name.get + "."  + prop
+    case PropertyIndirect(g@GameObjectRef(ObjectLiteral(obj)), prop) => 
+      val n = obj.name.get + "."  + prop
       context(n) = expr
       Sum(0, List((n, 1)))
-    case PropertyIndirect(_, prop) => throw new Error(s"$expr cannot be canonized because it is not well formed")
-    case PropertyRef(prop) => val n = prop.parent.name.get + "."  + prop.name
+    case PropertyIndirect(_, prop) => 
+      throw new Error(s"$expr cannot be canonized because it is not well formed")
+    case PropertyRef(prop) => 
+      val n = prop.parent.name.get + "."  + prop.name
       context(n) = expr
       Sum(0, List((n, 1)))
     case StringLiteral(_) => throw new Error(s"$expr cannot be canonized because it contains a String")
@@ -160,7 +164,8 @@ object ComfusySolver {
       val n = context(name(a))
       (if(c == 1) res + n else if(c == -1) res - n else if(c == 0) res else res + (n * c)) }
       u
-    case Conjunct(Nil, Nil) => BooleanLiteral(true)
+    case Conjunct(Nil, Nil) => 
+      BooleanLiteral(true)
     case Conjunct(lessEq, eq) =>
       val l1 = lessEq.map(translate).map(LessEq(_, 0)) ++ (eq.map(translate).map(Equals(_, 0)))
       l1 match {
@@ -168,7 +173,8 @@ object ComfusySolver {
         case a::Nil => a
         case l => l.reduceLeft(And(_, _))
       }
-    case IfExpr(c, ifTrue, ifFalse) => IfFunc(translate(c), translate(ifTrue), translate(ifFalse))
+    case IfExpr(c, ifTrue, ifFalse) => 
+      IfFunc(translate(c), translate(ifTrue), translate(ifFalse))
   }
   
   /**

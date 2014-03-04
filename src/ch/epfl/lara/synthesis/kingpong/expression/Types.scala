@@ -1,5 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
+import ch.epfl.lara.synthesis.kingpong.expression.Trees.Expr
+
 object Types {
 
   sealed abstract class Type {
@@ -76,6 +78,7 @@ object Types {
     def getPongType: Type
     def toPongValue(v: Any): Value
     def toScalaValue(v: Value): T
+    def toExpr(v: T): Expr
     def clone(v: T): T
   }
 

@@ -26,17 +26,22 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
 
   private val _properties = MMap.empty[String, Property[_]]
   
-  /** All properties in an immutable map. */
-  def properties = _properties.toMap
+  /** All properties. */
+  def properties = _properties.values
+  /** Get a specific property. */
+  def getProperty(name: String) = _properties.get(name)
   
-  /**
-   * Retrieves a property or anything else.
-   * //MIKAEL comment
-   */
+  /** Only writable properties of this object. */
+  def writableProperties = _properties.values.view.collect {
+    case p: RWProperty[_] => p
+  }
+  
   private val _ephemeralProperties = MMap.empty[String, EphemeralProperty[_]]
   
-  /** All ephemeral properties in an immutable map. */
-  def ephemeralProperties = _ephemeralProperties.toMap
+  /** All ephemeral properties. */
+  def ephemeralProperties = _ephemeralProperties.values
+  /** Get a specific ephemeral property. */
+  def getEphemeralProperty(name: String) = _ephemeralProperties.get(name)
 
   // --------------------------------------------------------------------------
   // Properties
@@ -48,9 +53,21 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def className: String
   def x: Property[Float]
   def y: Property[Float]
+  def bottom: Property[Float]
+  def top: Property[Float]
+  def left: Property[Float]
+  def right: Property[Float]
   def angle: Property[Float]
   def visible: Property[Boolean]
   def color: Property[Int]
+    
+  def center = readOnlyProperty[Vec2] (
+    name  = "center", 
+    getF  = Vec2(x.get, y.get),
+    nextF = Vec2(x.next, y.next),
+    exprF = VecExpr(x.expr, y.expr)
+  )
+  
   //def layer: Property[Int] // 0 means inside game, 1 means moves with the camera, -1 means its size is canvas-dependent.
 
   protected var attachedToCategory = true
@@ -67,8 +84,8 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   }
   def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
   def doesNotYetExist(time: Long) = time.toInt < creation_time.get
-  val creation_time: Property[Int] = simpleProperty[Int]("creation_time", -1)
-  val deletion_time: Property[Int] = simpleProperty[Int]("deletion_time", Int.MaxValue)
+  val creation_time = simpleProperty[Int]("creation_time", -1)
+  val deletion_time = simpleProperty[Int]("deletion_time", Int.MaxValue)
 
   // --------------------------------------------------------------------------
   // Category
@@ -88,23 +105,23 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // --------------------------------------------------------------------------
 
   /** Do a snapshot on all properties. */
-  def snapshot() = properties.values.foreach { _.snapshot() }
+  def snapshot() = writableProperties.foreach { _.snapshot() }
 
   /** Revert to the latest snapshot for all properties. */
-  def revert() = properties.values.foreach { _.revert() }
+  def revert() = writableProperties.foreach { _.revert() }
 
   // --------------------------------------------------------------------------
   // History functions
   // --------------------------------------------------------------------------
 
   /** Save the current state to the history. */
-  def save(t: Long) = properties.values.foreach { _.save(t) }
+  def save(t: Long) = writableProperties.foreach { _.save(t) }
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Long) = properties.values.foreach { _.restore(t) }
+  def restore(t: Long) =writableProperties.foreach { _.restore(t) }
 
   /** Clear the history of this object. */
-  def clear() = properties.values.foreach { _.clear() }
+  def clear() = writableProperties.foreach { _.clear() }
 
   // --------------------------------------------------------------------------
   // Utility functions
@@ -114,26 +131,26 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
    * Validate the next values of the underlying structure
    *  and replace the current value with it.
    */
-  def validate() = properties.values.foreach { _.validate() }
+  def validate() = writableProperties.foreach { _.validate() }
 
   /**
    * Write the properties values to the underlying structure. The common case
    *  is to force these values to the physical world, but it could also do
    *  nothing.
    */
-  def flush() = properties.values.foreach { _.flush() }
+  def flush() = writableProperties.foreach { _.flush() }
 
   /**
    * Load the properties values from the underlying structure, typically
    *  the physical world.
    */
-  def load() = properties.values.foreach { _.load() }
+  def load() = writableProperties.foreach { _.load() }
 
   /**
    * Reset all properties to their initial values.
    */
   def reset(interpreter: Interpreter)(implicit context: Context) = {
-    properties.values.foreach { _.reset(interpreter) }
+    writableProperties.foreach { _.reset(interpreter) }
   }
 
   /**
@@ -141,51 +158,21 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
    */
   def copyPropertiesFrom(other: GameObject, interpreter: Interpreter)(implicit context: Context) = {
     //MIKAEL check if this is always correct
-    (properties.values zip other.properties.values).foreach { case (v1, v2) => v1.set(v2.getPongValue) }
+    (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getPongValue) }
   }
-
-  def get(property: String) = this(property)
   
-  protected def apply(property: String): Expr = property match {
-    case _ if properties contains property => 
-      properties(property).ref
+  def apply(property: String): Expr = property match {
+    case _ if _properties contains property =>
+      _properties(property).expr
     
-    case "bottom" => this match {
-      case r: Rectangular => this("y") + this("height") / 2
-      case c: Circle => this("y") + this("radius")
-      case _ => throw new Exception(s"$this does not have a $property method")
-    }
-    
-    case "top" => this match {
-      case r: Rectangular => this("y") - this("height") / 2
-      case c: Circle => this("y") - this("radius")
-      case _ => throw new Exception(s"$this does not have a $property method")
-    }
-    
-    case "left" => this match {
-      case r: Rectangular => this("x") - this("width") / 2
-      case c: Circle => this("x") - this("radius")
-      case _ => throw new Exception(s"$this does not have a $property method")
-    }
-    
-    case "right" => this match {
-      case r: Rectangular => this("x") + this("width") / 2
-      case c: Circle => this("x") + this("radius")
-      case _ => throw new Exception(s"$this does not have a $property method")
-    }
-    
-    case "center" =>
-      VecExpr(List(this("x"), this("y")))
-    
-    // Maybe a temporary property
-    case _ if ephemeralProperties contains property =>
-      ephemeralProperties(property).ref
+    case _ if _ephemeralProperties contains property =>
+      _ephemeralProperties(property).expr
       
-    case GameObject.EphemeralEndings(propertyName, extension) if properties contains propertyName =>
+    case GameObject.EphemeralEndings(propertyName, extension) if _properties contains propertyName =>
       // Create a new ephemeral
-      val res = properties(propertyName).copyEphemeral(property)
+      val res = _properties(propertyName).copyEphemeral(property)
       _ephemeralProperties(property) = res
-      res.ref
+      res.expr
     
     case _ =>
       throw new Exception(s"$this does not have a $property method")
@@ -194,45 +181,18 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   /**
    * Abstract this object property to turn a call to method bottom to an expression reusable for other shapes.
    */
-  def structurally(c: PropertyIndirect, property: String): Expr = {
-    if (properties contains property) PropertyIndirect(c.indirectObject, property) else {
-      property match {
-        case "bottom" =>
-          this match {
-            case _: Rectangular => PropertyIndirect(c.indirectObject, "y") + PropertyIndirect(c.indirectObject, "height") / 2
-            case _: Circle => PropertyIndirect(c.indirectObject, "y") + PropertyIndirect(c.indirectObject, "radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "top" =>
-          this match {
-            case _: Rectangular => PropertyIndirect(c.indirectObject, "y") - PropertyIndirect(c.indirectObject, "height") / 2
-            case _: Circle => PropertyIndirect(c.indirectObject, "y") - PropertyIndirect(c.indirectObject, "radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "left" =>
-          this match {
-            case _: Rectangular => PropertyIndirect(c.indirectObject, "x") - PropertyIndirect(c.indirectObject, "width") / 2
-            case _: Circle => PropertyIndirect(c.indirectObject, "x") - PropertyIndirect(c.indirectObject, "radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "right" =>
-          this match {
-            case _: Rectangular => PropertyIndirect(c.indirectObject, "x") + PropertyIndirect(c.indirectObject, "width") / 2
-            case _: Circle => PropertyIndirect(c.indirectObject, "x") + PropertyIndirect(c.indirectObject, "radius")
-            case _ => throw new Exception(s"$this does not have a $property method")
-          }
-        case "center" =>
-          VecExpr(List(PropertyIndirect(c.indirectObject, "x"), PropertyIndirect(c.indirectObject, "y")))
-        case _ =>
-          throw new Exception(s"$this does not have a $property method")
-      }
+  //TODO check where it is called
+  def structurally(objectRef: GameObjectRef, property: String): Expr = {
+    if (_properties contains property) {
+      _properties(property).expr.structuralize()
+    } else {
+      throw new Exception(s"$this does not have a $property method")
     }
   }
 
-  //def selectDynamic(methodName: String): PropertyRefTrait = properties(methodName).ref
-  //def updateDynamic(property: String)(arg: Expr): Stat = update(property, arg)
-  def update(property: String, arg: Expr): Stat = properties(property).ref := arg
-  //override def update
+  //TODO check that the property exists and is writable ?
+  def update(property: String, arg: Expr): Stat = _properties(property).expr := arg
+
   def getAABB(): AABB
 
   def contains(pos: Vec2): Boolean
@@ -242,29 +202,57 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // --------------------------------------------------------------------------  
 
   // Property with no relationship with the physical world
-  protected def simpleProperty[T: PongType](name: String, init: Expr): Property[T] = {
+  protected def simpleProperty[T: PongType](name: String, init: Expr): RWProperty[T] = {
     val p = new SimpleProperty[T](name, init, this)
-    _properties += (name -> p)
+    addProperty(p)
     p
   }
 
   // Property that can be pushed to the physical world
-  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): Property[T] = {
+  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): RWProperty[T] = {
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
-    _properties += (name -> p)
+    addProperty(p)
     p
   }
 
   // Property that can be both pushed to the physical world and retrieved
-  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): Property[T] = {
+  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): RWProperty[T] = {
     val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f
       val loader = l
     }
-    _properties += (name -> p)
+    addProperty(p)
     p
+  }
+  
+  protected def readOnlyProperty[T: PongType](name: String, getF: => T, nextF: => T, exprF: => Expr): ROProperty[T] = {
+    val p = new ROProperty[T](name, this) {
+      def get = getF
+      def next = nextF
+      def expr = exprF
+    }
+    addProperty(p)
+    p
+  }
+  
+  protected def constProperty[T: PongType](name: String, getConst: => T): ROProperty[T] = {
+    val p = new ROProperty[T](name, this) {
+      def get = getConst
+      def next = getConst
+      def expr = tpe.toExpr(getConst)
+    }
+    addProperty(p)
+    p
+  }
+  
+  private def addProperty(prop: Property[_]): Unit = {
+    val name = prop.name
+    if (_properties contains name) {
+      throw new IllegalStateException(s"A property named $name is already present in $this.")
+    }
+    _properties += (name -> prop)
   }
 
   def getCopy(name: String, interpreter: Interpreter)(implicit context: Context): GameObject = {
@@ -276,7 +264,96 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
 }
 
 trait Rectangular { self: GameObject =>
-  val width: Property[Float]
-  val height: Property[Float]
+  def width: Property[Float]
+  def height: Property[Float]
+  
+  val bottom = readOnlyProperty (
+    name  = "bottom", 
+    getF  = y.get + height.get / 2,
+    nextF = y.next + height.next / 2,
+    exprF = y.expr + height.expr / 2
+  )
+  
+  val top = readOnlyProperty (
+    name  = "top", 
+    getF  = y.get - height.get / 2,
+    nextF = y.next - height.next / 2,
+    exprF = y.expr - height.expr / 2
+  )
+  
+  val left = readOnlyProperty (
+    name  = "left", 
+    getF  = x.get - width.get / 2,
+    nextF = x.next - width.next / 2,
+    exprF = x.expr - width.expr / 2
+  )
+  
+  val right = readOnlyProperty (
+    name  = "right", 
+    getF  = x.get + width.get / 2,
+    nextF = x.next + width.next / 2,
+    exprF = x.expr + width.expr / 2
+  )
 }
 
+trait Circular { self: GameObject =>
+  def radius: Property[Float]
+
+  val bottom = readOnlyProperty (
+    name  = "bottom", 
+    getF  = y.get + radius.get,
+    nextF = y.next + radius.next / 2,
+    exprF = y.expr + radius.expr / 2
+  )
+  
+  val top = readOnlyProperty (
+    name  = "top", 
+    getF  = y.get - radius.get,
+    nextF = y.next - radius.next / 2,
+    exprF = y.expr - radius.expr / 2
+  )
+  
+  val left = readOnlyProperty (
+    name  = "left", 
+    getF  = x.get - radius.get,
+    nextF = x.next - radius.next / 2,
+    exprF = x.expr - radius.expr / 2
+  )
+  
+  val right = readOnlyProperty (
+    name  = "right", 
+    getF  = x.get + radius.get,
+    nextF = x.next + radius.next / 2,
+    exprF = x.expr + radius.expr / 2
+  )
+}
+
+trait Point { self: GameObject =>
+  val bottom = readOnlyProperty (
+    name  = "bottom", 
+    getF  = center.get.y,
+    nextF = center.next.y,
+    exprF = center.expr.y
+  )
+  
+  val top = readOnlyProperty (
+    name  = "top", 
+    getF  = center.get.y,
+    nextF = center.next.y,
+    exprF = center.expr.y
+  )
+  
+  val left = readOnlyProperty (
+    name  = "left", 
+    getF  = center.get.x,
+    nextF = center.next.x,
+    exprF = center.expr.x
+  )
+  
+  val right = readOnlyProperty (
+    name  = "right", 
+    getF  = center.get.x,
+    nextF = center.next.x,
+    exprF = center.expr.x
+  )
+}

@@ -212,14 +212,12 @@ trait PrettyPrinterExtendedTypical {
     val ending = printIterable[GameObject](c, objects, { case (c, obj) =>
       val e = c + obj.className + "(" + obj.category + ")(" + LF
       val delimiter = "  " andThen (LF + "  ")
-      val e1 = (e /: accepted_properties) { case (e, name) =>
-        if(obj.properties.contains(name)) {
-          val prop = obj.properties(name)
+      val e1 = (e /: accepted_properties) { case (e, name) => obj.getProperty(name) match {
+        case Some(prop) => 
           e + delimiter.get + name + "=" +< (prop.get.toString, prop) +>(prop)
-        } else {
+        case None =>
           e
-        }
-      }
+      }}
         // or  e +#< name +< (prop.get.toString, prop) +>(prop) +#>
       e1 + ")"
     })
