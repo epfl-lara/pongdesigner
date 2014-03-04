@@ -960,6 +960,6 @@ object CodeTemplates extends CodeHandler {
         case _ =>
       }
     })
-    Expr.recursiveFlattenBlock(allcode.reverse)
+    Stat.recursiveFlattenBlock(allcode.reverse)
   }
 }

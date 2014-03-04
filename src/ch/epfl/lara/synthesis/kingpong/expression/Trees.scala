@@ -41,15 +41,40 @@ object Trees {
   implicit class RichTree(e: Tree) {
     def ::(other: Tree): List[Tree] = List(other, e)
   }
+  
+  sealed trait NoBinding { self: Tree =>
+     def children = Nil
+  }
+ 
+  sealed trait OBinding { self: Tree =>
+    def o: Tree
+    def children = List(o)
+  }
+  
+  sealed trait Prioritized { self: Tree =>
+    private var _priority = 0f
+    def setPriority(p: Float): self.type = { _priority = p ; self }
+    def priority = _priority
+  }
+  
+  object Tree {
+    private[kingpong] def replace0[T](n: Property[T], m: Property[T]): PartialFunction[Expr, Expr] = {
+      case prop: PropertyRef      => prop.replace(n, m)
+      case prop: PropertyIndirect => prop.replace(n, m)
+    }
+  }
 
   sealed trait Tree { self =>
-    def replace[T](n: Property[T], m: Property[T]): Tree = {
-      copyFromChildren(children map (_.replace(n, m)))
-    }
-    //def setBinding(n: String, o: GameObject): this.type
-    def expandProperties(n: String, o: GameObject): Tree // Same as setBinding, but replaces the object indirect properties with real formulas.
+    
+    def transform(f: PartialFunction[Expr, Expr]): Tree
+    
+    // Same as setBinding, but replaces the object indirect properties with real formulas.
+    def expandProperties(n: String, o: GameObject): Tree
+    
     def children: Seq[Tree]
-    def copyFromChildren(newChildren: Seq[Tree]): Tree
+    
+    def replace[T](n: Property[T], m: Property[T]): Tree
+        
     /** Continue to traverse the tree depending on the result, it continues to traverse the children.*/
     def traverse(nodeTraverser: Tree => TraverseMode): TraverseReturnMode = {
       nodeTraverser(this) match {
@@ -90,18 +115,6 @@ object Trees {
       this
     }
 
-    /*def traverseReplace(nodeTraverser: Tree => (Tree, List[Stat])): (Tree, TraverseReturnMode) = {
-      nodeTraverser(this) match {
-        case (t, ifFalseStats, ContinueWithChildren) =>
-          
-        case (t, ifFalseStats, ContinueSiblings) =>
-        
-        case (t, ifFalseStats, StopSiblings) =>
-          
-        case (t, ifFalseStats, Interrupt) =>
-          
-      }
-    }*/
   }
   
   case class MethodDecl(retType: Type, id: Val, args: List[Formal], stats: Stat, retExpr: Expr) extends Tree {
@@ -112,39 +125,26 @@ object Trees {
     }
     def children = stats :: List(retExpr)
     
-    override def copyFromChildren(newChildren: Seq[Tree]): MethodDecl = copy(stats=newChildren(0).asInstanceOf[Stat], retExpr=newChildren(1).asInstanceOf[Expr])
-    def expandProperties(n: String, o: GameObject): Tree = {
-      stats.expandProperties(n, o)
-      retExpr.expandProperties(n, o)
-      this
+    def transform(f: PartialFunction[Expr, Expr]): MethodDecl = {
+      MethodDecl(retType, id, args, stats.transform(f), retExpr.transform(f))
+    }
+    
+    def replace[T](n: Property[T], m: Property[T]): MethodDecl = {
+      MethodDecl(retType, id, args, stats.replace(n, m), retExpr.replace(n, m))
+    }
+    
+    def expandProperties(n: String, o: GameObject): MethodDecl = {
+      MethodDecl(retType, id, args, stats.expandProperties(n, o), retExpr.expandProperties(n, o))
     }
   }
-  sealed case class Formal(tpe: Type, id: Val) extends Tree with NoBinding {
+  
+  case class Formal(tpe: Type, id: Val) extends Tree with NoBinding {
     def expandProperties(n: String, o: GameObject): Tree = this
+    def replace[T](n: Property[T], m: Property[T]): Formal = this
+    def transform(f: PartialFunction[Expr, Expr]): Formal = this
   }
   
-  sealed trait NoBinding extends Tree { self =>
-     def children = List()
-     def copyFromChildren(c: Seq[Tree]): self.type = this
-  }
-  sealed trait NoReplaceStatBinding extends Stat {
-    def expandProperties(n: String, obj: GameObject): Stat = {this}
-  }
-  sealed trait NoReplaceExprBinding extends Expr {
-    def expandProperties(n: String, obj: GameObject): Expr = {this}
-  }
-  sealed trait OBinding extends Tree { self =>
-    def o: Tree
-    def children = List(o)
-  }
-  
-  sealed trait Prioritized extends Tree {
-    private var mPriority = 0f
-    def setPriority(p: Float): this.type = { mPriority = p ; this }
-    def priority = mPriority
-  }
-  
-  object Expr {
+  object Stat {
     /**
      * Takes a stat and recursively flatten its statements.
      */
@@ -196,14 +196,71 @@ object Trees {
 
   /** Statement, can have side-effect. */
   sealed trait Stat extends Tree with Prioritized {
-    override def expandProperties(n: String, obj: GameObject): Stat
-    override def copyFromChildren(newChildren: Seq[Tree]): Stat
-    override def replace[T](n: Property[T], m: Property[T]): Stat = {
-      copyFromChildren(children map (_.replace(n, m)))
+    
+    /** Recursive function to transform the entire tree by applying the 
+     *  given function to all its expressions nodes.
+     *  The function is first applied to the children and then to the current node.
+     */
+    def transform(f: PartialFunction[Expr, Expr]): Stat = this match {
+      case ParExpr(stats) =>
+        ParExpr(stats map (_.transform(f)))
+        
+      case Foreach1(cat, name, r) =>
+        Foreach1(cat, name, r.transform(f))
+        
+      case Block(stats) => 
+        Block(stats map (_.transform(f)))
+  
+      case If(c, s1, s2) => 
+        If(c.transform(f), s1.transform(f), s2 map (_.transform(f)))
+  
+      case Copy(name, ref, block) =>
+        Copy(name, ref, block.transform(f))
+        
+      case Assign(props, rhs) =>
+        Assign(props map (_.transform(f)), rhs.transform(f))
+      
+      case Reset(prop) =>
+        Reset(prop.transform(f))
+        
+      case Delete(name, ref) => this
+      case NOP => this
     }
+    
+    def replace[T](n: Property[T], m: Property[T]): Stat = transform(Tree.replace0(n, m))
+    
+    def expandProperties(n: String, obj: GameObject): Stat = this match {
+      case ParExpr(stats) =>
+        ParExpr(stats map (_.expandProperties(n, obj)))
+        
+      case Foreach1(cat, name, r) =>
+        Foreach1(cat, name, r.expandProperties(n, obj))
+        
+      case Block(stats) => 
+        Block(stats map (_.expandProperties(n, obj)))
+  
+      case If(c, s1, s2) => 
+        If(c.expandProperties(n, obj), s1.expandProperties(n, obj), s2 map (_.expandProperties(n, obj)))
+  
+      case Copy(name, ref, block) =>
+        Copy(name, ref.expandProperties(n, obj), block.expandProperties(n, obj))
+        
+      case Assign(props, rhs) =>
+        Assign(props map (_.expandProperties(n, obj)), rhs.expandProperties(n, obj))
+      
+      case Reset(prop) =>
+        Reset(prop.expandProperties(n, obj))
+        
+      case Delete(name, ref) =>
+        Delete(name, ref.expandProperties(n, obj))
+        
+      case NOP => this
+    }
+    
     def evaluate(interpreter: Interpreter)(implicit context: Context): Unit = {
       interpreter.eval(this)
     }
+    
     def Else(ifFalse: Stat) = {
       this match {
         case If(cond, ifTrue, None) =>
@@ -211,20 +268,17 @@ object Trees {
         case _ => this
       }
     }
+    
     def toList() = this match {
       case NOP => Nil
       case e => List(e)
     }
+
     def ::(other: Stat) = Block(List(other, this))
   }
   
   sealed trait RuleIterator extends Stat /*extends History*/ {
     
-    //private var state: Map[Keys, Boolean] = Map.empty.withDefaultValue(false)
-    
-    /** Contains the history. The head corresponds to the most recent value. */
-    //private val history: RingBuffer[(Long, Map[Keys, Boolean])] = new RingBuffer(History.MAX_HISTORY_SIZE)
- 
     trait BindingGenerator extends (Keys => Stat) {
       def apply(keys: Keys): Stat
     }
@@ -257,110 +311,175 @@ object Trees {
       }
     }
 
-    /** Reset the rules evaluation flags. */
-    //def reset(): Unit = state = Map.empty.withDefaultValue(false)
-
-    /*def save(t: Long): Unit = {
-      if (history.isEmpty || history.last._2 != state) {
-        history += (t, state)
-      }
-    }*/
-
-    /*def restore(t: Long): Unit = {
-      history.findLast(_._1 <= t) match {
-        case Some((_, s)) => state = s
-        case None => sys.error(s"The timestamp $t doesn't exist in the history.")
-      }
-    }*/
-
-    //def clear(): Unit = history.clear()
-
   }
   
   case class Foreach1(category: Category, nameBinding: String, protected val rule: Stat) extends RuleIterator {
     protected type Keys = Seq[(String, GameObject)]
     protected def keys = category.objects.map(o => List((nameBinding, o)))
     def generator: BindingGenerator = rule
-    
-    def expandProperties(n: String, o: GameObject): RuleIterator = {
-      if(nameBinding != n) Foreach1(category, nameBinding, rule.expandProperties(n, o)) else this
-    }
-    override def copyFromChildren(newChildren: Seq[Tree]): Foreach1 = copy(rule=newChildren(0).asInstanceOf[Stat])
-    /*def children = rule :: Nil*/
   }
   
-  case class Assign(props: List[MaybeAssignable], rhs: Expr) extends Stat {
-    def expandProperties(n: String, o: GameObject): Assign = {
-      props.map(_.expandProperties(n, o)) match {
-        case c if c.forall(_.isInstanceOf[MaybeAssignable]) => Assign(c.asInstanceOf[List[MaybeAssignable]], rhs.expandProperties(n, o))
-        case c => throw new Exception(s"$c cannot be assigned $rhs.")
-      }
-    }
+  case class Assign(props: List[Expr], rhs: Expr) extends Stat {
     def children = rhs :: props
-    override def copyFromChildren(newChildren: Seq[Tree]): Assign = copy(props=newChildren.tail.asInstanceOf[List[MaybeAssignable]], rhs=newChildren(0).asInstanceOf[Expr])
   }
+  
   // TODO : delete reset.
-  case class Reset(prop: MaybeAssignable) extends Stat {
-    def expandProperties(n: String, o: GameObject): Reset = {
-      prop.expandProperties(n, o) match {
-        case c:MaybeAssignable => Reset(c)
-        case c => throw new Exception(s"$c cannot be reset.")
-      }
-      
-    }
+  case class Reset(prop: Expr) extends Stat {
     def children = List(prop)
-    override def copyFromChildren(newChildren: Seq[Tree]): Reset = copy(prop=newChildren(0).asInstanceOf[MaybeAssignable])
   }
+  
   object Block {
     def apply(s1: Stat, s: Stat*): Block = {
       Block(List(s1) ++ s.toList)
     }
   }
+  
   case class Block(stats: Seq[Stat]) extends Stat {
-    def expandProperties(n: String, o: GameObject): Block = Block(stats.map(_.expandProperties(n, o)))
     def children = stats
-    override def copyFromChildren(newChildren: Seq[Tree]): Block = copy(stats=newChildren.asInstanceOf[List[Stat]])
     override def ::(other: Stat) = Block(other::stats.toList)
   }
+  
   object If {
     def apply(cond: Expr, s1: Stat, s2: Stat): If = If(cond, s1, Some(s2))
   }
+  
   case class If(cond: Expr, s1: Stat, s2: Option[Stat]) extends Stat {
-    def expandProperties(n: String, o: GameObject): If = If(cond.expandProperties(n, o), s1.expandProperties(n, o), s2.map(_.expandProperties(n, o)))
     def children = List(cond, s1) ++ s2.toList
-    override def copyFromChildren(newChildren: Seq[Tree]): If = copy(cond=newChildren(0).asInstanceOf[Expr], s1=newChildren(1).asInstanceOf[Stat], s2=if(newChildren.size >= 3) Some(newChildren(2).asInstanceOf[Stat]) else None)
   }
+  
   case class Copy(name: String, o: GameObjectRef, b: Stat) extends Stat {
-    def expandProperties(n: String, obj: GameObject): Copy = Copy(name, o.expandProperties(n, obj), b.expandProperties(n, obj))
     def children = o :: b
-    override def copyFromChildren(newChildren: Seq[Tree]): Copy = copy(o=newChildren(0).asInstanceOf[GameObjectRef], b=newChildren(1).asInstanceOf[Stat])
   }
+  
   case class Delete(name: String, o: GameObjectRef) extends Stat {
-    def expandProperties(n: String, obj: GameObject): Delete = Delete(name, o.expandProperties(n, obj))
     def children = List(o)
-    override def copyFromChildren(newChildren: Seq[Tree]): Delete = copy(o=newChildren(0).asInstanceOf[GameObjectRef])
   }
-  case object NOP extends Stat with NoBinding with NoReplaceStatBinding
+  
+  case object NOP extends Stat with NoBinding
 
-  case class IfFunc(cond: Expr, s1: Expr, s2: Expr) extends Expr {
-    def expandProperties(n: String, obj: GameObject): IfFunc = IfFunc(cond.expandProperties(n, obj), s1.expandProperties(n, obj), s2.expandProperties(n, obj))
-    def children = cond :: s1 :: s2
-    override def copyFromChildren(newChildren: Seq[Tree]): IfFunc = copy(cond=newChildren(0).asInstanceOf[Expr], s1=newChildren(1).asInstanceOf[Expr], s2=newChildren(2).asInstanceOf[Expr])
-  }
-  
   case class ParExpr(exprs: List[Stat]) extends Stat {
-    def expandProperties(n: String, o: GameObject): ParExpr = ParExpr(exprs.map(_.expandProperties(n, o)))
     def children = exprs
-    override def copyFromChildren(newChildren: Seq[Tree]): ParExpr = copy(exprs=newChildren.asInstanceOf[List[Stat]])
   }
   
-  /** Expressions, without side-effect. */
+  /** Expressions, without side-effect. 
+   *  An expression has a type.
+   */
   sealed trait Expr extends Tree with Typed {
-    override def copyFromChildren(c: Seq[Tree]): Expr
-    override def replace[T](n: Property[T], m: Property[T]): Expr = {
-      copyFromChildren(children map (_.replace(n, m)))
+    
+    /** Recursive function to transform the entire tree by applying the 
+     *  given function to all its nodes.
+     *  The function is first applied to the children and then to the current node.
+     */
+    def transform(f: PartialFunction[Expr, Expr]): Expr = if (f.isDefinedAt(this)) f(this) else this match {
+      case MethodCall(name, args) =>
+        MethodCall(name, args map (_.transform(f)))
+
+      case NValue(v, index) => 
+        NValue(v.transform(f), index)
+        
+      case VecExpr(l) => 
+        VecExpr(l map (_.transform(f)))
+        
+      case Choose(VecExpr(l), constraint) =>
+        Choose(VecExpr(l map (_.transform(f))), constraint.transform(f))
+        
+      case IfFunc(cond, ifTrue, ifFalse) => 
+        IfFunc(cond.transform(f), ifTrue.transform(f), ifFalse.transform(f))
+        
+      case _: Count => this
+      case _: PropertyIndirect => this
+      case _: PropertyRef => this
+      case UnitLiteral => this
+      case _: ObjectLiteral => this
+      case _: IntegerLiteral => this
+      case _: FloatLiteral => this
+      case _: StringLiteral => this
+      case _: BooleanLiteral => this
+      case _: Vec2Literal => this
+      case _: Val => this
+      
+      case Plus(lhs, rhs) => 
+        Plus(lhs.transform(f), rhs.transform(f))
+        
+      case Minus(lhs, rhs) => 
+        Minus(lhs.transform(f), rhs.transform(f))
+        
+      case Times(lhs, rhs) => 
+        Times(lhs.transform(f), rhs.transform(f))
+        
+      case Div(lhs, rhs) => 
+        Div(lhs.transform(f), rhs.transform(f))
+  
+      case Mod(lhs, rhs) =>
+        Mod(lhs.transform(f), rhs.transform(f))
+    
+      case And(lhs, rhs) =>
+        And(lhs.transform(f), rhs.transform(f))
+        
+      case Or(lhs, rhs) =>
+        Or(lhs.transform(f), rhs.transform(f))
+        
+      case Equals(lhs, rhs) =>
+        Equals(lhs.transform(f), rhs.transform(f))
+        
+      case LessThan(lhs, rhs) =>
+        LessThan(lhs.transform(f), rhs.transform(f))
+  
+      case LessEq(lhs, rhs) =>
+        LessEq(lhs.transform(f), rhs.transform(f))
+  
+      case GreaterThan(lhs, rhs) =>
+        GreaterThan(lhs.transform(f), rhs.transform(f))
+  
+      case GreaterEq(lhs, rhs) =>
+        GreaterEq(lhs.transform(f), rhs.transform(f))
+        
+      case Not(e) =>
+        Not(e.transform(f))
+  
+      case _: FingerMoveOver => this
+      case _: FingerDownOver => this
+      case _: FingerUpOver => this
+      case _: Collision => this
+      
+      case FingerCoordX1 => this
+      case FingerCoordX2 => this
+      case FingerCoordY1 => this
+      case FingerCoordY2 => this
+      
+      case _: GameObjectRef => this
+      
+      case On(cond) => 
+        On(cond.transform(f))
+        
+      case Once(cond) =>
+        Once(cond.transform(f))
+      
+      case null =>
+        this
+        
     }
-    override def expandProperties(n: String, o: GameObject): Expr
+    
+    def replace[T](n: Property[T], m: Property[T]): Expr = transform(Tree.replace0(n, m))
+    
+    /** Replace all `PropertyRef` by their corresponding `PropertyIndirect` */
+    def structuralize(): Expr = transform { 
+      case PropertyRef(p) => PropertyIndirect(p.parent.ref, p.name)
+    }
+    
+    def expandProperties(n: String, o: GameObject): Expr = transform {
+      case oRef: GameObjectRef => 
+        oRef.expandProperties(n, o)
+        
+      case indirect @ PropertyIndirect(indirectObject, prop) =>
+        if(n == indirect.name && o != indirectObject.obj) {
+          indirectObject.obj = o
+          o.structurally(indirectObject, prop)
+        } else {
+          indirect
+        }
+    }
+    
     def +(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => this
       case IntegerLiteral(i) => this match {
@@ -378,15 +497,18 @@ object Trees {
         case _ => Plus(this, e)
       }
     }
+    
     def -(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => this
       case _ => Minus(this, e)
     }
+    
     def unary_- : Expr = this match {
       case IntegerLiteral(j) => IntegerLiteral(-j)
       case FloatLiteral(j) => FloatLiteral(-j)
       case _ => Minus(IntegerLiteral(0), this)
     }
+    
     def *(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => e
       case IntegerLiteral(1) | FloatLiteral(1) => this
@@ -405,6 +527,7 @@ object Trees {
         case _ => Times(this, e)
       }
     }
+    
     def /(e: Expr): Expr = e match {
       case IntegerLiteral(1) | FloatLiteral(1) => this
       case IntegerLiteral(-1) | FloatLiteral(-1) => this match {
@@ -422,6 +545,7 @@ object Trees {
         case _ => Div(this, e)
       }
     }
+    
     def %(e: Expr): Expr = Mod(this, e)
     def &&(e: Expr): Expr = And(this, e)
     def ||(e: Expr): Expr = Or(this, e)
@@ -434,16 +558,22 @@ object Trees {
     def unary_! : Expr = Not(this)
     
     def apply(property: String): Expr = PropertyIndirect(GameObjectRef(this), property)
-    def update(property: String, arg: Expr): Stat = Assign(List(this(property).asInstanceOf[MaybeAssignable]), arg)
+    def update(property: String, arg: Expr): Stat = Assign(List(this(property)), arg)
     
     def x = NValue(this, 0)
     def y = NValue(this, 1)
-    
-    /*def above(e: Expr): Expr = this < e
-    def below(e: Expr): Expr = this > e
-    def toLeftOf(e: Expr): Expr = this < e
-    def toRightOf(e: Expr): Expr = this > e*/
 
+    def isProperty: Boolean = getProperty.isDefined
+    
+    def getProperty: Option[Property[_]] = this match {
+      case PropertyRef(property) => Some(property)
+      case e: PropertyIndirect => e.expr match {
+        case PropertyRef(property) => Some(property)
+        case _ => None
+      }
+      case _ => None
+    }
+    
     def :=(expr: Expr): Stat = {
       this match {
         case p @ VecExpr(l) => Assign(l collect { case m: MaybeAssignable => m }, expr)
@@ -455,37 +585,34 @@ object Trees {
         case _ => throw new Exception(s"$this is not assignable $expr")
       }
     }
+    
     def reset(): Stat = {
       this match {
         case p:MaybeAssignable => Reset(p)
         case _ => throw new Exception(s"$this is not resetable")
       }
     }
-
-    //def property: Property[_] = throw new Exception(s"$this is not a property reference")
-    //def reset(): Stat = throw new Exception(s"$this is not a property reference and thus reset cannot be called")
     
-    //def copy: Expr = this // TODO: to change in the future
   }
   
-  sealed trait ListBinding[T <: Expr] extends Expr {
+  case class IfFunc(cond: Expr, s1: Expr, s2: Expr) extends Expr {
+    def children = cond :: s1 :: s2
+  }
+  
+  sealed trait ListBinding[T <: Expr] { self: Expr =>
     val l: List[Expr]
-    override def expandProperties(n: String, o: GameObject): T = constructor(l.map(_.expandProperties(n, o)))
-    def constructor: (List[Expr]) => T
     def children = l
-    override def copyFromChildren(newChildren: Seq[Tree]): Expr = constructor(children.asInstanceOf[List[Expr]])
   }
-  case class NValue(o: Expr, index: Int) extends Expr with OBinding { 
-    override def expandProperties(n: String, obj: GameObject): NValue = NValue(o.expandProperties(n, obj), index) 
-    override def copyFromChildren(c: Seq[Tree]): NValue = copy(o = c(0).asInstanceOf[Expr])
-  }
-  case class Count(category: Category) extends Expr with NoBinding with NoReplaceExprBinding
+  
+  case class NValue(o: Expr, index: Int) extends Expr with OBinding
+  case class Count(category: Category) extends Expr with NoBinding
   val NULL = ObjectLiteral(null)
-  case class ObjectLiteral(value: GameObject) extends Expr with NoBinding with NoReplaceExprBinding
-  case class IntegerLiteral(value: Int) extends Expr with NoBinding with NoReplaceExprBinding
-  case class FloatLiteral(value: Float) extends Expr with NoBinding with NoReplaceExprBinding
-  case class StringLiteral(value: String) extends Expr with NoBinding with NoReplaceExprBinding
-  case class BooleanLiteral(value: Boolean) extends Expr with NoBinding with NoReplaceExprBinding
+  case class ObjectLiteral(value: GameObject) extends Expr with NoBinding
+  case class IntegerLiteral(value: Int) extends Expr with NoBinding
+  case class FloatLiteral(value: Float) extends Expr with NoBinding
+  case class StringLiteral(value: String) extends Expr with NoBinding
+  case class BooleanLiteral(value: Boolean) extends Expr with NoBinding
+  
   object VecExpr {
     def apply(s: Expr*): VecExpr = VecExpr(s.toList)
   }
@@ -495,46 +622,34 @@ object Trees {
       case _ => None
     }
   }
-  case class VecExpr(l: List[Expr]) extends Expr with ListBinding[VecExpr]  { def constructor = VecExpr.apply }
-  //case class Vec2Expr(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Vec2Expr.apply }
-  case class Vec2Literal(lhs: Float, rhs: Float) extends Expr with NoBinding with NoReplaceExprBinding
-  case object UnitLiteral extends Expr with NoBinding with NoReplaceExprBinding
-  case class Val(name: String) extends Expr with NoBinding with NoReplaceExprBinding
-  case class MethodCall(name: String, l: List[Expr]) extends Expr with ListBinding[MethodCall]  { def constructor = MethodCall.apply(name, _) }
+  case class VecExpr(l: List[Expr]) extends Expr with ListBinding[VecExpr]
+  case class Vec2Literal(lhs: Float, rhs: Float) extends Expr with NoBinding
+  case object UnitLiteral extends Expr with NoBinding
+  case class Val(name: String) extends Expr with NoBinding
+  case class MethodCall(name: String, l: List[Expr]) extends Expr with ListBinding[MethodCall]
 
-  sealed trait LeftRightBinding extends Expr {
+  sealed trait LeftRightBinding { self: Expr =>
     val lhs: Expr
     val rhs: Expr
-    override def expandProperties(n: String, o: GameObject): Expr = constructor(lhs.expandProperties(n, o), rhs.expandProperties(n, o))
-    def constructor: (Expr, Expr) => Expr
     def children = lhs :: rhs
-    override def copyFromChildren(newChildren: Seq[Tree]): Expr = constructor(newChildren(0).asInstanceOf[Expr], newChildren(1).asInstanceOf[Expr])
   }
-  case class Plus(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Plus.apply }
-  case class Minus(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Minus.apply }
-  case class Times(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Times.apply }
-  case class Div(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Div.apply }
-  case class Mod(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Mod.apply }
+  
+  case class Plus(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Minus(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Times(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Div(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Mod(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
 
-  case class And(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = And.apply }
-  case class Or(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Or.apply }
-  case class Equals(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = Equals.apply }
-  case class LessThan(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = LessThan.apply }
-  case class LessEq(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = LessEq.apply }
-  case class GreaterThan(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = GreaterThan.apply }
-  case class GreaterEq(lhs: Expr, rhs: Expr) extends LeftRightBinding { def constructor = GreaterEq.apply }
-  case class Not(o: Expr) extends Expr with OBinding { 
-    override def expandProperties(n: String, obj: GameObject): Expr = Not(o.expandProperties(n, obj)) 
-    override def copyFromChildren(newChildren: Seq[Tree]): Not = copy(o=newChildren(0).asInstanceOf[Expr])
-  }
-  case class On(o: Expr) extends Expr with OBinding { 
-    override def expandProperties(n: String, obj: GameObject): Expr = On(o.expandProperties(n, obj)) 
-    override def copyFromChildren(newChildren: Seq[Tree]): On = copy(o=newChildren(0).asInstanceOf[Expr])
-  }
-  case class Once(o: Expr) extends Expr with OBinding { 
-    override def expandProperties(n: String, obj: GameObject): Expr = Once(o.expandProperties(n, obj)) 
-    override def copyFromChildren(newChildren: Seq[Tree]): Once = copy(o=newChildren(0).asInstanceOf[Expr])
-  }
+  case class And(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Or(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Equals(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class LessThan(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class LessEq(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class GreaterThan(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class GreaterEq(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  case class Not(o: Expr) extends Expr with OBinding
+  case class On(o: Expr) extends Expr with OBinding
+  case class Once(o: Expr) extends Expr with OBinding
 
   object GameObjectRef {
     def apply(o: GameObject): GameObjectRef = GameObjectRef(ObjectLiteral(o))
@@ -548,11 +663,11 @@ object Trees {
     var obj: GameObject = reference match {case ObjectLiteral(o) => o case _ => null}
     override def equals(other: Any) = other match { case g@GameObjectRef(reference) => reference == g.reference || ref == g.ref || (g.ref == null && ref == null && obj == g.obj) case _ => false}
     
-    def expandProperties(n: String, obj: GameObject): GameObjectRef = {setBinding(n, obj)}
+    override def expandProperties(n: String, obj: GameObject): GameObjectRef = {setBinding(n, obj)}
+    
     def children = List()
     def contains(pos: ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.Vec2): Boolean = if(obj != null) obj.contains(pos) else false
     def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
-    val visible: ch.epfl.lara.synthesis.kingpong.objects.Property[Boolean] = if(obj != null) obj.visible else null
     //def x: Property[Float] = if(obj != null) obj.x else null
     //def y: Property[Float] = if(obj != null) obj.y else null
     override def apply(property: String): Expr = if(ref == null && obj != null) obj.get(property) else PropertyIndirect(this, property)
@@ -564,10 +679,6 @@ object Trees {
     def name = if(obj != null) obj.name else null //super.name
     def setCategory(c: CategoryObject) = { if(obj != null) obj.setCategory(c) else {} /*super.setCategory(c)*/  ;this }
     def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this, Block(blocks))
-    /*def makecopy(name: String): GameObject = {
-      val thecopy = this.copy()
-      thecopy
-    }*/
     def delete() = this("deleted") := BooleanLiteral(true)
     def toLeftOfAtMost(other:GameObjectRef) = this("right") <= other("left")
     def toRightOfAtMost(other:GameObjectRef) = this("left") >= other("right")
@@ -579,25 +690,17 @@ object Trees {
     def justBelow(other:GameObjectRef) = this("top") =:=  other("bottom")
     def alignLeft(other: GameObjectRef) = this("left") =:= other("left")
     def alignRight(other: GameObjectRef) = this("right") =:= other("right")
-    
     def collides(other: GameObjectRef) = Collision(this, other)
-    def copyFromChildren(newChildren: Seq[Tree]): GameObjectRef =  this
   }
   
-  case class FingerMoveOver(o: GameObjectRef) extends Expr with OBinding { override def expandProperties(n: String, obj: GameObject): Expr = FingerMoveOver(o.expandProperties(n, obj))
-    def copyFromChildren(newChildren: Seq[Tree]): FingerMoveOver =  this
-  }
-  case class FingerDownOver(o: GameObjectRef) extends Expr with OBinding { override def expandProperties(n: String, obj: GameObject): Expr = FingerDownOver(o.expandProperties(n, obj)) 
-    def copyFromChildren(newChildren: Seq[Tree]): FingerDownOver =  this
-  }
-  case class FingerUpOver(o: GameObjectRef) extends Expr with OBinding { override def expandProperties(n: String, obj: GameObject): Expr = FingerUpOver(o.expandProperties(n, obj)) 
-    def copyFromChildren(newChildren: Seq[Tree]): FingerUpOver =  this
-  }
+  case class FingerMoveOver(o: GameObjectRef) extends Expr with OBinding
+  case class FingerDownOver(o: GameObjectRef) extends Expr with OBinding
+  case class FingerUpOver(o: GameObjectRef) extends Expr with OBinding
   
-  case object FingerCoordX1 extends Expr with NoBinding with NoReplaceExprBinding
-  case object FingerCoordY1 extends Expr with NoBinding with NoReplaceExprBinding
-  case object FingerCoordX2 extends Expr with NoBinding with NoReplaceExprBinding
-  case object FingerCoordY2 extends Expr with NoBinding with NoReplaceExprBinding
+  case object FingerCoordX1 extends Expr with NoBinding
+  case object FingerCoordY1 extends Expr with NoBinding
+  case object FingerCoordX2 extends Expr with NoBinding
+  case object FingerCoordY2 extends Expr with NoBinding
   
   case class Collision(lhs: GameObjectRef, rhs: GameObjectRef) extends Expr with LeftRightBinding  { 
     def constructor = (a: Expr, b: Expr) => {
@@ -605,30 +708,12 @@ object Trees {
     } 
   }
   
-  sealed trait MaybeAssignable extends Expr {
+  sealed trait MaybeAssignable extends Expr { self: Expr =>
     override def :=(expr: Expr): Stat = Assign(List(this), expr)
     def +=(expr: Expr): Stat = Assign(List(this), Plus(this, expr))
     def -=(expr: Expr): Stat = Assign(List(this), Minus(this, expr))
     def *=(expr: Expr): Stat = Assign(List(this), Times(this, expr))
     def /=(expr: Expr): Stat = Assign(List(this), Div(this, expr))
-    
-    override def expandProperties(n: String, o: GameObject): Expr
-    
-    def isProperty: Boolean = this match {
-      case PropertyRef(_) => true
-      case e: PropertyIndirect => e.expr match {
-        case _: PropertyRef => true
-        case _ => false
-      }
-    }
-    
-    def getProperty: Option[Property[_]] = this match {
-      case PropertyRef(property) => Some(property)
-      case e: PropertyIndirect => e.expr match {
-        case PropertyRef(property) => Some(property)
-        case _ => None
-      }
-    }
   }
   
   /** Reference to a hard-coded property. */
@@ -645,7 +730,6 @@ object Trees {
     /** Get the current value of this property. */
     private[kingpong] def get: Value = property.getPongValue
     
-    override def expandProperties(n: String, o: GameObject): Expr = this
     override def replace[T](n: Property[T], m: Property[T]): PropertyRef = if(n == property) m.ref else this
   }
   
@@ -657,24 +741,12 @@ object Trees {
     def name = indirectObject.ref
     var expr: Expr = if(obj != null) obj.get(prop) else null
 
-    override def expandProperties(n: String, o: GameObject): Expr = {
-      if(n == name && o != indirectObject.obj) {
-        indirectObject.obj = o
-        //expr = obj(prop)
-        o.structurally(this, prop)
-      } else {
-        this
-      }
-    }
-    
     def children = List(indirectObject)
-    def copyFromChildren(newChildren: Seq[Tree]): PropertyIndirect =  copy(indirectObject=newChildren(0).asInstanceOf[GameObjectRef])
     
     override def replace[T](n: Property[T], m: Property[T]): Expr = expr match {
       case null => this
       case p: MaybeAssignable if p.getProperty.get == n => 
         m.ref
-        //PropertyIndirect(indirectObject, m.name)
       case _ => 
         this     
     }
@@ -699,23 +771,10 @@ object Trees {
     }}
     
     def children = if(evaluatedProgram == null) List(prop, constraint) else List(prop, constraint, evaluatedProgram)
-    def copyFromChildren(newChildren: Seq[Tree]): Choose = {
-      val res = copy(prop=newChildren(0).asInstanceOf[VecExpr], constraint=newChildren(1).asInstanceOf[Expr])
-      if(newChildren.size >= 0) {
-        res.evaluatedProgram = newChildren(2).asInstanceOf[Expr]
-      }
-      res
-    }
     
     var evaluatedProgram: Expr = null
     var expandedConstraint: Expr = null
     def getContraintForSolving = if(expandedConstraint == null) constraint else expandedConstraint
-    override def expandProperties(n: String, o: GameObject): Expr = {
-      //if(evaluatedProgram != null) evaluatedProgram.setBinding(n, o)
-      //else { // First time there is a binding, it will help us to solve the equations.
-      Choose(prop.expandProperties(n, o), constraint.expandProperties(n, o))
-    }
-    
-    //evaluatedProgram = solve(constraint)
+   
   }
 }

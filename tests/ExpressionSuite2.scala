@@ -80,4 +80,24 @@ class ExpressionSuite2 extends FlatSpec with ShouldMatchers {
     val c2 = PrettyPrinterExtended.print(List(game.rule1))
     c2.map.mObjects.keys should contain (game.paddles: Category)
   }
+  
+  
+  "Expression" should "be structuralizable" in {
+    
+    val oRef = game.Ball1.ref
+    val p = game.Ball1.angle.ref
+    val e1 = p + p / 2
+    interpreter.typeCheck(e1, TFloat)
+    
+    val e1Structural = e1.structuralize()
+    interpreter.typeCheck(e1Structural, TFloat)
+    
+    e1Structural should equal(
+      Plus(
+        PropertyIndirect(oRef, "angle"), 
+        Div(
+          PropertyIndirect(oRef, "angle"), 
+          IntegerLiteral(2))))
+  }
+  
 }
