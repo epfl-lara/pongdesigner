@@ -17,13 +17,10 @@ object GameObject {
   final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
 }
 
-abstract class GameObject(init_name: Expr) extends WithPoint with History with Snap { self =>
+abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   def game: Game
-  def ref = GameObjectRef(ObjectLiteral(this))
-
-  /** Main point for this object. Here set to the position. */
-  protected def point = Vec2(x.get, y.get)
-
+  def className: String
+  
   private val _properties = MMap.empty[String, Property[_]]
   
   /** All properties. */
@@ -31,6 +28,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   /** Get a specific property. */
   def getProperty(name: String) = _properties.get(name)
   
+  //TODO performance issue?
   /** Only writable properties of this object. */
   def writableProperties = _properties.values.view.collect {
     case p: RWProperty[_] => p
@@ -47,10 +45,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   // Properties
   // --------------------------------------------------------------------------
 
-  private[this] var mName: Property[String] = simpleProperty[String]("name", init_name)
-  def name: Property[String] = mName
-
-  def className: String
+  val name = simpleProperty[String]("name", init_name)
   def x: Property[Float]
   def y: Property[Float]
   def bottom: Property[Float]
@@ -61,16 +56,14 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def visible: Property[Boolean]
   def color: Property[Int]
     
-  def center = readOnlyProperty[Vec2] (
+  val center = readOnlyProperty[Vec2] (
     name  = "center", 
     getF  = Vec2(x.get, y.get),
     nextF = Vec2(x.next, y.next),
     exprF = VecExpr(x.expr, y.expr)
   )
   
-  //def layer: Property[Int] // 0 means inside game, 1 means moves with the camera, -1 means its size is canvas-dependent.
-
-  protected var attachedToCategory = true
+  private var attachedToCategory = true
   def setExistenceAt(time: Long): Boolean = {
     val exists = existsAt(time)
     if (!exists && attachedToCategory) {
@@ -118,7 +111,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def save(t: Long) = writableProperties.foreach { _.save(t) }
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Long) =writableProperties.foreach { _.restore(t) }
+  def restore(t: Long) = writableProperties.foreach { _.restore(t) }
 
   /** Clear the history of this object. */
   def clear() = writableProperties.foreach { _.clear() }
@@ -152,6 +145,11 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
   def reset(interpreter: Interpreter)(implicit context: Context) = {
     writableProperties.foreach { _.reset(interpreter) }
   }
+  
+  /**
+   * Get the corresponding expression for this object.
+   */
+  def expr = GameObjectRef(ObjectLiteral(this))
 
   /**
    * //MIKAEL add comment
@@ -161,7 +159,7 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getPongValue) }
   }
   
-  def apply(property: String): Expr = property match {
+  def get(property: String): Expr = property match {
     case _ if _properties contains property =>
       _properties(property).expr
     
@@ -177,17 +175,16 @@ abstract class GameObject(init_name: Expr) extends WithPoint with History with S
     case _ =>
       throw new Exception(s"$this does not have a $property method")
   }
+  
+  def apply(property: String): Expr = get(property)
 
   /**
    * Abstract this object property to turn a call to method bottom to an expression reusable for other shapes.
    */
-  //TODO check where it is called
-  def structurally(objectRef: GameObjectRef, property: String): Expr = {
-    if (_properties contains property) {
-      _properties(property).expr.structuralize()
-    } else {
-      throw new Exception(s"$this does not have a $property method")
-    }
+  //TODO does this can use the `get` method? (and thus lookup also in _ephemeralProperties)
+  def getStructurally(property: String): Expr = _properties.get(property) match {
+    case Some(p) => p.expr.structuralize()
+    case None    => throw new Exception(s"$this does not have a $property method")
   }
 
   //TODO check that the property exists and is writable ?

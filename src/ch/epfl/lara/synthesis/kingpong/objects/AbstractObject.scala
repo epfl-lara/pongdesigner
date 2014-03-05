@@ -206,8 +206,6 @@ case class Array2D(
   val numRows = simpleProperty[Int]("numRows", init_numRows)
   val numColumns = simpleProperty[Int]("numColumns", init_numColumns)
     
-  // Attributes
-  
   val width = readOnlyProperty[Float] (
     name  = "width", 
     getF  = numColumns.get * Array2D.CELL_WIDTH,

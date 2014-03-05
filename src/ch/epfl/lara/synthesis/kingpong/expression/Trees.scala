@@ -464,7 +464,7 @@ object Trees {
     
     /** Replace all `PropertyRef` by their corresponding `PropertyIndirect` */
     def structuralize(): Expr = transform { 
-      case PropertyRef(p) => PropertyIndirect(p.parent.ref, p.name)
+      case PropertyRef(p) => PropertyIndirect(p.parent.expr, p.name)
     }
     
     def expandProperties(n: String, o: GameObject): Expr = transform {
@@ -474,7 +474,7 @@ object Trees {
       case indirect @ PropertyIndirect(indirectObject, prop) =>
         if(n == indirect.name && o != indirectObject.obj) {
           indirectObject.obj = o
-          o.structurally(indirectObject, prop)
+          o.getStructurally(prop)
         } else {
           indirect
         }

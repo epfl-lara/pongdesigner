@@ -26,10 +26,7 @@ object JBox2DInterface {
     def distanceSquared(to: Vec2) = MathUtils.distanceSquared(v, to)
   }
 
-  case class Transform(pos: Vec2, angle: Float) extends WithPoint {
-    protected def point = pos
-  }
-  
+  case class Transform(pos: Vec2, angle: Float)
 
   type Contact = org.jbox2d.dynamics.contacts.Contact
 
@@ -39,7 +36,7 @@ object JBox2DInterface {
     }
   }
   
-  implicit class ContactExtended(val c: Contact) extends AnyVal with WithPoint {
+  implicit class ContactExtended(val c: Contact) extends AnyVal {
   
     def objectA: PhysicalObject = {
       c.getFixtureA().getBody().getUserData().asInstanceOf[PhysicalObject]
@@ -76,9 +73,9 @@ object JBox2DInterface {
     }
   }
   
-  implicit class AABBExtended(val aabb: AABB) extends AnyVal with WithPoint {
+  implicit class AABBExtended(val aabb: AABB) extends AnyVal {
     
-    protected def point = aabb.getCenter()
+    def center = aabb.getCenter()
 
     def contains(point: Vec2) = {
       point.x > aabb.lowerBound.x &&

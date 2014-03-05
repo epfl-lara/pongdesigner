@@ -372,7 +372,7 @@ object Disambiguator {
           props find {case p => p.getProperty == Some(p_original)} match {
             case Some(p: PropertyIndirect) =>
               //val exprReplaced = expr.replace(p_original, replaceEvaluated)
-              (If(p.indirectObject =:= p_original.parent.ref,
+              (If(p.indirectObject =:= p_original.parent.expr,
                   assign,
                   Some(Assign(props, expr))), npa, npe)
             case _ =>
