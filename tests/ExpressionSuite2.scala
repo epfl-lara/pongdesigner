@@ -84,8 +84,8 @@ class ExpressionSuite2 extends FlatSpec with ShouldMatchers {
   
   "Expression" should "be structuralizable" in {
     
-    val oRef = game.Ball1.ref
-    val p = game.Ball1.angle.ref
+    val oRef = game.Ball1.expr
+    val p = game.Ball1.angle.expr
     val e1 = p + p / 2
     interpreter.typeCheck(e1, TFloat)
     

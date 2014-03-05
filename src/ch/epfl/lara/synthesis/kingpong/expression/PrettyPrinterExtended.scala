@@ -268,7 +268,7 @@ trait PrettyPrinterExtendedTypical {
         c /*+ indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF)*/ + rule
       case Foreach1(cat, name, rule) =>
         c + indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + rule
-    case Delete(null, ref) => c + indent +! s"Delete(${ref.name.get})"
+    case Delete(null, ref) => c + indent +! s"Delete(${ref.name})"
     case Delete(name, ref) => c + indent +! s"Delete($name)"
     case VecExpr(l) => 
       l match {
@@ -291,6 +291,7 @@ trait PrettyPrinterExtendedTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
+        case _: Contains => "contains"
       }
       c + indent +< e.lhs + s" $op " + e.rhs +>
     case Assign(Nil, rhs: Expr) => c

@@ -440,14 +440,18 @@ object Trees {
       case _: FingerMoveOver => this
       case _: FingerDownOver => this
       case _: FingerUpOver => this
-      case _: Collision => this
-      
       case FingerCoordX1 => this
       case FingerCoordX2 => this
       case FingerCoordY1 => this
       case FingerCoordY2 => this
       
+      //TODO
+      case _: Collision => this
+      
       case _: GameObjectRef => this
+      
+      case Contains(lhs, rhs) =>
+        Contains(lhs.transform(f), rhs.transform(f))
       
       case On(cond) => 
         On(cond.transform(f))
@@ -457,7 +461,6 @@ object Trees {
       
       case null =>
         this
-        
     }
     
     def replace[T](n: Property[T], m: Property[T]): Expr = transform(Tree.replace0(n, m))
@@ -661,23 +664,24 @@ object Trees {
   case class GameObjectRef(reference: Expr) extends Expr {
     var ref: String = reference match {case StringLiteral(s) => s case _ => null}
     var obj: GameObject = reference match {case ObjectLiteral(o) => o case _ => null}
-    override def equals(other: Any) = other match { case g@GameObjectRef(reference) => reference == g.reference || ref == g.ref || (g.ref == null && ref == null && obj == g.obj) case _ => false}
+    
+    override def equals(other: Any) = other match { 
+      case g: GameObjectRef => 
+        reference == g.reference || 
+        ref == g.ref || 
+        (g.ref == null && ref == null && obj == g.obj) 
+      case _ => false
+    }
     
     override def expandProperties(n: String, obj: GameObject): GameObjectRef = {setBinding(n, obj)}
     
-    def children = List()
-    def contains(pos: ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.Vec2): Boolean = if(obj != null) obj.contains(pos) else false
-    def getAABB(): ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface.AABB = if(obj != null) obj.getAABB() else null
-    //def x: Property[Float] = if(obj != null) obj.x else null
-    //def y: Property[Float] = if(obj != null) obj.y else null
+    // TODO check why removing these two lines raise a runtime error.
     override def apply(property: String): Expr = if(ref == null && obj != null) obj(property) else PropertyIndirect(this, property)
     override def update(property: String, arg: Expr): Stat = apply(property) := arg
-   
-    def category = if(obj != null) obj.category else null
-    def category_=(c: CategoryObject) = if(obj != null) obj.category = c
-    def properties = if(obj != null) obj.properties else null //super.properties
-    def name = if(obj != null) obj.name else null //super.name
-    def setCategory(c: CategoryObject) = { if(obj != null) obj.setCategory(c) else {} /*super.setCategory(c)*/  ;this }
+    
+    def children = Nil
+    def name = if (obj != null) obj.name.get else "null"
+        
     def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this, Block(blocks))
     def delete() = this("deleted") := BooleanLiteral(true)
     def toLeftOfAtMost(other:GameObjectRef) = this("right") <= other("left")
@@ -702,11 +706,7 @@ object Trees {
   case object FingerCoordX2 extends Expr with NoBinding
   case object FingerCoordY2 extends Expr with NoBinding
   
-  case class Collision(lhs: GameObjectRef, rhs: GameObjectRef) extends Expr with LeftRightBinding  { 
-    def constructor = (a: Expr, b: Expr) => {
-      Collision.apply(a.asInstanceOf[GameObjectRef], b.asInstanceOf[GameObjectRef])
-    } 
-  }
+  case class Collision(lhs: GameObjectRef, rhs: GameObjectRef) extends Expr with LeftRightBinding
   
   sealed trait MaybeAssignable extends Expr { self: Expr =>
     override def :=(expr: Expr): Stat = Assign(List(this), expr)
@@ -765,4 +765,11 @@ object Trees {
     def getContraintForSolving = if(expandedConstraint == null) constraint else expandedConstraint
    
   }
+  
+  /**
+   * Does the left object contains the right one?
+   * Return a boolean after evaluation
+   */
+  case class Contains(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
+  
 }

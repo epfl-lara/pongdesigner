@@ -250,6 +250,11 @@ trait TypeChecker {
     case FingerDownOver(c) => expr.setType(TBoolean)
     case FingerUpOver(c) => expr.setType(TBoolean)
     case Collision(c1, c2) => expr.setType(TBoolean)
+    case Contains(o1, o2) =>
+      typeCheck(o1, TObject)
+      typeCheck(o2, TObject)
+      expr.setType(TBoolean)
+    
   }
   
   def typeCheck(expr: Expr, exp: Type*)(implicit context: Context): Type = {

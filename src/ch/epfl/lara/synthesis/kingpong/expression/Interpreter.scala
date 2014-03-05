@@ -397,6 +397,12 @@ trait Interpreter {
       }.nonEmpty
       BooleanV(isCollision)
       
+    case Contains(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (GameObjectV(o1), GameObjectV(o2)) => BooleanV(o1.contains(o2.center.get))
+        case _ => error(expr)
+      }
+      
     case FingerCoordX1 =>
       FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
     case FingerCoordX2 =>

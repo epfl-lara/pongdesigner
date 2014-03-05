@@ -269,30 +269,30 @@ trait Rectangular { self: GameObject =>
   
   val bottom = readOnlyProperty (
     name  = "bottom", 
-    getF  = y.get + height.get / 2,
-    nextF = y.next + height.next / 2,
-    exprF = y.expr + height.expr / 2
+    getF  = y.get + height.get / 2f,
+    nextF = y.next + height.next / 2f,
+    exprF = y.expr + height.expr / 2f
   )
   
   val top = readOnlyProperty (
     name  = "top", 
-    getF  = y.get - height.get / 2,
-    nextF = y.next - height.next / 2,
-    exprF = y.expr - height.expr / 2
+    getF  = y.get - height.get / 2f,
+    nextF = y.next - height.next / 2f,
+    exprF = y.expr - height.expr / 2f
   )
   
   val left = readOnlyProperty (
     name  = "left", 
-    getF  = x.get - width.get / 2,
-    nextF = x.next - width.next / 2,
-    exprF = x.expr - width.expr / 2
+    getF  = x.get - width.get / 2f,
+    nextF = x.next - width.next / 2f,
+    exprF = x.expr - width.expr / 2f
   )
   
   val right = readOnlyProperty (
     name  = "right", 
-    getF  = x.get + width.get / 2,
-    nextF = x.next + width.next / 2,
-    exprF = x.expr + width.expr / 2
+    getF  = x.get + width.get / 2f,
+    nextF = x.next + width.next / 2f,
+    exprF = x.expr + width.expr / 2f
   )
 }
 

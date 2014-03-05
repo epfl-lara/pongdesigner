@@ -383,7 +383,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     paint.setStyle(Paint.Style.FILL)
     paint.setStrokeWidth(mapRadiusI(3))
-    
     paintSelected.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
@@ -482,7 +481,12 @@ class GameView(val context: Context, attrs: AttributeSet)
           }
           canvas.restore()
         }
-    }}}
+    }
+    //Draw a small red dot in the (x, y) position of each object
+    paint.setColor(0xFFFF0000)
+    canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
+    }}
+    
     if(game == null) return;
     game.objects foreach drawObject
     canvas.restore()

@@ -527,8 +527,8 @@ class EmptyGame() extends Game {
   val cat = Category("Moving objects")()
   val catAdd = Category("Moving objects2")()
 
-  rectangle(cat)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
-  rectangle(cat)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
+  val rect1 = rectangle(cat)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
+  val rect2 = rectangle(cat)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
 
   circle(cat)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
   val c2 = circle(catAdd)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
@@ -540,7 +540,7 @@ class EmptyGame() extends Game {
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
-  val arr = array(catArray)("MyArray", 0, 0)
+  val arr = array(catArray)("MyArray", 1.3, 4)
   
   
   val r1 = foreach(cat)("o"){ foreach(base.category)("base") {
@@ -560,10 +560,18 @@ class EmptyGame() extends Game {
     whenever(FingerDownOver(obj("c2")))(
     obj("c2")("radius") += 0.1
   )}
-
+  
+  val cell = arr.cells(1)(1)
+  
+  val r4 = whenever(Contains(cell, rect1))(
+      rect1("x") := cell("x"),
+      rect1("y") := cell("y"),
+      rect1("velocity") := Vec2(0, 0)
+    )
 
   register(r1)
   register(r2)
   register(r3)
+  register(r4)
 
 }

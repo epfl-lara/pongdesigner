@@ -100,7 +100,7 @@ trait PrettyPrinterTypical {
   //}
 
   private def print(indent: String, s: Tree): CharSequence = s match {
-    case Delete(null, ref) => indent + s"Delete(${ref.name.get})"
+    case Delete(null, ref) => indent + s"Delete(${ref.name})"
     case Delete(name, ref) => indent + s"Delete($name)"
     case VecExpr(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
     case e:LeftRightBinding => val op = e match {

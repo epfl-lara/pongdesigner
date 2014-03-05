@@ -232,7 +232,7 @@ case class Array2D(
   }
 
   def getAABB() = {
-    val bottomLeft = Vec2(x.get, y.get)
+    val bottomLeft = Vec2(left.get, top.get)
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
@@ -317,7 +317,7 @@ case class Cell(
   }
   
   def getAABB() = {
-    val bottomLeft = Vec2(x.get, y.get)
+    val bottomLeft = Vec2(left.get, top.get)
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
