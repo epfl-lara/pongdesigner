@@ -299,29 +299,29 @@ trait Circular { self: GameObject =>
   val bottom = readOnlyProperty (
     name  = "bottom", 
     getF  = y.get + radius.get,
-    nextF = y.next + radius.next / 2,
-    exprF = y.expr + radius.expr / 2
+    nextF = y.next + radius.next,
+    exprF = y.expr + radius.expr
   )
   
   val top = readOnlyProperty (
     name  = "top", 
     getF  = y.get - radius.get,
-    nextF = y.next - radius.next / 2,
-    exprF = y.expr - radius.expr / 2
+    nextF = y.next - radius.next,
+    exprF = y.expr - radius.expr
   )
   
   val left = readOnlyProperty (
     name  = "left", 
     getF  = x.get - radius.get,
-    nextF = x.next - radius.next / 2,
-    exprF = x.expr - radius.expr / 2
+    nextF = x.next - radius.next,
+    exprF = x.expr - radius.expr
   )
   
   val right = readOnlyProperty (
     name  = "right", 
     getF  = x.get + radius.get,
-    nextF = x.next + radius.next / 2,
-    exprF = x.expr + radius.expr / 2
+    nextF = x.next + radius.next,
+    exprF = x.expr + radius.expr
   )
 }
 
