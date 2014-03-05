@@ -201,7 +201,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Property with no relationship with the physical world
   protected def simpleProperty[T: PongType](name: String, init: Expr): RWProperty[T] = {
     val p = new SimpleProperty[T](name, init, this)
-    addProperty(p)
+    _properties(p.name) = p
     p
   }
 
@@ -210,7 +210,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
-    addProperty(p)
+    _properties(p.name) = p
     p
   }
 
@@ -220,7 +220,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       val flusher = f
       val loader = l
     }
-    addProperty(p)
+    _properties(p.name) = p
     p
   }
   
@@ -230,27 +230,30 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       def next = nextF
       def expr = exprF
     }
-    addProperty(p)
+    _properties(p.name) = p
     p
   }
   
-  protected def constProperty[T: PongType](name: String, getConst: => T): ROProperty[T] = {
+  protected def constProperty[T: PongType](name: String, constF: => T): ROProperty[T] = {
     val p = new ROProperty[T](name, this) {
-      def get = getConst
-      def next = getConst
-      def expr = tpe.toExpr(getConst)
+      def get = constF
+      def next = constF
+      def expr = tpe.toExpr(constF)
     }
-    addProperty(p)
+    _properties(p.name) = p
     p
   }
   
-  private def addProperty(prop: Property[_]): Unit = {
-    val name = prop.name
-    if (_properties contains name) {
-      throw new IllegalStateException(s"A property named $name is already present in $this.")
+  protected def proxyProperty[T: PongType](property: Property[T]): ROProperty[T] = {
+    val p = new ROProperty[T](property.name, this) {
+      def get = property.get
+      def next = property.next
+      def expr = property.expr
     }
-    _properties += (name -> prop)
+    _properties(p.name) = p
+    p
   }
+
 
   def getCopy(name: String, interpreter: Interpreter)(implicit context: Context): GameObject = {
     val m = makecopy(name)

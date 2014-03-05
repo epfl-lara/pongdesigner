@@ -215,6 +215,26 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     this add r
     r
   }
+  
+  def array(category: CategoryObject)(
+             name: Expr,
+             x: Expr,
+             y: Expr,
+             angle: Expr = category.angle,
+             width: Expr = category.width,
+             height: Expr = category.height,
+             visible: Expr = category.visible,
+             color: Expr = category.color): Array2D = {
+    val array = Array2D(this, name, x, y, visible, color, 2, 3)
+    if(category != null) array.setCategory(category)
+    array.reset(this)(EventHistory)
+    this add array
+    array.cells.foreach(_ foreach { cell =>
+      cell.reset(this)(EventHistory)
+      this add cell
+    })
+    array
+  }
 
   def intbox(category: CategoryObject)(name: Expr,
              x: Expr,
@@ -516,9 +536,13 @@ class EmptyGame() extends Game {
   val score = intbox(Category("scores")())("Score", 1, 1, value = 0)
 
   val cat2 = Category("Static objects")()
+  val catArray = Category("Array objects")()
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
+  val arr = array(catArray)("MyArray", 0, 0)
+  
+  
   val r1 = foreach(cat)("o"){ foreach(base.category)("base") {
     whenever(obj("base")("y") < obj("o")("y"))(
       obj("o")("y") := 0, 

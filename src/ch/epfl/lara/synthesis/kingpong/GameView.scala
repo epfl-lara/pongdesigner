@@ -381,7 +381,9 @@ class GameView(val context: Context, attrs: AttributeSet)
     canvas.save()
     canvas.setMatrix(matrix)
     
-    paint.setStrokeWidth(mapRadiusI(1))
+    paint.setStyle(Paint.Style.FILL)
+    paint.setStrokeWidth(mapRadiusI(3))
+    
     paintSelected.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
@@ -389,22 +391,48 @@ class GameView(val context: Context, attrs: AttributeSet)
       o match {
       case r: Rectangle =>
         paint.setColor(r.color.get)
-        if(!r.visible.get)
+        if (!r.visible.get)
           paint.setAlpha(0x00)
 
         canvas.save()
         canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-        canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
-        if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
+        canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paint)
+        if (obj_to_highlight contains r) 
+          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintSelected)
         canvas.restore()
 
       case c: Circle => 
         paint.setColor(c.color.get)
-        if(!c.visible.get)
+        if (!c.visible.get)
           paint.setAlpha(0x00)
         canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
-        if(obj_to_highlight contains c) canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
+        if (obj_to_highlight contains c) 
+          canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
+      
+      case arr: Array2D =>
+        paint.setStyle(Paint.Style.STROKE)
+        paint.setColor(arr.color.get)
+        if (!arr.visible.get)
+          paint.setAlpha(0x00)
+        canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paint)
+        if (obj_to_highlight contains arr) 
+          canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paintSelected)
         
+        // reset the paint style
+        paint.setStyle(Paint.Style.FILL)
+                
+      case cell: Cell =>
+        paint.setStyle(Paint.Style.STROKE)
+        paint.setColor(cell.color.get)
+        if (!cell.visible.get)
+          paint.setAlpha(0x00)          
+        canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paint)
+        if (obj_to_highlight contains cell) 
+          canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paintSelected)
+        
+        // reset the paint style
+        paint.setStyle(Paint.Style.FILL)
+          
       case b: Box[_] => 
         paint.setColor(b.color.get)
         //if(b == obj_to_highlight) paint.setAlpha(0x88)
