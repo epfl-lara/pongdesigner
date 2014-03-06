@@ -350,52 +350,69 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    case FingerMoveOver(o) =>
-      var fromx = 0f
-      var fromy = 0f
-      var tox = 0f
-      var toy = 0f
-      var first = true
-      var n = 0
-      
-      if(!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
-        n *= 2
+    case FingerMoveOver(e) =>
+      eval(e) match {
+        case GameObjectV(o) =>
+          var fromx = 0f
+          var fromy = 0f
+          var tox = 0f
+          var toy = 0f
+          var first = true
+          var n = 0
+          
+          //MIKAEL n is always 0
+          if (!(context.events.collect{ case e: FingerMove => e }).isEmpty) {
+            n *= 2
+          }
+          
+          context.fingerMoves(_.obj.exists(_ == o)) foreach { event => 
+            if (first) {
+              fromx = event.from.x
+              fromy = event.from.y
+              first = false
+            }
+            tox = event.to.x
+            toy = event.to.y
+            n += 1
+          }
+          
+          val result = if (n != 0) {
+            context.set("from", Vec2V(fromx, fromy))
+            context.set("to", Vec2V(tox, toy))
+            context.set("dx", FloatV(tox - fromx))
+            context.set("dy", FloatV(toy - fromy))
+            true
+          } else false
+          
+          BooleanV(result)
+          
+        case _ => error(expr)
       }
       
-      context.fingerMoves(_.obj.exists(_ == o.obj)) foreach { event => 
-        if (first) {
-          fromx = event.from.x
-          fromy = event.from.y
-          first = false
-        }
-        tox = event.to.x
-        toy = event.to.y
-        n += 1
+    case FingerDownOver(e) =>
+      eval(e) match {
+        case GameObjectV(o) =>
+          BooleanV(context.existsFingerDown(_.obj.exists(_ == o)))
+        case _ => error(expr)
       }
-      
-      var result = if(n != 0) {
-        context.set("from", Vec2V(fromx, fromy))
-        context.set("to", Vec2V(tox, toy))
-        context.set("dx", FloatV(tox - fromx))
-        context.set("dy", FloatV(toy - fromy))
-        true
-      } else false
-      
-      BooleanV(result)
 
-    case FingerDownOver(o) => 
-      BooleanV(context.fingerDowns(_.obj.exists(_ == o.obj)).nonEmpty)
+    case FingerUpOver(e) =>
+      eval(e) match {
+        case GameObjectV(o) =>
+          BooleanV(context.existsFingerUp(_.obj.exists(_ == o)))
+        case _ => error(expr)
+      }
 
-    case FingerUpOver(o) => 
-      BooleanV(context.fingerUps(_.obj.exists(_ == o.obj)).nonEmpty)
-
-    case Collision(o1, o2) =>
-      //TODO optimize this ?
-      val isCollision = context.beginContacts { c =>
-        (c.contact.objectA == o1.obj && c.contact.objectB == o2.obj) ||
-        (c.contact.objectA == o2.obj && c.contact.objectB == o1.obj)
-      }.nonEmpty
-      BooleanV(isCollision)
+    case Collision(lhs, rhs) =>
+       (eval(lhs), eval(rhs)) match {
+        case (GameObjectV(o1), GameObjectV(o2)) => 
+          val isCollision = context.existsBeginContact { c =>
+            (c.contact.objectA == o1 && c.contact.objectB == o2) ||
+            (c.contact.objectA == o2 && c.contact.objectB == o1)
+          }
+          BooleanV(isCollision)
+        case _ => error(expr)
+      }
       
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
@@ -428,10 +445,12 @@ trait Interpreter {
         }
       }
     
-    case On(cond) => // Seems to be useless / or to be used when a collision occurs once until it is removed.
-      eval(cond) // TODO : Check that this is true until the condition is false, for any pair.
+    
+    // TODO remove when ready
+    case On(cond) =>
+      ???
     case Once(cond) =>
-      eval(cond) // TODO : Check that it happens only once.
+      ???
     
     case null =>
       Log.d("kingpong", "Interpreter: Erreur while evaluating null")

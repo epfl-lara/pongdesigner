@@ -437,21 +437,27 @@ object Trees {
       case Not(e) =>
         Not(e.transform(f))
   
-      case _: FingerMoveOver => this
-      case _: FingerDownOver => this
-      case _: FingerUpOver => this
+      case FingerMoveOver(o) =>
+        FingerMoveOver(o.transform(f))
+        
+      case FingerDownOver(o) =>
+        FingerDownOver(o.transform(f))
+        
+      case FingerUpOver(o) =>
+        FingerUpOver(o.transform(f))
+      
       case FingerCoordX1 => this
       case FingerCoordX2 => this
       case FingerCoordY1 => this
       case FingerCoordY2 => this
       
-      //TODO
-      case _: Collision => this
-      
-      case _: GameObjectRef => this
-      
+      case Collision(lhs, rhs) =>
+        Collision(lhs.transform(f), rhs.transform(f))
+        
       case Contains(lhs, rhs) =>
         Contains(lhs.transform(f), rhs.transform(f))
+      
+      case _: GameObjectRef => this
       
       case On(cond) => 
         On(cond.transform(f))
@@ -697,16 +703,16 @@ object Trees {
     def collides(other: GameObjectRef) = Collision(this, other)
   }
   
-  case class FingerMoveOver(o: GameObjectRef) extends Expr with OBinding
-  case class FingerDownOver(o: GameObjectRef) extends Expr with OBinding
-  case class FingerUpOver(o: GameObjectRef) extends Expr with OBinding
+  case class FingerMoveOver(o: Expr) extends Expr with OBinding
+  case class FingerDownOver(o: Expr) extends Expr with OBinding
+  case class FingerUpOver(o: Expr) extends Expr with OBinding
   
   case object FingerCoordX1 extends Expr with NoBinding
   case object FingerCoordY1 extends Expr with NoBinding
   case object FingerCoordX2 extends Expr with NoBinding
   case object FingerCoordY2 extends Expr with NoBinding
   
-  case class Collision(lhs: GameObjectRef, rhs: GameObjectRef) extends Expr with LeftRightBinding
+  case class Collision(lhs: Expr, rhs: Expr) extends Expr with LeftRightBinding
   
   sealed trait MaybeAssignable extends Expr { self: Expr =>
     override def :=(expr: Expr): Stat = Assign(List(this), expr)
