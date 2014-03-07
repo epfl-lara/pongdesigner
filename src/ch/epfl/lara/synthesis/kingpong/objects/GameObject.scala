@@ -1,6 +1,10 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import scala.Dynamic
+import scala.language.dynamics
 import scala.collection.mutable.{ HashMap => MMap }
+
+import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -9,9 +13,6 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import scala.Dynamic
-import scala.language.dynamics
-import ch.epfl.lara.synthesis.kingpong.Game
 
 object GameObject {
   final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r

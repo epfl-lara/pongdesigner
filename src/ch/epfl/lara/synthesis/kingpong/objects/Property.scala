@@ -39,9 +39,7 @@ abstract class Property[T : PongType]() { self =>
   }
 }
 
-abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T] { self => 
-  
-}
+abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T]
 
 abstract class RWProperty[T : PongType]() extends Property[T] with History with Snap { self => 
   

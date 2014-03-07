@@ -1,5 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong
 
+import java.util.ArrayList
+import scala.collection.mutable.ArrayBuffer
+import net.londatiga.android._
+
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -24,16 +28,10 @@ import android.app.ProgressDialog
 import android.widget.Toast
 import android.util.Log
 import android.os.AsyncTask
-import java.util.ArrayList
-import scala.collection.mutable.ArrayBuffer
 import android.content.Intent
 import android.net.Uri
-import net.londatiga.android._
 import android.media.MediaRecorder
-import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
 import android.graphics.drawable.Drawable
-import ch.epfl.lara.synthesis.kingpong.common.History
-import ch.epfl.lara.synthesis.kingpong.common.Messages
 import android.widget.TextView
 import android.support.v4.view.GestureDetectorCompat
 import android.view.GestureDetector
@@ -44,6 +42,12 @@ import android.widget.ImageView
 import android.view.ViewGroup
 import android.widget.ListView
 import android.widget.ExpandableListView
+
+import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
+
+import ch.epfl.lara.synthesis.kingpong.common.History
+import ch.epfl.lara.synthesis.kingpong.common.Messages
+import ch.epfl.lara.synthesis.kingpong.examples.TestGame
 
 object KingPong {
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -102,7 +106,7 @@ object KingPong {
           game = mapgames(filename)()
           publishProgress(("Finished", 100, 100))
         } else {
-          game = new EmptyGame()
+          game = new TestGame()
           /*game.setGameEngine(activity.mGameView)
           game.fromFile(filename, {
              (text: String, i: Int, j: Int) => 
@@ -197,7 +201,7 @@ class KingPong extends Activity
     }
     if(!mGameView.hasGame()) {
       if(task.game == null) {
-        task.game = new EmptyGame()
+        task.game = new TestGame()
       }
       mGameView.setGame(task.game)
     }
@@ -325,7 +329,7 @@ class KingPong extends Activity
             val res = context.getResources()
             CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
                 { _ =>
-                  mGameView.setGame(new EmptyGame())
+                  mGameView.setGame(new TestGame())
                 },
                 { _ => }
             )

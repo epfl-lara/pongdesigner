@@ -1,13 +1,14 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.Game
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.Shape
+
+import ch.epfl.lara.synthesis.kingpong.Game
+import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
 

@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
-import ch.epfl.lara.synthesis.kingpong.rules.Rules
 import ch.epfl.lara.synthesis.kingpong.objects._
 import android.text.style.CharacterStyle
 import android.text.SpannableStringBuilder
@@ -24,7 +23,6 @@ object PrettyPrinter extends PrettyPrinterTypical {
 }
 
 trait PrettyPrinterTypical {
-  import Rules._
 
   final val NO_INDENT = ""
   final val INDENT = "  "

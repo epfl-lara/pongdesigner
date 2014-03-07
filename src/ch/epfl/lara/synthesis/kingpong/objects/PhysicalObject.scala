@@ -7,6 +7,8 @@ import org.jbox2d.dynamics.BodyDef
 import org.jbox2d.dynamics.BodyType
 import org.jbox2d.dynamics.FixtureDef
 import org.jbox2d.dynamics.World
+import org.jbox2d.dynamics.Fixture
+
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -14,7 +16,6 @@ import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
-import org.jbox2d.dynamics.Fixture
 
 abstract class PhysicalObject(init_name: Expr, 
                               init_x: Expr,

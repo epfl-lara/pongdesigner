@@ -1,9 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
+import android.util.Log
+
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import ch.epfl.lara.synthesis.kingpong.rules.Rules._
-import android.util.Log
 import ch.epfl.lara.synthesis.kingpong.objects.Category
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 

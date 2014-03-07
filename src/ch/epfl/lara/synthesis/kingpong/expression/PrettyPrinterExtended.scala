@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
-import ch.epfl.lara.synthesis.kingpong.rules.Rules
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.StringDelimiter
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -35,10 +34,7 @@ trait PrettyPrinterExtendedTypical {
   val FINGER_UP_SYMBOL = "\u21E7"
   val ARROW_FUNC_SYMBOL = "\u21D2"
   val IF_SYMBOL = "if"
-  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)
-  
-  
-  import Rules._
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
   
   object Mappings {
     def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, Category](), Map[Int, Tree](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
