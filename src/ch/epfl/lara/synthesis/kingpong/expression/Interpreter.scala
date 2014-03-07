@@ -9,7 +9,8 @@ import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.objects.Property
-import ch.epfl.lara.synthesis.kingpong.objects.RWProperty
+import ch.epfl.lara.synthesis.kingpong.objects.AssignableProperty
+import ch.epfl.lara.synthesis.kingpong.objects.HistoricalProperty
 
 sealed trait Value extends Any {
   def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(this)
@@ -68,11 +69,11 @@ trait Interpreter {
 
     case Assign(props, rhs) =>
       def setValue(prop: Expr, v: Value): Unit = prop match {
-        case PropertyRef(writableProperty: RWProperty[_]) =>
-          writableProperty.setNext(v)
+        case PropertyRef(writableProperty: AssignableProperty[_]) =>
+          writableProperty.assign(v)
         case indirectProperty: PropertyIndirect => indirectProperty.expr match {
-          case PropertyRef(writableProperty: RWProperty[_]) =>
-            writableProperty.setNext(v)
+          case PropertyRef(writableProperty: AssignableProperty[_]) =>
+            writableProperty.assign(v)
           case null => eval(indirectProperty.indirectObject) match {
             case GameObjectV(o) => 
               setValue(o(indirectProperty.prop), v)
@@ -119,9 +120,9 @@ trait Interpreter {
       }
       
     case Reset(prop) => prop match {
-      case PropertyRef(writableProperty: RWProperty[_]) => writableProperty.reset(this)
+      case PropertyRef(historicalProperty: HistoricalProperty[_]) => historicalProperty.reset(this)
       case indirectProperty: PropertyIndirect => indirectProperty.expr match {
-        case PropertyRef(writableProperty: RWProperty[_]) => writableProperty.reset(this)
+        case PropertyRef(historicalProperty: HistoricalProperty[_]) => historicalProperty.reset(this)
         case _ => throw InterpreterException(s"$prop is not a resetable property")
       }
       case _ => throw InterpreterException(s"$prop cannot be reset")

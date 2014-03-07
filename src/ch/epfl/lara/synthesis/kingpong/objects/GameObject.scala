@@ -35,6 +35,16 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     case p: RWProperty[_] => p
   }
   
+  /** Only historical properties of this object. */
+  def historicalProperties = _properties.values.view.collect {
+    case p: HistoricalProperty[_] => p
+  }
+  
+  /** Only snappable properties of this object. */
+  def snappableProperties = _properties.values.view.collect {
+    case p: SnappableProperty[_] => p
+  }
+  
   private val _ephemeralProperties = MMap.empty[String, EphemeralProperty[_]]
   
   /** All ephemeral properties. */
@@ -99,23 +109,23 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------
 
   /** Do a snapshot on all properties. */
-  def snapshot() = writableProperties.foreach { _.snapshot() }
+  def snapshot() = snappableProperties.foreach { _.snapshot() }
 
   /** Revert to the latest snapshot for all properties. */
-  def revert() = writableProperties.foreach { _.revert() }
+  def revert() = snappableProperties.foreach { _.revert() }
 
   // --------------------------------------------------------------------------
   // History functions
   // --------------------------------------------------------------------------
 
   /** Save the current state to the history. */
-  def save(t: Long) = writableProperties.foreach { _.save(t) }
+  def save(t: Long) = historicalProperties.foreach { _.save(t) }
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Long) = writableProperties.foreach { _.restore(t) }
+  def restore(t: Long) = historicalProperties.foreach { _.restore(t) }
 
   /** Clear the history of this object. */
-  def clear() = writableProperties.foreach { _.clear() }
+  def clear() = historicalProperties.foreach { _.clear() }
 
   // --------------------------------------------------------------------------
   // Utility functions
@@ -125,26 +135,26 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * Validate the next values of the underlying structure
    *  and replace the current value with it.
    */
-  def validate() = writableProperties.foreach { _.validate() }
+  def validate() = historicalProperties.foreach { _.validate() }
 
   /**
    * Write the properties values to the underlying structure. The common case
    *  is to force these values to the physical world, but it could also do
    *  nothing.
    */
-  def flush() = writableProperties.foreach { _.flush() }
+  def flush() = historicalProperties.foreach { _.flush() }
 
   /**
    * Load the properties values from the underlying structure, typically
    *  the physical world.
    */
-  def load() = writableProperties.foreach { _.load() }
+  def load() = historicalProperties.foreach { _.load() }
 
   /**
    * Reset all properties to their initial values.
    */
   def reset(interpreter: Interpreter)(implicit context: Context) = {
-    writableProperties.foreach { _.reset(interpreter) }
+    historicalProperties.foreach { _.reset(interpreter) }
   }
   
   /**

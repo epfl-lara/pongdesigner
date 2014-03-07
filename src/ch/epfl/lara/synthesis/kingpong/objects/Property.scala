@@ -27,7 +27,7 @@ abstract class Property[T : PongType]() { self =>
   /** Get the Pong type of this property. */
   def getPongType: Type = tpe.getPongType
 
-  /** get this property as an Expression. */
+  /** Get this property as an Expression. */
   def expr: Expr
   
   /** The PongType implicit used for conversions. */
@@ -41,15 +41,49 @@ abstract class Property[T : PongType]() { self =>
 
 abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T]
 
-abstract class RWProperty[T : PongType]() extends Property[T] with History with Snap { self => 
+abstract class RWProperty[T : PongType]() extends Property[T] { self => 
   
   /** Get the reference of this property. */
   lazy val ref = PropertyRef(this)
   def expr = ref
   
+  /** Set the current value to `v`. 
+   *  The next value is also set.
+   */
+  def set(v: T): self.type
+  def set(v: Value): self.type = set(tpe.toScalaValue(v))  
+}
+
+trait AssignableProperty[T] { self: RWProperty[T] =>
+  
+  /** Assign the given value to this property. 
+   *  According to the implementation, this will modify the current 
+   *  or next value.
+   */
+  def assign(v: T): self.type
+  def assign(v: Value): self.type = assign(tpe.toScalaValue(v))
+}
+
+trait HistoricalProperty[T] extends History with AssignableProperty[T] { self: RWProperty[T] =>
+  
+  private var _setNext: T => self.type = setNextInternal _
+  
   /** Validate the next value and replace the current value with it. 
    */
   def validate(): self.type
+
+  /** Set the initial value as an expression.
+   *  Call `reset()` to push this value to the current state.
+   */
+  def setInit(e: Expr): self.type
+  
+  /** Set the next value to `v`.
+   *  Call `validate()` to push this value to the current state.
+   */
+  def setNext(v: T): self.type = _setNext(v)
+  def setNext(v: Value): self.type = setNext(tpe.toScalaValue(v))
+  
+  protected def setNextInternal(v: T): self.type
   
   /** Write the current value to the underlying structure. The common case
    *  is to force this value to the physical world, but it could also do
@@ -61,81 +95,65 @@ abstract class RWProperty[T : PongType]() extends Property[T] with History with 
    */
   def load(): self.type
   
-  /** Set the initial value as an expression.
-   *  Call `reset()` to push this value to the current state.
+  /** Interpret the initial expression and set the current value.
    */
-  def setInit(e: Expr): self.type
-
-  /** Set the current value to `v`. 
-   *  The next value is also set.
-   */
-  def set(v: T): self.type
-  def set(v: Value): self.type = set(tpe.toScalaValue(v))
-
-  /** Set the next value to `v`.
-   *  Call `validate()` to push this value to the current state.
-   */
-  def setNext(v: T): self.type = mSetNext(v)
-  def setNext(v: Value): self.type = setNext(tpe.toScalaValue(v))
-  
-  protected def setNextInternal(v: T): self.type
-  
-  protected var mSetNext: T => self.type = setNextInternal _
-  
-  private var instant = false
-  def setInstant(activate: Boolean) = {
-    if(activate) mSetNext = set _
-    else mSetNext = setNextInternal _
-  }
-
-  /** Interpret the initial expression and set the current value. */
   def reset(interpreter: Interpreter)(implicit context: Context): self.type
   
+  /** If activated, a call to `setNext` will set the current value instead
+   *  of the next value. 
+   */
+  def setInstant(activate: Boolean) = {
+    if (activate) 
+      _setNext = set _
+    else 
+      _setNext = setNextInternal _
+  }
+  
+  def assign(v: T) = setNext(v)
+}
+
+trait SnappableProperty[T] extends Snap { self: RWProperty[T] =>
+  private var _snap: T = _
+  def snapshot() = _snap = get
+  def revert() = set(_snap)
 }
 
 /**
  * Property which will not be persistent and is only for one-turn computation.
  * Its value is disregarded afterwards
  */
-class EphemeralProperty[T: PongType](val name: String, val parent: GameObject) extends RWProperty[T] { self =>
+class EphemeralProperty[T: PongType](val name: String, val parent: GameObject) 
+  extends RWProperty[T]
+  with SnappableProperty[T] with AssignableProperty[T] { self =>
+    
   private var value: T = _
-  def clear(): Unit  = {}
-  def restore(t: Long): Unit = {}
-  def save(t: Long): Unit = {}
-  // Members declared in  ch.epfl.lara.synthesis.kingpong.objects.Property
-  def flush() = self
   def get: T = value
-  def load() = self
   def next: T = value
-  def reset(interpreter: Interpreter)(implicit context: Context): self.type  = self
-  def set(v: T): self.type = {value = v; self }
-  def setInit(e:  Expr):  self.type = self
-  protected def setNextInternal(v: T):  self.type = { value = v; self }
-  def validate():  self.type = self
-  // Members declared in  ch.epfl.lara.synthesis.kingpong.common.Snap
-  def revert(): Unit = {}
-  def snapshot(): Unit = {}
+  def set(v: T) = { 
+    value = v
+    this 
+  }
+  def assign(v: T) = set(v)
 }
 
 /**
  * Property with some history
  */
-abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, val parent: GameObject) extends RWProperty[T] {
+abstract class HistoricalRWProperty[T : PongType](val name: String, init: Expr, val parent: GameObject) 
+  extends RWProperty[T] 
+  with HistoricalProperty[T] with SnappableProperty[T] { self =>
+  
   override def toString = s"ConcreteProperty($name)"
   
   protected var _crt: T = _
   protected var _next: T = _  
   protected var _init: Expr = init
-  protected var _snap: T = _
 
   /** Contains the history. The head corresponds to the most recent value. */
   protected val _history: RingBuffer[(Long, T)] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
   def get = _crt
   def next = _next
-
-  def snapshot() = _snap = _crt
-  def revert() = _crt = _snap
   
   def validate() = {
     _crt = _next
@@ -152,8 +170,8 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, val 
     _next = v
     this
   }
-
-  protected def setNextInternal(v: T) = {
+  
+  protected def setNextInternal(v: T): self.type = {
     _next = v
     this
   }
@@ -179,11 +197,11 @@ abstract class ConcreteProperty[T : PongType](val name: String, init: Expr, val 
   def clear(): Unit = {
     _history.clear()
   }
-
+  
 }
 
 abstract class PhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
-  extends ConcreteProperty[T](name, init, parent) {
+  extends HistoricalRWProperty[T](name, init, parent) {
   
   override def toString = s"PhysicalProperty($name)"
   
@@ -204,7 +222,7 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr, parent: 
 }
 
 abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
-  extends ConcreteProperty[T](name, init, parent) {
+  extends HistoricalRWProperty[T](name, init, parent) {
   
   override def toString = s"SimplePhysicalProperty($name)"
   
@@ -228,7 +246,9 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, pa
   val flusher: T => Unit
 }
 
-class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject) extends ConcreteProperty[T](name, init, parent) {
+class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
+  extends HistoricalRWProperty[T](name, init, parent) {
+  
   override def toString = s"SimpleProperty($name)"
   def flush() = this
   def load() = this

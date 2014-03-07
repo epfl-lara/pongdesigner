@@ -119,7 +119,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
    * if false, it is deactivated.
    */
   def setInstantProperties(activate: Boolean) = {
-    for (o <- objects; prop <- o.writableProperties) {
+    for (o <- objects; prop <- o.historicalProperties) {
       prop.setInstant(activate)
     }
   }
