@@ -28,16 +28,23 @@ object ComfusySolver {
       case (a::b, c::d) if name(a) < name(c) => a::merge(b, l2)
       case (a::b, c::d) => c::merge(l1, d)
     }
-    def map(l1: List[(Name, Coef)])(f: Coef => Coef):List[(Name, Coef)] = l1 match {
+    
+    def map(l: List[(Name, Coef)])(f: Coef => Coef): List[(Name, Coef)] = l match {
       case Nil => Nil
-      case a::q => val mapped = f(coef(a))
-        if(mapped == 0) map(q)(f) else (name(a),mapped)::map(q)(f)
+      case a::q => 
+        val mapped = f(coef(a))
+        if (mapped == 0) 
+          map(q)(f) 
+        else 
+          (name(a), mapped) :: map(q)(f)
     }
+    
     def getCoef(e: Expr): Float = e match {
-        case FloatLiteral(e) => e
-        case IntegerLiteral(e) =>e
-        case _ => 0
-      }
+      case FloatLiteral(e) => e
+      case IntegerLiteral(e) => e
+      case _ => 0
+    }
+    
     def +(other: Sum): Sum = {
       Sum(const + other.const, merge(e, other.e)(_ + _))
     }
@@ -82,7 +89,7 @@ object ComfusySolver {
   case class Conjunct(lessEqThanZero: List[Sum], equalZero: List[Sum]) extends ComExpr {
     def &&(other: Conjunct): Conjunct = Conjunct(lessEqThanZero ++ other.lessEqThanZero, equalZero ++ other.equalZero)
   }
-  final val True = Conjunct(Nil, Nil)
+  val True = Conjunct(Nil, Nil)
   case class IfExpr(cond: Conjunct, ifTrue: ComExpr, ifFalse: ComExpr) extends ComExpr
   
   implicit class RichTupleSum(t: (ComExpr, ComExpr)) {
@@ -100,12 +107,12 @@ object ComfusySolver {
    * Put the input constraint into canonization form.
    * ... <= 0  and ... === 0 where variables are sorted alphabetically
    */
-  def canonize[T](expr: Expr)(implicit context: Map[Name, Expr]): ComExpr = expr match {
-    case Plus(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ + _)
+  def canonize(expr: Expr)(implicit context: Map[Name, Expr]): ComExpr = expr match {
+    case Plus(lhs: Expr, rhs: Expr)  => (canonize(lhs),canonize(rhs)) asSum (_ + _)
     case Minus(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ - _)
     case Times(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ * _)
-    case Div(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ / _)
-    case Mod(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ % _)
+    case Div(lhs: Expr, rhs: Expr)   => (canonize(lhs),canonize(rhs)) asSum (_ / _)
+    case Mod(lhs: Expr, rhs: Expr)   => (canonize(lhs),canonize(rhs)) asSum (_ % _)
   
     case And(lhs: Expr, rhs: Expr) => (canonize(lhs), canonize(rhs)) asConj (_ && _)
     case Or(lhs: Expr, rhs: Expr) => throw new Error(s"$expr cannot be canonized because it contains an Or")
@@ -154,25 +161,29 @@ object ComfusySolver {
     case Vec2Literal(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Literal")
     case VecExpr(_) => throw new Error(s"$expr cannot be canonized because it contains a VecExpr")
   }
+  
   /**
-   * Translates the expression back to expr
+   * Translates a comfusy expression back to pong expression
    */
   def translate(input: ComExpr)(implicit context: Map[Name, Expr]): Expr = input match {
     case Sum(n, Nil) => n
-    case Sum(const, l) => val u = l.foldLeft(const){ case (res, a) => 
-      val c = coef(a)
-      val n = context(name(a))
-      (if(c == 1) res + n else if(c == -1) res - n else if(c == 0) res else res + (n * c)) }
-      u
+    case Sum(const, l) => 
+      l.foldLeft(const){ case (res, a) => 
+        val c = coef(a)
+        val n = context(name(a))
+        (if(c == 1) res + n else if(c == -1) res - n else if(c == 0) res else res + (n * c)) 
+      }
+      
     case Conjunct(Nil, Nil) => 
       BooleanLiteral(true)
+      
     case Conjunct(lessEq, eq) =>
-      val l1 = lessEq.map(translate).map(LessEq(_, 0)) ++ (eq.map(translate).map(Equals(_, 0)))
-      l1 match {
+      lessEq.map(translate).map(LessEq(_, 0)) ++ (eq.map(translate).map(Equals(_, 0))) match {
         case Nil => UnitLiteral
         case a::Nil => a
         case l => l.reduceLeft(And(_, _))
       }
+      
     case IfExpr(c, ifTrue, ifFalse) => 
       IfFunc(translate(c), translate(ifTrue), translate(ifFalse))
   }

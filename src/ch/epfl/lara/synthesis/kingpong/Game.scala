@@ -70,7 +70,6 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   private[kingpong] def restore(t: Long): Unit = {
     if (t >= 0 && t <= maxTime) {
       objects.foreach(_.restore(t))
-      //rules.foreach(_.restore(t))
       EventHistory.restore(t)
       world.clear()
     }
@@ -79,8 +78,6 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
   private[kingpong] def reset(): Unit = {
     objects.foreach(_.reset(this)(EventHistory))
     objects.foreach(_.clear())
-    //rules.foreach(_.reset())
-    //rules.foreach(_.clear())
     world.clear()
     EventHistory.clear()
   }
@@ -107,10 +104,11 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     objects foreach {_.flush()}                        /// push values to physical world
     world.step()                                       /// One step forward in the world
     objects foreach {_.load()}                         /// Load values from world
-    objects foreach { case i: InputManager =>          /// Maps the previous events to the input mechanisms.
-      i.collectInput(EventHistory) case _ => }
+    objects foreach {                                  /// Maps the previous events to the input mechanisms
+      case i: InputManager => i.collectInput(EventHistory) 
+      case _ => // do nothing
+    }
     objects foreach {_.save(time)}                     /// Save the values to history
-    //rules foreach {_.save(time)}                       /// Save "on" and "once" values.
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
@@ -132,15 +130,8 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     EventHistory.set(o.name.get, GameObjectV(o))
   }
 
-  /** Register this rule iterator in this game engine. */
-  def register(iterator: RuleIterator) {
-    typeCheck(iterator)(EventHistory)
-    addRule(iterator)
-  }
-
   /** Register this rule in this game engine. */
   def register(rule: Stat) {
-    //val iterator = new NoCategory(rule)
     typeCheck(rule)(EventHistory)
     addRule(rule)
   }
@@ -149,6 +140,7 @@ trait Game extends TypeChecker with Interpreter with ColorConstants with RuleMan
     typeCheck(e, implicitly[PongType[T]].getPongType)(EventHistory)
     eval(e)(EventHistory).as[T]
   }
+  
   def evaluate(e: Stat): Unit = {
     eval(e)(EventHistory)
   }

@@ -277,7 +277,7 @@ object Trees {
     def ::(other: Stat) = Block(List(other, this))
   }
   
-  sealed trait RuleIterator extends Stat /*extends History*/ {
+  sealed trait RuleIterator extends Stat {
     
     trait BindingGenerator extends (Keys => Stat) {
       def apply(keys: Keys): Stat
