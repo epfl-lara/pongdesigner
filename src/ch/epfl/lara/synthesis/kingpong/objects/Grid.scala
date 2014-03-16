@@ -4,7 +4,6 @@ import android.graphics.Canvas
 import ch.epfl.lara.synthesis.kingpong.Game
 import android.graphics.Matrix
 import android.graphics.Paint
-import ch.epfl.lara.synthesis.kingpong.expression.Vec2V
 
 object Grid {
   def apply(m: Matrix, width: Int, numSteps: Int, stroke_width: Float=1, color:Int = 0x88000000): Grid = {
@@ -76,7 +75,7 @@ class Grid(val step: Float, offset: Float, stroke_width: Float, color:Int) {
     (((x - offset)/step).round*step + offset).toFloat
   }
   
-  def snap(v: Vec2V): Vec2V = {
-    Vec2V(snap(v.x), snap(v.y))
-  }
+//  def snap(v: Vec2V): Vec2V = {
+//    Vec2V(snap(v.x), snap(v.y))
+//  }
 }

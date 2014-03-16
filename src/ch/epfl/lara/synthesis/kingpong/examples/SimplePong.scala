@@ -2,6 +2,12 @@ package ch.epfl.lara.synthesis.kingpong.examples
 
 import scala.collection.mutable.{Set => MSet}
 import scala.math.Numeric$DoubleIsFractional$
+import scala.Dynamic
+import scala.language.dynamics
+
+import org.jbox2d.dynamics.BodyType
+
+import android.util.Log
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -11,16 +17,10 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import scala.Dynamic
-import scala.language.dynamics
-
-//TODO remove when useless
-import org.jbox2d.dynamics.BodyType
-
-import android.util.Log
 
 class SimplePong extends Game {
   val world = new PhysicalWorld(Vec2(0, 0f))
@@ -57,18 +57,18 @@ class SimplePong extends Game {
   
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
-  val r1 = foreach(balls)("ball"){
-    whenever(obj("ball") below paddle1) (
-      score("value") -= 1,
-      started("value") := false,
-      obj("ball")("x").reset(),
-      obj("ball")("y").reset()
+  val r1 = foreach(balls) { ball =>
+    whenever(ball.top >= paddle1.bottom) ( // == below
+      score.value -= 1,
+      started.value := false,
+      Reset(ball.x),
+      Reset(ball.y)
     )
   }
   
-  val r1bis = foreach(balls)("ball"){
-    whenever(obj("ball") collides paddle1) (
-      obj("ball")("velocity") += VecExpr((obj("ball")("x") - paddle1("x"))*5, 0)
+  val r1bis = foreach(balls) { ball =>
+    whenever(Collision(ball, paddle1)) ( // == collides
+      ball.velocity += Tuple(Seq((ball.x - paddle1.x) * 5, 0))
     )
   }
   
@@ -109,73 +109,70 @@ class SimplePong extends Game {
    *     x' = max(x+3, 10)
    */
 
-  val r2 = foreach(balls)("ball"){
-    foreach(blocks)("block") {
-    foreach(scores)("score") {
-      whenever(Collision(obj("ball"), obj("block"))) (
-        obj("score")("value") += 1,
-        obj("ball")("color") := obj("block")("color"),
-        obj("block")("visible") = false
-      )
-    }
-    }
-  }
-  val r22 = foreach(balls, borders)("ball", "border") {
-    whenever(Collision(obj("ball"), obj("border"))) (
-      obj("border")("color") := obj("ball")("color")
-    )  
-  }
-
-  /*val r3 = foreach(balls)("ball") { whenever(FingerDownOver(obj("ball"))) (
-    obj("ball")("radius") += 0.1
-  )}*/
-  
-  val r4 = whenever(FingerMoveOver(paddle1))(
-    paddle1("x") += Val("dx")
-  )
-  
-  val r5 = foreach(duplicators, balls)("duplicator", "ball"){
-    whenever(Collision(obj("duplicator"), obj("ball")))(
-      obj("ball").copy("copy")(Seq(
-        obj("copy")("x") += 0.25,
-        obj("copy")("velocity") += Vec2(0.5f, 1f),
-        obj("ball")("x") -= 0.25,
-        obj("duplicator")("visible") = false
-      ))
+  val r2 = foreach(balls, blocks, scores) { (ball, block, score) =>
+    whenever(Collision(ball, block)) (
+      score.value += 1,
+      ball.color := block.color,
+      block.visible := false
     )
   }
   
-  val r6 = foreach(balls)("ball"){
-     whenever(!started("value")) (
-    obj("ball")("x") := paddle1("x"),
-    obj("ball")("y") := Choose(List(obj("ball")("y")), obj("ball")("bottom") =:= paddle1("top")),
-    obj("ball")("velocity") := Vec2(0, 0f)
-    // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
+  val r22 = foreach(balls, borders) { (ball, border) =>
+    whenever(Collision(ball, border)) (
+      border.color := ball.color
+    )  
+  }
+  
+  //TODO find a way to handle the finger move in rules
+//  val r4 = whenever(FingerMoveOver(paddle1))(
+//    paddle1.x += Val("dx")
+//  )
+
+  //TODO copy
+//  val r5 = foreach(duplicators, balls)("duplicator", "ball"){
+//    whenever(Collision(obj("duplicator"), obj("ball")))(
+//      obj("ball").copy("copy")(Seq(
+//        obj("copy")("x") += 0.25,
+//        obj("copy")("velocity") += Vec2(0.5f, 1f),
+//        obj("ball")("x") -= 0.25,
+//        obj("duplicator")("visible") = false
+//      ))
+//    )
+//  }
+  
+  //TODO choose
+//  val r6 = foreach(balls) { (ball) =>
+//    whenever(!started.value) (
+//      ball.x := paddle1.x,
+//      ball.y := Choose(List(obj("ball")("y")), obj("ball")("bottom") =:= paddle1("top")),
+//      ball.velocity := Vec2(0, 0f)
+//      // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
+//    )
+//  }
+  
+  val r7 = foreach(balls) { (ball) =>
+    whenever(!started.value && FingerUpOver(paddle1)) (
+    started.value := true,
+    ball.velocity := Vec2(0, -5.0f)
   )
   }
   
-  val r7 = foreach(balls)("ball"){
-    whenever(!started("value") && FingerUpOver(paddle1)) (
-    started("value") := true,
-    obj("ball")("velocity") := Vec2(0, -5.0f)
-  )
-  }
-  
-  val r8 = Block(
-     paddle1("x") := Choose(List(paddle1("x")),
-            (paddle1 toRightOfAtMost Border2)
-         && (paddle1 toLeftOfAtMost Border3)),
-     List(Border4("x"), Border4("width")) := Choose(List(Border4("x"), Border4("width")), (Border4 alignLeft Ball1) && (Border4 alignRight paddle1))
-  )
+  //TODO choose
+//  val r8 = Block(
+//     paddle1("x") := Choose(List(paddle1("x")),
+//            (paddle1 toRightOfAtMost Border2)
+//         && (paddle1 toLeftOfAtMost Border3)),
+//     List(Border4("x"), Border4("width")) := Choose(List(Border4("x"), Border4("width")), (Border4 alignLeft Ball1) && (Border4 alignRight paddle1))
+//  )
 
   register(r1)
   register(r1bis)
   register(r2)
   register(r22)
   //register(r3)
-  register(r8)
-  register(r5)
-  register(r6)
+//  register(r8)
+//  register(r5)
+//  register(r6)
   register(r7)
-  register(r4)
+//  register(r4)
 }

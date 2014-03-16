@@ -1,6 +1,5 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
-import Trees._
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.objects._
 import android.text.style.CharacterStyle
@@ -23,7 +22,9 @@ object PrettyPrinter extends PrettyPrinterTypical {
 }
 
 trait PrettyPrinterTypical {
-
+  import Trees._
+  import Extractors._
+  
   final val NO_INDENT = ""
   final val INDENT = "  "
   final val LF = "\n"
@@ -75,33 +76,11 @@ trait PrettyPrinterTypical {
     if(seq.isEmpty) "" else seq reduceLeft { (l: CharSequence, r: CharSequence) => l + LF +  r }
   }.makeStyle
   
-  /**
-   * Prints a RuleIterator
-   */
-  /*def print(r: RuleIterator): CharSequence = r match {
-    case NoCategory(rule) => print(NO_INDENT, rule)
-    case Foreach1(cat, name, rule) => s"$FOR_SYMBOL $name $IN_SYMBOL ${cat.name}:$LF" + print(NO_INDENT, rule)
-    case Foreach2(cat1, cat2, name1, name2, rule) =>
-      s"$FOR_SYMBOL $name1 $IN_SYMBOL ${cat1.name}:$LF"+ 
-      s"$FOR_SYMBOL $name2 $IN_SYMBOL ${cat2.name}:$LF"+ print(NO_INDENT, rule)
-    
-  }*/
-  /**
-   * Prints a rule
-   */
-  /*def print(r: Rule): CharSequence = r match {
-    case Whenever(cond, action) => s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF + print(INDENT, action)
-  }*/
-  
-  //def print(s: Tree, indent: String = ""): CharSequence = {
-  //  val result = print(indent, s)
-  //}
 
   private def print(indent: String, s: Tree): CharSequence = s match {
-    case Delete(null, ref) => indent + s"Delete(${ref.name})"
-    case Delete(name, ref) => indent + s"Delete($name)"
-    case VecExpr(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
-    case e:LeftRightBinding => val op = e match {
+    case Delete(obj) => indent + "Delete(" + print(NO_INDENT, obj) + ")"
+    case Tuple(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
+    case b @ BinaryOperator(lhs, rhs, _)=> val op = b match {
         case _:Plus => "+"
         case _:Minus => "-"
         case _:Times => TIMES_SYMBOL
@@ -116,10 +95,10 @@ trait PrettyPrinterTypical {
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
       }
-      print(indent, e.lhs) + " " + op + " " + print(NO_INDENT, e.rhs) // TODO : parenthesis
+      print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
     case Assign(List(e), rhs: Expr) => indent + print(NO_INDENT, e) + "' = " + print(NO_INDENT, rhs)
     case Assign(prop, rhs: Expr) => indent + prop.map(print(NO_INDENT, _)).toString.substring(4) + "' = " + print(NO_INDENT, rhs)
-    case Reset(prop: MaybeAssignable) => val p = print(NO_INDENT, prop)
+    case Reset(prop) => val p = print(NO_INDENT, prop)
       indent + p + "' = init_" + p 
     case Block(stats: Seq[Stat]) =>
       stats.toList match {
@@ -132,9 +111,14 @@ trait PrettyPrinterTypical {
       val middle = print(indent + INDENT, s1)
       val end = if(s2 != None) indent + "else:" + LF + print(indent + INDENT, s2.get) else ""
       prem + middle + end
-    case Copy(name: String, o: GameObjectRef, b: Block) =>
-      indent + name + " = " + o.obj.name.get + ".copy" + LF + print(indent, b)
+    case Copy(name, obj, b) =>
+      indent + name + " = " + obj + ".copy" + LF + print(indent, b)
     case NOP => "NOP"
+    
+    case Choose(vars, pred) => 
+      val varsString = vars.map(print(NO_INDENT, _)).mkString("(", ",", ")")
+      indent + "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + print(NO_INDENT, pred) + ")"
+    
     case IfFunc(cond: Expr, s1: Expr, s2: Expr) =>
       indent + s"$IF_SYMBOL("+print(NO_INDENT, cond)+") " + print(NO_INDENT, s1) + " else " + print(NO_INDENT, s2)
       
@@ -142,29 +126,17 @@ trait PrettyPrinterTypical {
     case FloatLiteral(value: Float) => indent + value.toString
     case StringLiteral(value: String) => indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => indent + value.toString
-    case Vec2Literal(x: Float, y: Float) => indent + "Vec2("+x+","+y+")"
     case ObjectLiteral(o) => indent + o.name.get
     case UnitLiteral => indent + "()"
-    case Val(name: String) => indent + name
+    case Variable(id) => indent + id
     case Not(expr: Expr)  => indent + NOT_SYMBOL + print(NO_INDENT, expr)
-    case On(cond: Expr)   => indent + "on " + print(NO_INDENT, cond)
-    case Once(cond: Expr) => indent + "once " + print(NO_INDENT, cond)
-    case GameObjectRef(ObjectLiteral(obj)) => indent + obj.name.get
-    case GameObjectRef(ref) => indent + print(NO_INDENT, ref)
-    case FingerMoveOver(o: GameObjectRef) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, o)
-    case FingerDownOver(o: GameObjectRef) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
-    case FingerUpOver(o: GameObjectRef) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
+    case FingerMoveOver(o) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, o)
+    case FingerDownOver(o) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
+    case FingerUpOver(o) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
     case FingerCoordX1 => indent + "x1"
     case FingerCoordY1 => indent + "y1"
     case FingerCoordX2 => indent + "x2"
     case FingerCoordY2 => indent + "y2"
-    case PropertyIndirect(indirectObject, p) => indent + print(NO_INDENT, indirectObject) + "." + p
-    case PropertyRef(p) => p.name match {
-      case "value" => indent + p.parent.name.get  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
-      case "velocity" => indent + p.parent.name.get + ".velocity"
-      case _ => indent + p.parent.name.get + "." + p.name
-    }
-    case Choose(prop, expr) => indent + "choose(" + print(NO_INDENT, prop) + s" $ARROW_FUNC_SYMBOL " + print(NO_INDENT, expr) + ")"
   }
 }
 

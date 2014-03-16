@@ -71,7 +71,7 @@ abstract class PhysicalObject(init_name: Expr,
   /** The body mass. */
   def mass = body.getMass()
   
-  override def reset(interpreter: Interpreter)(implicit context: Context) = {
+  override def reset(interpreter: Interpreter) = {
     super.reset(interpreter)
     body.setAwake(true)
   }

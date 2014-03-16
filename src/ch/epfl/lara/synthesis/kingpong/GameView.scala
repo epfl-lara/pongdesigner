@@ -36,6 +36,7 @@ import android.widget.TextView
 import android.text.style.BackgroundColorSpan
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import android.text.style.StyleSpan
 import android.graphics.Typeface
 import android.text.style.ForegroundColorSpan
@@ -137,24 +138,24 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
   }
   
-  EventHistory.addMethod("toGame", MethodDecl(TVec2, Val("toGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
-      (l: List[Value]) =>
-        mapVectorToGame(Vec2V(l))
-  ))
-  
-  EventHistory.addMethod("fromGame", MethodDecl(TVec2, Val("fromGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
-      (l: List[Value]) =>
-        mapVectorFromGame(Vec2V(l))
-  ))
-  EventHistory.addMethod("snap", MethodDecl(TVec2, Val("snap"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
-      (l: List[Value]) =>
-        l match {
-          case NumericV(i)::Nil => FloatV(grid.snap(i))
-          case (v@Vec2V(x, y))::Nil => grid.snap(v)
-          case NumericV(i)::NumericV(j)::Nil => grid.snap(Vec2V(i, j))
-          case _ => throw new InterpreterException(s"Unable to snap value $l to grid. Should be a FloatV x1 or x2, or a Vec2V")
-        }
-  ))
+//  EventHistory.addMethod("toGame", MethodDecl(TVec2, Val("toGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+//      (l: List[Value]) =>
+//        mapVectorToGame(Vec2V(l))
+//  ))
+//  
+//  EventHistory.addMethod("fromGame", MethodDecl(TVec2, Val("fromGame"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+//      (l: List[Value]) =>
+//        mapVectorFromGame(Vec2V(l))
+//  ))
+//  EventHistory.addMethod("snap", MethodDecl(TVec2, Val("snap"), List(Formal(TVec2, Val("pos"))), stats=NOP, retExpr=List()).withFastImplementation(
+//      (l: List[Value]) =>
+//        l match {
+//          case NumericV(i)::Nil => FloatV(grid.snap(i))
+//          case (v@Vec2V(x, y))::Nil => grid.snap(v)
+//          case NumericV(i)::NumericV(j)::Nil => grid.snap(Vec2V(i, j))
+//          case _ => throw new InterpreterException(s"Unable to snap value $l to grid. Should be a FloatV x1 or x2, or a Vec2V")
+//        }
+//  ))
   
   def toGame(e: Expr): Expr = {
     MethodCall("toGame", List(e))
@@ -175,21 +176,18 @@ class GameView(val context: Context, attrs: AttributeSet)
   val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
   
   val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
-  //val moveRule1 = Block(// need to disambiguate moveMenu("obj") := ObjectLiteral(null),
-  //    foreach(FingerUps)("fingerUp") {
-  //  moveMenu("obj") := obj("fingerUp")("obj")  // Objects of the GameView, that is none.
-  //})
-  val moveRule2 = whenever(FingerMoveOver(moveMenu))(
-    List(moveMenu("x"), moveMenu("y")) := List(moveMenu("x"), moveMenu("y")) + VecExpr(List(Val("dx"), Val("dy")))
-  )
-  // TODO : it currently updates their next state, not their current.
-  val moveRule2bis = whenever(moveMenu("obj") =!= NULL)(
-     List(moveMenu("obj")("x"), moveMenu("obj")("y")) := snap(toGame(List(moveMenu("x"), moveMenu("y"))))
-  )
   
-  //register(moveRule1)
-  register(moveRule2)
-  register(moveRule2bis)
+  
+//  val moveRule2 = whenever(FingerMoveOver(moveMenu))(
+//    List(moveMenu("x"), moveMenu("y")) := List(moveMenu("x"), moveMenu("y")) + VecExpr(List(Val("dx"), Val("dy")))
+//  )
+//  // TODO : it currently updates their next state, not their current.
+//  val moveRule2bis = whenever(moveMenu("obj") =!= ObjectLiteral(null))(
+//     List(moveMenu("obj")("x"), moveMenu("obj")("y")) := snap(toGame(List(moveMenu("x"), moveMenu("y"))))
+//  )
+  
+//  register(moveRule2)
+//  register(moveRule2bis)
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -274,18 +272,18 @@ class GameView(val context: Context, attrs: AttributeSet)
             
         }
       }
-      if(propMapping != null) {
-        propMapping.get(start) match {
-          case Some(p) => // Activate the menu corresponding to this kind of property;
-            p.name match {
-              case "x" | "y" => evaluate(Block(moveMenu("obj") := ObjectLiteral(p.parent),
-                  List(moveMenu("x"), moveMenu("y")) := fromGame(List(p.parent.x.expr, p.parent.y.expr)),
-                  moveMenu("visible") := true))
-              case _ =>
-            }
-          case _ =>
-        }
-      }
+//      if(propMapping != null) {
+//        propMapping.get(start) match {
+//          case Some(p) => // Activate the menu corresponding to this kind of property;
+//            p.name match {
+//              case "x" | "y" => evaluate(Block(moveMenu.obj := ObjectLiteral(p.parent),
+//                  List(moveMenu.x, moveMenu.y) := fromGame(List(p.parent.x.expr, p.parent.y.expr)),
+//                  moveMenu("visible") := true))
+//              case _ =>
+//            }
+//          case _ =>
+//        }
+//      }
     })
   }
   
@@ -646,11 +644,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
   
   /** meters to pixels */
-  def mapVectorFromGame(p: Vec2V): Vec2V = {
-    val toMap = Array(p.x, p.y)
-    matrix.mapPoints(toMap)
-    Vec2V(toMap(0), toMap(1))
-  }
+//  def mapVectorFromGame(p: Vec2V): Vec2V = {
+//    val toMap = Array(p.x, p.y)
+//    matrix.mapPoints(toMap)
+//    Vec2V(toMap(0), toMap(1))
+//  }
   
 
   /** pixels to meters */
@@ -662,11 +660,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   
   /** meters to pixels */
-  def mapVectorToGame(p: Vec2V): Vec2V = {
-    val toMap = Array(p.x, p.y)
-    matrixI.mapPoints(toMap)
-    Vec2V(toMap(0), toMap(1))
-  }
+//  def mapVectorToGame(p: Vec2V): Vec2V = {
+//    val toMap = Array(p.x, p.y)
+//    matrixI.mapPoints(toMap)
+//    Vec2V(toMap(0), toMap(1))
+//  }
 
   /** meters to pixels */
   def mapRadius(r: Float): Float = matrix.mapRadius(r)

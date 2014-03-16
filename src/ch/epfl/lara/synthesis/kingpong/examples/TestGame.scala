@@ -6,6 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
 class TestGame extends Game {
@@ -30,30 +31,31 @@ class TestGame extends Game {
   val arr = array(catArray)("MyArray", 1.3, 4)
   
   
-  val r1 = foreach(cat)("o"){ foreach(base.category)("base") {
-    whenever(obj("base")("y") < obj("o")("y"))(
-      obj("o")("y") := 0, 
-      obj("o")("velocity") := Vec2(0, 0)
+  val r1 = foreach(cat, base.category) { (obj, base) =>
+    whenever(base.y < obj.y)(
+      obj.y := 0, 
+      obj.velocity := Vec2(0, 0)
     )
-  }}
-
-  val r2 = foreach(cat, cat2)("o1", "o2") { foreach(score.category)("score") {
-    whenever(Collision(obj("o1"), obj("o2"))) (
-      obj("score")("value") += 1
+  }
+  
+  val r2 = foreach(cat, cat2, score.category) { (o1, o2, score) =>
+    whenever(Collision(o1, o2)) (
+      score.value += 1
     )
-  }}
-
-  val r3 = foreach(catAdd)("c2") {
-    whenever(FingerDownOver(obj("c2")))(
-    obj("c2")("radius") += 0.1
-  )}
+  }
+  
+  val r3 = foreach(catAdd) { obj =>
+    whenever(FingerDownOver(obj)) {
+      obj.radius += 0.1
+    } 
+  }
   
   val cell = arr.cells(1)(1)
   
   val r4 = whenever(Contains(cell, rect1))(
-      rect1("x") := cell("x"),
-      rect1("y") := cell("y"),
-      rect1("velocity") := Vec2(0, 0)
+      rect1.x := cell.x,
+      rect1.y := cell.y,
+      rect1.velocity := Vec2(0, 0)
     )
 
   register(r1)

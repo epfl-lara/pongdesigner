@@ -13,54 +13,33 @@ import ch.epfl.lara.synthesis.kingpong.objects.GameObject
  ***/
 object Disambiguator {
   import Trees._
-  import TraverseMode.{Value => _, _}
+  import TreeOps._
+  
   object MergeMode extends Enumeration {
      type MergeMode = Value
      val SequentialMerge, ForceSecond = Value
   }
   import MergeMode._
   
+  
   /**
    * Returns a tuple (PropertyHavingBeenAssigned, PropertyWithDuplicates)
    */
-  def findDuplicates(t: Stat): (Set[Property[_]], Set[Property[_]]) = {
-    t match {
-      case ParExpr(l) =>
-        val (l1, l2) = (l map findDuplicates).unzip
-        (l1 reduceLeft (_ union _), l2 reduceLeft (_ union _))
-      case Block(stats) =>
-        ((Set[Property[_]](), Set[Property[_]]()) /: stats) {
-          case ((assigned, duplicates), stat) =>
-            val (newAssigned, newDuplicates) = findDuplicates(stat)
-            (assigned union newAssigned, duplicates.union(assigned intersect newAssigned))
-        }
-      case If(cond, ifTrue, None) =>
-        val (trueAssigned, trueDuplicates) = findDuplicates(ifTrue)
-        //val (falseAssigned, falseDuplicates) = findDuplicates(ifFalse)
-        (trueAssigned, trueDuplicates)
-      case If(cond, ifTrue, Some(ifFalse)) =>
-        val (trueAssigned, trueDuplicates) = findDuplicates(ifTrue)
-        val (falseAssigned, falseDuplicates) = findDuplicates(ifFalse)
-        (trueAssigned union falseAssigned, trueDuplicates union falseDuplicates)
-      case f@Foreach1(category, name, rule) =>
-        val duplicatesParallel = f.children.map(findDuplicates)
-        ((Set[Property[_]](), Set[Property[_]]()) /: duplicatesParallel) {
-          case ((assigned, duplicates), (newAssigned, newDuplicates)) =>
-            (assigned union newAssigned, duplicates union newDuplicates)
-        }
-      case Copy(name, obj, stat) =>
-        // Stat cannot be evaluated at this time
-        (Set[Property[_]](), Set[Property[_]]())
-      case Assign(props, expr) =>
-        (Set[Property[_]]() ++ (props.collect{ case m: MaybeAssignable if m.isProperty => m.getProperty.get }), Set[Property[_]]())
-      case Delete(name, o) =>
-        (Set[Property[_]](), Set[Property[_]]())
-      case NOP =>
-        (Set[Property[_]](), Set[Property[_]]())
-      case Reset(prop) =>
-        (Set[Property[_]]() ++ prop.getProperty, Set[Property[_]]())
-    }
+  def findDuplicates(stat: Stat): (Set[PropertyIdentifier], Set[PropertyIdentifier]) = {
+    TreeOps.foldRight{(s: Stat, subs: Seq[(Set[PropertyIdentifier], Set[PropertyIdentifier])]) => 
+      val (l1, l2) = subs.unzip
+      val (assigned, duplicates) = (l1.foldLeft(Set.empty[PropertyIdentifier])(_ union _), l2.foldLeft(Set.empty[PropertyIdentifier])(_ union _))
+      s match {
+        case Assign(props, _) =>
+          val newAssigned = props.toSet
+          (assigned union newAssigned, duplicates.union(assigned intersect newAssigned))
+        case _ => 
+          (assigned, duplicates)
+      }
+    }(stat)
   }
+  
+  
   
   implicit class RichMap(m: Map[Property[_], List[Assign]]) {
     def union(other: Map[Property[_], List[Assign]]): Map[Property[_], List[Assign]] = {
@@ -100,31 +79,32 @@ object Disambiguator {
             (assigned union newAssigned, duplicates union (assigned intersect newAssigned))
         }
       case If(cond, ifTrue, None) =>
-        val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
-        //val (falseAssigned, falseDuplicates) = findDuplicatesMap(ifFalse)
-        (trueAssigned, trueDuplicates)
+        findDuplicatesMap(ifTrue)
       case If(cond, ifTrue, Some(ifFalse)) =>
         val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
         val (falseAssigned, falseDuplicates) = findDuplicatesMap(ifFalse)
         (trueAssigned union falseAssigned, trueDuplicates union falseDuplicates)
-      case f@Foreach1(category, name, rule) =>
-        val duplicatesParallel = f.children.map(findDuplicatesMap)
-        ((Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]()) /: duplicatesParallel) {
-          case ((assigned, duplicates), (newAssigned, newDuplicates)) =>
-            (assigned union newAssigned, duplicates union newDuplicates)
-        }
+      case Foreach(_, _, body) =>
+        findDuplicatesMap(body)
+//        val duplicatesParallel = f.children.map(findDuplicatesMap)
+//        ((Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]()) /: duplicatesParallel) {
+//          case ((assigned, duplicates), (newAssigned, newDuplicates)) =>
+//            (assigned union newAssigned, duplicates union newDuplicates)
+//        }
+        
       case Copy(name, obj, stat) =>
-        // Stat cannot be evaluated at this time
-        (Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]())
+        (Map.empty, Map.empty)
       case a @ Assign(props, expr) =>
-        (Map[Property[_], List[Assign]]() ++ (props.collect{ case m: MaybeAssignable if m.isProperty => m.getProperty.get -> List(a) }), Map[Property[_], List[Assign]]())
-      case Delete(name, o) =>
-        (Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]())
+        //TODO 
+        ???
+//        (Map[Property[_], List[Assign]]() ++ (props.collect{ case m: MaybeAssignable if m.isProperty => m.getProperty.get -> List(a) }), Map[Property[_], List[Assign]]())
+      
+      case Delete(_) =>
+        (Map.empty, Map.empty)
       case NOP =>
-        (Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]())
+        (Map.empty, Map.empty)
       case Reset(prop) =>
-        (Map[Property[_], List[Assign]](), Map[Property[_], List[Assign]]())
-  //    (Map[Property[_], List[Assign]]() ++ (prop.getProperty -> , Map[Property[_], List[Assign]]())
+        (Map.empty, Map.empty)
     }
   }
   
@@ -344,13 +324,13 @@ object Disambiguator {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
           }
-        case f@Foreach1(category, name, rule) =>
-          f.children.foreach { stat =>
-            val (s, newAssigned, newEvaluated) = rec(stat, p, replaceAssigned, replaceEvaluated)
-            if(newAssigned != replaceAssigned) // There has been a replacement with if-like structure. Keep it
-              return (Foreach1(category, name, s), newAssigned, newEvaluated)
-          }
-          (t, replaceAssigned, replaceEvaluated) // No replacement
+        case f @ Foreach(_, _, body) =>
+          val (s, newAssigned, newEvaluated) = rec(stat, p, replaceAssigned, replaceEvaluated)
+          if(newAssigned != replaceAssigned) // There has been a replacement with if-like structure. Keep it
+            (f.copy(body = s), newAssigned, newEvaluated)
+          else
+            (t, replaceAssigned, replaceEvaluated) // No replacement
+            
         case Copy(name, obj, stat) =>
           (t, replaceAssigned, replaceEvaluated) // No replacement for the moment.
         case a @ Assign(props, expr) =>
@@ -358,31 +338,35 @@ object Disambiguator {
           // where the two variables are shifted from the previous assignments
           // If x' is hard-coded, we replace it normally
           // If x' is soft-coded, we add an If condition.
-          val (assign, npa, npe) = if(props exists { case p => p.getProperty == Some(p_original) }) {
-            val newPropAssigned = replaceEvaluated
-            val newPropEvaluated = newProp(replaceEvaluated)
-            val res = Assign(props.map{
-              case p if p.getProperty == Some(p_original) => newPropAssigned.expr
-              case p => p
-            }, expr.replace(p_original, newPropEvaluated))
-            (res, newPropAssigned, newPropEvaluated)
-          } else {
-            (Assign(props, expr.replace(p_original, replaceEvaluated)), replaceAssigned, replaceEvaluated)
-          }
-          props find {case p => p.getProperty == Some(p_original)} match {
-            case Some(p: PropertyIndirect) =>
-              //val exprReplaced = expr.replace(p_original, replaceEvaluated)
-              (If(p.indirectObject =:= p_original.parent.expr,
-                  assign,
-                  Some(Assign(props, expr))), npa, npe)
-            case _ =>
-              (assign, npa, npe)
-          }
-        case Delete(name, o) =>
+          
+          //TODO
+          ???
+//          val (assign, npa, npe) = if(props exists { case p => p.getProperty == Some(p_original) }) {
+//            val newPropAssigned = replaceEvaluated
+//            val newPropEvaluated = newProp(replaceEvaluated)
+//            val res = Assign(props.map{
+//              case p if p.getProperty == Some(p_original) => newPropAssigned.expr
+//              case p => p
+//            }, expr.replace(p_original, newPropEvaluated))
+//            (res, newPropAssigned, newPropEvaluated)
+//          } else {
+//            (Assign(props, expr.replace(p_original, replaceEvaluated)), replaceAssigned, replaceEvaluated)
+//          }
+//          props find {case p => p.getProperty == Some(p_original)} match {
+//            case Some(p: PropertyIndirect) =>
+//              //val exprReplaced = expr.replace(p_original, replaceEvaluated)
+//              (If(p.indirectObject =:= p_original.parent.expr,
+//                  assign,
+//                  Some(Assign(props, expr))), npa, npe)
+//            case _ =>
+//              (assign, npa, npe)
+//          }
+        
+        case Delete(_) =>
           (t, replaceAssigned, replaceEvaluated)
         case NOP =>
           (t, replaceAssigned, replaceEvaluated)
-        case Reset(prop) =>
+        case Reset(_) =>
           (t, replaceAssigned, replaceEvaluated)
       }
     }

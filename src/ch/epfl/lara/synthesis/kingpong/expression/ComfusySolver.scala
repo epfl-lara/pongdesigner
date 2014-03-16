@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
+import TreeDSL._
 import scala.collection.mutable.Map
 
 object ComfusySolver {
@@ -108,6 +109,11 @@ object ComfusySolver {
    * ... <= 0  and ... === 0 where variables are sorted alphabetically
    */
   def canonize(expr: Expr)(implicit context: Map[Name, Expr]): ComExpr = expr match {
+    
+    //TODO right way ?
+    case Variable(id: PropertyIdentifier) => Sum(0, List((id.name, 1)))
+    case Variable(id) => throw new Error(s"$expr cannot be canonized because the variable is not a property")
+  
     case Plus(lhs: Expr, rhs: Expr)  => (canonize(lhs),canonize(rhs)) asSum (_ + _)
     case Minus(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ - _)
     case Times(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ * _)
@@ -135,31 +141,11 @@ object ComfusySolver {
     case FingerMoveOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerMoveOver")
     case FingerUpOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerUpOver")
     case FloatLiteral(f) => Sum(f, Nil)
-    case GameObjectRef(_) => throw new Error(s"$expr cannot be canonized because it contains a GameObjectRef")
     case IfFunc(_, _, _) => throw new Error(s"$expr cannot be canonized because it contains a IfFunc")
     case IntegerLiteral(f) => Sum(f, Nil)
-    case On(e) => canonize(e)
-    case Once(e) => canonize(e)
-    case PropertyIndirect(g@GameObjectRef(StringLiteral(name)), prop) => 
-      val n = name + "."  + prop
-      context(n) = expr
-      Sum(0, List((n, 1)))
-    case PropertyIndirect(g@GameObjectRef(ObjectLiteral(obj)), prop) => 
-      val n = obj.name.get + "."  + prop
-      context(n) = expr
-      Sum(0, List((n, 1)))
-    case PropertyIndirect(_, prop) => 
-      throw new Error(s"$expr cannot be canonized because it is not well formed")
-    case PropertyRef(prop) => 
-      val n = prop.parent.name.get + "."  + prop.name
-      context(n) = expr
-      Sum(0, List((n, 1)))
     case StringLiteral(_) => throw new Error(s"$expr cannot be canonized because it contains a String")
     case UnitLiteral => throw new Error(s"$expr cannot be canonized because it contains a UnitLiteral")
-    case Val(f) => Sum(0, List((f, 1)))
-    //case Vec2Expr(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Expr")
-    case Vec2Literal(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Vec2Literal")
-    case VecExpr(_) => throw new Error(s"$expr cannot be canonized because it contains a VecExpr")
+    case Tuple(_) => throw new Error(s"$expr cannot be canonized because it contains a VecExpr")
   }
   
   /**
@@ -250,20 +236,21 @@ object ComfusySolver {
     }
   }
   
-  def solve(o: VecExpr, constraint: Expr): Expr = {
-    val output_variables = o.l.map{
-      case p:PropertyIndirect => p.name + "." + p.prop
-      case p@PropertyRef(prop) => prop.parent.name.get + "." + prop.name
+  def solve(o: Tuple, constraint: Expr): Expr = {
+    val output_variables = o.exprs.map{
+      //TODO
+//      case p:PropertyIndirect => p.name + "." + p.prop
+//      case p@PropertyRef(prop) => prop.parent.name.get + "." + prop.name
       case e => e.toString
     }
     implicit val context = Map[Name, Expr]()
     canonize(constraint) match {
       case canonized:Conjunct =>
-        val result = solveCanonized(output_variables, canonized)
+        val result = solveCanonized(output_variables.toList, canonized)
         result._2.map(translate(_)) match {
           case Nil => UnitLiteral
           case a::Nil => a
-          case l => VecExpr(l)
+          case l => Tuple(l)
         }
       case e => throw new Exception(s"Not possible to solve $e")
     }

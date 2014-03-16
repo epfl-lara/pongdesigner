@@ -1,13 +1,13 @@
 package ch.epfl.lara.synthesis.kingpong.rules
 
+import scala.collection.mutable.{Set => MSet}
+
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import scala.collection.mutable.{Set => MSet}
-import ch.epfl.lara.synthesis.kingpong.expression.Value
 
 trait Context extends Any {
 
@@ -15,7 +15,8 @@ trait Context extends Any {
   def addEvent(e: Event): Unit
   
   def time: Long
-  def addAssignment(a: Assign, p: PropertyRef)
+  
+//  def addAssignment(a: Assign, p: PropertyLiteral)
   
   
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
@@ -72,21 +73,9 @@ trait Context extends Any {
     case _ => false
   }
   
-  def get(value: String): Option[Value]
-  def set(value: String, v: Value)
-  def addMethod(name: String, methodDecl: MethodDecl): Unit
-   def getMethod(name: String): MethodDecl
-  
-  def getOrElse(value: String, orElse: => Value): Value = get(value) match {
-    case Some(v) => v
-    case None => orElse
-  }
-  def getOrElseUpdate(value: String, orElse: => Value): Value = get(value) match {
-    case Some(v) => v
-    case None => set(value, orElse)
-      orElse
-  }
-  
+//  def addMethod(name: String, methodDecl: MethodDecl): Unit
+//  def getMethod(name: String): MethodDecl
+//  
   def getNewName(s: String): String
   
   def add(c: GameObject)

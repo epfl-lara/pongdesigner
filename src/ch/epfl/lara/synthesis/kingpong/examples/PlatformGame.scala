@@ -11,6 +11,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
@@ -61,29 +62,26 @@ class PlatformGame extends Game {
   
   val j = joystick(io)(name="joystick", x=3, y=17, radius=2.5, color=white)
   
-  val r1 = whenever(j("jump") && player("grounded"))(
-      player("velocity") = VecExpr(player("velocity").x, -12)
+  val r1 = whenever(j.jump && player.grounded)(
+      player.velocity := Tuple(Seq(TupleSelect(player.velocity, 1), -12))
   )
   
-  val r2 = whenever(j("isRight"))(
-      player("velocity") = VecExpr(3, player("velocity").y),
-      player("friction") = 0f
+  val r2 = whenever(j.isRight)(
+      player.velocity := Tuple(Seq(3, TupleSelect(player.velocity, 2))),
+      player.friction := 0f
   )
   
   val r3 = whenever(j("isLeft"))(
-      player("velocity") = VecExpr(-3, player("velocity").y),
-      player("friction") = 0f
+      player.velocity := Tuple(Seq(-3, TupleSelect(player.velocity, 2))),
+      player.friction := 0f
   )
   
-  val r4 = whenever(!j("isLeft") && !j("isRight"))(
-      player("friction") = 1f
+  val r4 = whenever(!j.isLeft && !j.isRight)(
+      player.friction := 1f
   )
   
   register(r1)
   register(r2)
   register(r3)
   register(r4)
-  //val r1 = joystick mapTo
-
-  //register(r1)
 }

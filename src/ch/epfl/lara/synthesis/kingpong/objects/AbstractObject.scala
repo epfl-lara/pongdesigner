@@ -8,6 +8,7 @@ import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
@@ -257,16 +258,16 @@ case class Cell(
   
   val x = readOnlyProperty[Float] (
     name  = "x", 
-    getF  = array.left.get  + (column + 0.5f) * width.get,
-    nextF = array.left.next + (column + 0.5f) * width.next,
-    exprF = array.left.expr + (column + 0.5f) * width.expr
+    getF  = array.left.get  + width.get  * (column + 0.5f),
+    nextF = array.left.next + width.next * (column + 0.5f),
+    exprF = array.left.expr + width.expr * (column + 0.5f) 
   )
   
   val y = readOnlyProperty[Float] (
     name  = "y", 
-    getF  = array.top.get  + (row + 0.5f) * height.get,
-    nextF = array.top.next + (row + 0.5f) * height.next,
-    exprF = array.top.expr + (row + 0.5f) * height.expr
+    getF  = array.top.get  + height.get  * (row + 0.5f),
+    nextF = array.top.next + height.next * (row + 0.5f),
+    exprF = array.top.expr + height.expr * (row + 0.5f)
   )
   
   val width = constProperty[Float] (
@@ -281,30 +282,30 @@ case class Cell(
   
   override val bottom = readOnlyProperty[Float] (
     name  = "bottom", 
-    getF  = array.top.get  + (row + 1) * height.get,
-    nextF = array.top.next + (row + 1) * height.next,
-    exprF = array.top.expr + (row + 1) * height.expr
+    getF  = array.top.get  + height.get  * (row + 1),
+    nextF = array.top.next + height.next * (row + 1),
+    exprF = array.top.expr + height.expr * (row + 1)
   )
   
   override val top = readOnlyProperty[Float] (
     name  = "top", 
-    getF  = array.top.get  + row * height.get,
-    nextF = array.top.next + row * height.next,
-    exprF = array.top.expr + row * height.expr
+    getF  = array.top.get  + height.get  * row,
+    nextF = array.top.next + height.next * row,
+    exprF = array.top.expr + height.expr * row
   )
   
   override val left = readOnlyProperty[Float] (
     name  = "left", 
-    getF  = array.left.get  + column * width.get,
-    nextF = array.left.next + column * width.next,
-    exprF = array.left.expr + column * width.expr
+    getF  = array.left.get  + width.get  * column,
+    nextF = array.left.next + width.next * column,
+    exprF = array.left.expr + width.expr * column
   )
   
   override val right = readOnlyProperty[Float] (
     name  = "right", 
-    getF  = array.left.get  + (column + 1) * width.get,
-    nextF = array.left.next + (column + 1) * width.next,
-    exprF = array.left.expr + (column + 1) * width.expr
+    getF  = array.left.get  + width.get  * (column + 1),
+    nextF = array.left.next + width.next * (column + 1),
+    exprF = array.left.expr + width.expr * (column + 1)
   )
   
   val angle = proxyProperty(array.angle)

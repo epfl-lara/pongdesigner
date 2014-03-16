@@ -26,10 +26,10 @@ trait CodeHandler {
   val yTo_ident = EIdent("yTo")
   val x_ident = EIdent("x")
   val y_ident = EIdent("y")
-  val newValue_ident = EIdent("newValue")*/
+  val newValue_ident = EIdent("newValue")
   val dx_ident = Val("dx")
   val dy_ident = Val("dy")
-  
+  */
   
   /** Determines if two differences are almost the same up to a 40% factor */
   def almostTheSameDiff(val1:Float, val2:Float): Boolean = {

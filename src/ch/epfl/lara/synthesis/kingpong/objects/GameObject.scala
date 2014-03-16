@@ -11,6 +11,7 @@ import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Snap
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
@@ -26,8 +27,6 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   
   /** All properties. */
   def properties = _properties.values
-  /** Get a specific property. */
-  def getProperty(name: String) = _properties.get(name)
   
   //TODO performance issue?
   /** Only writable properties of this object. */
@@ -71,7 +70,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     name  = "center", 
     getF  = Vec2(x.get, y.get),
     nextF = Vec2(x.next, y.next),
-    exprF = VecExpr(x.expr, y.expr)
+    exprF = Tuple(Seq(x.expr, y.expr))
   )
   
   private var attachedToCategory = true
@@ -153,53 +152,51 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   /**
    * Reset all properties to their initial values.
    */
-  def reset(interpreter: Interpreter)(implicit context: Context) = {
+  def reset(interpreter: Interpreter) = {
     historicalProperties.foreach { _.reset(interpreter) }
   }
   
   /**
    * Get the corresponding expression for this object.
    */
-  def expr = GameObjectRef(ObjectLiteral(this))
+  lazy val expr: Expr = ObjectLiteral(this)
+  
+  /**
+   * Unique identifier of this object.
+   */
+  lazy val identifier: ObjectIdentifier = FreshIdentifier(name.get)
 
   /**
    * //MIKAEL add comment
    */
   def copyPropertiesFrom(other: GameObject, interpreter: Interpreter)(implicit context: Context) = {
     //MIKAEL check if this is always correct
-    (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getPongValue) }
+    (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getExpr) }
   }
   
-  def get(property: String): Expr = property match {
+  /** Get a specific property. */
+  def getProperty(property: String): Option[Property[_]] = property match {
     case _ if _properties contains property =>
-      _properties(property).expr
+      _properties.get(property)
     
     case _ if _ephemeralProperties contains property =>
-      _ephemeralProperties(property).expr
+      _ephemeralProperties.get(property)
       
-    case GameObject.EphemeralEndings(propertyName, extension) if _properties contains propertyName =>
-      // Create a new ephemeral
-      val res = _properties(propertyName).copyEphemeral(property)
-      _ephemeralProperties(property) = res
-      res.expr
+//    case GameObject.EphemeralEndings(propertyName, extension) if _properties contains propertyName =>
+//      // Create a new ephemeral
+//      val res = _properties(propertyName).copyEphemeral(property)
+//      _ephemeralProperties(property) = res
+//      res.expr
     
-    case _ =>
-      throw new Exception(s"$this does not have a $property method")
+    case _ => None
   }
   
-  def apply(property: String): Expr = get(property)
-
-  /**
-   * Abstract this object property to turn a call to method bottom to an expression reusable for other shapes.
-   */
-  //TODO does this can use the `get` method? (and thus lookup also in _ephemeralProperties)
-  def getStructurally(property: String): Expr = _properties.get(property) match {
-    case Some(p) => p.expr.structuralize()
-    case None    => throw new Exception(s"$this does not have a $property method")
+  def get(property: String): Property[_] = getProperty(property) match {
+    case Some(p) => p
+    case None    => throw new Exception(s"$this does not have a $property property.")
   }
-
-  //TODO check that the property exists and is writable ?
-  def update(property: String, arg: Expr): Stat = _properties(property).expr := arg
+  
+  def apply(property: String): Expr = get(property).expr
 
   def getAABB(): AABB
 
@@ -344,27 +341,27 @@ trait Point { self: GameObject =>
     name  = "bottom", 
     getF  = center.get.y,
     nextF = center.next.y,
-    exprF = center.expr.y
+    exprF = TupleSelect(center.expr, 2)
   )
   
   val top = readOnlyProperty (
     name  = "top", 
     getF  = center.get.y,
     nextF = center.next.y,
-    exprF = center.expr.y
+    exprF = TupleSelect(center.expr, 2)
   )
   
   val left = readOnlyProperty (
     name  = "left", 
     getF  = center.get.x,
     nextF = center.next.x,
-    exprF = center.expr.x
+    exprF = TupleSelect(center.expr, 1)
   )
   
   val right = readOnlyProperty (
     name  = "right", 
     getF  = center.get.x,
     nextF = center.next.x,
-    exprF = center.expr.x
+    exprF = TupleSelect(center.expr, 1)
   )
 }

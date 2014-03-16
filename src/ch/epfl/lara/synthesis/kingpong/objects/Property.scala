@@ -6,7 +6,6 @@ import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
-import ch.epfl.lara.synthesis.kingpong.expression.Value
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 abstract class Property[T : PongType]() { self => 
@@ -18,8 +17,8 @@ abstract class Property[T : PongType]() { self =>
   /** Current value. */
   def get: T
 
-  /** Get the current value converted into a Pong Type. */
-  def getPongValue: Value = tpe.toPongValue(get)
+  /** Get the current value converted into an expression. */
+  def getExpr: Expr = tpe.toExpr(get)
 
   /** Next value after the end of this time slot. */
   def next: T  
@@ -41,30 +40,31 @@ abstract class Property[T : PongType]() { self =>
 
 abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T]
 
-abstract class RWProperty[T : PongType]() extends Property[T] { self => 
+abstract class RWProperty[T : PongType]() extends Property[T] with AssignableProperty[T] { self => 
   
   /** Get the reference of this property. */
-  lazy val ref = PropertyRef(this)
-  def expr = ref
+  lazy val expr = Variable(identifier)
   
   /** Set the current value to `v`. 
    *  The next value is also set.
    */
   def set(v: T): self.type
-  def set(v: Value): self.type = set(tpe.toScalaValue(v))  
+  def set(e: Expr): self.type = set(tpe.toScalaValue(e))  
 }
 
 trait AssignableProperty[T] { self: RWProperty[T] =>
+  
+  lazy val identifier = FreshPropertyIdentifier(parent.identifier, name).setType(tpe.getPongType)
   
   /** Assign the given value to this property. 
    *  According to the implementation, this will modify the current 
    *  or next value.
    */
   def assign(v: T): self.type
-  def assign(v: Value): self.type = assign(tpe.toScalaValue(v))
+  def assign(e: Expr): self.type = assign(tpe.toScalaValue(e))
 }
 
-trait HistoricalProperty[T] extends History with AssignableProperty[T] { self: RWProperty[T] =>
+trait HistoricalProperty[T] extends History { self: RWProperty[T]  =>
   
   private var _setNext: T => self.type = setNextInternal _
   
@@ -81,7 +81,7 @@ trait HistoricalProperty[T] extends History with AssignableProperty[T] { self: R
    *  Call `validate()` to push this value to the current state.
    */
   def setNext(v: T): self.type = _setNext(v)
-  def setNext(v: Value): self.type = setNext(tpe.toScalaValue(v))
+  def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
   
   protected def setNextInternal(v: T): self.type
   
@@ -97,7 +97,7 @@ trait HistoricalProperty[T] extends History with AssignableProperty[T] { self: R
   
   /** Interpret the initial expression and set the current value.
    */
-  def reset(interpreter: Interpreter)(implicit context: Context): self.type
+  def reset(interpreter: Interpreter): self.type
   
   /** If activated, a call to `setNext` will set the current value instead
    *  of the next value. 
@@ -124,7 +124,7 @@ trait SnappableProperty[T] extends Snap { self: RWProperty[T] =>
  */
 class EphemeralProperty[T: PongType](val name: String, val parent: GameObject) 
   extends RWProperty[T]
-  with SnappableProperty[T] with AssignableProperty[T] { self =>
+  with SnappableProperty[T] { self =>
     
   private var value: T = _
   def get: T = value
@@ -176,8 +176,9 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, init: Expr, 
     this
   }
 
-  def reset(interpreter: Interpreter)(implicit context: Context) = {
-    set(interpreter.eval(_init).as[T])
+  def reset(interpreter: Interpreter) = {
+    val e = interpreter.evaluate(_init)
+    set(tpe.toScalaValue(e))
   }
 
   def save(t: Long): Unit = {

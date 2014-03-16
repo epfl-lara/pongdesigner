@@ -36,7 +36,9 @@ object Types {
     override def toString = "Object"
   }
   
-  case class TTuple(types: List[Type]) extends Type {
+  case class TTuple(types: Seq[Type]) extends Type {
+    
+    //TODO !! incorrect
     override def accept(tpe: Type) = tpe == this || {
       (tpe, types) match {
         case (TTuple(List(TFloat | TInt, TFloat | TInt)), List(TFloat | TInt, TFloat | TInt)) => true
@@ -47,6 +49,11 @@ object Types {
   }
     
   val TVec2 = TTuple(List(TFloat, TFloat))
+  
+  case object TAny extends Type {
+    override def accept(tpe: Type) = false
+    override def toString = "Any"
+  }
   
   case object TUnit extends Type {
     override def accept(tpe: Type) = tpe match {
@@ -66,18 +73,37 @@ object Types {
     override def toString = "<error>"
   }
  
-  trait Typed { self =>
+  trait Typed extends Serializable { self =>
 
-    private var _tpe: Type = TUntyped
+    private var _type: Option[Type] = None
 
-    def setType(tpe: Type): self.type = { _tpe = tpe; this }
-    def getType: Type = _tpe
+    def getType: Type = _type match {
+      case None => TUntyped
+      case Some(t) => t
+    }
+
+    def setType(tt: Type): self.type = _type match {
+      case None => _type = Some(tt); this
+      case Some(o) if o != tt => scala.sys.error("Resetting type information! Type [" + o + "] is modified to [" + tt)
+      case _ => this
+    }
+
+    def isTyped : Boolean = (getType != TUntyped)
   }
 
+  trait FixedType extends Typed { self =>
+    val fixedType: Type
+    override def getType: Type = fixedType
+    override def setType(tt2: Type): self.type = this
+  }
+  
+  trait FixedBooleanType extends FixedType {
+    val fixedType = TBoolean
+  }
+  
   trait PongType[T] {
     def getPongType: Type
-    def toPongValue(v: Any): Value
-    def toScalaValue(v: Value): T
+    def toScalaValue(v: Expr): T
     def toExpr(v: T): Expr
     def clone(v: T): T
   }

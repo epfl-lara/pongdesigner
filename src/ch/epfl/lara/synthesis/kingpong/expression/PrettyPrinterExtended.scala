@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
+import Extractors._
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.StringDelimiter
@@ -59,10 +60,8 @@ trait PrettyPrinterExtendedTypical {
     }
     def add(s: Tree, start: Int, end: Int): Mappings = {
       val p1 = s match {
-        case GameObjectRef(ObjectLiteral(o)) => Some(o.category)
-        case GameObjectRef(_) => None
-        case PropertyRef(prop) => Some(prop.parent.category)
-        case PropertyIndirect(GameObjectRef(ObjectLiteral(obj)), prop) if obj != null => Some(obj.category)
+        case ObjectLiteral(obj) => Some(obj.category)
+        case PropertyLiteral(prop) => Some(prop.parent.category)
         case _ =>  None
       }
       val posCategories = p1 match {
@@ -77,9 +76,8 @@ trait PrettyPrinterExtendedTypical {
     }
     def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[Category, List[(Int, Int)]]): Map[Category, List[(Int, Int)]] = {
       s match {
-        case GameObjectRef(ObjectLiteral(o)) if o != null => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
-        case PropertyRef(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
-        case PropertyIndirect(GameObjectRef(ObjectLiteral(obj)), prop) if obj != null=> mm + (obj.category -> ((start, end)::mm.getOrElse(obj.category, List())))
+        case ObjectLiteral(o) => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
+        case PropertyLiteral(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
         case _ => mm
       }
     }
@@ -101,7 +99,7 @@ trait PrettyPrinterExtendedTypical {
     }
     def addIfProperty(s: Tree, start: Int, end: Int, mm: Map[Property[_], List[(Int, Int)]]): Map[Property[_], List[(Int, Int)]] = {
       s match {
-        case PropertyRef(prop) => mm + (prop -> ((start, end)::mm.getOrElse(prop, List())))
+        case PropertyLiteral(prop) => mm + (prop -> ((start, end)::mm.getOrElse(prop, List())))
         case _ => mm
       }
     }
@@ -258,22 +256,20 @@ trait PrettyPrinterExtendedTypical {
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
     s match {  
-      case NValue(expr, index) =>
+      case TupleSelect(expr, index) =>
         c + indent + expr + "." + (if(index == 0) "x" else "y")
-      case Foreach1(cat, name, rule) if cat.objects.size == 1 =>
-        c /*+ indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF)*/ + rule
-      case Foreach1(cat, name, rule) =>
-        c + indent + (FOR_SYMBOL+" ") +! (name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + rule
-    case Delete(null, ref) => c + indent +! s"Delete(${ref.name})"
-    case Delete(name, ref) => c + indent +! s"Delete($name)"
-    case VecExpr(l) => 
-      l match {
-        case Nil => c + indent +< "()" +>
-        case a::Nil => c + indent + a
-        case a::l =>
-          (((c + indent +< "(" + a) /: l) { case (i, el) => i + "," + el }) + ")" +>
+      case Foreach(cat, id, body) =>
+        c + indent + (FOR_SYMBOL+" ") +! (id.name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + body
+        
+    case Delete(obj) => c + indent +! "Delete(" + obj + ")"
+    case Tuple(exprs) => 
+      exprs match {
+        case Seq() => c + indent +< "()" +>
+        case Seq(a) => c + indent + a
+        case _ =>
+          (((c + indent +< "(" + exprs.head) /: exprs.tail) { case (i, el) => i + "," + el }) + ")" +>
       }
-    case e:LeftRightBinding => val op = e match {
+    case b @ BinaryOperator(lhs, rhs, _) => val op = b match {
         case _:Plus => "+"
         case _:Minus => "-"
         case _:Times => TIMES_SYMBOL
@@ -287,15 +283,16 @@ trait PrettyPrinterExtendedTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
-        case _: Contains => "contains"
+        case _:Contains => "contains"
       }
-      c + indent +< e.lhs + s" $op " + e.rhs +>
+      c + indent +< lhs + s" $op " + rhs +>
     case Assign(Nil, rhs: Expr) => c
     case Assign(List(e), rhs: Expr) => 
       c + indent +< e + "' = " + rhs +>
-    case Assign(a::l, rhs: Expr) =>
-      c + indent +< VecExpr(a::l) + "' = " + rhs +>
-    case Reset(prop: MaybeAssignable) => 
+    case Assign(l, rhs: Expr) =>
+      val ids = l.mkString(",")
+      c + indent +< ids + "' = " + rhs +>
+    case Reset(prop) => 
       c + indent +< prop + "' = init_" + prop +>
     case Block(stats: Seq[Stat]) =>
       stats.toList match {
@@ -309,40 +306,31 @@ trait PrettyPrinterExtendedTypical {
       val h = g + (s1, indent + INDENT)
       val end = if(s2 != None) h + LF + indent + s"else:$LF" + (s2.get, indent + INDENT) else h
       end +>
-    case Copy(name: String, o: GameObjectRef, b: Block) =>
-      c + indent +< s"$name = ${o.obj.name.get}.copy$LF" +(b, indent + INDENT) +>
+    case Copy(name: String, id, b: Block) =>
+      c + indent +< s"$name = $id.copy$LF" +(b, indent + INDENT) +>
     case NOP => c +! "NOP"
+    
+    case Choose(vars, pred) => 
+      val varsString = vars.mkString("(", ",", ")")
+      c + indent +< "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
+    
     case IfFunc(cond: Expr, s1: Expr, s2: Expr) =>
       c +< s"$indent$IF_SYMBOL(" + cond + ") " + s1 + " else " + s2 +>
     case IntegerLiteral(value: Int) => c + indent +< value.toString +>
     case FloatLiteral(value: Float) => c + indent +< value.toString +>
     case StringLiteral(value: String) => c + indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => c + indent + value.toString
-    case Vec2Literal(x: Float, y: Float) => c + indent + "Vec2("+x.toString+","+y.toString+")"
     case UnitLiteral => c + indent + "()"
-    case Val(name: String) => c + indent +! name
+    case Variable(id) => c + indent +! id.toString
     case Not(expr: Expr)  => c + indent +< NOT_SYMBOL + expr +>
-    case On(cond: Expr)   => c + indent +< "on " + cond +>
-    case Once(cond: Expr) => c + indent +< "once " + cond +>
-    case GameObjectRef(ObjectLiteral(obj)) => c + indent +! obj.name.get
-    case GameObjectRef(StringLiteral(e)) => c + indent + e
-    case GameObjectRef(e) => c + indent + e
     case ObjectLiteral(obj) => c + indent +! obj.name.get
-    case FingerMoveOver(o: GameObjectRef) => c + indent +< FINGER_MOVE_SYMBOL + o +>
-    case FingerDownOver(o: GameObjectRef) => c + indent +< FINGER_DOWN_SYMBOL + o +>
-    case FingerUpOver(o: GameObjectRef) => c + indent +< FINGER_UP_SYMBOL + o +>
+    case FingerMoveOver(o) => c + indent +< FINGER_MOVE_SYMBOL + o +>
+    case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>
+    case FingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + o +>
     case FingerCoordX1 => c + indent +! "x1"
     case FingerCoordY1 => c + indent +! "y1"
     case FingerCoordX2 => c + indent +! "x2"
     case FingerCoordY2 => c + indent +! "y2"
-    case PropertyIndirect(GameObjectRef(ObjectLiteral(obj)), p) => c + indent +! (obj.name.get, obj.category) + "." +< p +>
-    case PropertyIndirect(GameObjectRef(expr), p) => c + indent + expr + "." +< p +>
-    case PropertyRef(p) => p.name match {
-      case "value" => c + indent +< p.parent.name.get +>  // Special case: For the value (like Int or Boolean, we do not specify the "value" property)
-      //case "velocity" => c + indent +< p.parent.name.get + ".velocity" +>
-      case _ => c + indent +! (p.parent.name.get, p.parent.category) + "."  +< p.name +>
-    }
-    case Choose(prop, expr) => c + indent +< "choose(" + prop + s" $ARROW_FUNC_SYMBOL " + expr + ")" +>
   }}
 }
 
