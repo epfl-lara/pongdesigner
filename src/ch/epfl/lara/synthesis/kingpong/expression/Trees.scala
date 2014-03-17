@@ -33,6 +33,9 @@ object Trees {
     
   }
   
+  /**
+   * Common trait for `ObjectIdentifier` and `PropertyIdentifier`.
+   */
   trait Identifier extends Tree with Typed {
     def name: String
     def freshen: Identifier
@@ -40,7 +43,7 @@ object Trees {
   
   
   /**
-   * Identifier for game objects in `foreach` statements.
+   * Identifier for game objects in `foreach` statements. Also used by `PropertyIdentifier`.
    */
   class ObjectIdentifier private[Trees](val name: String, private val globalId: Int, val id: Int, alwaysShowUniqueID: Boolean = false) 
     extends Identifier { self =>
@@ -79,37 +82,10 @@ object Trees {
   /**
    * Identifier only used to reference directly or not an assignable property.
    */
-  class PropertyIdentifier private[Trees](val obj: ObjectIdentifier, val property: String, protected val globalId: Int, val id: Int, protected val alwaysShowUniqueID: Boolean)
+  case class PropertyIdentifier(obj: ObjectIdentifier, property: String)
     extends Identifier {
     val name = obj.name + "." + property
-    def freshen: PropertyIdentifier = FreshPropertyIdentifier(obj, property, alwaysShowUniqueID).copiedFrom(this)
-    
-    override def toString: String = {
-      if(alwaysShowUniqueID) {
-        obj.toString + "." + property + (if(id > 0) id else "")
-      } else {
-        name
-      }
-    }
-    
-    override def equals(other: Any): Boolean = {
-      if(other == null || !other.isInstanceOf[PropertyIdentifier])
-        false
-      else
-        other.asInstanceOf[PropertyIdentifier].globalId == this.globalId
-    }
-
-    override def hashCode: Int = globalId
-  }
-  
-  object FreshPropertyIdentifier {
-    def apply(obj: ObjectIdentifier, property: String, alwaysShowUniqueID: Boolean = false): PropertyIdentifier = {
-      val name = obj.name + "." + property
-      new PropertyIdentifier(obj, property, UniqueCounter.nextGlobal, UniqueCounter.next(name), alwaysShowUniqueID)
-    }
-    def apply(obj: ObjectIdentifier, property: String, forceId: Int): PropertyIdentifier = {
-      new PropertyIdentifier(obj, property, UniqueCounter.nextGlobal, forceId, true)
-    }
+    override def toString: String = name
   }
   
   private object UniqueCounter {
@@ -236,7 +212,7 @@ object Trees {
     def ::(other: Stat) = Block(List(other, this))
   }
   
-  case class Foreach(category: Category, id: Identifier, body: Stat) extends Stat
+  case class Foreach(category: Category, id: ObjectIdentifier, body: Stat) extends Stat
   
   case class Assign(props: Seq[PropertyIdentifier], rhs: Expr) extends Stat
   

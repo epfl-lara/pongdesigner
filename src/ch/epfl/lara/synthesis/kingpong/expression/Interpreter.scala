@@ -136,7 +136,7 @@ trait Interpreter {
         case objId: ObjectIdentifier => 
           rctx.getObjectExpr(objId)
         case propId: PropertyIdentifier =>
-          rctx.getObject(propId.obj).get(propId.property).expr
+          rctx.getPropertyExpr(propId)
       }
   
     case m @ MethodCall(name, args) =>

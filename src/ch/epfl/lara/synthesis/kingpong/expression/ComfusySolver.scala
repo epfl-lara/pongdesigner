@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import TreeDSL._
-import scala.collection.mutable.Map
 
 object ComfusySolver {
   import ch.epfl.lara.synthesis.kingpong.common.Implicits._

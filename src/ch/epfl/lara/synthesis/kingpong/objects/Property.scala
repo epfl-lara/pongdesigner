@@ -54,7 +54,7 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
 
 trait AssignableProperty[T] { self: RWProperty[T] =>
   
-  lazy val identifier = FreshPropertyIdentifier(parent.identifier, name).setType(tpe.getPongType)
+  lazy val identifier = PropertyIdentifier(parent.identifier, name).setType(tpe.getPongType)
   
   /** Assign the given value to this property. 
    *  According to the implementation, this will modify the current 

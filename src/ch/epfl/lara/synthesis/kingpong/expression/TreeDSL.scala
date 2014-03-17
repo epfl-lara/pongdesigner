@@ -128,10 +128,10 @@ object TreeDSL {
     def value = AssignablePropertyProxy("value", TUntyped)
     
     /* Read-only properties */
-    def bottom = Variable(FreshPropertyIdentifier(id, "bottom")).setType(TFloat)
-    def top = Variable(FreshPropertyIdentifier(id, "top")).setType(TFloat)
-    def left = Variable(FreshPropertyIdentifier(id, "left")).setType(TFloat)
-    def right = Variable(FreshPropertyIdentifier(id, "right")).setType(TFloat)
+    def bottom = Variable(PropertyIdentifier(id, "bottom")).setType(TFloat)
+    def top = Variable(PropertyIdentifier(id, "top")).setType(TFloat)
+    def left = Variable(PropertyIdentifier(id, "left")).setType(TFloat)
+    def right = Variable(PropertyIdentifier(id, "right")).setType(TFloat)
     
     object AssignablePropertyProxy {
       def apply(property: String, tpe: Type) = new AssignablePropertyProxy(property, tpe)
@@ -139,7 +139,7 @@ object TreeDSL {
     
     class AssignablePropertyProxy(property: String, tpe: Type) {
       lazy val expr: Expr = Variable(identifier)
-      lazy val identifier: PropertyIdentifier = FreshPropertyIdentifier(id, property).setType(tpe)
+      lazy val identifier: PropertyIdentifier = PropertyIdentifier(id, property).setType(tpe)
       
       def :=(expr: Expr): Stat = Assign(List(this), expr)
       def +=(expr: Expr): Stat = Assign(List(this), Plus(this, expr))
