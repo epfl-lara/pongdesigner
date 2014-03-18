@@ -109,7 +109,7 @@ trait HistoricalProperty[T] extends History { self: RWProperty[T]  =>
       _setNext = setNextInternal _
   }
   
-  def assign(v: T) = setNext(v)
+  def assign(v: T): self.type = setNext(v)
 }
 
 trait SnappableProperty[T] extends Snap { self: RWProperty[T] =>
@@ -131,9 +131,9 @@ class EphemeralProperty[T: PongType](val name: String, val parent: GameObject)
   def next: T = value
   def set(v: T) = { 
     value = v
-    this 
+    self 
   }
-  def assign(v: T) = set(v)
+  def assign(v: T): self.type = set(v)
 }
 
 /**
@@ -237,7 +237,7 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, pa
     this
   }
 
-  override def reset(interpreter: Interpreter)(implicit context: Context) = {
+  override def reset(interpreter: Interpreter) = {
     _lastFlushed = null.asInstanceOf[T]
     super.reset(interpreter)
   }

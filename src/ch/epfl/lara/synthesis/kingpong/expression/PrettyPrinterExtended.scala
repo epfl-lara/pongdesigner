@@ -61,7 +61,9 @@ trait PrettyPrinterExtendedTypical {
     def add(s: Tree, start: Int, end: Int): Mappings = {
       val p1 = s match {
         case ObjectLiteral(obj) => Some(obj.category)
-        case PropertyLiteral(prop) => Some(prop.parent.category)
+        
+        //TODO Lomig to compile
+        //case PropertyLiteral(prop) => Some(prop.parent.category)
         case _ =>  None
       }
       val posCategories = p1 match {
@@ -77,7 +79,8 @@ trait PrettyPrinterExtendedTypical {
     def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[Category, List[(Int, Int)]]): Map[Category, List[(Int, Int)]] = {
       s match {
         case ObjectLiteral(o) => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
-        case PropertyLiteral(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
+        //TODO Lomig to compile
+        //case PropertyLiteral(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
         case _ => mm
       }
     }
@@ -99,7 +102,8 @@ trait PrettyPrinterExtendedTypical {
     }
     def addIfProperty(s: Tree, start: Int, end: Int, mm: Map[Property[_], List[(Int, Int)]]): Map[Property[_], List[(Int, Int)]] = {
       s match {
-        case PropertyLiteral(prop) => mm + (prop -> ((start, end)::mm.getOrElse(prop, List())))
+        //TODO Lomig to compile
+        //case PropertyLiteral(prop) => mm + (prop -> ((start, end)::mm.getOrElse(prop, List())))
         case _ => mm
       }
     }

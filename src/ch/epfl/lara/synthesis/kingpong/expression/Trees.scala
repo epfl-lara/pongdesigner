@@ -38,7 +38,6 @@ object Trees {
    */
   trait Identifier extends Tree with Typed {
     def name: String
-    def freshen: Identifier
   }
   
   

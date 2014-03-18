@@ -271,7 +271,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   protected def makecopy(name: String): GameObject
 }
 
-trait Rectangular { self: GameObject =>
+trait Rectangular extends GameObject {
   def width: Property[Float]
   def height: Property[Float]
   
@@ -304,7 +304,7 @@ trait Rectangular { self: GameObject =>
   )
 }
 
-trait Circular { self: GameObject =>
+trait Circular extends GameObject {
   def radius: Property[Float]
 
   val bottom = readOnlyProperty (
@@ -336,7 +336,7 @@ trait Circular { self: GameObject =>
   )
 }
 
-trait Point { self: GameObject =>
+trait Point extends GameObject {
   val bottom = readOnlyProperty (
     name  = "bottom", 
     getF  = center.get.y,

@@ -14,10 +14,7 @@ trait Context extends Any {
   def events: Iterable[Event]
   def addEvent(e: Event): Unit
   
-  def time: Long
-  
-//  def addAssignment(a: Assign, p: PropertyLiteral)
-  
+  def time: Long  
   
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
     case e: FingerDown if f(e) => e
@@ -72,10 +69,7 @@ trait Context extends Any {
     case e: EndContact => f(e)
     case _ => false
   }
-  
-//  def addMethod(name: String, methodDecl: MethodDecl): Unit
-//  def getMethod(name: String): MethodDecl
-//  
+
   def getNewName(s: String): String
   
   def add(c: GameObject)
