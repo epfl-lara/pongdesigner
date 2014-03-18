@@ -34,7 +34,7 @@ object CodeTemplates extends CodeHandler {
   
   def inferStatements(event: Event, objects: Traversable[GameObject]): Seq[Stat] = {
     implicit val ctx = new TemplateContext(event, objects)
-    val stats = objects.flatMap(TShape.apply).toList
+    val stats = objects.flatMap(TShape.applyForObject).toList
     Stat.recursiveFlattenBlock(stats)
   }
   
@@ -186,7 +186,7 @@ object CodeTemplates extends CodeHandler {
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
       if (condition(obj)) {
-        val results = templates.flatMap(_.apply(obj)).toList
+        val results = templates.flatMap(_.applyForObject(obj)).toList
         results.sortWith(_.priority > _.priority) match {
           case Nil => None
           case sortedResults => Some(ParExpr(sortedResults).setPriority(priority(obj)))
@@ -210,7 +210,7 @@ object CodeTemplates extends CodeHandler {
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
       if (condition(obj)) {
-        templates.flatMap(_.apply(obj)).toSeq match {
+        templates.flatMap(_.applyForObject(obj)).toSeq match {
           case Seq()   => None
           case results => Some(Block(results).setPriority(priority(obj)))
         }
