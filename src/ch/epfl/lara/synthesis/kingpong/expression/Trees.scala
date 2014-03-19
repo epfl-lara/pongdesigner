@@ -303,9 +303,7 @@ object Trees {
   case class GreaterThan(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   case class GreaterEq(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   case class Not(o: Expr) extends Expr with FixedBooleanType
-
-//        
-//    def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this, Block(blocks))
+        
 //    def delete() = this("deleted") := BooleanLiteral(true)
 //    def toLeftOfAtMost(other:GameObjectRef) = this("right") <= other("left")
 //    def toRightOfAtMost(other:GameObjectRef) = this("left") >= other("right")

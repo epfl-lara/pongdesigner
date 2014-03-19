@@ -94,8 +94,7 @@ trait Interpreter {
       val o = eval(obj).as[GameObject]
       val freshName = gctx.getNewName(id.name)
       val fresh = o.getCopy(freshName)
-      
-      fresh.creation_time.set(gctx.time.toInt)
+      fresh.setCreationTime(gctx.time)
       fresh.flush()
       gctx.add(fresh)
       
@@ -103,7 +102,7 @@ trait Interpreter {
       
     case Delete(obj) =>
       val o = eval(obj).as[GameObject]
-      o.deletion_time.set(gctx.time.toInt)
+      o.setDeletionTime(gctx.time)
       
     case NOP => //Do nothing
   }

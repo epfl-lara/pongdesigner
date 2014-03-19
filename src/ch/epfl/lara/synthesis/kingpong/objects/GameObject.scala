@@ -72,34 +72,58 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     nextF = Vec2(x.next, y.next),
     exprF = Tuple(Seq(x.expr, y.expr))
   )
+
+  // --------------------------------------------------------------------------
+  // Existence
+  // --------------------------------------------------------------------------  
   
-  private var attachedToCategory = true
+  // None means that this object exists from the beginning of time.
+  private var _creationTime: Option[Long] = None
+  // None means that this object doesn't know yet when it will die.
+  private var _deletionTime: Option[Long] = None
+  
+  // TODO here the creation time can only be set once. Is it correct ?
+  def setCreationTime(time: Long): self.type = {
+    assert(time >= 0)
+    if (_creationTime == None)
+      _creationTime = Some(time)
+    self
+  }
+  
+  // TODO here the deletion time can only be set once. Is it correct ?
+  def setDeletionTime(time: Long): self.type = {
+    assert(time >= 0 && _creationTime.map(_ <= time).getOrElse(true))
+    if (_deletionTime == None) 
+      _deletionTime = Some(time)
+    self
+  }
+  
+  def existsAt(time: Long) = _creationTime.map(_ <= time).getOrElse(true) && _deletionTime.map(time < _).getOrElse(true) 
+    
   def setExistenceAt(time: Long): Boolean = {
     val exists = existsAt(time)
-    if (!exists && attachedToCategory) {
+    if (!exists && _attachedToCategory) {
       category.remove(this)
-      attachedToCategory = false
-    } else if (exists && !attachedToCategory) {
+      _attachedToCategory = false
+    } else if (exists && !_attachedToCategory) {
       category.add(this)
-      attachedToCategory = true
+      _attachedToCategory = true
     }
     exists
   }
-  def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
-  def doesNotYetExist(time: Long) = time.toInt < creation_time.get
-  val creation_time = simpleProperty[Int]("creation_time", -1)
-  val deletion_time = simpleProperty[Int]("deletion_time", Int.MaxValue)
-
+  
   // --------------------------------------------------------------------------
   // Category
   // --------------------------------------------------------------------------
 
-  private[this] var mCategory: CategoryObject = DefaultCategory(this)
-  def category: CategoryObject = mCategory
-  def category_=(c: CategoryObject): Unit = mCategory = c
+  private var _attachedToCategory = true
+  private var _category: CategoryObject = DefaultCategory(this)
+  def category = _category
 
   def setCategory(c: CategoryObject): self.type = {
-    c add this
+    _category = c
+    _attachedToCategory = true
+    c.add(this)
     self
   }
 

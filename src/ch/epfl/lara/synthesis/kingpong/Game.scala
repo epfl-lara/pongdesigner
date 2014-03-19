@@ -102,7 +102,7 @@ trait Game extends RuleManager with ColorConstants { self =>
     
     EventHistory.step()                                /// Opens saving for new coordinates
     
-    rules foreach {interpreter.evaluate}                           /// Evaluate all rules using the previous events
+    rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
     objects foreach {_.validate()}                     /// Store new computed values
     objects.foreach {o => o.setExistenceAt(time.toInt) }
     objects foreach {_.flush()}                        /// push values to physical world
@@ -339,12 +339,14 @@ trait Game extends RuleManager with ColorConstants { self =>
   }
   
   def gc() = {
-    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
-      true
-    } else {
-      obj.setExistenceAt(time)
-      false
-    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
+    //TODO write GC
+    
+//    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
+//      true
+//    } else {
+//      obj.setExistenceAt(time)
+//      false
+//    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
   
   var FINGER_SIZE = 20f

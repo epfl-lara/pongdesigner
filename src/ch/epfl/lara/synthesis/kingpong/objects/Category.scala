@@ -59,7 +59,6 @@ class CategoryObject(val game: Game = null,
 
   def add(o: GameObject): self.type = {
     _children += o
-    o.category = this
     this
   }
 
