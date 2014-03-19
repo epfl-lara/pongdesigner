@@ -5,6 +5,7 @@ import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.rules.Context
@@ -74,7 +75,7 @@ trait Interpreter {
     case Assign(props, rhs) =>
       def setValue(id: PropertyIdentifier, v: Expr): Unit = {
         val obj = rctx.getObject(id.obj)
-        //TODO will not work with ephemeral properties
+        //TODO check if this will work with ephemeral properties
         obj.get(id.property) match {
           case assignable: AssignableProperty[_] => assignable.assign(v)
           case p => scala.sys.error(s"The property $p is not assignable and is in $stat")
@@ -89,37 +90,20 @@ trait Interpreter {
         case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
       }
 
-    case Copy(name, obj, block) =>
-      eval(obj) match {
-        case ObjectLiteral(o) =>
-          val realname = gctx.getNewName(name)
-          val fresh = o.getCopy(realname, this)
-          fresh.creation_time.set(gctx.time.toInt)
-          fresh.flush()
-          gctx add fresh
-          
-          //TODO not finished, COPY do NOT work
-//          block.setBinding(name, c)
-          eval(block)
-          gctx.addEvent(GameObjectCreated(fresh))
-          
-        case _ => throw InterpreterException(s"$obj is not an object.")
-      }
+    case Copy(obj, id, block) =>
+      val o = eval(obj).as[GameObject]
+      val freshName = gctx.getNewName(id.name)
+      val fresh = o.getCopy(freshName)
       
-    case Reset(propertyId) =>
-      rctx.getProperty(propertyId) match {
-        case p: HistoricalProperty[_] => p.reset(this)
-        case p => throw InterpreterException(s"p cannot be reset.")
-      }
+      fresh.creation_time.set(gctx.time.toInt)
+      fresh.flush()
+      gctx.add(fresh)
       
-    case Delete(obj) => 
-      eval(obj) match {
-        case ObjectLiteral(o) =>
-          o.deletion_time.set(gctx.time.toInt)
-          gctx.addEvent(GameObjectDeleted(o))
-          
-        case _ => throw InterpreterException(s"$obj is not an object.")
-      }
+      eval(block)(gctx, rctx.withNewVar(id, fresh.expr))
+      
+    case Delete(obj) =>
+      val o = eval(obj).as[GameObject]
+      o.deletion_time.set(gctx.time.toInt)
       
     case NOP => //Do nothing
   }

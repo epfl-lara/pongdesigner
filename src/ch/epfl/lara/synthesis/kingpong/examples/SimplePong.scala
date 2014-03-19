@@ -61,8 +61,8 @@ class SimplePong extends Game {
     whenever(ball.top >= paddle1.bottom) ( // == below
       score.value -= 1,
       started.value := false,
-      Reset(ball.x),
-      Reset(ball.y)
+      ball.x := 2.5,
+      ball.y := 8.5
     )
   }
   
@@ -128,51 +128,51 @@ class SimplePong extends Game {
 //    paddle1.x += Val("dx")
 //  )
 
-  //TODO copy
-//  val r5 = foreach(duplicators, balls)("duplicator", "ball"){
-//    whenever(Collision(obj("duplicator"), obj("ball")))(
-//      obj("ball").copy("copy")(Seq(
-//        obj("copy")("x") += 0.25,
-//        obj("copy")("velocity") += Vec2(0.5f, 1f),
-//        obj("ball")("x") -= 0.25,
-//        obj("duplicator")("visible") = false
-//      ))
-//    )
-//  }
+  val r5 = foreach(duplicators, balls) { (duplicator, ball) =>
+    whenever(Collision(duplicator, ball)) {
+      copy(ball) { copy => Seq(
+        copy.x += 0.25,
+        copy.velocity += Vec2(0.5f, 1f),
+        ball.x -= 0.25,
+        duplicator.visible := false
+      )}
+    }
+  }
   
-  //TODO choose
-//  val r6 = foreach(balls) { (ball) =>
-//    whenever(!started.value) (
-//      ball.x := paddle1.x,
-//      ball.y := Choose(List(obj("ball")("y")), obj("ball")("bottom") =:= paddle1("top")),
-//      ball.velocity := Vec2(0, 0f)
-//      // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
-//    )
-//  }
+  val r6 = foreach(balls) { ball =>
+    whenever(!started.value) (
+      ball.x := paddle1.x,
+      ball.y := Choose(List(ball.y), ball.bottom =:= paddle1.top),
+      ball.velocity := Vec2(0, 0)
+      // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
+    )
+  }
   
   val r7 = foreach(balls) { (ball) =>
     whenever(!started.value && FingerUpOver(paddle1)) (
-    started.value := true,
-    ball.velocity := Vec2(0, -5.0f)
-  )
+      started.value := true,
+      ball.velocity := Vec2(0, -5.0f)
+    )
   }
   
-  //TODO choose
-//  val r8 = Block(
-//     paddle1("x") := Choose(List(paddle1("x")),
-//            (paddle1 toRightOfAtMost Border2)
-//         && (paddle1 toLeftOfAtMost Border3)),
-//     List(Border4("x"), Border4("width")) := Choose(List(Border4("x"), Border4("width")), (Border4 alignLeft Ball1) && (Border4 alignRight paddle1))
-//  )
+  
+  val r8 = Block(
+     paddle1.x := Choose(List(paddle1.x),
+                         (paddle1.left >= Border2.right) && // toRightOfAtMost
+                         (paddle1.right <= Border3.left)),  // toLeftOfAtMost
+     Seq(Border4.x, Border4.width) := Choose(List(Border4.x, Border4.width), 
+                                             (Border4.left =:= Ball1.left) && // alignLeft
+                                             (Border4.right =:= paddle1.right))    // alignRight
+  )
 
   register(r1)
   register(r1bis)
   register(r2)
   register(r22)
   //register(r3)
-//  register(r8)
-//  register(r5)
-//  register(r6)
+  register(r8)
+  register(r5)
+  register(r6)
   register(r7)
 //  register(r4)
 }

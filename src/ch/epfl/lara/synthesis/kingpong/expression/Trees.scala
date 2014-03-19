@@ -155,68 +155,14 @@ object Trees {
     } // Ensures that none of the elements of the resulting list is a ParallelExpression
   }
   
-  object %:: {
-    def unapply(s: Stat): Option[(Stat, Stat)] = s match {
-      case Block(a::q) => Some((a, Block(q)))
-      case e => None
-    }
-  }
-
   /** Statement, can have side-effect. */
   sealed trait Stat extends Tree with Prioritized {
-    
-    /** Recursive function to transform the entire tree by applying the 
-     *  given function to all its expressions nodes.
-     *  The function is first applied to the children and then to the current node.
-     */
-//    def transform(f: PartialFunction[Expr, Expr]): Stat = this match {
-//      case ParExpr(stats) =>
-//        ParExpr(stats map (_.transform(f)))
-//        
-//      case Foreach1(cat, name, r) =>
-//        Foreach1(cat, name, r.transform(f))
-//        
-//      case Block(stats) => 
-//        Block(stats map (_.transform(f)))
-//  
-//      case If(c, s1, s2) => 
-//        If(c.transform(f), s1.transform(f), s2 map (_.transform(f)))
-//  
-//      case Copy(name, ref, block) =>
-//        Copy(name, ref, block.transform(f))
-//        
-//      case Assign(props, rhs) =>
-//        Assign(props map (_.transform(f)), rhs.transform(f))
-//      
-//      case Reset(prop) =>
-//        Reset(prop.transform(f))
-//        
-//      case Delete(name, ref) => this
-//      case NOP => this
-//    }
-    
-    def Else(ifFalse: Stat) = {
-      this match {
-        case If(cond, ifTrue, None) =>
-          If(cond, ifTrue, Some(ifFalse))
-        case _ => this
-      }
-    }
-    
-    def toList() = this match {
-      case NOP => Nil
-      case e => List(e)
-    }
 
-    def ::(other: Stat) = Block(List(other, this))
   }
   
   case class Foreach(category: Category, id: ObjectIdentifier, body: Stat) extends Stat
   
   case class Assign(props: Seq[PropertyIdentifier], rhs: Expr) extends Stat
-  
-  // TODO : delete reset.
-  case class Reset(id: PropertyIdentifier) extends Stat
   
   object Block {
     def apply(s1: Stat, s: Stat*): Block = {
@@ -224,9 +170,7 @@ object Trees {
     }
   }
   
-  case class Block(stats: Seq[Stat]) extends Stat {
-    override def ::(other: Stat) = Block(other::stats.toList)
-  }
+  case class Block(stats: Seq[Stat]) extends Stat
   
   object If {
     def apply(cond: Expr, s1: Stat, s2: Stat): If = If(cond, s1, Some(s2))
@@ -234,7 +178,7 @@ object Trees {
   
   case class If(cond: Expr, s1: Stat, s2: Option[Stat]) extends Stat
   
-  case class Copy(name: String, obj: Expr, b: Stat) extends Stat
+  case class Copy(obj: Expr, id: ObjectIdentifier, body: Stat) extends Stat
   
   case class Delete(ojb: Expr) extends Stat
   
@@ -250,7 +194,7 @@ object Trees {
   }
   
   /**
-   * A variable used to reference either a game object or a property.
+   * A variable used to reference either a game object or a property value.
    */
   case class Variable(id: Identifier) extends Expr with Terminal {
     override def getType = id.getType

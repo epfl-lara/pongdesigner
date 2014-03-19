@@ -4,11 +4,11 @@ import android.content.Context
 import scala.collection.mutable.HashMap
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.common._
 import org.jbox2d.common.Vec2
 
 trait CodeHandler {
-  import Implicits._
   /*import Expression.Subtype._*/
   /** Conversions */
   def coord(i: Int): Expr = { val res: Expr = i; /*res.setSubtype(COORD_SUBTYPE);*/ res }

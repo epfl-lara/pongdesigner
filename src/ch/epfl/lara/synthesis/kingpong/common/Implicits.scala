@@ -10,20 +10,8 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 
 object Implicits {
-  implicit def NumericIsExpr[T: Numeric](n: T): Expr = FloatLiteral(implicitly[Numeric[T]].toFloat(n))
-  implicit def FloatIsExpr(f: Float): Expr = FloatLiteral(f)
-  implicit def IntegerIsExpr(i: Int): Expr = IntegerLiteral(i)
-  implicit def StringIsExpr(s: String): Expr = StringLiteral(s)
-  implicit def BooleanIsExpr(b: Boolean): Expr = BooleanLiteral(b)
-  implicit def Vec2IsExpr(v: Vec2): Expr = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
-  implicit def ListIsExpr(v: List[Expr]): Tuple = Tuple(v)
   
-//  implicit class ListAssignableIsExpr(v: List[MaybeAssignable]) {
-//    def :=(other: Expr) = Assign(v, other)
-//  }
-//  implicit class TupleAssignableIsExpr(v: (MaybeAssignable, MaybeAssignable)) {
-//    def :=(other: Expr) = Assign(List(v._1, v._2), other)
-//  }
+  
   implicit class toDelimiter(s: String) {
     def andThen(other: String) = StringDelimiter(s, other)
     def followedBy(other: String) = StringDelimiter(s, other)
@@ -81,7 +69,7 @@ object Implicits {
       case Tuple(Seq(FloatLiteral(x), FloatLiteral(y))) => Vec2(x, y)
       case _ => throw InterpreterException(s"The value $e is incompatible with Vec2.")
     }
-    def toExpr(v: Vec2) = Tuple(Seq(v.x, v.y))
+    def toExpr(v: Vec2) = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
 
     def clone(v: Vec2) = v.clone
   }

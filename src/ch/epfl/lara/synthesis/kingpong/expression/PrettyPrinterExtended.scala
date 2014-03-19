@@ -296,8 +296,6 @@ trait PrettyPrinterExtendedTypical {
     case Assign(l, rhs: Expr) =>
       val ids = l.mkString(",")
       c + indent +< ids + "' = " + rhs +>
-    case Reset(prop) => 
-      c + indent +< prop + "' = init_" + prop +>
     case Block(stats: Seq[Stat]) =>
       stats.toList match {
         case Nil => c + indent +! "{}"
@@ -310,8 +308,8 @@ trait PrettyPrinterExtendedTypical {
       val h = g + (s1, indent + INDENT)
       val end = if(s2 != None) h + LF + indent + s"else:$LF" + (s2.get, indent + INDENT) else h
       end +>
-    case Copy(name: String, id, b: Block) =>
-      c + indent +< s"$name = $id.copy$LF" +(b, indent + INDENT) +>
+    case Copy(obj, id, block) =>
+      c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
     case NOP => c +! "NOP"
     
     case Choose(vars, pred) => 

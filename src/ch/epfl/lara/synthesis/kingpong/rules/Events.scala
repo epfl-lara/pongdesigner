@@ -22,7 +22,4 @@ object Events {
   case class EndContact(contact: Contact) extends Event
 
   case class AccelerometerChanged(vector: Vec2) extends Event
-  
-  case class GameObjectCreated(o: GameObject) extends Event { override def obj = MSet(o) }
-  case class GameObjectDeleted(o: GameObject) extends Event { override def obj = MSet(o) }
 }

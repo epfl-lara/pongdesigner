@@ -169,9 +169,10 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   /**
    * //MIKAEL add comment
    */
-  def copyPropertiesFrom(other: GameObject, interpreter: Interpreter)(implicit context: Context) = {
+  def copyPropertiesFrom(other: GameObject): self.type = {
     //MIKAEL check if this is always correct
     (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getExpr) }
+    self
   }
   
   /** Get a specific property. */
@@ -263,11 +264,12 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
 
-  def getCopy(name: String, interpreter: Interpreter)(implicit context: Context): GameObject = {
-    val m = makecopy(name)
-    m.copyPropertiesFrom(this, interpreter)
-    m.setCategory(this.category)
+  def getCopy(name: String): GameObject = {
+    makecopy(name)
+      .copyPropertiesFrom(this)
+      .setCategory(this.category)
   }
+  
   protected def makecopy(name: String): GameObject
 }
 

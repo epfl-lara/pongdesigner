@@ -29,18 +29,20 @@ object TreeOps {
         f(s, List(ifTrue, ifFalse).view.map(rec))
       case Foreach(_, _, body) =>
         f(s, List(body).view.map(rec))
-      case Assign(props, expr) =>
+      case Assign(_, _) =>
         f(s, Stream.empty)
-      case Copy(name, obj, stat) =>
+      case Copy(_, _, stat) =>
         f(s, List(stat).view.map(rec))
-      case Delete(o) =>
-        f(s, Stream.empty)
-      case Reset(expr) =>
+      case Delete(_) =>
         f(s, Stream.empty)
       case NOP =>
         f(s, Stream.empty)
     }
   }
+  
+  //TODO add other operations to Stat tree, like traverse and map.
+  
+  
   
   /**
    * Do a right tree fold
@@ -57,13 +59,13 @@ object TreeOps {
       case t: Terminal =>
         f(t, Stream.empty)
 
-      case u @ UnaryOperator(e, builder) =>
+      case u @ UnaryOperator(e, _) =>
         f(u, List(e).view.map(rec))
 
-      case b @ BinaryOperator(e1, e2, builder) =>
+      case b @ BinaryOperator(e1, e2, _) =>
         f(b, List(e1, e2).view.map(rec))
 
-      case n @ NAryOperator(es, builder) =>
+      case n @ NAryOperator(es, _) =>
         f(n, es.view.map(rec))
     }
   }
@@ -231,7 +233,7 @@ object TreeOps {
     f(newV).getOrElse(newV)
   }
 
-  /*
+  /**
    * Apply 'f' on 'e' as long as until it stays the same (value equality)
    */
   def fixpoint[T](f: T => T)(e: T): T = {

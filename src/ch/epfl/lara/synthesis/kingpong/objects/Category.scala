@@ -2,8 +2,8 @@ package ch.epfl.lara.synthesis.kingpong.objects
 
 import scala.collection.mutable.{HashSet => MSet, HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import org.jbox2d.dynamics._
 import ch.epfl.lara.synthesis.kingpong.Game

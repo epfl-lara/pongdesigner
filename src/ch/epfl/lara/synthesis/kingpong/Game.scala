@@ -327,6 +327,12 @@ trait Game extends RuleManager with ColorConstants { self =>
     val ref3 = new ObjectProxy(id3)
     Foreach(category1, id1, Foreach(category2, id2, Foreach(category3, id3, body(ref1, ref2, ref3))))
   }
+  
+  def copy(obj: Expr)(body: ObjectProxy => Stat): Stat = {
+    val id = FreshIdentifier("copy")
+    val ref = new ObjectProxy(id)
+    Copy(obj, id, body(ref))
+  }
 
   def whenever(cond: Expr)(actions: Stat*): Stat = {
     If(cond, toSingleStat(actions.toSeq), None)

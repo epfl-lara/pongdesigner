@@ -98,8 +98,6 @@ trait PrettyPrinterTypical {
       print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
     case Assign(List(e), rhs: Expr) => indent + print(NO_INDENT, e) + "' = " + print(NO_INDENT, rhs)
     case Assign(prop, rhs: Expr) => indent + prop.map(print(NO_INDENT, _)).toString.substring(4) + "' = " + print(NO_INDENT, rhs)
-    case Reset(prop) => val p = print(NO_INDENT, prop)
-      indent + p + "' = init_" + p 
     case Block(stats: Seq[Stat]) =>
       stats.toList match {
         case Nil => indent + "{}"

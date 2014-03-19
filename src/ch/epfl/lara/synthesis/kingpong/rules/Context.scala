@@ -12,8 +12,6 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 trait Context extends Any {
 
   def events: Iterable[Event]
-  def addEvent(e: Event): Unit
-  
   def time: Long  
   
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {

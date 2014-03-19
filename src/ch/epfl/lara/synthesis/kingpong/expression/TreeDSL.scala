@@ -1,29 +1,60 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
+// Remove implicit warnings
+import language.implicitConversions
+
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
-
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 
 object TreeDSL {
-
+  implicit def NumericIsExpr[T: Numeric](n: T): Expr = FloatLiteral(implicitly[Numeric[T]].toFloat(n))
+  implicit def FloatIsExpr(f: Float): Expr = FloatLiteral(f)
+  implicit def IntegerIsExpr(i: Int): Expr = IntegerLiteral(i)
+  implicit def StringIsExpr(s: String): Expr = StringLiteral(s)
+  implicit def BooleanIsExpr(b: Boolean): Expr = BooleanLiteral(b)
+  implicit def Vec2IsExpr(v: Vec2): Expr = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
+  implicit def ListIsExpr(v: List[Expr]): Tuple = Tuple(v)
+  
   implicit def objectReftoExpr(ref: ObjectProxy): Expr = ref.expr
   implicit def objectToExpr(obj: GameObject): Expr = obj.expr
   implicit def propertyToExpr(prop: Property[_]): Expr = prop.expr
   implicit def propertyProxytoExpr(ref: ObjectProxy#AssignablePropertyProxy): Expr = ref.expr
+  implicit def propertyToPropertyIdentifier(prop: Property[_] with AssignableProperty[_]): PropertyIdentifier = prop.identifier
   implicit def propertyProxytoPropertyIdentifier(ref: ObjectProxy#AssignablePropertyProxy): PropertyIdentifier = ref.identifier
+  implicit def seqStatToStat(stats: Seq[Stat]) = stats match {
+    case Seq()  => NOP
+    case Seq(s) => s
+    case _      => Block(stats)
+  }
   
-  implicit class RichAssignableProperty(property: Property[_] with AssignableProperty[_]) extends AnyRef {
-    private def identifier = property.identifier
-    def :=(expr: Expr): Stat = Assign(Seq(identifier), expr)
-    def +=(expr: Expr): Stat = Assign(Seq(identifier), Plus(Variable(identifier), expr))
-    def -=(expr: Expr): Stat = Assign(Seq(identifier), Minus(Variable(identifier), expr))
-    def *=(expr: Expr): Stat = Assign(Seq(identifier), Times(Variable(identifier), expr))
-    def /=(expr: Expr): Stat = Assign(Seq(identifier), Div(Variable(identifier), expr))
+  trait RichAssignableProperty extends AnyRef {
+    protected def identifiers: Seq[PropertyIdentifier]
+    def :=(expr: Expr): Stat = Assign(identifiers, expr)
+  }
+  
+  implicit class RichAssignablePropertySingle(property: Property[_] with AssignableProperty[_]) extends RichAssignableProperty {
+    protected def identifier = property.identifier
+    protected def identifiers = Seq(identifier)
+    def +=(expr: Expr): Stat = Assign(identifiers, Plus(Variable(identifier), expr))
+    def -=(expr: Expr): Stat = Assign(identifiers, Minus(Variable(identifier), expr))
+    def *=(expr: Expr): Stat = Assign(identifiers, Times(Variable(identifier), expr))
+    def /=(expr: Expr): Stat = Assign(identifiers, Div(Variable(identifier), expr))
+  }
+  
+  implicit class RichAssignablePropertyTuple(properties: (Property[_] with AssignableProperty[_], Property[_] with AssignableProperty[_])) extends RichAssignableProperty {
+    protected def identifiers = Seq(properties._1.identifier, properties._2.identifier)
+  }
+  
+  implicit class RichAssignablePropertySeq(properties: Seq[Property[_] with AssignableProperty[_]]) extends RichAssignableProperty {
+    protected def identifiers = properties.map(_.identifier)
   }
   
   trait RichExpr extends AnyRef {
     def expr: Expr
+    
+    def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(expr)
     
     def +(e: Expr): Expr = e match {
       case IntegerLiteral(0) | FloatLiteral(0) => expr
