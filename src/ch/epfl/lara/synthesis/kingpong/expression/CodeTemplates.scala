@@ -176,7 +176,7 @@ object CodeTemplates extends CodeHandler {
    */
   trait TemplateParallel[T <: GameObject] extends Template[T] {
     /** All the templates that will be checked. */
-    def templates: Traversable[Template[T]]
+    def templates: Traversable[Template[_]]
     
     /** The condition under which this template applies. */
     def condition(obj: T)(implicit ctx: TemplateContext): Boolean
@@ -200,7 +200,7 @@ object CodeTemplates extends CodeHandler {
    */
   trait TemplateBlock[T <: GameObject] extends Template[T] {
     /** All the templates that will be checked. */
-    def templates: Traversable[Template[T]]
+    def templates: Traversable[Template[_]]
     
     /** The condition under which this template applies. */
     def condition(obj: T)(implicit ctx: TemplateContext): Boolean
@@ -1127,8 +1127,8 @@ object CodeTemplates extends CodeHandler {
   }
   
   object TShape extends TemplateBlock[GameObject] with TemplateObject {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = true
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
+    def condition(obj: GameObject)(implicit ctx: TemplateContext) = true
+    def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
     val templates = List(
         TXY,
         TAngle,
