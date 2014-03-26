@@ -77,10 +77,16 @@ case class Box[T : PongType](val game: Game,
   }
 }
 
-trait InputManager {
+trait InputManager extends GameObject {
   
   def collectInput(from: Context)
 
+  override def postStep(time: Long, ctx: Context): Unit = {
+    super.postStep(time, ctx)
+    // Maps the previous events to the input mechanisms
+    collectInput(ctx)
+  }
+  
 }
 
 /**

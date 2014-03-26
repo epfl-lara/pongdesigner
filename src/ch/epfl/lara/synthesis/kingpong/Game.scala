@@ -103,16 +103,9 @@ trait Game extends RuleManager with ColorConstants { self =>
     EventHistory.step()                                /// Opens saving for new coordinates
     
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
-    objects foreach {_.validate()}                     /// Store new computed values
-    objects.foreach {o => o.setExistenceAt(time.toInt) }
-    objects foreach {_.flush()}                        /// push values to physical world
+    objects foreach {_.preStep(time, EventHistory)}
     world.step()                                       /// One step forward in the world
-    objects foreach {_.load()}                         /// Load values from world
-    objects foreach {                                  /// Maps the previous events to the input mechanisms
-      case i: InputManager => i.collectInput(EventHistory) 
-      case _ => // do nothing
-    }
-    objects foreach {_.save(time)}                     /// Save the values to history
+    objects foreach {_.postStep(time, EventHistory)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.

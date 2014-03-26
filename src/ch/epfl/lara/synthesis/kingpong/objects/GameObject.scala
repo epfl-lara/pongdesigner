@@ -167,6 +167,30 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------  
 
   /**
+   * This method is called just before the physical world advances and after
+   * the rules are evaluated. 
+   * @param time The time for the current step.
+   */
+  def preStep(time: Long, ctx: Context): Unit = {
+    setExistenceAt(time)
+    historicalProperties foreach { p =>
+      p.validate() 
+      p.flush()
+    }
+  }
+  
+  /**
+   * This method is called directly after the physical world advances.
+   * @param time The time for the current step.
+   */
+  def postStep(time: Long, ctx: Context): Unit = {
+    historicalProperties foreach { p =>
+      p.load() 
+      p.save(time)
+    }
+  }
+  
+  /**
    * Validate the next values of the underlying structure
    *  and replace the current value with it.
    */
