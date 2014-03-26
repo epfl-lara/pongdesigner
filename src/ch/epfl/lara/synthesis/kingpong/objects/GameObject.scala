@@ -82,7 +82,11 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // None means that this object doesn't know yet when it will die.
   private var _deletionTime: Option[Long] = None
   
-  // TODO here the creation time can only be set once. Is it correct ?
+  /**
+   * Set the creation time. By default, it is unspecified and that means
+   * the current object is created from  the beginning of time. 
+   * The creation time can only be set once.
+   */
   def setCreationTime(time: Long): self.type = {
     assert(time >= 0)
     if (_creationTime == None)
@@ -90,16 +94,24 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     self
   }
   
-  // TODO here the deletion time can only be set once. Is it correct ?
+  /**
+   * Set the deletion time. By default, it is unspecified and that means
+   * the current object doesn't know yet when it will die. 
+   * The deletion time can be set as often as needed.
+   */
   def setDeletionTime(time: Long): self.type = {
     assert(time >= 0 && _creationTime.map(_ <= time).getOrElse(true))
-    if (_deletionTime == None) 
-      _deletionTime = Some(time)
+    _deletionTime = Some(time)
     self
   }
   
+  /** Checks whether this object exists at the given time. */
   def existsAt(time: Long) = _creationTime.map(_ <= time).getOrElse(true) && _deletionTime.map(time < _).getOrElse(true) 
-    
+  
+  /**
+   * Update the internal state according to the current time. Particularly, remove the object from the 
+   * physical world if it doesn't exist and vice-versa. 
+   */ 
   def setExistenceAt(time: Long): Boolean = {
     val exists = existsAt(time)
     if (!exists && _attachedToCategory) {
