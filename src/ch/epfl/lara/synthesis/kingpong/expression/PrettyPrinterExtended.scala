@@ -189,7 +189,7 @@ trait PrettyPrinterExtendedTypical {
     /*def +(other: Rule): StringMaker = {
       print(this, other)
     }*/
-    def +(other: Stat): StringMaker = {
+    def +(other: Expr): StringMaker = {
       print(this, other)
     }
   }
@@ -197,8 +197,8 @@ trait PrettyPrinterExtendedTypical {
   /**
    * External printing function
    */
-  def print(s: Iterable[Stat], c: StringMaker = StringMaker()): StringMaker = {
-    val res = printIterable[Stat](c, s, print)
+  def print(s: Iterable[Expr], c: StringMaker = StringMaker()): StringMaker = {
+    val res = printIterable[Expr](c, s, print)
     res
   }
   
@@ -291,13 +291,14 @@ trait PrettyPrinterExtendedTypical {
       }
       c + indent +< lhs + s" $op " + rhs +>
     case Assign(Nil, rhs: Expr) => c
-    case Assign(List(e), rhs: Expr) => 
-      c + indent +< e + "' = " + rhs +>
+    case Assign(List((e, prop)), rhs: Expr) => 
+      c + indent +< e + "." + prop + "' = " + rhs +>
     case Assign(l, rhs: Expr) =>
+      //TODO update the printer for Assign
       val ids = l.mkString(",")
       c + indent +< ids + "' = " + rhs +>
-    case Block(stats: Seq[Stat]) =>
-      stats.toList match {
+    case Block(exprs) =>
+      exprs.toList match {
         case Nil => c + indent +! "{}"
         case a::Nil => c + indent +< a +>
         case a::l => 
@@ -306,7 +307,7 @@ trait PrettyPrinterExtendedTypical {
     case If(cond, s1, s2) =>
       val g = c +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = g + (s1, indent + INDENT)
-      val end = if(s2 != None) h + LF + indent + s"else:$LF" + (s2.get, indent + INDENT) else h
+      val end = if(s2 != NOP) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
       end +>
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
@@ -316,16 +317,19 @@ trait PrettyPrinterExtendedTypical {
       val varsString = vars.mkString("(", ",", ")")
       c + indent +< "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
     
-    case IfFunc(cond: Expr, s1: Expr, s2: Expr) =>
-      c +< s"$indent$IF_SYMBOL(" + cond + ") " + s1 + " else " + s2 +>
     case IntegerLiteral(value: Int) => c + indent +< value.toString +>
     case FloatLiteral(value: Float) => c + indent +< value.toString +>
     case StringLiteral(value: String) => c + indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => c + indent + value.toString
     case UnitLiteral => c + indent + "()"
-    case Variable(id) => c + indent +! id.toString
-    case Not(expr: Expr)  => c + indent +< NOT_SYMBOL + expr +>
     case ObjectLiteral(obj) => c + indent +! obj.name.get
+    
+    case Variable(id) => c + indent +! id.toString
+    case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
+    
+    case Row(expr) => c + indent +< expr + ".row" +>
+    case Column(expr) => c + indent +< expr + ".column" +>
+    
     case FingerMoveOver(o) => c + indent +< FINGER_MOVE_SYMBOL + o +>
     case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>
     case FingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + o +>

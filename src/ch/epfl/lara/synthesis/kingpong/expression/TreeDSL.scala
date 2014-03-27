@@ -17,38 +17,13 @@ object TreeDSL {
   implicit def Vec2IsExpr(v: Vec2): Expr = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
   implicit def ListIsExpr(v: List[Expr]): Tuple = Tuple(v)
   
-  implicit def objectReftoExpr(ref: ObjectProxy): Expr = ref.expr
+  implicit def proxyToExpr(ref: Proxy): Expr = ref.expr
   implicit def objectToExpr(obj: GameObject): Expr = obj.expr
   implicit def propertyToExpr(prop: Property[_]): Expr = prop.expr
-  implicit def propertyProxytoExpr(ref: ObjectProxy#AssignablePropertyProxy): Expr = ref.expr
-  implicit def propertyToPropertyIdentifier(prop: Property[_] with AssignableProperty[_]): PropertyIdentifier = prop.identifier
-  implicit def propertyProxytoPropertyIdentifier(ref: ObjectProxy#AssignablePropertyProxy): PropertyIdentifier = ref.identifier
-  implicit def seqStatToStat(stats: Seq[Stat]) = stats match {
+  implicit def seqStatToStat(stats: Seq[Expr]) = stats match {
     case Seq()  => NOP
     case Seq(s) => s
     case _      => Block(stats)
-  }
-  
-  trait RichAssignableProperty extends AnyRef {
-    protected def identifiers: Seq[PropertyIdentifier]
-    def :=(expr: Expr): Stat = Assign(identifiers, expr)
-  }
-  
-  implicit class RichAssignablePropertySingle(property: Property[_] with AssignableProperty[_]) extends RichAssignableProperty {
-    protected def identifier = property.identifier
-    protected def identifiers = Seq(identifier)
-    def +=(expr: Expr): Stat = Assign(identifiers, Plus(Variable(identifier), expr))
-    def -=(expr: Expr): Stat = Assign(identifiers, Minus(Variable(identifier), expr))
-    def *=(expr: Expr): Stat = Assign(identifiers, Times(Variable(identifier), expr))
-    def /=(expr: Expr): Stat = Assign(identifiers, Div(Variable(identifier), expr))
-  }
-  
-  implicit class RichAssignablePropertyTuple(properties: (Property[_] with AssignableProperty[_], Property[_] with AssignableProperty[_])) extends RichAssignableProperty {
-    protected def identifiers = Seq(properties._1.identifier, properties._2.identifier)
-  }
-  
-  implicit class RichAssignablePropertySeq(properties: Seq[Property[_] with AssignableProperty[_]]) extends RichAssignableProperty {
-    protected def identifiers = properties.map(_.identifier)
   }
   
   trait RichExpr extends AnyRef {
@@ -135,7 +110,7 @@ object TreeDSL {
   }
   
   implicit class RichExprLiteral(val expr: Expr) extends RichExpr
-  implicit class RichExprPropertyProxy(ref: ObjectProxy#AssignablePropertyProxy) extends RichExpr {
+  implicit class RichExprProxy(ref: Proxy) extends RichExpr {
     def expr = ref.expr
   }
   implicit class RichExprProperty(prop: Property[_]) extends RichExpr {
@@ -143,41 +118,69 @@ object TreeDSL {
   }
   
   
-  class ObjectProxy(id: ObjectIdentifier) {
-    lazy val expr: Expr = Variable(id)
+  trait Proxy extends AnyRef {
+    def expr: Expr
     
-    /* Read-Write properties */
-    def x = AssignablePropertyProxy("x", TFloat)
-    def y = AssignablePropertyProxy("y", TFloat)
-    def angle = AssignablePropertyProxy("angle", TFloat)
-    def visible = AssignablePropertyProxy("visible", TBoolean)
-    def color = AssignablePropertyProxy("color", TBoolean)
-    def velocity = AssignablePropertyProxy("velocity", TVec2)
-    def radius = AssignablePropertyProxy("radius", TFloat)
+    def x = new PropertyProxySingleRef(expr, "x").setType(TFloat)
+    def y = new PropertyProxySingleRef(expr, "y").setType(TFloat)
+    def angle = new PropertyProxySingleRef(expr, "angle").setType(TFloat)
+    def visible = new PropertyProxySingleRef(expr, "visible").setType(TBoolean)
+    def color = new PropertyProxySingleRef(expr, "color").setType(TBoolean)
+    def velocity = new PropertyProxySingleRef(expr, "velocity").setType(TVec2)
+    def radius = new PropertyProxySingleRef(expr, "radius").setType(TFloat)
     
     //TODO handle Box[T] type...
-    def value = AssignablePropertyProxy("value", TUntyped)
+    def value = new PropertyProxySingleRef(expr, "value").setType(TUntyped)
     
-    /* Read-only properties */
-    def bottom = Variable(PropertyIdentifier(id, "bottom")).setType(TFloat)
-    def top = Variable(PropertyIdentifier(id, "top")).setType(TFloat)
-    def left = Variable(PropertyIdentifier(id, "left")).setType(TFloat)
-    def right = Variable(PropertyIdentifier(id, "right")).setType(TFloat)
-    
-    object AssignablePropertyProxy {
-      def apply(property: String, tpe: Type) = new AssignablePropertyProxy(property, tpe)
-    }
-    
-    class AssignablePropertyProxy(property: String, tpe: Type) {
-      lazy val expr: Expr = Variable(identifier)
-      lazy val identifier: PropertyIdentifier = PropertyIdentifier(id, property).setType(tpe)
-      
-      def :=(expr: Expr): Stat = Assign(List(this), expr)
-      def +=(expr: Expr): Stat = Assign(List(this), Plus(this, expr))
-      def -=(expr: Expr): Stat = Assign(List(this), Minus(this, expr))
-      def *=(expr: Expr): Stat = Assign(List(this), Times(this, expr))
-      def /=(expr: Expr): Stat = Assign(List(this), Div(this, expr))
-    }
-    
+    def bottom = new PropertyProxySingleRef(expr, "bottom").setType(TFloat)
+    def top = new PropertyProxySingleRef(expr, "top").setType(TFloat)
+    def left = new PropertyProxySingleRef(expr, "left").setType(TFloat)
+    def right = new PropertyProxySingleRef(expr, "right").setType(TFloat) 
   }
+  
+  class ObjectProxy(id: Identifier) extends Proxy {
+    def expr: Expr = Variable(id)
+  }
+  
+  trait PropertyProxy extends Proxy with Typed {
+    protected def properties: Seq[(Expr, PropertyId)]
+    def :=(e: Expr): Expr = Assign(properties, e)
+    def :=(e1: Expr, e2: Expr): Expr = Assign(properties, Tuple(Seq(e1, e2)))
+  }
+  
+  trait PropertyProxySingle extends PropertyProxy {
+    protected def propertyPair: (Expr, PropertyId)
+    protected def properties = Seq(propertyPair)
+    def expr: Expr = Select(propertyPair._1, propertyPair._2).setType(getType)
+    def +=(e: Expr): Expr = Assign(properties, Plus(expr, e))
+    def -=(e: Expr): Expr = Assign(properties, Minus(expr, e))
+    def *=(e: Expr): Expr = Assign(properties, Times(expr, e))
+    def /=(e: Expr): Expr = Assign(properties, Div(expr, e))
+  }
+  
+  class PropertyProxySingleRef(baseExpr: Expr, property: String) extends PropertyProxySingle {
+    protected def propertyPair = (baseExpr, property)
+  }
+  
+  implicit def propertyToProxy(property: Property[_] with AssignableProperty[_]): PropertyProxySingle = {
+    new PropertyProxySingle {
+      protected def propertyPair = (property.parent.expr, property.name)
+    }
+  }
+  
+  implicit def propertyTupleToProxy(props: (Property[_] with AssignableProperty[_], Property[_] with AssignableProperty[_])): PropertyProxy = {
+    new PropertyProxy {
+      def expr = Tuple(Seq(props._1, props._2).map(_.expr))
+      protected def properties = Seq(props._1, props._2).map(p => (p.parent.expr, p.name))
+    }
+  }
+  
+  implicit def propertySeqToProxy(props: Seq[Property[_] with AssignableProperty[_]]): PropertyProxy = {
+    new PropertyProxy {
+      def expr = Tuple(props.map(_.expr))
+      protected def properties = props.map(p => (p.parent.expr, p.name))
+    }
+  }
+  
+  
 }

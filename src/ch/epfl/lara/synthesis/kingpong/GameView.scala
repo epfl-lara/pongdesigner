@@ -583,7 +583,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       super.onFingerUp(pos)
   }
   
-  def updateCodeView(rules: Iterable[Stat], objects: Iterable[GameObject]) = {
+  def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
     val header = PrettyPrinterExtended.printGameObjectDef(objects)
     val all = PrettyPrinterExtended.print(rules, header + "\n")
     val r: CharSequence = all.c

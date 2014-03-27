@@ -6,44 +6,7 @@ object TreeOps {
   import Trees._
   import Types._
   import Extractors._
-  
-  /**
-   * Do a right tree fold on statement
-   *
-   * f takes the current node, as well as the seq of results form the subtrees.
-   *
-   * Usages of views makes the computation lazy. (which is useful for
-   * contains-like operations)
-   */
-  def foldRight[T](f: (Stat, Seq[T]) => T)(s: Stat): T = {
-    val rec = foldRight(f) _
-
-    s match {
-      case ParExpr(stats) =>
-        f(s, stats.view.map(rec))
-      case Block(stats) =>
-        f(s, stats.view.map(rec))
-      case If(cond, ifTrue, None) =>
-        f(s, List(ifTrue).view.map(rec))
-      case If(cond, ifTrue, Some(ifFalse)) =>
-        f(s, List(ifTrue, ifFalse).view.map(rec))
-      case Foreach(_, _, body) =>
-        f(s, List(body).view.map(rec))
-      case Assign(_, _) =>
-        f(s, Stream.empty)
-      case Copy(_, _, stat) =>
-        f(s, List(stat).view.map(rec))
-      case Delete(_) =>
-        f(s, Stream.empty)
-      case NOP =>
-        f(s, Stream.empty)
-    }
-  }
-  
-  //TODO add other operations to Stat tree, like traverse and map.
-  
-  
-  
+   
   /**
    * Do a right tree fold
    *
@@ -265,6 +228,46 @@ object TreeOps {
   def replace(substs: Map[Expr,Expr], expr: Expr) : Expr = {
     postMap(substs.lift)(expr)
   }
-
   
+  /**
+   * Flatten an expression.
+   * All unnecessary blocks are removed nested ones flatten. 
+   * All nested ParExpr are flatten.
+   */
+  def flatten(expr: Expr): Expr = {
+    val f = (e: Expr) => e match {
+      case Block(es) => 
+        def flattenBlock(expr: Expr): Seq[Expr] = expr match {
+          case Block(es2) => es2
+          case _ => Seq(expr)
+        }
+        flattenNOP(es.flatMap(flattenBlock)) match {
+          case Seq()  => Some(NOP)
+          case Seq(e) => Some(e)
+          case exprs  => Some(Block(exprs))
+        }
+        
+      case ParExpr(es) => 
+        def flattenParallel(expr: Expr): List[Expr] = expr match {
+          case ParExpr(es2) => es2
+          case _ => List(expr)
+        }
+        flattenNOP(es.flatMap(flattenParallel).toSeq) match {
+          case Seq()  => Some(NOP)
+          case Seq(e) => Some(e)
+          case exprs  => Some(ParExpr(exprs.toList))
+        }
+        
+      case _ => None
+    }
+    postMap(f)(expr)
+  }
+  
+  /**
+   * Remove NOP from a sequence of expressions.
+   */
+  def flattenNOP(exprs: Seq[Expr]): Seq[Expr] = {
+    exprs.filterNot(_ == NOP)
+  }
+
 }

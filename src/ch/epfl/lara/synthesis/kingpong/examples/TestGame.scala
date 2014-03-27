@@ -28,7 +28,7 @@ class TestGame extends Game {
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
 
-  val arr = array(catArray)("MyArray", 1.3, 4)
+  val arr = array(catArray)("MyArray", 1.3, 4, 2, 3)
   
   
   val r1 = foreach(cat, base.category) { (obj, base) =>
@@ -53,8 +53,7 @@ class TestGame extends Game {
   val cell = arr.cells(1)(1)
   
   val r4 = whenever(Contains(cell, rect1))(
-      rect1.x := cell.x,
-      rect1.y := cell.y,
+      (rect1.x, rect1.y) := (cell.x, cell.y),
       rect1.velocity := Vec2(0, 0)
     )
 

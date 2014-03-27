@@ -191,8 +191,8 @@ case class Rectangle (val game: Game,
   
   protected val bodyDef = {
     val body_def = new BodyDef()
-    body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
-                             game.typeCheckAndEvaluate[Float](init_y))
+    body_def.position = Vec2(game.evaluate[Float](init_x), 
+                             game.evaluate[Float](init_y))
     body_def.`type` = init_tpe
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
@@ -202,15 +202,15 @@ case class Rectangle (val game: Game,
   
   protected val fixtureDef = {
     val shape = new PolygonShape()
-    shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
-                   game.typeCheckAndEvaluate[Float](init_height)/2)
+    shape.setAsBox(game.evaluate[Float](init_width)/2,
+                   game.evaluate[Float](init_height)/2)
   
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
-    fixture_def.density = game.typeCheckAndEvaluate[Float](init_density)
-    fixture_def.friction = game.typeCheckAndEvaluate[Float](init_friction)
-    fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
-    fixture_def.isSensor = game.typeCheckAndEvaluate[Boolean](init_sensor)
+    fixture_def.density = game.evaluate[Float](init_density)
+    fixture_def.friction = game.evaluate[Float](init_friction)
+    fixture_def.restitution = game.evaluate[Float](init_restitution)
+    fixture_def.isSensor = game.evaluate[Boolean](init_sensor)
     Seq(fixture_def)
   }
   
@@ -262,8 +262,8 @@ case class Character (val game: Game,
   
   protected val bodyDef = {
     val body_def = new BodyDef()
-    body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
-                             game.typeCheckAndEvaluate[Float](init_y))
+    body_def.position = Vec2(game.evaluate[Float](init_x), 
+                             game.evaluate[Float](init_y))
     body_def.`type` = init_tpe
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
@@ -272,19 +272,19 @@ case class Character (val game: Game,
   }
   
   protected val shapeSensor = new CircleShape()
-  shapeSensor.m_radius = game.typeCheckAndEvaluate[Float](init_width)/2
-  shapeSensor.m_p.set(0f, game.typeCheckAndEvaluate[Float](init_height)/2)
+  shapeSensor.m_radius = game.evaluate[Float](init_width)/2
+  shapeSensor.m_p.set(0f, game.evaluate[Float](init_height)/2)
   
   protected val fixtureDef = {
     val shape = new PolygonShape()
-    shape.setAsBox(game.typeCheckAndEvaluate[Float](init_width)/2,
-                   game.typeCheckAndEvaluate[Float](init_height)/2)
+    shape.setAsBox(game.evaluate[Float](init_width)/2,
+                   game.evaluate[Float](init_height)/2)
   
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
-    fixture_def.density = game.typeCheckAndEvaluate[Float](init_density)
-    fixture_def.friction = game.typeCheckAndEvaluate[Float](init_friction)
-    fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
+    fixture_def.density = game.evaluate[Float](init_density)
+    fixture_def.friction = game.evaluate[Float](init_friction)
+    fixture_def.restitution = game.evaluate[Float](init_restitution)
     
     val fixture_sensor = new FixtureDef()
     fixture_sensor.shape = shapeSensor
@@ -365,8 +365,8 @@ case class Circle(val game: Game,
   // Create the physical JBox2D body with a circle shape.
   protected val bodyDef = {
     val body_def = new BodyDef()
-    body_def.position = Vec2(game.typeCheckAndEvaluate[Float](init_x), 
-                             game.typeCheckAndEvaluate[Float](init_y))
+    body_def.position = Vec2(game.evaluate[Float](init_x), 
+                             game.evaluate[Float](init_y))
     body_def.`type` = init_tpe
     
     //if (init_tpe == BodyType.DYNAMIC) {
@@ -377,13 +377,13 @@ case class Circle(val game: Game,
   
   protected val fixtureDef = {
     val shape = new CircleShape()
-    shape.m_radius = game.typeCheckAndEvaluate[Float](init_radius)
+    shape.m_radius = game.evaluate[Float](init_radius)
   
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
-    fixture_def.density = game.typeCheckAndEvaluate[Float](init_density)
-    fixture_def.friction = game.typeCheckAndEvaluate[Float](init_friction)
-    fixture_def.restitution = game.typeCheckAndEvaluate[Float](init_restitution)
+    fixture_def.density = game.evaluate[Float](init_density)
+    fixture_def.friction = game.evaluate[Float](init_friction)
+    fixture_def.restitution = game.evaluate[Float](init_restitution)
     Seq(fixture_def)
   }
   

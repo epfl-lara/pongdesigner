@@ -71,7 +71,7 @@ trait PrettyPrinterTypical {
   /**
    * Prints a set of RuleIterator
    */
-  def print(s: Iterable[Stat]): CharSequence = {
+  def print(s: Iterable[Expr]): CharSequence = {
     val seq = s map (print(NO_INDENT, _))
     if(seq.isEmpty) "" else seq reduceLeft { (l: CharSequence, r: CharSequence) => l + LF +  r }
   }.makeStyle
@@ -94,20 +94,21 @@ trait PrettyPrinterTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
+        case _:Contains => "contains"
       }
       print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
-    case Assign(List(e), rhs: Expr) => indent + print(NO_INDENT, e) + "' = " + print(NO_INDENT, rhs)
-    case Assign(prop, rhs: Expr) => indent + prop.map(print(NO_INDENT, _)).toString.substring(4) + "' = " + print(NO_INDENT, rhs)
-    case Block(stats: Seq[Stat]) =>
-      stats.toList match {
+    case Assign(List((e, prop)), rhs) => indent + print(NO_INDENT, e) + "." + prop + "' = " + print(NO_INDENT, rhs)
+    case Assign(props, rhs) => indent + props.map{case (e, prop) => print(NO_INDENT, e) + "." + prop}.toString.substring(4) + "' = " + print(NO_INDENT, rhs)
+    case Block(exprs) =>
+      exprs.toList match {
         case Nil => indent + "{}"
         case a::Nil => print(indent, a)
         case l => (l map (print(indent+INDENT, _)) reduceLeft (_ + LF + _))
       }
-    case If(cond: Expr, s1: Stat, s2) => 
+    case If(cond, s1, s2) => 
       val prem = s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF
       val middle = print(indent + INDENT, s1)
-      val end = if(s2 != None) indent + "else:" + LF + print(indent + INDENT, s2.get) else ""
+      val end = if(s2 != NOP) indent + "else:" + LF + print(indent + INDENT, s2) else ""
       prem + middle + end
     case Copy(name, obj, b) =>
       indent + name + " = " + obj + ".copy" + LF + print(indent, b)
@@ -117,9 +118,6 @@ trait PrettyPrinterTypical {
       val varsString = vars.map(print(NO_INDENT, _)).mkString("(", ",", ")")
       indent + "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + print(NO_INDENT, pred) + ")"
     
-    case IfFunc(cond: Expr, s1: Expr, s2: Expr) =>
-      indent + s"$IF_SYMBOL("+print(NO_INDENT, cond)+") " + print(NO_INDENT, s1) + " else " + print(NO_INDENT, s2)
-      
     case IntegerLiteral(value: Int) => indent + value.toString
     case FloatLiteral(value: Float) => indent + value.toString
     case StringLiteral(value: String) => indent + "\"" + value + "\""
@@ -127,7 +125,12 @@ trait PrettyPrinterTypical {
     case ObjectLiteral(o) => indent + o.name.get
     case UnitLiteral => indent + "()"
     case Variable(id) => indent + id
+    
     case Not(expr: Expr)  => indent + NOT_SYMBOL + print(NO_INDENT, expr)
+    
+    case Row(expr) => indent + print(NO_INDENT, expr) + ".row"
+    case Column(expr) => indent + print(NO_INDENT, expr) + ".column"
+    
     case FingerMoveOver(o) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, o)
     case FingerDownOver(o) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
     case FingerUpOver(o) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)

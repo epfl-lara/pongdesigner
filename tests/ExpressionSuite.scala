@@ -1,120 +1,97 @@
 package ch.epfl.lara.synthesis.kingpong.test
 
-import org.scalatest.FunSuite
-import org.scalatest.BeforeAndAfter
+import org.scalatest._
 
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import org.jbox2d.dynamics.BodyType
+
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
-import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression._
+import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
+import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.rules.EmptyContext
+import ch.epfl.lara.synthesis.kingpong.Game
+import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
 
-class ExpressionSuite extends FunSuite with BeforeAndAfter {
- 
-  implicit var interpreter: Interpreter with TypeChecker = _
-  implicit var context: Context = _
+class ExpressionSuite extends FlatSpec with Matchers {
 
-  before {
-    interpreter = new Interpreter with TypeChecker {}
-    /*context = new Context {
-        def events = Seq.empty
-    }*/
+  val i1 = IntegerLiteral(1)
+  val i2 = IntegerLiteral(2)
+  val i3 = IntegerLiteral(3)
+  val i4 = IntegerLiteral(4)
+  
+  val interpreter = new Interpreter {
+    def initGC() = new EmptyContext {}
+    def initRC() = RecContext(Map.empty)
   }
 
-  test("Implicits to build expressions are working.") {
-    var e: Expr = 1
-    assert(e === IntegerLiteral(1))
-    e = 1.2f
-    assert(e === FloatLiteral(1.2f))
-    e = 1.2d
-    assert(e === FloatLiteral(1.2f))
-    e = "test"
-    assert(e === StringLiteral("test"))
-    e = true
-    assert(e === BooleanLiteral(true))
-    e = Vec2(1, 2)
-    assert(e === Vec2Literal(1, 2))
-  }
-
-  test("Typecheck and Interpreter for expressions work.") {
-    var e: Expr = Plus(1, 3)
-    interpreter.typeCheck(e)
-    assert(e.getType === TInt)
-    assert(interpreter.eval(e) === IntV(4))
-    assert(interpreter.eval(e).as[Int] === 4)
-
-    e = Plus(1, 3.5)
-    interpreter.typeCheck(e)
-    assert(e.getType === TFloat)
-    assert(interpreter.eval(e) === FloatV(4.5f))
-    assert(interpreter.eval(e).as[Float] === 4.5f)
-
-    e = Plus(Vec2(1, 2), Vec2(3, 4))
-    interpreter.typeCheck(e)
-    assert(e.getType === TVec2)
-    assert(interpreter.eval(e).as[Vec2] === Vec2(4, 6))
-
-    e = Times(2, Vec2(1, 2))
-    interpreter.typeCheck(e)
-    assert(e.getType === TVec2)
-    assert(interpreter.eval(e).as[Vec2] === Vec2(2, 4))
-
-    e = Div(Vec2(1, 2), 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TVec2)
-    assert(interpreter.eval(e).as[Vec2] === Vec2(0.5f, 1))
-
-    e = LessThan(3, 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TBoolean)
-    assert(interpreter.eval(e).as[Boolean] === false)
-
-    e = LessEq(2, 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TBoolean)
-    assert(interpreter.eval(e).as[Boolean] === true)
-
-    e = GreaterThan(1, 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TBoolean)
-    assert(interpreter.eval(e).as[Boolean] === false)
-
-    e = GreaterEq(3, 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TBoolean)
-    assert(interpreter.eval(e).as[Boolean] === true)
-
-    e = Times(1, true)
-    intercept[TypeCheckException] {
-      interpreter.typeCheck(e)
+  val game = new Game() {
+    val world = new PhysicalWorld(Vec2(0, 0f))
+    
+    val blocks = Category("Blocks")()
+    val balls = Category("Balls")()
+    
+    val ball1 = circle(balls)(name="ball1", x=2, y=2)
+    val block1 = intbox(blocks)(name="block1", x=0, y=0)
+    
+    val rule1 = foreach(blocks, balls) { (block, ball) =>
+      whenever(block.y < ball.y) (
+        ball.y := 0, 
+        ball.velocity := Vec2(0, 0)
+      )
     }
-    intercept[InterpreterException] {
-      interpreter.eval(e)
-    }
-
-    e = Equals(true, 2.4)
-    interpreter.typeCheck(e)
-    assert(e.getType === TBoolean)
-    assert(interpreter.eval(e) === BooleanV(false))
-    assert(interpreter.eval(e).as[Boolean] === false)
-
-    e = Div(Times(Minus(Plus(2, 20), 1), 4), 2)
-    interpreter.typeCheck(e)
-    assert(e.getType === TFloat)
-    assert(interpreter.eval(e) === FloatV(42f))
+    
+    
+//    val rule2 = foreach(paddles)("paddle"){
+//      whenever(true)(
+//        List(obj("paddle")("x"), obj("paddle")("width")) := Choose(List(obj("paddle")("x"), obj("paddle")("width")), obj("paddle")("left") =:= Border2("right") && obj("paddle")("right") =:= Ball1("x"))
+//      // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
+//      )
+//    }
   }
 
-  test("Typecheck and Interpreter for statements work.") {
-    val p = new SimpleProperty[Int]("test_prop", 1, null).reset(interpreter)
-    var s: Stat = If(Equals(p.ref, 1), 
-      Assign(List(p.ref), Plus(p.ref, 1)),
-      Assign(List(p.ref), Minus(p.ref, 1)))
-
-    interpreter.typeCheck(s)
-    interpreter.eval(s)
-    p.validate()
-    assert(p.get === 2)
+  
+  //TODO test Choose expression
+//  "Comfusy Solver" should "correctly compute programs" in {
+//    game.rule2.evaluate(interpreter)
+//    game.objects foreach {_.validate()}
+//    game.paddle1.x.get should equal(1.5f)
+//    game.paddle1.width.get should equal(2f)
+//    
+//  }
+  
+  //TODO test printer
+//  "Pretty Printer extended" should "correctly output mappings" in {
+//    val c = PrettyPrinterExtended.StringMaker()
+//    val c2 = PrettyPrinterExtended.print(List(game.rule1))
+//    c2.map.mObjects.keys should contain (game.paddles: Category)
+//  }
+  
+  
+  "Expression" should "be correctly built by the DSL" in {
+    val e = game.ball1.x := 0
+    e should be (Assign(List((ObjectLiteral(game.ball1), "x")), IntegerLiteral(0)))
   }
+  
+  ignore should "..." in {
+    //TODO
+  }
+  
+  "TreeOps" should "correctly flatten a Block" in {
+    val e = Block(i1, NOP, Block(NOP, i2, Block(i3)), NOP, i4, Block(Nil))
+    val flat = flatten(e)
+    flat should be (Block(i1, i2, i3, i4))
+  }
+  
+  it should "correctly flatten a ParExpr" in {
+    val e = ParExpr(List(i1, NOP, ParExpr(List(NOP, i2, Block(i3), ParExpr(List(i1)))), NOP, i4, Block(Nil)))
+    val flat = flatten(e)
+    flat should be (ParExpr(List(i1, i2, i3, i1, i4)))
+  }
+  
+  
 }

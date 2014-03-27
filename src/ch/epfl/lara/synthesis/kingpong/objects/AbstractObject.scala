@@ -206,12 +206,18 @@ case class Array2D(
     init_numColumns: Expr,
     init_numRows: Expr
     ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
-      with Rectangular {
+      with Rectangular { self =>
  
   import Array2D._
   
   val className = "Array2D"
   
+  val cellsCategory = new Category {
+    def game = self.game
+    def name = self.name.get + " cells"
+    def objects = self.cells.view.flatten
+  }
+    
   //TODO for the moment the array size is constant
   lazy val cells = Array.tabulate(numColumns.get, numRows.get)(Cell(this, _, _))
     

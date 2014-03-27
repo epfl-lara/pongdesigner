@@ -220,11 +220,6 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * Get the corresponding expression for this object.
    */
   lazy val expr: Expr = ObjectLiteral(this)
-  
-  /**
-   * Unique identifier of this object.
-   */
-  lazy val identifier: ObjectIdentifier = FreshIdentifier(name.get)
 
   /**
    * //MIKAEL add comment
