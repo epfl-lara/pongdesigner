@@ -271,7 +271,10 @@ object Trees {
   case class ObjectLiteral(value: GameObject) extends Literal[GameObject] with FixedType {
     val fixedType = TObject
   }
-  case class IntegerLiteral(value: Int) extends Literal[Int] with FixedType {
+  case class IntegerLiteral(v: Int) extends Literal[Int] with FixedType {
+    var mValue: Int = value
+    def value_=(v: Int) = mValue = v
+    override def value = mValue
     val fixedType = TInt
   }
   case class FloatLiteral(value: Float) extends Literal[Float] with FixedType {

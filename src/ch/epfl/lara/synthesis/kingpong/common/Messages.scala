@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.common
 
 import android.os.Message
+import language.implicitConversions
 
 /***
  * Message Builder and unapply methods for easy pattern matching.

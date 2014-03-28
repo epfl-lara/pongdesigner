@@ -132,7 +132,7 @@ abstract class PhysicalObject(init_name: Expr,
 
   val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation) { b =>
     body.setFixedRotation(b)
-  } 
+  }
   
   //TODO !!!!
   /*
@@ -187,6 +187,8 @@ case class Rectangle (val game: Game,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
                   with Rectangular {
 
+  tpe = init_tpe
+  
   def className = "Rect"
   
   protected val bodyDef = {
@@ -257,7 +259,7 @@ case class Character (val game: Game,
                 ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
                   with Rectangular with InputManager {
-
+  tpe = init_tpe
   def className = "Rect"
   
   protected val bodyDef = {
@@ -360,6 +362,7 @@ case class Circle(val game: Game,
                                      init_density, init_friction, init_restitution, init_fixedRotation, init_color)
               with Circular {
   
+  tpe = init_tpe
   def className = "Circ"
   
   // Create the physical JBox2D body with a circle shape.

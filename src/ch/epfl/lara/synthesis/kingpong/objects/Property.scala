@@ -49,7 +49,10 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
    *  The next value is also set.
    */
   def set(v: T): self.type
-  def set(e: Expr): self.type = set(tpe.toScalaValue(e))  
+  def set(e: Expr): self.type = set(tpe.toScalaValue(e)) 
+  
+  def setNext(v: T): self.type
+  def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
 }
 
 trait AssignableProperty[T] { self: RWProperty[T] =>
@@ -129,6 +132,7 @@ class EphemeralProperty[T: PongType](val name: String, val parent: GameObject)
   private var value: T = _
   def get: T = value
   def next: T = value
+  def setNext(v: T) = {value = v; this} // Not a good idea to call it.
   def set(v: T) = { 
     value = v
     self 

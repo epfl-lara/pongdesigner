@@ -3,7 +3,6 @@ package ch.epfl.lara.synthesis.kingpong.objects
 import scala.Dynamic
 import scala.language.dynamics
 import scala.collection.mutable.{ HashMap => MMap }
-
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -14,6 +13,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
+import org.jbox2d.dynamics.BodyType
 
 object GameObject {
   final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
@@ -56,16 +56,19 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------
 
   val name = simpleProperty[String]("name", init_name)
-  def x: Property[Float]
-  def y: Property[Float]
+  def x: RWProperty[Float]
+  def y: RWProperty[Float]
   def bottom: Property[Float]
   def top: Property[Float]
   def left: Property[Float]
   def right: Property[Float]
-  def angle: Property[Float]
-  def visible: Property[Boolean]
-  def color: Property[Int]
-    
+  def angle: RWProperty[Float]
+  def visible: RWProperty[Boolean]
+  def color: RWProperty[Int]
+  var tpe: BodyType = BodyType.STATIC
+  def noVelocity = tpe == BodyType.STATIC
+  def noVelocity_=(b: Boolean): Unit = ??? // TODO It means to change the way the shape is. Do it in subclasses
+
   val center = readOnlyProperty[Vec2] (
     name  = "center", 
     getF  = Vec2(x.get, y.get),
@@ -274,8 +277,8 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
 }
 
 trait Rectangular extends GameObject {
-  def width: Property[Float]
-  def height: Property[Float]
+  def width: RWProperty[Float]
+  def height: RWProperty[Float]
   
   val bottom = readOnlyProperty (
     name  = "bottom", 
@@ -307,7 +310,7 @@ trait Rectangular extends GameObject {
 }
 
 trait Circular extends GameObject {
-  def radius: Property[Float]
+  def radius: RWProperty[Float]
 
   val bottom = readOnlyProperty (
     name  = "bottom", 

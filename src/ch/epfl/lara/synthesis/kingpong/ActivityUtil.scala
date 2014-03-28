@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.widget.LinearLayout
 import android.widget.ImageView
 import android.widget.ListView
+import language.implicitConversions
 
 trait Implicits {
   implicit def toOnclickListener(f: ()=>Unit):View.OnClickListener = {

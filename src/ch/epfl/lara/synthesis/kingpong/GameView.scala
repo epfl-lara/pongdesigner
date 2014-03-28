@@ -42,6 +42,8 @@ import android.graphics.Typeface
 import android.text.style.ForegroundColorSpan
 import android.widget.ExpandableListView
 import android.widget.ExpandableListAdapter
+import ch.epfl.lara.synthesis.kingpong.menus._
+import ch.epfl.lara.synthesis.kingpong.common.History
 
 object GameView {
   sealed trait GameState
@@ -81,6 +83,10 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   }
   def onStopTrackingTouch(seekBar: SeekBar):Unit = {
   }
+  def setTimeProgressAbsolute(i: Long) = {
+    progressBar.setProgress(Math.max(0, (i - History.MAX_HISTORY_SIZE).toInt))
+  }
+  def getGame: Game
 }
 
 /**
@@ -168,6 +174,23 @@ class GameView(val context: Context, attrs: AttributeSet)
     MethodCall("snap", List(e))
   }
   
+  var gameEngineEditors: List[GameEngineEditor] = _
+  def addGameEngineEditor(g: GameEngineEditor) = {
+    if(gameEngineEditors == null) {
+      gameEngineEditors = List(g)
+    } else {
+      gameEngineEditors = gameEngineEditors ++ List(g)
+    }
+  }
+  /** Selected objects, events and rules */
+  var shapeEditor = new ShapeEditor(this)
+  var eventEditor = new EventEditor(this)
+  /*var categoryEditor = new CategoryEditor(this)
+  var ruleEditor = new RuleEditor(this)
+  var numberEditor = new NumberEditor(this)
+  var systemEditor = new SystemEditor(this)
+  var gameEditor = new GameEditor(this)*/
+  
   /** All game stuff from the Game trait */
   val world = new PhysicalWorld(Vec2(0, 0))
   
@@ -177,6 +200,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
   
+  var whitePaint = new Paint()
+  whitePaint.setColor(0xFFFFFFFF)
+  whitePaint.setStyle(Paint.Style.FILL_AND_STROKE)
+  whitePaint.setStrokeWidth(1)
+  whitePaint.setAntiAlias(true)
   
 //  val moveRule2 = whenever(FingerMoveOver(moveMenu))(
 //    List(moveMenu("x"), moveMenu("y")) := List(moveMenu("x"), moveMenu("y")) + VecExpr(List(Val("dx"), Val("dy")))
@@ -188,6 +216,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   
 //  register(moveRule2)
 //  register(moveRule2bis)
+  
+  def setModeSelectEffects() = {}
 
   /** The game model currently rendered. */
   private var game: Game = null

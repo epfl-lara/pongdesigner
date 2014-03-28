@@ -51,6 +51,16 @@ object TreeDSL {
     protected def identifiers = properties.map(_.identifier)
   }
   
+  
+  implicit class RichStat(s: Stat) extends AnyRef {
+    def ::(prepend: Stat): Stat = (prepend, s) match {
+      case (Block(a), Block(l)) => Block(a ++ l)
+      case (a, Block(l)) => Block(a::l.toList)
+      case (Block(l),a) => Block(l ++ List(a))
+      case (a, b) => Block(List(a, b))
+    }
+  }
+  
   trait RichExpr extends AnyRef {
     def expr: Expr
     
