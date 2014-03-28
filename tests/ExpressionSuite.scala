@@ -12,6 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.EmptyContext
 import ch.epfl.lara.synthesis.kingpong.Game
@@ -23,6 +24,8 @@ class ExpressionSuite extends FlatSpec with Matchers {
   val i2 = IntegerLiteral(2)
   val i3 = IntegerLiteral(3)
   val i4 = IntegerLiteral(4)
+  val bt = BooleanLiteral(true)
+  val bf = BooleanLiteral(false)
   
   val interpreter = new Interpreter {
     def initGC() = new EmptyContext {}
@@ -81,6 +84,36 @@ class ExpressionSuite extends FlatSpec with Matchers {
     //TODO
   }
   
+  "Interpreter" should "handle arithmetic expressions" in {
+    val e1 = (i1 + i2) * i3 / i2
+    interpreter.evaluate(e1) should be (FloatLiteral(4.5f))
+    
+    val e2 = (i2 * i2 + i2) % i4
+    interpreter.evaluate(e2) should be (i2)
+  }
+  
+  it should "handle boolean expressions" in {
+    val e1 = !((bt || bf) && bf)
+    interpreter.evaluate(e1) should be (bt)
+    
+    val e2 = bt && (bf || !bf) && bt
+    interpreter.evaluate(e2) should be (bt)
+    
+    val e3 = (i1 < i2) && (i2 <= i2) && (i1 =:= i4)
+    interpreter.evaluate(e3) should be (bf)
+    
+    val e4 = (i4 > i4) || (i3 >= i4) || i2 =:= bt || bf =:= bt
+    interpreter.evaluate(e4) should be (bf)
+  }
+  
+  it should "handle If expression" in {
+    val e1 = If(i1 < i2, i2 * i2, i2 * i3)
+    interpreter.evaluate(e1) should be (i4)
+    
+    val e2 = If(i1 >= i2, i2 * i2, i2 * i1)
+    interpreter.evaluate(e2) should be (i2)
+  }
+  
   "TreeOps" should "correctly flatten a Block" in {
     val e = Block(i1, NOP, Block(NOP, i2, Block(i3)), NOP, i4, Block(Nil))
     val flat = flatten(e)
@@ -91,6 +124,18 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val e = ParExpr(List(i1, NOP, ParExpr(List(NOP, i2, Block(i3), ParExpr(List(i1)))), NOP, i4, Block(Nil)))
     val flat = flatten(e)
     flat should be (ParExpr(List(i1, i2, i3, i1, i4)))
+  }
+  
+  "TypesOps" should "have correct subtypes" in {
+    isSubtypeOf(TInt, TFloat) should be (true)
+    isSubtypeOf(TFloat, TInt) should be (false)
+    isSubtypeOf(TFloat, TString) should be (false)
+    isSubtypeOf(TFloat, TFloat) should be (true)
+    isSubtypeOf(TUnit, TString) should be (false)
+    isSubtypeOf(TAny, TAny) should be (true)
+    isSubtypeOf(TUnit, TAny) should be (true)
+    isSubtypeOf(TInt, TAny) should be (true)
+    isSubtypeOf(TFloat, TAny) should be (true)
   }
   
   

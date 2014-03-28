@@ -4,6 +4,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
@@ -134,7 +135,9 @@ object Trees {
     def apply(cond: Expr, e: Expr): If = If(cond, e, NOP)
   }
   
-  case class If(cond: Expr, s1: Expr, s2: Expr) extends Expr
+  case class If(cond: Expr, thenn: Expr, elze: Expr) extends Expr with FixedType {
+    val fixedType = leastUpperBound(thenn.getType, elze.getType).getOrElse(TAny)
+  }
   
   /**
    * A variable XXX
@@ -295,5 +298,9 @@ object Trees {
   
   case class Column(obj: Expr) extends Expr with FixedType {
     val fixedType = TInt
+  }
+  
+  case class Apply(obj: Expr, column: Expr, row: Expr) extends Expr with FixedType {
+    val fixedType = TObject
   }
 }

@@ -324,6 +324,7 @@ trait PrettyPrinterExtendedTypical {
     case UnitLiteral => c + indent + "()"
     case ObjectLiteral(obj) => c + indent +! obj.name.get
     
+    case Select(expr, property) => c + indent +< expr + "." + property +>
     case Variable(id) => c + indent +! id.toString
     case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
     

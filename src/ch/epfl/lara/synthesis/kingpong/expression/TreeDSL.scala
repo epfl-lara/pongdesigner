@@ -19,6 +19,7 @@ object TreeDSL {
   
   implicit def proxyToExpr(ref: Proxy): Expr = ref.expr
   implicit def objectToExpr(obj: GameObject): Expr = obj.expr
+  implicit def objectToProxyExpr(obj: GameObject): ObjectProxyExpr = new ObjectProxyExpr(obj.expr)
   implicit def propertyToExpr(prop: Property[_]): Expr = prop.expr
   implicit def seqStatToStat(stats: Seq[Expr]) = stats match {
     case Seq()  => NOP
@@ -136,10 +137,18 @@ object TreeDSL {
     def top = new PropertyProxySingleRef(expr, "top").setType(TFloat)
     def left = new PropertyProxySingleRef(expr, "left").setType(TFloat)
     def right = new PropertyProxySingleRef(expr, "right").setType(TFloat) 
+    
+    def cell(column: Expr, row: Expr) = new ArrayApplyProxy(expr, column, row)
   }
   
   class ObjectProxy(id: Identifier) extends Proxy {
-    def expr: Expr = Variable(id)
+    def expr = Variable(id).setType(TObject)
+  }
+  
+  class ObjectProxyExpr(val expr: Expr) extends Proxy
+
+  class ArrayApplyProxy(obj: Expr, column: Expr, row: Expr) extends Proxy {
+    def expr = Apply(obj, column, row).setType(TObject)
   }
   
   trait PropertyProxy extends Proxy with Typed {
