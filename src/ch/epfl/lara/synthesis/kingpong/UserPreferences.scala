@@ -16,6 +16,9 @@ object Options {
   object Access {
     var showTooltips = true
   }
+  object Event {
+    var selectableAreaRadius = 30.0f
+  }
 }
 
 /**

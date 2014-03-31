@@ -40,6 +40,14 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     else 
       array(toIndex(idx)) = elem
   }
+  
+  /**
+   * Replace the first element at a given time.
+   */
+  def replace(theElementToChangeIs: A => Boolean, convertElement: A => A): Unit = {
+    val i = array.indexWhere(theElementToChangeIs(_))
+    array(i) = convertElement(array(i))
+  }
 
   /** Add a new element at the end of this buffer.
    *  If the buffer is already full, the oldest value

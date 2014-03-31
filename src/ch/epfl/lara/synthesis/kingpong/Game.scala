@@ -391,6 +391,9 @@ trait Game extends RuleManager with ColorConstants { self =>
   private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
     EventHistory.addEvent(FingerMove(from, to, null))
   }
+  
+  // Advanced way to add an event unsynchronized from input.
+  def addEvent(e: Event, time: Int): Event = { EventHistory.addEvent(e, time); e}
 
   private val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
@@ -431,6 +434,12 @@ trait Game extends RuleManager with ColorConstants { self =>
     }
     
     def getEvents(i: Long): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
+    
+    def foreachEvent(f: (Event, Int) => Unit) = {
+      for((k, s) <- history.iterator; e <- s) {
+        f(e, k.toInt)
+      }
+    }
 
     /* Advance the time and store the current events in the history. */
     def step(): Unit = {
@@ -490,6 +499,14 @@ trait Game extends RuleManager with ColorConstants { self =>
           crtEvents += e
       }      
     }
+    
+    /** Add an event in the ongoing time step. 
+     *  Can be called by another thread, from user inputs.
+     *  Caution: This function should not be used very often
+     */
+    def addEvent(e: Event, time: Int): Unit = history.synchronized {
+      history.replace({ case (t, events) => time == t }, { case (t, events) => (t, events ++ List(e)) })
+    }
 
     /** Completely clear the history and the ongoing time step. */
     def clear(): Unit = crtEvents.synchronized {
@@ -524,6 +541,10 @@ trait Game extends RuleManager with ColorConstants { self =>
     }
     
     def add(c: GameObject) = self add c
+  }
+  
+  def foreachEvent(f: (Event, Int) => Unit) = {
+    EventHistory.foreachEvent(f)
   }
   
   def getNewName(baseName: String): String = EventHistory.getNewName(baseName)

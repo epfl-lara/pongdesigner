@@ -14,6 +14,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import org.jbox2d.dynamics.BodyType
+import ch.epfl.lara.synthesis.kingpong.Options.Event._
 
 object GameObject {
   final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
@@ -72,7 +73,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   
   private var _creationTime: Long = 0
   def creationTime = _creationTime
-  def deletionTime = simpleProperty[Long]("deletion time", -1)
+  def deletionTime = simpleProperty[Long]("deletion time", Long.MaxValue)
   
   /**
    * Set the creation time. By default, it is set to 0.
@@ -305,6 +306,9 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
   
   protected def makecopy(name: String): GameObject
+  
+  def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
+  def distanceSelection(x: Float, y: Float): Float = Float.MaxValue
 }
 
 trait Rectangular extends GameObject with Positionable {
@@ -338,6 +342,27 @@ trait Rectangular extends GameObject with Positionable {
     nextF = x.next + width.next / 2f,
     exprF = x.expr + width.expr / 2f
   )
+  
+  override def selectableBy(xCursor: Float, yCursor: Float):Boolean = {
+    xCursor > left.get &&
+    xCursor < right.get &&
+    yCursor > top.get &&
+    yCursor < bottom.get
+  }
+  
+  override def distanceSelection(xCursor: Float, yCursor: Float):Float = {
+    val dx = if(xCursor < left.next) {
+      left.next - xCursor
+    } else if(xCursor > right.next) {
+      xCursor - right.next
+    } else 0
+    val dy = if(yCursor < top.next) {
+      top.next - yCursor
+    } else if(yCursor > bottom.next) {
+      yCursor - bottom.next
+    } else 0
+    Math.sqrt(dx*dx + dy*dy).toFloat
+  }
 }
 
 trait ResizableRectangular extends Rectangular {
@@ -375,6 +400,21 @@ trait Circular extends GameObject with Positionable {
     nextF = x.next + radius.next,
     exprF = x.expr + radius.expr
   )
+  
+  override def selectableBy(xCursor: Float, yCursor: Float):Boolean = {
+    xCursor > left.next &&
+    xCursor < right.next &&
+    yCursor > top.next &&
+    yCursor < bottom.next && xCursor*xCursor + yCursor*yCursor <= radius.next * radius.next
+  }
+  
+  override def distanceSelection(xCursor: Float, yCursor: Float): Float = {
+    val dx = xCursor-x.next
+    val dy = yCursor-y.next
+     val r = radius.next + selectableAreaRadius
+     val res = Math.sqrt(dx*dx + dy*dy).toFloat - radius.next
+     if(res < 0) 0 else res
+  }
 }
 
 trait Point extends GameObject with Positionable {
@@ -417,6 +457,19 @@ trait Positionable extends GameObject {
     nextF = Vec2(x.next, y.next),
     exprF = Tuple(Seq(x.expr, y.expr))
   )
+  
+    
+  override def selectableBy(xCursor: Float, yCursor: Float):Boolean = {
+     xCursor*xCursor + yCursor*yCursor <= selectableAreaRadius * selectableAreaRadius
+  }
+  
+  override def distanceSelection(xCursor: Float, yCursor: Float): Float = {
+    val dx = xCursor-x.next
+    val dy = yCursor-y.next
+     val r = selectableAreaRadius
+     val res = Math.sqrt(dx*dx + dy*dy).toFloat
+     if(res < 0) 0 else res
+  }
 }
 
 trait Movable extends GameObject with Positionable {

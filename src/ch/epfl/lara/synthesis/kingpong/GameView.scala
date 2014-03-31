@@ -44,6 +44,8 @@ import android.widget.ExpandableListView
 import android.widget.ExpandableListAdapter
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.common.History
+import android.widget.Toast
+import collection.mutable.{Set => MSet}
 
 object GameView {
   sealed trait GameState
@@ -191,6 +193,44 @@ class GameView(val context: Context, attrs: AttributeSet)
   var systemEditor = new SystemEditor(this)
   var gameEditor = new GameEditor(this)*/
   
+  final val STATE_MODIFYING_GAME = 0 // All effects are applied immediately
+  final val STATE_SELECTING_EVENTS = 1 // Only events can be selected 
+  final val STATE_SELECTING_EFFECTS = 2 // Effects are applied only on the future state, the previous state remains the same.
+  final val STATE_MODIFYING_CATEGORY = 3 // Objects are selected to be included to a given category
+  var mRuleState = STATE_MODIFYING_GAME
+  def setModeSelectCategory() = {
+    mRuleState = STATE_MODIFYING_CATEGORY
+    MenuOptions.copy_to_prev = true
+    MenuOptions.modify_prev = false
+  }
+  
+  /** Switches the current mode to selecting effects */
+  def setModeSelectEffects(): Unit = {
+    mRuleState = STATE_SELECTING_EFFECTS
+    MenuOptions.copy_to_prev = false
+    MenuOptions.modify_prev = false
+    Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
+  }
+  
+  /** Switches the current mode to selecting events. */
+  def setModeSelectEvents() = {
+    mRuleState = STATE_SELECTING_EVENTS
+    gameEngineEditors foreach (_.unselect())
+    MenuOptions.modify_prev = false // irrelevant
+    MenuOptions.copy_to_prev = true // irrelevant
+  }
+  
+  /** Switches the current mode to the global modification of the game */
+  def setModeModifyGame(resetView: Boolean = true) {
+    mRuleState = STATE_MODIFYING_GAME
+    MenuOptions.modify_prev = false
+    MenuOptions.copy_to_prev = true
+    //EditRuleButton.selected = false
+    //enterEditMode()
+    //AddRuleButton.hovered = false
+    eventEditor.unselect()
+  }
+
   /** All game stuff from the Game trait */
   val world = new PhysicalWorld(Vec2(0, 0))
   
@@ -216,8 +256,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   
 //  register(moveRule2)
 //  register(moveRule2bis)
-  
-  def setModeSelectEffects() = {}
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -600,7 +638,62 @@ class GameView(val context: Context, attrs: AttributeSet)
         //TODO: Add menus handling ?
     }
   }
+  
+  /**
+   * Selects objects
+   */
+  var previousSelectedShape: GameObject = null
+  def performSelection(res: Vec2) = {
+    val objectsTouched = game.objectFingerAt(res)
+    obj_to_highlight = objectsTouched.toSet
+    val rulesConcerned = game.getRulesbyObject(objectsTouched)
+    updateCodeView(rulesConcerned, objectsTouched)
+    shapeEditor.unselect()
+    // The selected shape should be the first after the previousSelectedShape,
+    // or the closest else.
+    var afterPreviousSelectedShape = false
+    var shapeToSelect: GameObject = null
+    var minDistance = -1f
+    def checkShapeToSelect(shape: GameObject) = {
+      if(previousSelectedShape != null && !afterPreviousSelectedShape) {
+        if(previousSelectedShape == shape) {
+           afterPreviousSelectedShape = true
+        }
+      } else { // We are after the previously selected shape, so we can check the distance to the finger.
+        shape match {
+          case shape: Movable =>
+            val x = res.x + (if(MenuOptions.modify_prev) shape.x.next - shape.x.get else 0)
+            val y = res.y + (if(MenuOptions.modify_prev) shape.y.next - shape.y.get else 0)// - shape.y + shape.prev_y
+            if(shape.selectableBy(x, y)) {
+              val dist = shape.distanceSelection(x, y)
+              if(dist < minDistance || minDistance == -1) {
+                minDistance = dist
+                shapeToSelect = shape
+              }
+            }
+          case _ =>
+        }
+      }
+    }
+    
+    objectsTouched foreach checkShapeToSelect
+    if(shapeToSelect == null) {
+      if(afterPreviousSelectedShape) {
+        objectsTouched foreach checkShapeToSelect
+      } else {
+        previousSelectedShape = null
+        objectsTouched foreach checkShapeToSelect
+      }
+    }
+    if(shapeToSelect != null) {
+      shapeEditor.select(shapeToSelect)
+      previousSelectedShape = shapeToSelect
+    }
+  }
 
+  /**
+   * Called when a finger is up
+   */
   override def onFingerUp(pos: Vec2): Unit = state match {
     case Running => 
       val res = mapVectorToGame(pos)
@@ -610,10 +703,199 @@ class GameView(val context: Context, attrs: AttributeSet)
     case Editing =>
       // Select an object below if any and display the corresponding code
       val res = mapVectorToGame(pos)
-      val objectsTouched = game.objectFingerAt(res)
-      obj_to_highlight = objectsTouched.toSet
-      val rulesConcerned = game.getRulesbyObject(objectsTouched)
-      updateCodeView(rulesConcerned, objectsTouched)
+
+      var menuSelected:Boolean = false
+      //numberEditor.unselect()
+      ColorMenu.activated = false
+      //if(fingerUpCanceled) return
+      //GameMenu.onFingerUp(this, selectedShape, x, y)
+      val x = pos.x
+      val y = pos.y
+      if(shapeEditor.selectedShape != null) {
+        menuSelected = ShapeMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
+        //if(ColorMenu.activated) {
+          //ColorMenu.onFingerUp(this, selectedShape, x, y)
+        //}
+      }
+      if(!menuSelected && EventMenu.isActivated) {
+        menuSelected = EventMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
+      }
+      /*if(!menuSelected && ruleEditor.selectedRule != null && mRuleState != STATE_SELECTING_EVENTS) { // Test is top left menu activated
+        menuSelected = RuleMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
+      }*/
+      /*if(!menuSelected) { // Test is top left menu activated
+        menuSelected = StaticMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
+      }*/
+      
+      /*if(EditRuleButton.selected) {
+        ruleEditor.updateSelectedRule()
+      }*/
+      /*for(action <- ruleEditor.selectedRuleActions) { // Convert this to a menu ?
+        action.hovered = false
+      }*/
+  
+      if(!menuSelected) {
+        // If the previous attempts to select a menu failed,
+        // We dissmiss all selection and we select something else depending on the game editor type.
+        ShapeMenu.cancelHovered()
+        ColorMenu.cancelHovered()
+        //RuleMenu.cancelHovered()
+        
+        val touchCoords = res
+        
+        if(mRuleState == STATE_SELECTING_EVENTS) {
+          // If we are making a rule, we select the events first
+          var oneShapeSelectable = false
+          var closestTimeStampDiff: Long = -1
+          var closestSpaceDistance: Float = -1
+          var closestEvent: Event = null
+          var closestEventTime: Int = 0
+          eventEditor.select(null, 0)
+          def updateClosest(i: Event, timestamp: Int): Unit = {
+            i match {
+              case FingerDown(_,_) |  FingerUp(_,_) |  FingerMove(_,_,_) | BeginContact(_) |  CurrentContact(_) |  EndContact(_) => 
+                //canvas.drawCircle(i.x1, i.y1, 20, touchMovePaint)
+                if(i.selectableBy(res.x, res.y)) {
+                  val distTime = Math.abs(timestamp - game.time)
+                  val distSpace = i.distanceSquareTo(res.x, res.y)
+                  if(distTime < closestTimeStampDiff || (distTime == closestTimeStampDiff && (distSpace < closestSpaceDistance || closestSpaceDistance == -1)) || closestTimeStampDiff == -1) {
+                    closestEvent = i
+                    closestEventTime = timestamp
+                    if(distTime < closestTimeStampDiff || closestSpaceDistance == -1) {
+                      closestSpaceDistance = distSpace
+                    }
+                    closestTimeStampDiff = distTime
+                  }
+                }
+              case _ =>
+            }
+          }
+          game.foreachEvent(updateClosest(_, _))
+          //game.triggerEvents foreach (updateClosest(_))
+          
+          // Try to get number events even if no event on it
+          if(closestEvent == null) {
+            performSelection(res)
+            if(shapeEditor.selectedShape != null) {
+              shapeEditor.selectedShape match {
+                case d:Box[Int] if d.className == "Box[Int]" =>
+                  //TODO : val p = game.triggerEvents.addEvent(game.currentTime, INTEGER_CHANGE_EVENT, d, null, d.x, d.y, d.value, d.value)
+                  //closestEvent = p
+                case d: Positionable =>
+                  val p  = game.addEvent(FingerDown(Vec2(d.x.get, d.y.get), MSet(d: GameObject)), game.time.toInt)
+                  val p2 = game.addEvent(FingerUp(Vec2(d.x.get, d.y.get), MSet(d: GameObject)), game.time.toInt)
+                  closestEvent = p
+              }
+              shapeEditor.select(null)
+            }
+          }
+          
+          // If we got an event:
+          if(closestEvent != null) {
+            //game.storeInitialState(game.currentTime == 0)
+            //game.prepareNewValues()
+            if(closestEvent.isNumerical) {
+              /*EventMenu.activate(false)
+              val d = closestEvent.value.shape1.asInstanceOf[IntegerBox]
+              val name = d.mName
+              val newValue = closestEvent.value.y2.toInt
+              val integer = new Integer(newValue)
+              CustomDialogs.launchChoiceDialog(context, String.format(res.getString(R.string.choose_trigger), name),
+                  List(
+                    String.format(res.getString(R.string.trigger_integer_1), name),
+                    String.format(res.getString(R.string.trigger_integer_2), name, integer),
+                    String.format(res.getString(R.string.trigger_integer_3), name, integer),
+                    String.format(res.getString(R.string.trigger_integer_4), name, integer))
+                    ++ (
+                      if(newValue != 0) {
+                        if(newValue > 0) {
+                          List(String.format(res.getString(R.string.trigger_integer_5), name),
+                               String.format(res.getString(R.string.trigger_integer_7), name))
+                        } else if(newValue < 0) {
+                          List(String.format(res.getString(R.string.trigger_integer_6), name),
+                               String.format(res.getString(R.string.trigger_integer_8), name))
+                        } else Nil
+                      } else Nil)
+                    ,
+                       {i:Int =>
+                         closestEvent.value.code = INTEGER_CHANGE_EVENT + i
+                         if(i == 4) {
+                           if(newValue > 0) {
+                             closestEvent.value.code = INTEGER_POSITIVE_EVENT
+                           } else if(newValue == 0) {
+                             // Normally this should not happen
+                             throw new Exception("newValue == 0 but the point 4 was chosen")
+                           } else {
+                             closestEvent.value.code = INTEGER_NEGATIVE_EVENT
+                           }
+                           
+                         } else if(i == 5) {
+                            if(newValue > 0) {
+                             closestEvent.value.code = INTEGER_GREATER_EQUAL_EVENT
+                             closestEvent.value.y2 = 0
+                           } else if(newValue == 0) {
+                             // Normally this should not happen
+                             throw new Exception("newValue == 0 but the point 4 was chosen")
+                           } else {
+                             closestEvent.value.code = INTEGER_LESS_EQUAL_EVENT
+                             closestEvent.value.y2 = 0
+                           }
+                         }
+                         eventEditor.select(closestEvent)
+                         setModeSelectEffects()
+                       },
+                       {() =>})*/
+            } else if(closestEvent.isCrossing) {
+              /*val d = closestEvent.value.shape1
+              val name = d.mName
+              EventMenu.activate(false)
+              CustomDialogs.launchChoiceDialog(context, String.format(res.getString(R.string.choose_trigger_outofscreen), name),
+                  List(
+                    String.format(res.getString(R.string.trigger_outscreen_1), name),
+                    String.format(res.getString(R.string.trigger_outscreen_2), name)),
+                       {i:Int =>
+                         closestEvent.value.code = BEYOND_SCREEN_EVENT + i
+                         eventEditor.select(closestEvent)
+                         setModeSelectEffects()},
+                       {() =>
+                         
+                       })*/
+            } else if(closestEvent.isContact) {
+              eventEditor.select(closestEvent, closestEventTime)
+              EventMenu.activate(true)
+            } else closestEvent match {
+              case FingerRelated(coord, obj) => 
+                eventEditor.select(closestEvent, closestEventTime, false)
+                var shapesBelow = obj
+                var shapeBelow = if(obj.nonEmpty) obj.head else null
+                var minDistance = -1f
+                shapesBelow foreach { shape =>
+                  val x = coord.x
+                  val y = coord.y
+                  if(shape.selectableBy(x, y)) {
+                    val newDist = shape.distanceSelection(x, y)
+                    if(newDist < minDistance || minDistance == -1) {
+                      shapeBelow = shape
+                      minDistance = newDist
+                    }
+                  }
+                }
+                //closestEvent.value.shape1 = shapeBelow
+                EventMenu.activate(true, shapeBelow)
+              case _ =>
+                EventMenu.activate(false)
+                eventEditor.select(closestEvent, closestEventTime)
+                setModeSelectEffects()
+            }
+          }
+        } else if(mRuleState == STATE_MODIFYING_CATEGORY /*|| CameraButton.isSelected*/) {
+          //categoryEditor.onFingerUp(touchCoords(0), touchCoords(1))
+        } else if(mRuleState == STATE_SELECTING_EFFECTS) {
+          performSelection(res/*, false*/)
+        } else {
+          performSelection(res)
+        }
+      }
       super.onFingerUp(pos)
   }
   
