@@ -96,7 +96,7 @@ trait Interpreter {
         //TODO check if this will work with ephemeral properties
         eval(objExpr).as[GameObject].get(propertyName) match {
           case assignable: AssignableProperty[_] => assignable.assign(v)
-          case p => scala.sys.error(s"The property $p is not assignable and is in $expr")
+          case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
         }
       }
       
@@ -122,7 +122,7 @@ trait Interpreter {
       
     case Delete(obj) =>
       val o = eval(obj).as[GameObject]
-      o.setDeletionTime(gctx.time)
+      o.deletionTime.setNext(gctx.time)
       UnitLiteral
       
     case m @ MethodCall(name, args) =>

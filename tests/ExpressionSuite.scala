@@ -37,9 +37,11 @@ class ExpressionSuite extends FlatSpec with Matchers {
     
     val blocks = Category("Blocks")()
     val balls = Category("Balls")()
+    val arrays = Category("Arrays")()
     
     val ball1 = circle(balls)(name="ball1", x=2, y=2)
     val block1 = intbox(blocks)(name="block1", x=0, y=0)
+    val arr = array(arrays)("array1", x=0, y=0, columns=2, rows=2)
     
     val rule1 = foreach(blocks, balls) { (block, ball) =>
       whenever(block.y < ball.y) (
@@ -112,6 +114,44 @@ class ExpressionSuite extends FlatSpec with Matchers {
     
     val e2 = If(i1 >= i2, i2 * i2, i2 * i1)
     interpreter.evaluate(e2) should be (i2)
+  }
+  
+  it should "correctly assign properties" in {
+    game.ball1.snapshot()
+    val radius = game.ball1.radius
+    radius.set(1)
+    
+    val e1 = radius += 2f
+    e1 should be (Assign(Seq((ObjectLiteral(game.ball1), "radius")), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2f))))
+    radius.get should be (1f)
+    interpreter.evaluate(e1) should be (UnitLiteral)
+    radius.next should be (3f)
+    radius.validate()
+    radius.get should be (3f)
+    
+    // redo the assign to test the validate and the mutability.
+    interpreter.evaluate(e1) should be (UnitLiteral)
+    radius.next should be (5f)
+    radius.validate()
+    radius.get should be (5f)
+    
+    // test the assign with an indirect reference to the object.
+    val e2 = game.foreach(game.balls) { ball =>
+      ball.radius := 2
+    }
+    interpreter.evaluate(e2) should be (UnitLiteral)
+    radius.next should be (2f)
+    radius.validate()
+    radius.get should be (2f)
+    
+    game.ball1.revert()
+  }
+  
+  it should "throw an exception when assigning a RO property" in {
+    val e1 = game.foreach(game.arr.cellsCategory) { cell =>
+      cell.x := 2
+    }
+    an [InterpreterException] should be thrownBy interpreter.evaluate(e1)
   }
   
   "TreeOps" should "correctly flatten a Block" in {

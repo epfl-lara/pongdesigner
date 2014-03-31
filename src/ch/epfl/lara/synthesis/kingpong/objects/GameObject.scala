@@ -80,36 +80,22 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Existence
   // --------------------------------------------------------------------------  
   
-  // None means that this object exists from the beginning of time.
-  private var _creationTime: Option[Long] = None
-  // None means that this object doesn't know yet when it will die.
-  private var _deletionTime: Option[Long] = None
+  private var _creationTime: Long = 0
+  def creationTime = _creationTime
+  def deletionTime = simpleProperty[Long]("deletion time", -1)
   
   /**
-   * Set the creation time. By default, it is unspecified and that means
-   * the current object is created from  the beginning of time. 
-   * The creation time can only be set once.
+   * Set the creation time. By default, it is set to 0.
+   * The creation time should only be set once.
    */
   def setCreationTime(time: Long): self.type = {
     assert(time >= 0)
-    if (_creationTime == None)
-      _creationTime = Some(time)
-    self
-  }
-  
-  /**
-   * Set the deletion time. By default, it is unspecified and that means
-   * the current object doesn't know yet when it will die. 
-   * The deletion time can be set as often as needed.
-   */
-  def setDeletionTime(time: Long): self.type = {
-    assert(time >= 0 && _creationTime.map(_ <= time).getOrElse(true))
-    _deletionTime = Some(time)
+    _creationTime = time
     self
   }
   
   /** Checks whether this object exists at the given time. */
-  def existsAt(time: Long) = _creationTime.map(_ <= time).getOrElse(true) && _deletionTime.map(time < _).getOrElse(true) 
+  def existsAt(time: Long) = _creationTime <= time && (deletionTime.get < 0 || time < deletionTime.get)
   
   /**
    * Update the internal state according to the current time. Particularly, remove the object from the 
@@ -266,14 +252,14 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------  
 
   // Property with no relationship with the physical world
-  protected def simpleProperty[T: PongType](name: String, init: Expr): RWProperty[T] = {
+  protected def simpleProperty[T: PongType](name: String, init: Expr): HistoricalRWProperty[T] = {
     val p = new SimpleProperty[T](name, init, this)
     _properties(p.name) = p
     p
   }
 
   // Property that can be pushed to the physical world
-  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): RWProperty[T] = {
+  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): HistoricalRWProperty[T] = {
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
@@ -282,7 +268,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   // Property that can be both pushed to the physical world and retrieved
-  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): RWProperty[T] = {
+  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): HistoricalRWProperty[T] = {
     val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f
       val loader = l
@@ -425,3 +411,9 @@ trait Point extends GameObject {
     exprF = TupleSelect(center.expr, 1)
   )
 }
+
+trait Movable extends GameObject {
+  def x: RWProperty[Float]
+  def y: RWProperty[Float]
+}
+
