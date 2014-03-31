@@ -560,7 +560,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(game == null) return;
     game.objects foreach drawObject
     canvas.restore()
-    this.objects foreach drawObject
+    //this.objects foreach drawObject
     
     if(fingerIsDown) {
       paint.setColor(0xAAFF0000)
@@ -664,13 +664,13 @@ class GameView(val context: Context, attrs: AttributeSet)
           case shape: Movable =>
             val x = res.x + (if(MenuOptions.modify_prev) shape.x.next - shape.x.get else 0)
             val y = res.y + (if(MenuOptions.modify_prev) shape.y.next - shape.y.get else 0)// - shape.y + shape.prev_y
-            if(shape.selectableBy(x, y)) {
+            //if(shape.selectableBy(x, y)) {
               val dist = shape.distanceSelection(x, y)
               if(dist < minDistance || minDistance == -1) {
                 minDistance = dist
                 shapeToSelect = shape
               }
-            }
+            //}
           case _ =>
         }
       }
