@@ -122,7 +122,7 @@ trait Interpreter {
       
     case Delete(obj) =>
       val o = eval(obj).as[GameObject]
-      o.setDeletionTime(gctx.time)
+      o.deletionTime.setNext(gctx.time)
       UnitLiteral
       
     case m @ MethodCall(name, args) =>
