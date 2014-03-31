@@ -286,20 +286,22 @@ object Trees {
   
   case class Collision(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   
-  /**
-   * Does the left object contains the right one?
-   * Return a boolean after evaluation.
-   */
+  /* Array operations */
+  
+  /** Test if the left object contains the right one. */
   case class Contains(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
-   
+  
+  /** Get the row of a cell. */
   case class Row(obj: Expr) extends Expr with FixedType {
     val fixedType = TInt
   }
   
+  /** Get the column of a cell. */
   case class Column(obj: Expr) extends Expr with FixedType {
     val fixedType = TInt
   }
   
+  /** Get the cell at the specified position in the array. */
   case class Apply(obj: Expr, column: Expr, row: Expr) extends Expr with FixedType {
     val fixedType = TObject
   }

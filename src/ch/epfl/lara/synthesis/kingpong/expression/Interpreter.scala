@@ -96,7 +96,7 @@ trait Interpreter {
         //TODO check if this will work with ephemeral properties
         eval(objExpr).as[GameObject].get(propertyName) match {
           case assignable: AssignableProperty[_] => assignable.assign(v)
-          case p => scala.sys.error(s"The property $p is not assignable and is in $expr")
+          case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
         }
       }
       

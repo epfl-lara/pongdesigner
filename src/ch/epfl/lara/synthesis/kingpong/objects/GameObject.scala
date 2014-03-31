@@ -263,14 +263,14 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------  
 
   // Property with no relationship with the physical world
-  protected def simpleProperty[T: PongType](name: String, init: Expr): RWProperty[T] = {
+  protected def simpleProperty[T: PongType](name: String, init: Expr): HistoricalRWProperty[T] = {
     val p = new SimpleProperty[T](name, init, this)
     _properties(p.name) = p
     p
   }
 
   // Property that can be pushed to the physical world
-  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): RWProperty[T] = {
+  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): HistoricalRWProperty[T] = {
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
@@ -279,7 +279,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   // Property that can be both pushed to the physical world and retrieved
-  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): RWProperty[T] = {
+  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): HistoricalRWProperty[T] = {
     val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f
       val loader = l
