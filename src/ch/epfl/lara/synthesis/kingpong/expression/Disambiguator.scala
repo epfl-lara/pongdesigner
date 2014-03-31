@@ -27,13 +27,13 @@ object Disambiguator {
   /**
    * Returns a tuple (PropertyHavingBeenAssigned, PropertyWithDuplicates)
    */
-  def findDuplicates(stat: Stat): (Set[PropertyIdentifier], Set[PropertyIdentifier]) = {
-    TreeOps.foldRight{(s: Stat, subs: Seq[(Set[PropertyIdentifier], Set[PropertyIdentifier])]) => 
+  def findDuplicates(stat: Expr): (Set[PropertyId], Set[PropertyId]) = {
+    TreeOps.foldRight{(s: Expr, subs: Seq[(Set[PropertyId], Set[PropertyId])]) => 
       val (l1, l2) = subs.unzip
-      val (assigned, duplicates) = (l1.foldLeft(Set.empty[PropertyIdentifier])(_ union _), l2.foldLeft(Set.empty[PropertyIdentifier])(_ union _))
+      val (assigned, duplicates) = (l1.foldLeft(Set.empty[PropertyId])(_ union _), l2.foldLeft(Set.empty[PropertyId])(_ union _))
       s match {
         case Assign(props, _) =>
-          val newAssigned = props.toSet
+          val newAssigned = props.toSet.map((t: (Expr, PropertyId)) => t._2)
           (assigned union newAssigned, duplicates.union(assigned intersect newAssigned))
         case _ => 
           (assigned, duplicates)
@@ -69,7 +69,7 @@ object Disambiguator {
   /**
    * Returns (PropertyHavingBeenAssigned -> Assignments, PropertyDuplicated -> ConflictingAssignments )
    */
-  def findDuplicatesMap(t: Stat): (Map[Property[_], List[Assign]], Map[Property[_], List[Assign]]) = {
+  def findDuplicatesMap(t: Expr): (Map[Property[_], List[Assign]], Map[Property[_], List[Assign]]) = {
     t match {
       case ParExpr(l) =>
         val (l1, l2) = (l map findDuplicatesMap).unzip
@@ -80,9 +80,9 @@ object Disambiguator {
             val (newAssigned, newDuplicates) = findDuplicatesMap(stat)
             (assigned union newAssigned, duplicates union (assigned intersect newAssigned))
         }
-      case If(cond, ifTrue, None) =>
+      case If(cond, ifTrue, NOP) =>
         findDuplicatesMap(ifTrue)
-      case If(cond, ifTrue, Some(ifFalse)) =>
+      case If(cond, ifTrue, ifFalse) =>
         val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
         val (falseAssigned, falseDuplicates) = findDuplicatesMap(ifFalse)
         (trueAssigned union falseAssigned, trueDuplicates union falseDuplicates)
@@ -138,7 +138,7 @@ object Disambiguator {
    * Returns (PropertyHavingBeenAssigned -> Assignments with # of conflict, PropertyDuplicated -> ConflictingAssignments with # of conflict (in disorder) )
    */
   /*def 
-   * (t: Stat): (Map[Property[_], List[(Assign, Int)]], Map[Property[_], List[(Assign, Int)]]) = {
+   * (t: Expr): (Map[Property[_], List[(Assign, Int)]], Map[Property[_], List[(Assign, Int)]]) = {
     t match {
       case Block(stats) =>
         ((Map[Property[_], List[(Assign, Int)]](), Map[Property[_], List[(Assign, Int)]]()) /: stats) {
@@ -157,7 +157,7 @@ object Disambiguator {
             (assigned union newAssigned, duplicates union newDuplicates)
         }
       case Copy(name, obj, stat) =>
-        // Stat cannot be evaluated at this time
+        // Expr cannot be evaluated at this time
         (Map[Property[_], List[(Assign, Int)]](), Map[Property[_], List[(Assign, Int)]]())
       case a @ Assign(props, expr) =>
         (Map[Property[_], List[(Assign, Int)]]() ++ (props.collect{ case m: MaybeAssignable if m.isProperty => m.getProperty.get -> List(a) }), Map[Property[_], List[(Assign, Int)]]())
@@ -189,11 +189,11 @@ object Disambiguator {
    *                 else
    *                   x' = x2
    */
-  def apply(t: Stat)(implicit interface: PropertyIdentifier => MergeMode)= {
+  def apply(t: Expr)(implicit interface: PropertyId => MergeMode)= {
     val (_, duplicates) = findDuplicates(t)
     (t /: duplicates) { case (tree, prop) =>
       val mergeMode = interface(prop)
-      modifyCode(tree, prop, mergeMode)
+      modifyCode(tree, NOP, prop, mergeMode) // TODO : Replace NOP by the expression corresponding to prop
     }
   }
   
@@ -201,49 +201,49 @@ object Disambiguator {
    * Interface returns a list of pair of assignments, where the first assign should replace the old one,
    * and the second assigned should be applied in the else section of the containing IF if it exists. 
    */
-  def modifyCode(t: Stat, p: PropertyIdentifier, mode: MergeMode): Stat = {
+  def modifyCode(t: Expr, pe: Expr, p: PropertyId, mode: MergeMode): Expr = {
     mode match {
       case MergeMode.SequentialMerge =>
-        modifyCodeSequential(t, p)
+        modifyCodeSequential(t, (pe, p))
       case MergeMode.ForceSecond =>
         modifyCodeForceSecond(t, p)
     }
   }
   
-  def modifyCodeForceSecond[T](t: Stat, p_original: PropertyIdentifier): Stat = {
+  def modifyCodeForceSecond[T](t: Expr, p_original: PropertyId): Expr = {
     t // Not implemented yet/
   }
   
   /**
    * Sequential substitution
    */
-  def modifyCodeSequential[T](t: Stat, p_original: PropertyIdentifier): Stat = {
+  def modifyCodeSequential[T](t: Expr, p_original: (Expr, PropertyId)): Expr = {
     // Retrieve a property's number. x => 0, x1 => 1, x2 => 2 ...
-    def numProperty(p: PropertyIdentifier): Int = {
-      p.name match {
+    def numProperty(p: PropertyId): Int = {
+      p match {
         case GameObject.EphemeralEndings(prefix, num) => num.toInt
         case _ => 0
       }
     }
     // Retrieve a property given a number and the original: 0 => x, 1 => x1, 2 => x2, ....
-    def propertyNumGet(p: PropertyIdentifier, num: Int): PropertyIdentifier = {
-      val prefixName = p.name match {
+    def propertyNumGet(p: PropertyId, num: Int): PropertyId = {
+      val prefixName = p match {
         case GameObject.EphemeralEndings(prefix, num) => prefix
-        case _ => p.name
+        case _ => p
       }
       val requestedName = prefixName + num
       
-      val currentProperty: PropertyIdentifier = ??? // TODO : Recover the object. p.parent.getEphemeralProperty(requestedName).asInstanceOf[Option[PropertyIdentifier]]
+      val currentProperty: PropertyId = ??? // TODO : Recover the object. p.parent.getEphemeralProperty(requestedName).asInstanceOf[Option[PropertyId]]
       currentProperty//.getOrElse(p.copyEphemeral(requestedName))
     }
     
     // Retrieve the successor of a property.
-    def newProp(p: PropertyIdentifier): PropertyIdentifier = {
+    def newProp(p: PropertyId): PropertyId = {
       propertyNumGet(p, numProperty(p) + 1)
     }
     
     // do it in reverse
-    def rec(stat: Stat, p: PropertyIdentifier, replaceAssigned: PropertyIdentifier, replaceEvaluated: PropertyIdentifier): (Stat, PropertyIdentifier, PropertyIdentifier) = {
+    def rec(stat: Expr, p: PropertyId, replaceAssigned: (Expr, PropertyId), replaceEvaluated: (Expr, PropertyId)): (Expr, (Expr, PropertyId), (Expr, PropertyId)) = {
       stat match {
         case ParExpr(l) =>
           val pars = l map { a => rec(a, p, replaceAssigned, replaceEvaluated) } // Should all be the same
@@ -253,19 +253,19 @@ object Disambiguator {
             case a::q => (ParExpr(pars.map(_._1)), a._2, a._3)
           }
         case Block(stats) =>
-          val (stats2, res1, res2) = ((List[Stat](), replaceAssigned, replaceEvaluated) /: stats.reverse) { case ((statList, r1, r2), newStat) =>
+          val (stats2, res1, res2) = ((List[Expr](), replaceAssigned, replaceEvaluated) /: stats.reverse) { case ((statList, r1, r2), newStat) =>
             val (s, rr1, rr2) = rec(newStat, p, r1, r2)
             (s::statList, rr1, rr2)
           }
           (Block(stats2), res1, res2)
-        case If(cond, ifTrue, None) =>
+        case If(cond, ifTrue, NOP) =>
           val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
-          val (ifFalse2, ifr, ife) = (None, replaceAssigned, replaceEvaluated)
+          val (ifFalse2, ifr, ife) = (NOP, replaceAssigned, replaceEvaluated)
           if(itr == ifr && ite == ife) { // Ifs are balanced.
-            (If(cond, ifTrue2, None), itr, ite)
+            (If(cond, ifTrue2, NOP), itr, ite)
           } else { // Need to introduce new variables
-            val i = numProperty(itr)
-            val j = numProperty(ifr)
+            val i = numProperty(itr._2)
+            val j = numProperty(ifr._2)
             if(i < j) { // More variables in ifFalse2
               /* Case 
                * if A:
@@ -276,7 +276,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite), ife.property) :: ifTrue2, ifFalse2), ifr, ife)
+              (If(cond, Assign(List(ite), ife._1) :: ifTrue2, ifFalse2), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -287,19 +287,19 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Some(Assign(List(ife), ite.property))), itr, ite)
+              (If(cond, ifTrue2, Assign(List(ife), ite._1)), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
           }
-        case If(cond, ifTrue, Some(ifFalse)) =>
+        case If(cond, ifTrue, ifFalse) =>
           val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
           val (ifFalse2, ifr, ife) = rec(ifFalse, p, replaceAssigned, replaceEvaluated)
           if(itr == ifr && ite == ife) { // Ifs are balanced.
-            (If(cond, ifTrue2, Some(ifFalse2)), itr, ite)
+            (If(cond, ifTrue2, ifFalse2), itr, ite)
           } else { // Need to introduce new variables
-            val i = numProperty(itr)
-            val j = numProperty(ifr)
+            val i = numProperty(itr._2)
+            val j = numProperty(ifr._2)
             if(i < j) { // More variables in ifFalse2
               /* Case 
                * if A:
@@ -310,7 +310,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite), ife.property) :: ifTrue2, Some(ifFalse2)), ifr, ife)
+              (If(cond, Assign(List(ite), ife._1) :: ifTrue2, ifFalse2), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -321,7 +321,7 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Some(Assign(List(ife), ite.property) :: ifFalse2)), itr, ite)
+              (If(cond, ifTrue2, Assign(List(ife), ite._1) :: ifFalse2), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -372,7 +372,7 @@ object Disambiguator {
          // (t, replaceAssigned, replaceEvaluated)
       }
     }
-    val (result, replaceAssigned, replaceEvaluated) = rec(t, p_original, p_original, p_original)
-    Assign(List(replaceEvaluated), p_original.property)::result
+    val (result, replaceAssigned, replaceEvaluated) = rec(t, p_original._2, p_original, p_original)
+    Assign(List(replaceEvaluated), p_original._1)::result
   }
 }

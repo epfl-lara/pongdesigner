@@ -108,6 +108,12 @@ object TreeDSL {
     def >(e: Expr): Expr = GreaterThan(expr, e)
     def >=(e: Expr): Expr = GreaterEq(expr, e)
     def unary_! : Expr = Not(expr)
+    def ::(e: Expr) : Expr = (expr, e) match{
+      case (Block(a), Block(b)) => Block(a++b)
+      case (Block(a), b) => Block(a++List(b))
+      case (a, Block(b)) => Block(a::b.toList)
+      case (a, b) => Block(List(a, b))
+    }
   }
   
   implicit class RichExprLiteral(val expr: Expr) extends RichExpr

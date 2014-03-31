@@ -363,10 +363,10 @@ object TrashButton extends MenuButton {
     if(modify_prev) { // Nothing to be done here
       //selectedShape.deletion_time set gameEngine.time
     } else {
-      selectedShape.deletion_time setNext gameEngine.time.toInt
+      selectedShape.deletionTime setNext gameEngine.time.toInt
     }
     if(copy_to_prev) {
-      selectedShape.deletion_time set selectedShape.deletion_time.next
+      selectedShape.deletionTime set selectedShape.deletionTime.next
     }
     
     val res = context.getResources()
