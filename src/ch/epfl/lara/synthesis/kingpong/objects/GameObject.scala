@@ -422,3 +422,9 @@ trait Point extends GameObject {
     exprF = TupleSelect(center.expr, 1)
   )
 }
+
+trait Movable extends GameObject {
+  def x: RWProperty[Float]
+  def y: RWProperty[Float]
+}
+

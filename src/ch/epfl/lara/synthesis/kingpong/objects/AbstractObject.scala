@@ -42,7 +42,8 @@ case class Box[T : PongType](val game: Game,
                         init_visible: Expr,
                         init_color: Expr
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
-                         with Rectangular {
+                         with Rectangular
+                         with Movable {
   
   def className = "Box[" + implicitly[PongType[T]].getPongType.toString() + "]"
   // --------------------------------------------------------------------------
@@ -102,6 +103,7 @@ case class Joystick(val game: Game,
                         init_color: Expr
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
                          with Circular
+                         with Movable
                          with InputManager {
   
   def className = "Joystick"
@@ -206,7 +208,8 @@ case class Array2D(
     init_numColumns: Expr,
     init_numRows: Expr
     ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
-      with Rectangular { self =>
+      with Rectangular
+      with Movable { self =>
  
   import Array2D._
   
