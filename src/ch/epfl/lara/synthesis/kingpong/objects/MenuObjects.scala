@@ -33,11 +33,11 @@ case class ObjRef(override val game: Game,
   
   val obj = simpleProperty[GameObject]("obj", ObjectLiteral(null))
 
-  def angle: Property[Float] = if(obj.get != null) obj.get.angle else null
-  def color: Property[Int] = if(obj.get != null) obj.get.color else null
-  def visible: Property[Boolean] = if(obj.get != null) obj.get.visible else null
-  def x: Property[Float] = if(obj.get != null) obj.get.x else null
-  def y: Property[Float] = if(obj.get != null) obj.get.y else null
+  def angle: RWProperty[Float] = if(obj.get != null) obj.get.angle else null
+  def color: RWProperty[Int] = if(obj.get != null) obj.get.color else null
+  def visible: RWProperty[Boolean] = if(obj.get != null) obj.get.visible else null
+  def x: RWProperty[Float] = if(obj.get != null) obj.get.x else null
+  def y: RWProperty[Float] = if(obj.get != null) obj.get.y else null
   
   // --------------------------------------------------------------------------
   // Utility functions

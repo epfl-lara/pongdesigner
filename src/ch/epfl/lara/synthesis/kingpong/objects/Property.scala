@@ -84,7 +84,6 @@ trait HistoricalProperty[T] extends History { self: RWProperty[T]  =>
    *  Call `validate()` to push this value to the current state.
    */
   def setNext(v: T): self.type = _setNext(v)
-  def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
   
   protected def setNextInternal(v: T): self.type
   
