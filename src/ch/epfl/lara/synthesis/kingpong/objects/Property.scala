@@ -43,7 +43,7 @@ abstract class ROProperty[T : PongType](val name: String, val parent: GameObject
 abstract class RWProperty[T : PongType]() extends Property[T] with AssignableProperty[T] { self => 
   
   /** Get the reference of this property. */
-  lazy val expr = Variable(identifier)
+  lazy val expr = Select(parent.expr, name)
   
   /** Set the current value to `v`. 
    *  The next value is also set.
@@ -56,9 +56,7 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
 }
 
 trait AssignableProperty[T] { self: RWProperty[T] =>
-  
-  lazy val identifier = PropertyIdentifier(parent.identifier, name).setType(tpe.getPongType)
-  
+    
   /** Assign the given value to this property. 
    *  According to the implementation, this will modify the current 
    *  or next value.

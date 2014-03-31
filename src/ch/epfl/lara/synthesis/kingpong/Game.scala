@@ -17,6 +17,7 @@ import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
@@ -24,14 +25,14 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
 
 trait RuleManager {
-  private val _rules = ListBuffer[Stat]()
-  private val _rulesByObject = MMap.empty[GameObject, MSet[Stat]]
+  private val _rules = ListBuffer[Expr]()
+  private val _rulesByObject = MMap.empty[GameObject, MSet[Expr]]
   
   /** All the rules iterators in this game. */
-  def rules: Iterable[Stat] = _rules
-  def getRules(): Iterable[Stat] = _rules
-  def getRulesbyObject(o: GameObject):  Iterable[Stat] = _rulesByObject.getOrElse(o, List())
-  def addRule(r: Stat) = {
+  def rules: Iterable[Expr] = _rules
+  def getRules(): Iterable[Expr] = _rules
+  def getRulesbyObject(o: GameObject): Iterable[Expr] = _rulesByObject.getOrElse(o, List())
+  def addRule(r: Expr) = {
     
     //TODO
 //    r traverse {
@@ -44,7 +45,7 @@ trait RuleManager {
 //    }
     _rules += r
   }
-  def getRulesbyObject(o: Iterable[GameObject]): Iterable[Stat] = (o flatMap getRulesbyObject)
+  def getRulesbyObject(o: Iterable[GameObject]): Iterable[Expr] = (o flatMap getRulesbyObject)
 }
 
 trait Game extends RuleManager with ColorConstants { self => 
@@ -103,17 +104,10 @@ trait Game extends RuleManager with ColorConstants { self =>
     
     EventHistory.step()                                /// Opens saving for new coordinates
     
-    rules foreach {interpreter.evaluate}                           /// Evaluate all rules using the previous events
-    objects foreach {_.validate()}                     /// Store new computed values
-    objects.foreach {o => o.setExistenceAt(time.toInt) }
-    objects foreach {_.flush()}                        /// push values to physical world
+    rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
+    objects foreach {_.preStep(time, EventHistory)}
     world.step()                                       /// One step forward in the world
-    objects foreach {_.load()}                         /// Load values from world
-    objects foreach {                                  /// Maps the previous events to the input mechanisms
-      case i: InputManager => i.collectInput(EventHistory) 
-      case _ => // do nothing
-    }
-    objects foreach {_.save(time)}                     /// Save the values to history
+    objects foreach {_.postStep(time, EventHistory)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
@@ -132,12 +126,14 @@ trait Game extends RuleManager with ColorConstants { self =>
 
   def add(o: GameObject) = {
     _objects.add(o)
-    _mappings += (o.identifier -> ObjectLiteral(o))
+    //TODO remove
+//    _mappings += (o.identifier -> ObjectLiteral(o))
   }
   
   def remove(o: GameObject) = {
     _objects.remove(o)
-    _mappings -= o.identifier
+    //TODO remove
+//    _mappings -= o.identifier
   }
   
   def rename(o: GameObject, newName: String) = {
@@ -148,15 +144,12 @@ trait Game extends RuleManager with ColorConstants { self =>
   }
 
   /** Register this rule in this game engine. */
-  def register(rule: Stat) {
-    interpreter.typeCheck(rule)(EventHistory)
+  def register(rule: Expr) {
     addRule(rule)
   }
 
-  def typeCheckAndEvaluate[T : PongType](e: Expr): T = {
-    val tpe = implicitly[PongType[T]]
-    interpreter.typeCheck(e, tpe.getPongType)(EventHistory)
-    tpe.toScalaValue(interpreter.evaluate(e))
+  def evaluate[T : PongType](e: Expr): T = {
+    interpreter.evaluate(e).as[T]
   }
 
   def circle(category: CategoryObject)(name: Expr,
@@ -226,12 +219,12 @@ trait Game extends RuleManager with ColorConstants { self =>
              name: Expr,
              x: Expr,
              y: Expr,
+             columns: Expr,
+             rows: Expr,
              angle: Expr = category.angle,
-             width: Expr = category.width,
-             height: Expr = category.height,
              visible: Expr = category.visible,
              color: Expr = category.color): Array2D = {
-    val array = Array2D(this, name, x, y, visible, color, 2, 3)
+    val array = Array2D(this, name, x, y, visible, color, columns, rows)
     if(category != null) array.setCategory(category)
     array.reset(interpreter)
     this add array
@@ -312,13 +305,13 @@ trait Game extends RuleManager with ColorConstants { self =>
     r
   }
 
-  def foreach(category: Category)(body: ObjectProxy => Stat): Stat = {
+  def foreach(category: Category)(body: ObjectProxy => Expr): Expr = {
     val id = FreshIdentifier(category.name)
     val ref = new ObjectProxy(id)
     Foreach(category, id, body(ref))
   }
 
-  def foreach(category1: Category, category2: Category)(body: (ObjectProxy, ObjectProxy) => Stat): Stat = {
+  def foreach(category1: Category, category2: Category)(body: (ObjectProxy, ObjectProxy) => Expr): Expr = {
     val id1 = FreshIdentifier(category1.name)
     val id2 = FreshIdentifier(category2.name)
     val ref1 = new ObjectProxy(id1)
@@ -326,7 +319,7 @@ trait Game extends RuleManager with ColorConstants { self =>
     Foreach(category1, id1, Foreach(category2, id2, body(ref1, ref2)))
   }
   
-  def foreach(category1: Category, category2: Category, category3: Category)(body: (ObjectProxy, ObjectProxy, ObjectProxy) => Stat): Stat = {
+  def foreach(category1: Category, category2: Category, category3: Category)(body: (ObjectProxy, ObjectProxy, ObjectProxy) => Expr): Expr = {
     val id1 = FreshIdentifier(category1.name)
     val id2 = FreshIdentifier(category2.name)
     val id3 = FreshIdentifier(category3.name)
@@ -336,23 +329,25 @@ trait Game extends RuleManager with ColorConstants { self =>
     Foreach(category1, id1, Foreach(category2, id2, Foreach(category3, id3, body(ref1, ref2, ref3))))
   }
   
-  def copy(obj: Expr)(body: ObjectProxy => Stat): Stat = {
+  def copy(obj: Expr)(body: ObjectProxy => Expr): Expr = {
     val id = FreshIdentifier("copy")
     val ref = new ObjectProxy(id)
     Copy(obj, id, body(ref))
   }
 
-  def whenever(cond: Expr)(actions: Stat*): Stat = {
-    If(cond, toSingleStat(actions.toSeq), None)
+  def whenever(cond: Expr)(actions: Expr*): Expr = {
+    If(cond, flatten(actions.toSeq))
   }
   
   def gc() = {
-    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
-      true
-    } else {
-      obj.setExistenceAt(time)
-      false
-    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
+    //TODO write GC
+    
+//    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
+//      true
+//    } else {
+//      obj.setExistenceAt(time)
+//      false
+//    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
   
   var FINGER_SIZE = 20f
@@ -397,13 +392,7 @@ trait Game extends RuleManager with ColorConstants { self =>
     EventHistory.addEvent(FingerMove(from, to, null))
   }
 
-  private def toSingleStat(stats: Seq[Stat]): Stat = stats match {
-    case Seq()  => NOP
-    case Seq(s) => s
-    case _      => Block(stats)
-  }
-
-  private val interpreter = new Interpreter with TypeChecker {
+  private val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
     def initGC() =  EventHistory
     

@@ -4,10 +4,13 @@ package ch.epfl.lara.synthesis.kingpong.expression
 import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
+import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 object Trees {
+  
+  type PropertyId = String
   
   sealed trait Terminal {
     self: Expr =>
@@ -33,25 +36,18 @@ object Trees {
     
   }
   
-  /**
-   * Common trait for `ObjectIdentifier` and `PropertyIdentifier`.
-   */
-  trait Identifier extends Tree with Typed {
-    def name: String
-  }
-  
   
   /**
-   * Identifier for game objects in `foreach` statements. Also used by `PropertyIdentifier`.
+   * Identifier XXX
    */
-  class ObjectIdentifier private[Trees](val name: String, private val globalId: Int, val id: Int, alwaysShowUniqueID: Boolean = false) 
-    extends Identifier { self =>
+  class Identifier private[Trees](val name: String, private val globalId: Int, val id: Int, alwaysShowUniqueID: Boolean = false) 
+    extends Tree with Typed { self =>
 
     override def equals(other: Any): Boolean = {
-      if(other == null || !other.isInstanceOf[ObjectIdentifier])
+      if(other == null || !other.isInstanceOf[Identifier])
         false
       else
-        other.asInstanceOf[ObjectIdentifier].globalId == this.globalId
+        other.asInstanceOf[Identifier].globalId == this.globalId
     }
 
     override def hashCode: Int = globalId
@@ -66,25 +62,16 @@ object Trees {
 
     def uniqueName : String = name + id
     def toVariable: Variable = Variable(this)
-    def freshen: ObjectIdentifier = FreshIdentifier(name, alwaysShowUniqueID).copiedFrom(this)
+    def freshen: Identifier = FreshIdentifier(name, alwaysShowUniqueID).copiedFrom(this)
   }
 
   object FreshIdentifier {
-    def apply(name: String, alwaysShowUniqueID: Boolean = false): ObjectIdentifier = {
-      new ObjectIdentifier(name, UniqueCounter.nextGlobal, UniqueCounter.next(name), alwaysShowUniqueID)
+    def apply(name: String, alwaysShowUniqueID: Boolean = false): Identifier = {
+      new Identifier(name, UniqueCounter.nextGlobal, UniqueCounter.next(name), alwaysShowUniqueID)
     }
-    def apply(name: String, forceId: Int): ObjectIdentifier = {
-      new ObjectIdentifier(name, UniqueCounter.nextGlobal, forceId, true)
+    def apply(name: String, forceId: Int): Identifier = {
+      new Identifier(name, UniqueCounter.nextGlobal, forceId, true)
     }
-  }
-  
-  /**
-   * Identifier only used to reference directly or not an assignable property.
-   */
-  case class PropertyIdentifier(obj: ObjectIdentifier, property: String)
-    extends Identifier {
-    val name = obj.name + "." + property
-    override def toString: String = name
   }
   
   private object UniqueCounter {
@@ -102,7 +89,7 @@ object Trees {
     }
   }
 
-  case class MethodDecl(id: Identifier, args: List[Identifier], stats: Stat, retExpr: Expr) extends Tree with FixedType {
+  case class MethodDecl(id: Identifier, args: List[Identifier], exprs: Expr, retExpr: Expr) extends Tree with FixedType {
     val fixedType = id.getType
     
 //    var fastImplementation: List[Value] => Value = null
@@ -112,94 +99,59 @@ object Trees {
 //    }
   }
   
-  object Stat {
-    /**
-     * Takes a stat and recursively flatten its statements.
-     */
-    def recursiveFlattenStat(l: Stat): Stat = {
-      l match {
-        case Block(a) => recursiveFlattenBlock(a.toList) match {
-          case Nil => NOP
-          case a::Nil => a
-          case l => Block(l)
-        }
-        case ParExpr(a) => ParExpr(recursiveFlattenParallel(a))
-        case _ => l
-      }
-    }
-    /**
-     * Takes a list of sequential statements and flatten them.
-     */
-    def recursiveFlattenBlock(l: List[Stat]): List[Stat] = {
-      l match {
-        case Nil => Nil
-        case (p @ ParExpr(a)) :: q => recursiveFlattenStat(p) :: recursiveFlattenBlock(q)
-        case Block(a)::q => recursiveFlattenBlock((a ++ q).toList)
-        case If(condition, codeIfTrue, codeIfFalse)::q =>
-          If(condition, recursiveFlattenStat(codeIfTrue), codeIfFalse.map(recursiveFlattenStat(_)))::recursiveFlattenBlock(q)
-        case a::q => a::recursiveFlattenBlock(q)
-      }
-    }
-    /**
-     * Takes a list of equivalent statements and flattens them.
-     */
-    def recursiveFlattenParallel(l: List[Stat]): List[Stat] = {
-      l match {
-        case Nil => Nil
-        case (b@Block(l))::q => recursiveFlattenStat(b) :: recursiveFlattenParallel(q)
-        case ParExpr(l)::q => recursiveFlattenParallel(l ++ q)
-        case If(condition, codeIfTrue, codeIfFalse)::q =>
-          If(condition, recursiveFlattenStat(codeIfTrue) , codeIfFalse.map(recursiveFlattenStat(_)))::recursiveFlattenParallel(q)
-        case a::q => a::recursiveFlattenParallel(q)
-      }
-    } // Ensures that none of the elements of the resulting list is a ParallelExpression
-  }
-  
-  /** Statement, can have side-effect. */
-  sealed trait Stat extends Tree with Prioritized {
-
-  }
-  
-  case class Foreach(category: Category, id: ObjectIdentifier, body: Stat) extends Stat
-  
-  case class Assign(props: Seq[PropertyIdentifier], rhs: Expr) extends Stat
-  
-  object Block {
-    def apply(s1: Stat, s: Stat*): Block = {
-      Block(List(s1) ++ s.toList)
-    }
-  }
-  
-  case class Block(stats: Seq[Stat]) extends Stat
-  
-  object If {
-    def apply(cond: Expr, s1: Stat, s2: Stat): If = If(cond, s1, Some(s2))
-  }
-  
-  case class If(cond: Expr, s1: Stat, s2: Option[Stat]) extends Stat
-  
-  case class Copy(obj: Expr, id: ObjectIdentifier, body: Stat) extends Stat
-  
-  case class Delete(ojb: Expr) extends Stat
-  
-  case object NOP extends Stat
-
-  case class ParExpr(exprs: List[Stat]) extends Stat
-  
-  /** Expressions, without side-effect. 
+  /** Expressions. 
    *  An expression has a type.
    */
-  sealed trait Expr extends Tree with Typed {
+  sealed trait Expr extends Tree with Typed with Prioritized {
     
   }
   
+  /** Unit expressions, some of them can have side-effect. */
+  sealed trait UnitExpr extends Expr with FixedType {
+    val fixedType = TUnit
+  }
+  
+  case class Foreach(category: Category, id: Identifier, body: Expr) extends UnitExpr
+  
+  case class Assign(props: Seq[(Expr, PropertyId)], rhs: Expr) extends UnitExpr
+  
+  object Block {
+    def apply(e1: Expr, e: Expr*): Block = {
+      Block(List(e1) ++ e.toList)
+    }
+  }
+  
+  case class Block(exprs: Seq[Expr]) extends UnitExpr
+  
+  case class Copy(obj: Expr, id: Identifier, body: Expr) extends UnitExpr
+  
+  case class Delete(ojb: Expr) extends UnitExpr
+  
+  case object NOP extends UnitExpr with Terminal
+
+  case class ParExpr(exprs: List[Expr]) extends UnitExpr
+  
+  object If {
+    def apply(cond: Expr, e: Expr): If = If(cond, e, NOP)
+  }
+  
+  case class If(cond: Expr, thenn: Expr, elze: Expr) extends Expr with FixedType {
+    val fixedType = leastUpperBound(thenn.getType, elze.getType).getOrElse(TAny)
+  }
+  
   /**
-   * A variable used to reference either a game object or a property value.
+   * A variable XXX
    */
   case class Variable(id: Identifier) extends Expr with Terminal {
     override def getType = id.getType
     override def setType(t: Type) = { id.setType(t); this }
   }
+  
+  case class Let(id: Identifier, expr: Expr, body: Expr) extends Expr with FixedType {
+    val fixedType = body.getType
+  }
+  
+  case class Select(expr: Expr, property: String) extends Expr
    
   case class Tuple(exprs: Seq[Expr]) extends Expr with FixedType {
     val fixedType = TTuple(exprs.map(_.getType))
@@ -244,7 +196,7 @@ object Trees {
   /**
    * Choose construct to choose some assignments given the constraint.
    */
-  case class Choose(vars: List[PropertyIdentifier], constraint: Expr) extends Expr with FixedType {
+  case class Choose(vars: List[Identifier], constraint: Expr) extends Expr with FixedType {
     
     assert(!vars.isEmpty)
     
@@ -256,8 +208,6 @@ object Trees {
   }
   
   case class MethodCall(name: String, l: List[Expr]) extends Expr
-  
-  case class IfFunc(cond: Expr, s1: Expr, s2: Expr) extends Expr
   
   case class Count(category: Category) extends Expr with Terminal with FixedType {
     val fixedType = TInt
@@ -306,9 +256,7 @@ object Trees {
   case class GreaterThan(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   case class GreaterEq(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   case class Not(o: Expr) extends Expr with FixedBooleanType
-
-//        
-//    def copy(name: String)(blocks: Seq[Stat]) = Copy(name, this, Block(blocks))
+        
 //    def delete() = this("deleted") := BooleanLiteral(true)
 //    def toLeftOfAtMost(other:GameObjectRef) = this("right") <= other("left")
 //    def toRightOfAtMost(other:GameObjectRef) = this("left") >= other("right")
@@ -346,5 +294,16 @@ object Trees {
    * Return a boolean after evaluation.
    */
   case class Contains(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
-    
+   
+  case class Row(obj: Expr) extends Expr with FixedType {
+    val fixedType = TInt
+  }
+  
+  case class Column(obj: Expr) extends Expr with FixedType {
+    val fixedType = TInt
+  }
+  
+  case class Apply(obj: Expr, column: Expr, row: Expr) extends Expr with FixedType {
+    val fixedType = TObject
+  }
 }

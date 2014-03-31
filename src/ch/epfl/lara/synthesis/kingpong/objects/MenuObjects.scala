@@ -114,7 +114,7 @@ case class ActiveBox(override val game: Game,
   }
   
   private val shape = new CircleShape()
-  shape.setRadius(game.typeCheckAndEvaluate[Float](init_radius))
+  shape.setRadius(game.evaluate[Float](init_radius))
 
   def getShape = {
     shape.m_p.set(x.get, y.get)

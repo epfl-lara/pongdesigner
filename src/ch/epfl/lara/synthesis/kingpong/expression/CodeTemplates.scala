@@ -8,6 +8,7 @@ import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object CodeTemplates extends CodeHandler {
@@ -32,10 +33,10 @@ object CodeTemplates extends CodeHandler {
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
   }
   
-  def inferStatements(event: Event, objects: Traversable[GameObject]): Seq[Stat] = {
+  def inferStatements(event: Event, objects: Traversable[GameObject]): Seq[Expr] = {
     implicit val ctx = new TemplateContext(event, objects)
-    val stats = objects.flatMap(TShape.applyForObject).toList
-    Stat.recursiveFlattenBlock(stats)
+    val exprs = objects.flatMap(TShape.applyForObject).toList
+    flattenNOP(exprs.map(flatten))
   }
   
   
@@ -52,7 +53,7 @@ object CodeTemplates extends CodeHandler {
     /**
      * Compute the a statement if the given object applies to this template.
      */
-    def applyForObject(obj: GameObject)(implicit ctx: TemplateContext): Option[Stat] = {
+    def applyForObject(obj: GameObject)(implicit ctx: TemplateContext): Option[Expr] = {
       if (typeCondition(obj)) 
         apply(obj.asInstanceOf[T])
       else 
@@ -62,7 +63,7 @@ object CodeTemplates extends CodeHandler {
     /**
      * Compute the a statement if the given object applies to this template.
      */
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat]
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr]
     
     protected def typeCondition(obj: GameObject): Boolean
   }
@@ -74,12 +75,12 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: T)(implicit ctx: TemplateContext): Boolean
     
     /** The statement this template can return. */
-    def result(obj: T)(implicit ctx: TemplateContext): Stat
+    def result(obj: T)(implicit ctx: TemplateContext): Expr
 
     /** The priority of this template compare to others, given a game object. */
     def priority(obj: T)(implicit ctx: TemplateContext): Int
     
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       if (condition(obj)) {
         result(obj) match {
           case Block(Nil) => None
@@ -98,14 +99,14 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: T, other: U)(implicit ctx: TemplateContext): Boolean
     
     /** The statement this template can return. */
-    def result(obj: T, other: U)(implicit ctx: TemplateContext): Stat
+    def result(obj: T, other: U)(implicit ctx: TemplateContext): Expr
 
     /** The priority of this template compare to others, given a game object. */
     def priority(obj: T, other: U)(implicit ctx: TemplateContext): Int
     
     def others(implicit ctx: TemplateContext): Traversable[U]
     
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       val stats = others flatMap { other =>
         if (condition(obj, other) && obj != other) {
           result(obj, other) match {
@@ -135,7 +136,7 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Boolean
     
     /** The statement this template can return. */
-    def result(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Stat
+    def result(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Expr
 
     /** The priority of this template compare to others, given a game object. */
     def priority(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Int
@@ -151,7 +152,7 @@ object CodeTemplates extends CodeHandler {
         if otherOrder && other1.## < other2.##
       } yield (other1, other2)
     
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       val stats = othersFiltered flatMap { case (other1, other2) =>
         if (condition(obj, other1, other2) && obj != other1 && obj != other2) {
           result(obj, other1, other2) match {
@@ -184,7 +185,7 @@ object CodeTemplates extends CodeHandler {
     /** The priority of this template compare to others, given a game object. */
     def priority(obj: T)(implicit ctx: TemplateContext): Int
     
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       if (condition(obj)) {
         val results = templates.flatMap(_.applyForObject(obj)).toList
         results.sortWith(_.priority > _.priority) match {
@@ -208,7 +209,7 @@ object CodeTemplates extends CodeHandler {
     /** The priority of this template compare to others, given a game object. */
     def priority(obj: T)(implicit ctx: TemplateContext): Int
     
-    def apply(obj: T)(implicit ctx: TemplateContext): Option[Stat] = {
+    def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       if (condition(obj)) {
         templates.flatMap(_.applyForObject(obj)).toSeq match {
           case Seq()   => None

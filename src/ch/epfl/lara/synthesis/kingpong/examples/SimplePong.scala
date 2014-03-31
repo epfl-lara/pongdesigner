@@ -53,7 +53,7 @@ class SimplePong extends Game {
 
   val score = intbox(scores)("Score1", x=1, y=8, value = 0, width=1, height=0.5)
   
-  var started = booleanbox(states)("Started", x=1, y=9, value=false, height=0.5)
+  val started = booleanbox(states)("Started", x=1, y=9, value=false, height=0.5)
   
   //val base = rectangle("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC, category=cat2)
 
@@ -142,7 +142,10 @@ class SimplePong extends Game {
   val r6 = foreach(balls) { ball =>
     whenever(!started.value) (
       ball.x := paddle1.x,
-      ball.y := Choose(List(ball.y), ball.bottom =:= paddle1.top),
+      
+      //TODO takes care of choose in examples
+      
+      //ball.y := Choose(List(ball.y), ball.bottom =:= paddle1.top),
       ball.velocity := Vec2(0, 0)
       // Should replace by obj("ball")("y") - obj("ball")("radius") and solved
     )
@@ -156,13 +159,13 @@ class SimplePong extends Game {
   }
   
   
-  val r8 = Block(
-     paddle1.x := Choose(List(paddle1.x),
-                         (paddle1.left >= Border2.right) && // toRightOfAtMost
-                         (paddle1.right <= Border3.left)),  // toLeftOfAtMost
-     Seq(Border4.x, Border4.width) := Choose(List(Border4.x, Border4.width), 
-                                             (Border4.left =:= Ball1.left) && // alignLeft
-                                             (Border4.right =:= paddle1.right))    // alignRight
+  val r8 = Block( NOP
+//     paddle1.x := Choose(List(paddle1.x),
+//                         (paddle1.left >= Border2.right) && // toRightOfAtMost
+//                         (paddle1.right <= Border3.left)),  // toLeftOfAtMost
+//     Seq(Border4.x, Border4.width) := Choose(List(Border4.x, Border4.width), 
+//                                             (Border4.left =:= Ball1.left) && // alignLeft
+//                                             (Border4.right =:= paddle1.right))    // alignRight
   )
 
   register(r1)

@@ -75,34 +75,70 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     nextF = Vec2(x.next, y.next),
     exprF = Tuple(Seq(x.expr, y.expr))
   )
+
+  // --------------------------------------------------------------------------
+  // Existence
+  // --------------------------------------------------------------------------  
   
-  private var attachedToCategory = true
+  // None means that this object exists from the beginning of time.
+  private var _creationTime: Option[Long] = None
+  // None means that this object doesn't know yet when it will die.
+  private var _deletionTime: Option[Long] = None
+  
+  /**
+   * Set the creation time. By default, it is unspecified and that means
+   * the current object is created from  the beginning of time. 
+   * The creation time can only be set once.
+   */
+  def setCreationTime(time: Long): self.type = {
+    assert(time >= 0)
+    if (_creationTime == None)
+      _creationTime = Some(time)
+    self
+  }
+  
+  /**
+   * Set the deletion time. By default, it is unspecified and that means
+   * the current object doesn't know yet when it will die. 
+   * The deletion time can be set as often as needed.
+   */
+  def setDeletionTime(time: Long): self.type = {
+    assert(time >= 0 && _creationTime.map(_ <= time).getOrElse(true))
+    _deletionTime = Some(time)
+    self
+  }
+  
+  /** Checks whether this object exists at the given time. */
+  def existsAt(time: Long) = _creationTime.map(_ <= time).getOrElse(true) && _deletionTime.map(time < _).getOrElse(true) 
+  
+  /**
+   * Update the internal state according to the current time. Particularly, remove the object from the 
+   * physical world if it doesn't exist and vice-versa. 
+   */ 
   def setExistenceAt(time: Long): Boolean = {
     val exists = existsAt(time)
-    if (!exists && attachedToCategory) {
+    if (!exists && _attachedToCategory) {
       category.remove(this)
-      attachedToCategory = false
-    } else if (exists && !attachedToCategory) {
+      _attachedToCategory = false
+    } else if (exists && !_attachedToCategory) {
       category.add(this)
-      attachedToCategory = true
+      _attachedToCategory = true
     }
     exists
   }
-  def existsAt(time: Long) = creation_time.get <= time.toInt && time.toInt < deletion_time.get
-  def doesNotYetExist(time: Long) = time.toInt < creation_time.get
-  val creation_time = simpleProperty[Int]("creation_time", -1)
-  val deletion_time = simpleProperty[Int]("deletion_time", Int.MaxValue)
-
+  
   // --------------------------------------------------------------------------
   // Category
   // --------------------------------------------------------------------------
 
-  private[this] var mCategory: CategoryObject = DefaultCategory(this)
-  def category: CategoryObject = mCategory
-  def category_=(c: CategoryObject): Unit = mCategory = c
+  private var _attachedToCategory = true
+  private var _category: CategoryObject = DefaultCategory(this)
+  def category = _category
 
   def setCategory(c: CategoryObject): self.type = {
-    c add this
+    _category = c
+    _attachedToCategory = true
+    c.add(this)
     self
   }
 
@@ -134,6 +170,30 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------  
 
   /**
+   * This method is called just before the physical world advances and after
+   * the rules are evaluated. 
+   * @param time The time for the current step.
+   */
+  def preStep(time: Long, ctx: Context): Unit = {
+    setExistenceAt(time)
+    historicalProperties foreach { p =>
+      p.validate() 
+      p.flush()
+    }
+  }
+  
+  /**
+   * This method is called directly after the physical world advances.
+   * @param time The time for the current step.
+   */
+  def postStep(time: Long, ctx: Context): Unit = {
+    historicalProperties foreach { p =>
+      p.load() 
+      p.save(time)
+    }
+  }
+  
+  /**
    * Validate the next values of the underlying structure
    *  and replace the current value with it.
    */
@@ -163,11 +223,6 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * Get the corresponding expression for this object.
    */
   lazy val expr: Expr = ObjectLiteral(this)
-  
-  /**
-   * Unique identifier of this object.
-   */
-  lazy val identifier: ObjectIdentifier = FreshIdentifier(name.get)
 
   /**
    * //MIKAEL add comment

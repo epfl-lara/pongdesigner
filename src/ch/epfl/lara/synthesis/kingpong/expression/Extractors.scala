@@ -6,11 +6,17 @@ object Extractors {
   object UnaryOperator {
     def unapply(expr: Expr): Option[(Expr, (Expr) => Expr)] = expr match {
       case Not(e) => Some((e, Not))
+      case Row(e) => Some((e, Row))
+      case Column(e) => Some((e, Column))
       case FingerMoveOver(e) => Some((e, FingerMoveOver))
       case FingerDownOver(e) => Some((e, FingerDownOver))
       case FingerUpOver(e)   => Some((e, FingerUpOver))
       case TupleSelect(e, i) => Some((e, TupleSelect(_, i)))
       case Choose(vars, e)   => Some((e, Choose(vars, _)))
+      
+      case Foreach(cat, id, e) => Some((e, Foreach(cat, id, _)))
+      case Delete(e) => Some((e, Delete))
+      
       case _ => None
     }
   }
@@ -33,6 +39,8 @@ object Extractors {
       
       case Collision(t1,t2) => Some((t1, t2, Collision))
       case Contains(t1,t2)  => Some((t1, t2, Contains))
+      case Let(id, t1, t2)  => Some((t1, t2, Let(id, _, _)))
+      case Copy(t1, id, t2) => Some((t1, t2, Copy(_, id, _)))
       
       case _ => None
     }
@@ -41,7 +49,14 @@ object Extractors {
   object NAryOperator {
     def unapply(expr: Expr): Option[(Seq[Expr], (Seq[Expr]) => Expr)] = expr match {
       case Tuple(args) => Some((args, (as: Seq[Expr]) => Tuple(as)))
-      case IfFunc(cond, thenn, elze) => Some((Seq(cond, thenn, elze), (as: Seq[Expr]) => IfFunc(as(0), as(1), as(2))))
+      case If(cond, thenn, elze) => Some((Seq(cond, thenn, elze), (as: Seq[Expr]) => If(as(0), as(1), as(2))))
+      
+      case Block(exprs) => Some((exprs, (as: Seq[Expr]) => Block(as)))
+      case ParExpr(exprs) => Some((exprs, (as: Seq[Expr]) => ParExpr(as.toList)))
+      case Assign(props, rhs) => Some((rhs +: props.map(_._1), (as: Seq[Expr]) => 
+        Assign(as.tail.zip(props).map{ case (a, (_, p)) => (a, p)}, as.head)
+      ))
+      
       case _ => None
     }
   }

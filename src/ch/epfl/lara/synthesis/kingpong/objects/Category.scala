@@ -32,7 +32,7 @@ object Category {
 trait Category {
   def game: Game
   def name: String
-  def objects: Iterable[GameObject]
+  def objects: Traversable[GameObject]
 }
 
 class CategoryObject(val game: Game = null,
@@ -59,7 +59,6 @@ class CategoryObject(val game: Game = null,
 
   def add(o: GameObject): self.type = {
     _children += o
-    o.category = this
     this
   }
 

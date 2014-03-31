@@ -110,7 +110,7 @@ object ComfusySolver {
   def canonize(expr: Expr)(implicit context: Map[Name, Expr]): ComExpr = expr match {
     
     //TODO right way ?
-    case Variable(id: PropertyIdentifier) => Sum(0, List((id.name, 1)))
+    case Variable(id: Identifier) => Sum(0, List((id.name, 1)))
     case Variable(id) => throw new Error(s"$expr cannot be canonized because the variable is not a property")
   
     case Plus(lhs: Expr, rhs: Expr)  => (canonize(lhs),canonize(rhs)) asSum (_ + _)
@@ -140,7 +140,6 @@ object ComfusySolver {
     case FingerMoveOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerMoveOver")
     case FingerUpOver(_) => throw new Error(s"$expr cannot be canonized because it contains a FingerUpOver")
     case FloatLiteral(f) => Sum(f, Nil)
-    case IfFunc(_, _, _) => throw new Error(s"$expr cannot be canonized because it contains a IfFunc")
     case IntegerLiteral(f) => Sum(f, Nil)
     case StringLiteral(_) => throw new Error(s"$expr cannot be canonized because it contains a String")
     case UnitLiteral => throw new Error(s"$expr cannot be canonized because it contains a UnitLiteral")
@@ -170,7 +169,7 @@ object ComfusySolver {
       }
       
     case IfExpr(c, ifTrue, ifFalse) => 
-      IfFunc(translate(c), translate(ifTrue), translate(ifFalse))
+      If(translate(c), translate(ifTrue), translate(ifFalse))
   }
   
   /**

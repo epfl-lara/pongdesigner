@@ -7,7 +7,7 @@ import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.objects.GameObject
+import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.objects.Property
@@ -35,79 +35,18 @@ trait Interpreter {
   
   case class RecContext(mappings: Map[Identifier, Expr]) {
     def withNewVar(id: Identifier, e: Expr) = RecContext(mappings + (id -> e))
-    def getObjectExpr(id: ObjectIdentifier): ObjectLiteral = mappings.get(id) match {
-      case Some(lit: ObjectLiteral) => lit
-      case Some(e) =>
-        throw InterpreterException(s"The value for identifier ${id} in mappings is $e, expected an object literal.")
+    
+    def getObjectExpr(id: Identifier)(implicit gctx: Context, rctx: RecContext): ObjectLiteral = mappings.get(id) match {
+      case Some(e) => eval(e) match {
+        case lit: ObjectLiteral => lit
+        case _ => throw InterpreterException(s"The value for identifier ${id} in mappings is $e, expected an object literal.")
+      }
       case None => 
         throw InterpreterException(s"No value for identifier ${id} in mapping.")
     }
-    def getObject(id: ObjectIdentifier): GameObject = getObjectExpr(id).value
-    def getProperty(id: PropertyIdentifier): Property[_] = getObject(id.obj).get(id.property)
-    def getPropertyExpr(id: PropertyIdentifier): Expr = getProperty(id).getExpr
+    
+    def getObject(id: Identifier)(implicit gctx: Context, rctx: RecContext): GameObject = getObjectExpr(id).value
   }
-  
-  
-  def evaluate(stat: Stat): Unit = eval(stat)(initGC(), initRC())
-  
-  protected def eval(stat: Stat)(implicit gctx: Context, rctx: RecContext): Unit = stat match {
-    case ParExpr(a::l) =>
-      eval(a)
-      
-    case ParExpr(Nil) =>
-      // do nothing
-      
-    case Foreach(cat, id, body) =>
-      cat.objects.foreach { o =>
-        eval(body)(gctx, rctx.withNewVar(id, o.expr))
-      }
-      
-    case Block(stats) => 
-      stats foreach eval
-
-    case If(c, s1, s2) => 
-      eval(c) match {
-        case BooleanLiteral(true)  => eval(s1)
-        case BooleanLiteral(false) => if(s2 != None) eval(s2.get)
-        case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
-      }
-
-    case Assign(props, rhs) =>
-      def setValue(id: PropertyIdentifier, v: Expr): Unit = {
-        val obj = rctx.getObject(id.obj)
-        //TODO check if this will work with ephemeral properties
-        obj.get(id.property) match {
-          case assignable: AssignableProperty[_] => assignable.assign(v)
-          case p => scala.sys.error(s"The property $p is not assignable and is in $stat")
-        }
-      }
-      
-      eval(rhs) match {
-        case Tuple(values) if values.size == props.size => 
-          (props zip values) foreach { case (prop, value) => setValue(prop, value) }
-        case rhsValue if props.size == 1 => 
-          setValue(props.head, rhsValue)
-        case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
-      }
-
-    case Copy(obj, id, block) =>
-      val o = eval(obj).as[GameObject]
-      val freshName = gctx.getNewName(id.name)
-      val fresh = o.getCopy(freshName)
-      
-      fresh.creation_time.set(gctx.time.toInt)
-      fresh.flush()
-      gctx.add(fresh)
-      
-      eval(block)(gctx, rctx.withNewVar(id, fresh.expr))
-      
-    case Delete(obj) =>
-      val o = eval(obj).as[GameObject]
-      o.deletion_time.set(gctx.time.toInt)
-      
-    case NOP => //Do nothing
-  }
-
   
   def evaluate(expr: Expr): Expr = eval(expr)(initGC(), initRC())
   
@@ -116,13 +55,76 @@ trait Interpreter {
     case lit: Literal[_] => lit
     
     case Variable(id) =>
-      id match {
-        case objId: ObjectIdentifier => 
-          rctx.getObjectExpr(objId)
-        case propId: PropertyIdentifier =>
-          rctx.getPropertyExpr(propId)
+      rctx.mappings.get(id) match {
+        case Some(e) => e
+        case None => throw InterpreterException(s"No value for identifier ${id} in mapping.")
       }
   
+    case Let(id, value, body) =>
+      val first = eval(value)
+      eval(body)(gctx, rctx.withNewVar(id, first))
+      
+    case Select(e, propertyName) =>
+      eval(e).as[GameObject].get(propertyName).getExpr
+
+    case ParExpr(a :: _) =>
+      eval(a)
+      
+    case ParExpr(Nil) =>
+      UnitLiteral
+      
+    case Foreach(cat, id, body) =>
+      cat.objects.foreach { o =>
+        eval(body)(gctx, rctx.withNewVar(id, o.expr))
+      }
+      UnitLiteral
+      
+    case Block(stats) => 
+      stats foreach eval
+      UnitLiteral
+
+    case If(c, s1, s2) => 
+      // TODO return UnitLiteral if the else part is NOP ? 
+      eval(c) match {
+        case BooleanLiteral(true)  => eval(s1)
+        case BooleanLiteral(false) => eval(s2)
+        case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
+      }
+
+    case Assign(props, rhs) =>
+      def setValue(objExpr: Expr, propertyName: PropertyId, v: Expr): Unit = {
+        //TODO check if this will work with ephemeral properties
+        eval(objExpr).as[GameObject].get(propertyName) match {
+          case assignable: AssignableProperty[_] => assignable.assign(v)
+          case p => scala.sys.error(s"The property $p is not assignable and is in $expr")
+        }
+      }
+      
+      eval(rhs) match {
+        case Tuple(values) if values.size == props.size => 
+          (props zip values) foreach { case ((objExpr, propertyName), value) => setValue(objExpr, propertyName, value) }
+        case rhsValue if props.size == 1 => 
+          setValue(props.head._1, props.head._2, rhsValue)
+        case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
+      }
+      UnitLiteral
+
+    case Copy(obj, id, block) =>
+      val o = eval(obj).as[GameObject]
+      val freshName = gctx.getNewName(id.name)
+      val fresh = o.getCopy(freshName)
+      fresh.setCreationTime(gctx.time)
+      fresh.flush()
+      gctx.add(fresh)
+      
+      eval(block)(gctx, rctx.withNewVar(id, fresh.expr))
+      UnitLiteral
+      
+    case Delete(obj) =>
+      val o = eval(obj).as[GameObject]
+      o.setDeletionTime(gctx.time)
+      UnitLiteral
+      
     case m @ MethodCall(name, args) =>
       //TODO
       ???
@@ -152,11 +154,6 @@ trait Interpreter {
     case c: Choose =>
       eval(c.evaluatedProgram)
       
-    case IfFunc(cond, ifTrue, ifFalse) => eval(cond) match {
-      case BooleanLiteral(true)  => eval(ifTrue)
-      case BooleanLiteral(false) => eval(ifFalse)
-    }
-    
     case Plus(lhs, rhs) => eval(lhs) match {
       case IntegerLiteral(v1) => eval(rhs) match {
         case IntegerLiteral(v2) => IntegerLiteral(v1 + v2)
@@ -355,6 +352,18 @@ trait Interpreter {
         case _ => error(expr)
       }
       
+    case Row(e) =>
+      eval(e) match {
+        case ObjectLiteral(o: Cell) => IntegerLiteral(o.row)
+        case _ => error(expr)
+      }
+      
+    case Column(e) =>
+      eval(e) match {
+        case ObjectLiteral(o: Cell) => IntegerLiteral(o.column)
+        case _ => error(expr)
+      }
+      
 //    case FingerCoordX1 =>
 //      FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
 //    case FingerCoordX2 =>
@@ -364,6 +373,8 @@ trait Interpreter {
 //    case FingerCoordY2 =>
 //      FloatV(context.getOrElse("to", Vec2V(0, 0)).asInstanceOf[Vec2V].y)
     
+    case NOP => UnitLiteral
+      
     case null =>
       Log.d("kingpong", "Interpreter: Erreur while evaluating null")
       error(expr)

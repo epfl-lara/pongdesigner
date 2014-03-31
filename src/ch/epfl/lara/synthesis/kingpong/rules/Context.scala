@@ -13,6 +13,8 @@ trait Context extends Any {
 
   def events: Iterable[Event]
   def time: Long  
+  def getNewName(s: String): String
+  def add(c: GameObject)
   
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
     case e: FingerDown if f(e) => e
@@ -67,8 +69,11 @@ trait Context extends Any {
     case e: EndContact => f(e)
     case _ => false
   }
+}
 
-  def getNewName(s: String): String
-  
-  def add(c: GameObject)
+trait EmptyContext extends Context {
+  def events: Iterable[Event] = Seq.empty
+  def time: Long = 0 
+  def getNewName(s: String): String = s + "FRESH"
+  def add(c: GameObject) = ()
 }
