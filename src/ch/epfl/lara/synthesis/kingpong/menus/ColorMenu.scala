@@ -21,6 +21,7 @@ object ColorMenu extends MenuCenter {
   var activated = false
   
   var registeredExpr: Option[Expr] = None
+  var registeredRule: Option[Expr] = None
   var registeredAction: Option[Action] = None
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
@@ -109,7 +110,7 @@ class ColorCircleMenu extends CustomMenu {
       } else {
           ColorMenu.registeredExpr match {
             case Some(p@IntegerLiteral(i)) if i > 0x10000/* == Expr.Subtype.COLOR_SUBTYPE*/ => // heuristic to know if it is a color
-              p.value = color
+              //p.value = color
               //if(gameEngine.ruleEditor.selectedRule != null) gameEngine.ruleEditor.selectedRule.execute(gameEngine.getGame().context, false)
             case _ => 
           }
