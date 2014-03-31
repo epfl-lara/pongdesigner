@@ -71,9 +71,9 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Existence
   // --------------------------------------------------------------------------  
   
-  private var _creationTime: Long = 0
-  def creationTime = _creationTime
-  def deletionTime = simpleProperty[Long]("deletion time", Long.MaxValue)
+  private var _creationTime: Long = -1
+  val creationTime = simpleProperty[Long]("creation time", -1)
+  val deletionTime = simpleProperty[Long]("deletion time", Long.MaxValue)
   
   /**
    * Set the creation time. By default, it is set to 0.
