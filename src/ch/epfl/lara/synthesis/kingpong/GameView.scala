@@ -195,8 +195,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   val world = new PhysicalWorld(Vec2(0, 0))
   
   val menus = Category("Menus")()
-  val FingerUps = CategoryInput("FingerUps", { case e: FingerUp => true case _ => false} )
-  val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
+  //val FingerUps = CategoryInput("FingerUps", { case e: FingerUp => true case _ => false} )
+  //val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
   
   val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
   
@@ -512,7 +512,11 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
     //Draw a small red dot in the (x, y) position of each object
     paint.setColor(0xFFFF0000)
-    canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
+    o match {
+      case o: Movable =>
+        canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
+      case _ =>
+    }
     }}
     
     if(game == null) return;

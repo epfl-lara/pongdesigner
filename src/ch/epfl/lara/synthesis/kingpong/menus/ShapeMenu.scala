@@ -135,16 +135,20 @@ object MoveButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     if(selectedShape.noVelocity) {
     // TODO : Snap to the grid.
-      if(modify_prev) {
-        if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+2.5f)/5).toFloat * 5
-        if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+2.5f)/5).toFloat * 5   
-      } else {
-        if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+2.5f)/5).toFloat * 5
-        if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+2.5f)/5).toFloat * 5          
-      }
-      if(copy_to_prev) {
-        selectedShape.x set selectedShape.x.next
-        selectedShape.y set selectedShape.y.next
+      selectedShape match {
+        case selectedShape: Movable =>
+          if(modify_prev) {
+            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+2.5f)/5).toFloat * 5
+            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+2.5f)/5).toFloat * 5   
+          } else {
+            if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+2.5f)/5).toFloat * 5
+            if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+2.5f)/5).toFloat * 5          
+          }
+          if(copy_to_prev) {
+            selectedShape.x set selectedShape.x.next
+            selectedShape.y set selectedShape.y.next
+          }
+        case _ =>
       }
     }
     hovered = false
@@ -152,6 +156,8 @@ object MoveButton extends MenuButton {
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
     if(selectedShape != null) {
+      selectedShape match {
+        case selectedShape: Movable =>
       if(modify_prev) {
         selectedShape.x set selected_shape_first_x + relativeX
         selectedShape.y set selected_shape_first_y + relativeY
@@ -162,6 +168,8 @@ object MoveButton extends MenuButton {
       if(copy_to_prev) {
         selectedShape.x set selectedShape.x.next
         selectedShape.y set selectedShape.y.next
+      }
+        case _ =>
       }
     }
   }
@@ -225,7 +233,7 @@ object SizeButton extends MenuButton {
         if(copy_to_prev) {
           c.radius set c.radius.next
         }
-      case r:Rectangular =>
+      case r:ResizableRectangular =>
         if(modify_prev) {
           r.width set (Math.floor((r.width.get + 2.5f)/5) * 5).toInt
           r.height set (Math.floor((r.height.get + 2.5f)/5) * 5).toInt
@@ -254,7 +262,7 @@ object SizeButton extends MenuButton {
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
-        case r:Rectangular =>
+        case r:ResizableRectangular =>
           if(modify_prev) {
             r.width set Math.max(10, r.width.get + shiftX.toInt)
             r.height set Math.max(10, r.height.get + shiftY.toInt)
@@ -393,15 +401,20 @@ object TrashButton extends MenuButton {
 object VisibilityButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    if(MenuOptions.modify_prev) {
-      selectedShape.visible set !selectedShape.visible.get
-    } else {
-      selectedShape.visible setNext !selectedShape.visible.next
+    selectedShape match {
+      case selectedShape: Visiblable =>
+        if(MenuOptions.modify_prev) {
+          selectedShape.visible set !selectedShape.visible.get
+        } else {
+          selectedShape.visible setNext !selectedShape.visible.next
+        }
+        if(copy_to_prev) {
+          selectedShape.visible set selectedShape.visible.next
+        }
+        hovered = false
+      case _ =>
     }
-    if(copy_to_prev) {
-      selectedShape.visible set selectedShape.visible.next
-    }
-    hovered = false
+
   }
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {

@@ -93,22 +93,27 @@ class ColorCircleMenu extends CustomMenu {
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = { 
     if(hovered) {
       if(selectedShape != null) {
-        if(MenuOptions.modify_prev) {
-          selectedShape.color.set(color)
-        } else {
-          selectedShape.color.setNext(color)
-        }
-        if(copy_to_prev) {
-          selectedShape.color.set(selectedShape.color.next)
+        selectedShape match {
+          case selectedShape: Colorable =>
+            if(MenuOptions.modify_prev) {
+              selectedShape.color.set(color)
+            } else {
+              selectedShape.color.setNext(color)
+            }
+            if(copy_to_prev) {
+              selectedShape.color.set(selectedShape.color.next)
+            }
+            
+          case _ =>
         }
       } else {
-        ColorMenu.registeredExpr match {
-          case Some(p@IntegerLiteral(i)) if i > 0x10000/* == Expr.Subtype.COLOR_SUBTYPE*/ => // heuristic to know if it is a color
-            p.value = color
-            //if(gameEngine.ruleEditor.selectedRule != null) gameEngine.ruleEditor.selectedRule.execute(gameEngine.getGame().context, false)
-          case _ => 
+          ColorMenu.registeredExpr match {
+            case Some(p@IntegerLiteral(i)) if i > 0x10000/* == Expr.Subtype.COLOR_SUBTYPE*/ => // heuristic to know if it is a color
+              p.value = color
+              //if(gameEngine.ruleEditor.selectedRule != null) gameEngine.ruleEditor.selectedRule.execute(gameEngine.getGame().context, false)
+            case _ => 
+          }
         }
-      }
     }
   }
   

@@ -56,25 +56,15 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------
 
   val name = simpleProperty[String]("name", init_name)
-  def x: RWProperty[Float]
-  def y: RWProperty[Float]
   def bottom: Property[Float]
   def top: Property[Float]
   def left: Property[Float]
   def right: Property[Float]
-  def angle: RWProperty[Float]
-  def visible: RWProperty[Boolean]
-  def color: RWProperty[Int]
+  def visible: Property[Boolean]
+  def color: Property[Int]
   var tpe: BodyType = BodyType.STATIC
   def noVelocity = tpe == BodyType.STATIC
   def noVelocity_=(b: Boolean): Unit = ??? // TODO It means to change the way the shape is. Do it in subclasses
-
-  val center = readOnlyProperty[Vec2] (
-    name  = "center", 
-    getF  = Vec2(x.get, y.get),
-    nextF = Vec2(x.next, y.next),
-    exprF = Tuple(Seq(x.expr, y.expr))
-  )
 
   // --------------------------------------------------------------------------
   // Existence
@@ -317,9 +307,9 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   protected def makecopy(name: String): GameObject
 }
 
-trait Rectangular extends GameObject {
-  def width: RWProperty[Float]
-  def height: RWProperty[Float]
+trait Rectangular extends GameObject with Positionable {
+  def width: Property[Float]
+  def height: Property[Float]
   
   val bottom = readOnlyProperty (
     name  = "bottom", 
@@ -350,8 +340,13 @@ trait Rectangular extends GameObject {
   )
 }
 
-trait Circular extends GameObject {
-  def radius: RWProperty[Float]
+trait ResizableRectangular extends Rectangular {
+  def width: RWProperty[Float]
+  def height: RWProperty[Float]
+}
+
+trait Circular extends GameObject with Positionable {
+  def radius: Property[Float]
 
   val bottom = readOnlyProperty (
     name  = "bottom", 
@@ -382,7 +377,7 @@ trait Circular extends GameObject {
   )
 }
 
-trait Point extends GameObject {
+trait Point extends GameObject with Positionable {
   val bottom = readOnlyProperty (
     name  = "bottom", 
     getF  = center.get.y,
@@ -412,8 +407,35 @@ trait Point extends GameObject {
   )
 }
 
-trait Movable extends GameObject {
+trait Positionable extends GameObject {
+  def x: Property[Float]
+  def y: Property[Float]
+
+  val center = readOnlyProperty[Vec2] (
+    name  = "center", 
+    getF  = Vec2(x.get, y.get),
+    nextF = Vec2(x.next, y.next),
+    exprF = Tuple(Seq(x.expr, y.expr))
+  )
+}
+
+trait Movable extends GameObject with Positionable {
   def x: RWProperty[Float]
   def y: RWProperty[Float]
 }
 
+trait Directionable extends GameObject {
+  def angle: Property[Float]
+}
+
+trait Rotationable extends Directionable {
+  def angle: RWProperty[Float]
+}
+
+trait Colorable extends GameObject {
+  def color: RWProperty[Int]
+}
+
+trait Visiblable extends GameObject {
+  def visible: RWProperty[Boolean]
+}

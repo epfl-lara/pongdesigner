@@ -19,7 +19,7 @@ trait MenuObjects extends AbstractObject {
 /**
  * Pointer object containing a reference to an object
  */
-case class ObjRef(override val game: Game,
+/*case class ObjRef(override val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr 
@@ -33,11 +33,11 @@ case class ObjRef(override val game: Game,
   
   val obj = simpleProperty[GameObject]("obj", ObjectLiteral(null))
 
-  def angle: RWProperty[Float] = if(obj.get != null) obj.get.angle else null
+  //def angle: RWProperty[Float] = if(obj.get != null) obj.get.angle else null
   def color: RWProperty[Int] = if(obj.get != null) obj.get.color else null
   def visible: RWProperty[Boolean] = if(obj.get != null) obj.get.visible else null
-  def x: RWProperty[Float] = if(obj.get != null) obj.get.x else null
-  def y: RWProperty[Float] = if(obj.get != null) obj.get.y else null
+  //def x: RWProperty[Float] = if(obj.get != null) obj.get.x else null
+  //def y: RWProperty[Float] = if(obj.get != null) obj.get.y else null
   
   // --------------------------------------------------------------------------
   // Utility functions
@@ -63,7 +63,7 @@ case class ObjRef(override val game: Game,
   def makecopy(name: String): GameObject = {
     this.copy(init_name=StringIsExpr(name))
   }
-}
+}*/
 
 /**
  * Input class already defining some methods

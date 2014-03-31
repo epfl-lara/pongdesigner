@@ -84,7 +84,7 @@ object DefaultCategory {
   def apply(o: String, g: Game): CategoryObject = Category(o)()(g)
 }
 
-object CategoryInput {
+/*object CategoryInput {
   def apply(name: String, selector: Event => Boolean)(implicit game: Game): CategoryInput = {
     new CategoryInput(game, name, selector)
   }
@@ -105,4 +105,4 @@ class CategoryInput(val game: Game,
       inputMenu
     }.toIterable
   }
-}
+}*/

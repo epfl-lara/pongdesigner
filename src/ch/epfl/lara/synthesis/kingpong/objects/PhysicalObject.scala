@@ -31,7 +31,7 @@ abstract class PhysicalObject(init_name: Expr,
                               init_fixedRotation: Expr,
                               init_color: Expr
                              ) extends GameObject(init_name) 
-                               with Movable { self =>
+                               with Movable with Visiblable with Colorable with Rotationable { self =>
   
   private var _body: Body = null
   def body: Body = _body
@@ -186,7 +186,7 @@ case class Rectangle (val game: Game,
                  init_tpe: BodyType = BodyType.DYNAMIC
                 ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-                  with Rectangular {
+                  with ResizableRectangular {
 
   tpe = init_tpe
   
@@ -259,7 +259,7 @@ case class Character (val game: Game,
                  init_tpe: BodyType = BodyType.DYNAMIC
                 ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-                  with Rectangular with InputManager {
+                  with ResizableRectangular with InputManager {
   tpe = init_tpe
   def className = "Rect"
   
@@ -325,12 +325,12 @@ case class Character (val game: Game,
   // Properties
   // --------------------------------------------------------------------------
   
-  val width: Property[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
+  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
     shape.setAsBox(w/2, height.get/2)
     body.resetMassData() // update the body mass
   }
 
-  val height: Property[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
+  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
     shape.setAsBox(width.get/2, h/2)
     body.resetMassData() // update the body mass
   }

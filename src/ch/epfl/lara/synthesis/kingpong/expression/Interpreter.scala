@@ -348,7 +348,7 @@ trait Interpreter {
       
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (ObjectLiteral(o1), ObjectLiteral(o2)) => BooleanLiteral(o1.contains(o2.center.get))
+        case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) => BooleanLiteral(o1.contains(o2.center.get))
         case _ => error(expr)
       }
       
