@@ -149,7 +149,7 @@ object CodeTemplates extends CodeHandler {
         other1 <- others
         other2 <- others
         if other1 != other2
-        if otherOrder && other1.## < other2.##
+        if !otherOrder || other1.## < other2.##
       } yield (other1, other2)
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
