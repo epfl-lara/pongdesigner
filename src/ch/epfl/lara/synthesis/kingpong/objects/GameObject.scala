@@ -417,6 +417,10 @@ trait Circular extends GameObject with Positionable {
   }
 }
 
+trait ResizableCircular extends Circular {
+  def radius: RWProperty[Float]
+}
+
 trait Point extends GameObject with Positionable {
   val bottom = readOnlyProperty (
     name  = "bottom", 

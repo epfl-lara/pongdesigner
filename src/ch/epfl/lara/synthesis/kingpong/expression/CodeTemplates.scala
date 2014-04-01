@@ -33,6 +33,7 @@ object CodeTemplates extends CodeHandler {
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
     lazy val positionables: Traversable[Positionable] = objects.collect{ case b: Positionable => b }
     lazy val rotationables: Traversable[Rotationable] = objects.collect{ case b: Rotationable => b }
+    lazy val cells: Traversable[Cell] = objects.collect{ case c: Cell => c }
   }
   
   def inferStatements(event: Event, objects: Traversable[GameObject]): Seq[Expr] = {
@@ -73,51 +74,37 @@ object CodeTemplates extends CodeHandler {
   trait TemplateSimple[T <: GameObject] extends Template[T] {
     def comment(obj: T)(implicit ctx: TemplateContext): String
     
-    /** The condition under which this template applies. */
-    def condition(obj: T)(implicit ctx: TemplateContext): Boolean
-    
-    /** The statement this template can return. */
-    def result(obj: T)(implicit ctx: TemplateContext): Expr
+    /** 
+     * The statement this template can return.
+     * Return `None` if this template doesn't appy to the given object. 
+     * Also set the priority on the expression, if any.
+     */
+    def result(obj: T)(implicit ctx: TemplateContext): Option[Expr]
 
-    /** The priority of this template compare to others, given a game object. */
-    def priority(obj: T)(implicit ctx: TemplateContext): Int
-    
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
-      if (condition(obj)) {
-        result(obj) match {
-          case Block(Nil) => None
-          case ParExpr(Nil) => None
-          case NOP => None
-          case stat => Some(stat.setPriority(priority(obj)))
-        }
-      } else None
+      result(obj)
     }
   }
   
   trait TemplateOther[T <: GameObject, U] extends Template[T] {
     def comment(obj: T, other: U)(implicit ctx: TemplateContext): String
     
-    /** The condition under which this template applies. */
-    def condition(obj: T, other: U)(implicit ctx: TemplateContext): Boolean
-    
-    /** The statement this template can return. */
-    def result(obj: T, other: U)(implicit ctx: TemplateContext): Expr
+    /** 
+     * The statement this template can return.
+     * Return `None` if this template doesn't appy to the given objects. 
+     * Also set the priority on the expression, if any.
+     */
+    def result(obj: T, other: U)(implicit ctx: TemplateContext): Option[Expr]
 
-    /** The priority of this template compare to others, given a game object. */
-    def priority(obj: T, other: U)(implicit ctx: TemplateContext): Int
-    
     def others(implicit ctx: TemplateContext): Traversable[U]
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       val stats = others flatMap { other =>
-        if (condition(obj, other) && obj != other) {
-          result(obj, other) match {
-            case Block(Nil) => None
-            case ParExpr(Nil) => None
-            case NOP => None
-            case stat => Some(stat.setPriority(priority(obj, other)))
-          }
-        } else None
+        if (obj != other) {
+          result(obj, other)
+        } else {
+          None
+        }
       }
       
       if (stats.size == 0)
@@ -228,8 +215,17 @@ object CodeTemplates extends CodeHandler {
   trait TemplateMovable extends Template[Movable] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Movable]
   }
+  
   trait TemplateRotationable extends Template[Rotationable] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Rotationable]
+  }
+  
+  trait TemplateColorable extends Template[Colorable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Colorable]
+  }
+  
+  trait TemplateVisiblable extends Template[Visiblable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Visiblable]
   }
   
   trait TemplatePhysicalObject extends Template[PhysicalObject] {
@@ -246,6 +242,10 @@ object CodeTemplates extends CodeHandler {
   
   trait TemplateCircular extends Template[Circular] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Circular]
+  }
+  
+  trait TemplateResizableCircular extends Template[ResizableCircular] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[ResizableCircular]
   }
   
   trait TemplateRectangular extends Template[Rectangular] {
@@ -280,6 +280,10 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.rectangulars
   }
   
+  trait TemplateOtherCell[T <: GameObject] extends TemplateOther[T, Cell] {
+    def others(implicit ctx: TemplateContext) = ctx.cells
+  }
+  
   trait TemplateOtherPairObject[T <: GameObject] extends TemplateOtherPair[T, GameObject] {
     def others(implicit ctx: TemplateContext) = ctx.objects
   }
@@ -299,91 +303,96 @@ object CodeTemplates extends CodeHandler {
   trait TemplateOtherPairRectangular[T <: GameObject] extends TemplateOtherPair[T, Rectangular] {
     def others(implicit ctx: TemplateContext) = ctx.rectangulars
   }
+  
+  trait TemplateOtherPairCell[T <: GameObject] extends TemplateOtherPair[T, Cell] {
+    def others(implicit ctx: TemplateContext) = ctx.cells
+  }
 
   object TX_DY1 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.x) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dy) && !ctx.isMovementHorizontal
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := obj.x - ctx.dy
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 0
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.x := obj.x - ctx.dy
+        Some(expr.setPriority(0))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes upwards, ${obj.name.next} moves horizontally to the right."
   }
   
   object TX_DY2 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.x) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dy) && !ctx.isMovementHorizontal
-    
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := obj.x + ctx.dy
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 0
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.x := obj.x + ctx.dy
+        Some(expr.setPriority(0))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes downwards, ${obj.name.next} moves horizontally to the right."
   }
   
   object TX_relative extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = Template.isWritable(obj.x)
-    
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := obj.x + coord(obj.x.next.toInt - obj.x.get.toInt)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 5
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      val expr = obj.x := obj.x + coord(obj.x.next.toInt - obj.x.get.toInt)
+      Some(expr.setPriority(5))
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"Relative movement of ${obj.name.next} by (" + (obj.x.next.toInt - obj.x.get.toInt) + ", 0)"
   }
   
   object TX_absolute extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = Template.isWritable(obj.x)
-    
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := coord(obj.x.next.toInt)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 6
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      val expr = obj.x := coord(obj.x.next.toInt)
+      Some(expr.setPriority(6))
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"Absolute positionning of ${obj.name.next} to x = ${obj.x.next.toInt}."
   }
   
   object TX_DX1 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.x) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dx) && !ctx.isMovementVertical
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := obj.x + (-ctx.dx)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 3
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.x := obj.x + (-ctx.dx)
+        Some(expr.setPriority(3))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes to the left, ${obj.name.next} moves horizontally to the right."
   }
   
   object TX_DX2 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.x) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && !ctx.isMovementVertical
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.x.asInstanceOf[RWProperty[_]] := obj.x + ctx.dx
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 15
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.x := obj.x + ctx.dx
+        Some(expr.setPriority(15))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"${obj.name.next} moves horizontally in the same direction as the finger."
   }
   
   object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
-    def condition(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
-      Template.isWritable(obj.x) && almostTheSame(obj.x.next, other.x.get, 20)
-    
-    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
-      obj.x.asInstanceOf[RWProperty[_]] := other.x
-
-    def priority(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 10
+    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
+      if (almostTheSame(obj.x.next, other.x.get, 20)) {
+        val expr = obj.x := other.x
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
       s"${obj.name.next} aligns its x side to the x side of ${other.name.next}"
@@ -463,89 +472,90 @@ object CodeTemplates extends CodeHandler {
   }
 
   object TY_DX1 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.y) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dx) && !ctx.isMovementVertical
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] := obj.y + (-ctx.dx)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 0
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.y := obj.y + (-ctx.dx)
+        Some(expr.setPriority(0))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes to the left, ${obj.name.next} moves vertically to the bottom."
   }
   
   object TY_DX2 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.y) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dx) && !ctx.isMovementVertical
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] := obj.y + ctx.dx
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 0
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.y := obj.y + ctx.dx
+        Some(expr.setPriority(0))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes to the left, ${obj.name.next} moves vertically to the top."
   }
   
   object TY_relative extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = Template.isWritable(obj.y)
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] += coord(obj.y.next.toInt - obj.y.get.toInt)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 5
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      val expr = obj.y += coord(obj.y.next.toInt - obj.y.get.toInt)
+      Some(expr.setPriority(5))
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"Relative movement of ${obj.name.next} by (0, " + (obj.y.next.toInt - obj.y.get.toInt) + ")"
   }
   
   object TY_absolute extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = Template.isWritable(obj.y)
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] := coord(obj.y.next.toInt)
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 6
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      val expr = obj.y := coord(obj.y.next.toInt)
+      Some(expr.setPriority(6))
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"Absolute positionning of ${obj.name.next} to y = " + obj.y.next.toInt
   }
   
   object TY_DY1 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.y) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dy) && !ctx.isMovementHorizontal
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] += -ctx.dy
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 3
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.y += -ctx.dy
+        Some(expr.setPriority(3))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       s"If the finger goes to the bottom, ${obj.name.next} moves vertically to the top."
   }
   
   object TY_DY2 extends TemplateSimple[Movable] with TemplateMovable {
-    def condition(obj: Movable)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.y) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy) && !ctx.isMovementHorizontal
-      
-    def result(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.y.asInstanceOf[RWProperty[_]] += ctx.dy
-    
-    def priority(obj: Movable)(implicit ctx: TemplateContext) = 15
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.y += ctx.dy
+        Some(expr.setPriority(15))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
       obj.name.next + " moves vertically in the same direction as the finger"
   }
   
   object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
-    def condition(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
-      Template.isWritable(obj.y) && almostTheSame(obj.y.next, other.y.get, 20)
-    
-    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
-      obj.y.asInstanceOf[RWProperty[_]] := other.y
-
-    def priority(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 10
+    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
+      if (almostTheSame(obj.y.next, other.y.get, 20)) {
+        val expr = obj.y := other.y
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
       s"${obj.name.next} aligns its y side to the y side of ${other.name.next}"
@@ -656,12 +666,10 @@ object CodeTemplates extends CodeHandler {
   }
     
   object TAngleRelative extends TemplateSimple[Rotationable] with TemplateRotationable {
-    def condition(obj: Rotationable)(implicit ctx: TemplateContext) = Template.isWritable(obj.angle)
-      
-    def result(obj: Rotationable)(implicit ctx: TemplateContext) =
-      obj.angle.asInstanceOf[RWProperty[_]] -= angle(shiftAngle(obj)) 
-    
-    def priority(obj: Rotationable)(implicit ctx: TemplateContext) = 8
+    def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
+      val expr = obj.angle -= angle(shiftAngle(obj)) 
+      Some(expr.setPriority(8))
+    }
     
     def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
       s"Change the speed direction of ${obj.name.next} by " + shiftAngle(obj) + "°"
@@ -670,12 +678,10 @@ object CodeTemplates extends CodeHandler {
   }
   
   object TAngleAbsolute extends TemplateSimple[Rotationable] with TemplateRotationable {
-    def condition(obj: Rotationable)(implicit ctx: TemplateContext) = Template.isWritable(obj.angle)
-      
-    def result(obj: Rotationable)(implicit ctx: TemplateContext) =
-      obj.angle.asInstanceOf[RWProperty[_]] := angle(roundedAngle(obj)) 
-    
-    def priority(obj: Rotationable)(implicit ctx: TemplateContext) = 9
+    def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
+      val expr = obj.angle := angle(roundedAngle(obj))
+      Some(expr.setPriority(9))
+    }
     
     def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
       s"Change the speed direction of ${obj.name.next} to " + roundedAngle(obj) + "°"
@@ -692,13 +698,14 @@ object CodeTemplates extends CodeHandler {
   }*/
   
   object TAngleCopy extends TemplateOtherRotationable[Rotationable] with TemplateRotationable {
-    def condition(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) =
-      Template.isWritable(obj.angle) && almostTheSame(obj.angle.next, other.angle.get, 15)
-    
-    def result(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) =
-      obj.angle.asInstanceOf[RWProperty[_]] := other.angle
-
-    def priority(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = 10
+    def result(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = {
+      if (almostTheSame(obj.angle.next, other.angle.get, 15)) {
+        val expr = obj.angle := other.angle
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = 
       s"Copy the speed direction of " + other.name.next + s" to ${obj.name.next}"
@@ -720,12 +727,10 @@ object CodeTemplates extends CodeHandler {
   }
   
   object TVelocityAbsolute extends TemplateSimple[PhysicalObject] with TemplatePhysicalObject {
-    def condition(obj: PhysicalObject)(implicit ctx: TemplateContext) = true
-      
-    def result(obj: PhysicalObject)(implicit ctx: TemplateContext) =
-      obj.velocity := speed(obj.velocity.next)
-    
-    def priority(obj: PhysicalObject)(implicit ctx: TemplateContext) = 10
+    def result(obj: PhysicalObject)(implicit ctx: TemplateContext) = {
+      val expr = obj.velocity := speed(obj.velocity.next)
+      Some(expr.setPriority(10))
+    }
     
     def comment(obj: PhysicalObject)(implicit ctx: TemplateContext) =
        s"Velocity of ${obj.name.next} is set absolutely to ${obj.velocity.next}."
@@ -751,15 +756,13 @@ object CodeTemplates extends CodeHandler {
     def comment = s"Possible velocity changes for ${shape.name.next}"
   }*/
   
-  object TColorAbsolute extends TemplateSimple[GameObject] with TemplateObject {
-    def condition(obj: GameObject)(implicit ctx: TemplateContext) = Template.isWritable(obj.color)
-      
-    def result(obj: GameObject)(implicit ctx: TemplateContext) = 
-      obj.color.asInstanceOf[RWProperty[_]] := color(obj.color.next)
+  object TColorAbsolute extends TemplateSimple[Colorable] with TemplateColorable {
+    def result(obj: Colorable)(implicit ctx: TemplateContext) = {
+      val expr = obj.color := color(obj.color.next)
+      Some(expr.setPriority(10))
+    }
     
-    def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
-    
-    def comment(obj: GameObject)(implicit ctx: TemplateContext) = 
+    def comment(obj: Colorable)(implicit ctx: TemplateContext) = 
       s"The color of ${obj.name.next} is set to " + obj.color.next
   }
   
@@ -771,27 +774,23 @@ object CodeTemplates extends CodeHandler {
     // def comment = s"Possible color changes for ${shape.name.next}"
   }
   
-  object TVisibleAbsolute extends TemplateSimple[GameObject] with TemplateObject {
-    def condition(obj: GameObject)(implicit ctx: TemplateContext) = Template.isWritable(obj.visible)
-      
-    def result(obj: GameObject)(implicit ctx: TemplateContext) = 
-      obj.visible.asInstanceOf[RWProperty[_]] := BooleanLiteral(obj.visible.next)
+  object TVisibleAbsolute extends TemplateSimple[Visiblable] with TemplateVisiblable {
+    def result(obj: Visiblable)(implicit ctx: TemplateContext) = {
+      val expr = obj.visible := BooleanLiteral(obj.visible.next)
+      Some(expr.setPriority(10))
+    }
     
-    def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
-    
-    def comment(obj: GameObject)(implicit ctx: TemplateContext) = 
+    def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
       s"The visibility of ${obj.name.next} is set to " + obj.visible.next
   }
   
-  object TVisibleToggle extends TemplateSimple[GameObject] with TemplateObject {
-    def condition(obj: GameObject)(implicit ctx: TemplateContext) = Template.isWritable(obj.visible)
-      
-    def result(obj: GameObject)(implicit ctx: TemplateContext) = 
-      obj.visible.asInstanceOf[RWProperty[_]] := !obj.visible
+  object TVisibleToggle extends TemplateSimple[Visiblable] with TemplateVisiblable {
+    def result(obj: Visiblable)(implicit ctx: TemplateContext) = {
+      val expr = obj.visible := !obj.visible
+      Some(expr.setPriority(10))
+    }
     
-    def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
-    
-    def comment(obj: GameObject)(implicit ctx: TemplateContext) = 
+    def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
       s"The visibility of ${obj.name.next} is toggled"
   }
   
@@ -991,14 +990,15 @@ object CodeTemplates extends CodeHandler {
 //  }
   
   object TTextCopy extends TemplateOtherText[Box[String]] with TemplateText {
-    def condition(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) =
-      obj.value.next == other.value.get 
-    
-    def result(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) =
-      obj.value := other.value
-
-    def priority(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) =
-      if (other.value.get != "") 10 else 0
+    def result(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other.value.get) {
+        val expr = obj.value := other.value
+        val priority = if (other.value.get != "") 10 else 0
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
     
     def comment(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) = 
       s"Copy the text of " + other.name.next + s" to ${obj.name.next}"
@@ -1032,39 +1032,38 @@ object CodeTemplates extends CodeHandler {
     //def comment   = s"Possible text changes for ${shape.name.next}"
   }
   
-  object TRadiusRelativePlus extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = Template.isWritable(obj.radius)
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] += coord(obj.radius.next - obj.radius.get)
+  object TRadiusRelativePlus extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      val expr = obj.radius += coord(obj.radius.next - obj.radius.get)
+      Some(expr.setPriority(10))
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
       s"Add a constant to the radius of ${obj.name.next}."
   }
   
-  object TRadiusRelativeTimes extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.radius) && obj.radius.get != 0
-      
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 
-      if (obj.radius.next / obj.radius.get < 1) 8 else 0
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] *= coord(obj.radius.next / obj.radius.get)
+  object TRadiusRelativeTimes extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      if (obj.radius.get != 0) {
+        val expr = obj.radius *= coord(obj.radius.next / obj.radius.get)
+        val priority = if (obj.radius.next / obj.radius.get < 1) 8 else 0
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
       s"Multiply the radius of ${obj.name.next} by a factor."
   }
   
-  object TRadiusAbsolute extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = Template.isWritable(obj.radius)
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] := coord(obj.radius.next)
+  object TRadiusAbsolute extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      val expr = obj.radius := coord(obj.radius.next)
+      Some(expr.setPriority(10))
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
        s"Change the radius of ${obj.name.next} absolutely."
   }
   
@@ -1076,55 +1075,59 @@ object CodeTemplates extends CodeHandler {
 //    def comment   = s"Add a constant to the radius of ${shape.name.next}"
 //  }
   
-  object TRadiusMoveX extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.radius) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dx) && !ctx.isMovementVertical
-      
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] += ctx.dx
+  object TRadiusMoveX extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.radius += ctx.dx
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
        s"Augment the radius of ${obj.name.next} when the finger moves to the right."
   }
   
-  object TRadiusMoveX_rev extends TemplateSimple[Circular] with TemplateCircular {
-     def condition(obj: Circular)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.radius) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dx) && !ctx.isMovementVertical
-      
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 8
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] += -ctx.dx
+  object TRadiusMoveX_rev extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dx) && !ctx.isMovementVertical) {
+        val expr = obj.radius += -ctx.dx
+        Some(expr.setPriority(8))
+      } else {
+        None
+      }
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
        s"Augment the radius of ${obj.name.next} when the finger moves to the left."
   }
   
-  object TRadiusMoveY extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.radius) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dy) && !ctx.isMovementHorizontal
-      
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] += ctx.dy
+  object TRadiusMoveY extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.radius += ctx.dy
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
        s"Augment the radius of ${obj.name.next} when the finger moves to the bottom."
   }
   
-  object TRadiusMoveY_rev extends TemplateSimple[Circular] with TemplateCircular {
-    def condition(obj: Circular)(implicit ctx: TemplateContext) = 
-      Template.isWritable(obj.radius) && ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dy) && !ctx.isMovementHorizontal
-      
-    def priority(obj: Circular)(implicit ctx: TemplateContext) = 8
-    
-    def result(obj: Circular)(implicit ctx: TemplateContext) =
-      obj.radius.asInstanceOf[RWProperty[_]] += -ctx.dy
+  object TRadiusMoveY_rev extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
+    def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dy) && !ctx.isMovementHorizontal) {
+        val expr = obj.radius += -ctx.dy
+        Some(expr.setPriority(8))
+      } else {
+        None
+      }
+    }
 
-    def comment(obj: Circular)(implicit ctx: TemplateContext) = 
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
        s"Augment the radius of ${obj.name.next} when the finger moves to the top."
   }
   
@@ -1144,6 +1147,31 @@ object CodeTemplates extends CodeHandler {
     // def comment   = s"Possible radius changes for ${shape.name.next}"
   }
   
+  /* Array templates */
+  
+  object TArrayMoveUp extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
+      if (other.column >= 1 &&
+          other.contains(obj.center.get) &&
+          other.array.cells(other.column)(other.row - 1).contains(obj.center.next)) {
+        val upCellExpr = other.array.cell(Column(other), Row(other) - 1)
+        val expr = Block(
+          obj.x := upCellExpr.x,
+          obj.y := upCellExpr.y
+        )
+        Some(expr.setPriority(5)) //TODO priority ? 
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
+      s"Move ${obj.name.get} to the upper adjacent cell."
+  }
+  
+  
+  
+  /** Top template */
   object TShape extends TemplateBlock[GameObject] with TemplateObject {
     def condition(obj: GameObject)(implicit ctx: TemplateContext) = true
     def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
