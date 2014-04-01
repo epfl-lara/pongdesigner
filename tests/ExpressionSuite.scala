@@ -187,6 +187,13 @@ class ExpressionSuite extends FlatSpec with Matchers {
     )
   }
   
+  it should "not change an expression during generalization if it doesn't contain the given object" in {
+    val obj = game.ball1
+    val e = If(game.block1.visible, game.block1.y += 2)
+    val generalized = generalizeToCategory(e, obj)
+    generalized should be (e)
+  }
+  
   "TypesOps" should "have correct subtypes" in {
     isSubtypeOf(TInt, TFloat) should be (true)
     isSubtypeOf(TFloat, TInt) should be (false)

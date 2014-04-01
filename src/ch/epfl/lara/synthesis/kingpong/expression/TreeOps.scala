@@ -277,11 +277,19 @@ object TreeOps {
     }}(e)
   }
   
+  /**
+   * Generalize an expression to the category of the given object.
+   * If the object is not in the expression, the expression is returned unchanged.
+   */
   def generalizeToCategory(e: Expr, obj: GameObject): Expr = {
-    val cat = obj.category
-    val id = FreshIdentifier(cat.name)
-    val body = replace(Map(ObjectLiteral(obj) -> Variable(id)), e)
-    Foreach(cat, id, body)
+    if (!collectObjects(e).contains(obj)) {
+      e
+    } else {
+      val cat = obj.category
+      val id = FreshIdentifier(cat.name)
+      val body = replace(Map(ObjectLiteral(obj) -> Variable(id)), e)
+      Foreach(cat, id, body)
+    }
   }
   
 }
