@@ -270,4 +270,18 @@ object TreeOps {
     exprs.filterNot(_ == NOP)
   }
   
+  def collectObjects(e: Expr): Set[GameObject] = {
+    collect[GameObject] { _ match {
+      case ObjectLiteral(o) => Set(o)
+      case _ => Set()
+    }}(e)
+  }
+  
+  def generalizeToCategory(e: Expr, obj: GameObject): Expr = {
+    val cat = obj.category
+    val id = FreshIdentifier(cat.name)
+    val body = replace(Map(ObjectLiteral(obj) -> Variable(id)), e)
+    Foreach(cat, id, body)
+  }
+  
 }

@@ -42,19 +42,13 @@ object CodeTemplates extends CodeHandler {
     flattenNOP(exprs.map(flatten))
   }
   
-  
-  object Template {
-    def isWritable[T](p: Property[T]) = p.isInstanceOf[AssignableProperty[T]]
-  }
-  
-  
   /**
    * A template converts a modification of the game to a line of code if possible
    */
   trait Template[T <: GameObject] {
     
     /**
-     * Compute the a statement if the given object applies to this template.
+     * Compute an expression if the given object applies to this template.
      */
     def applyForObject(obj: GameObject)(implicit ctx: TemplateContext): Option[Expr] = {
       if (typeCondition(obj)) 
@@ -64,7 +58,7 @@ object CodeTemplates extends CodeHandler {
     }
     
     /**
-     * Compute the a statement if the given object applies to this template.
+     * Compute an expression if the given object applies to this template.
      */
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr]
     
@@ -1155,10 +1149,10 @@ object CodeTemplates extends CodeHandler {
           other.contains(obj.center.get) &&
           other.array.cells(other.column)(other.row - 1).contains(obj.center.next)) {
         val upCellExpr = other.array.cell(Column(other), Row(other) - 1)
-        val expr = Block(
+        val expr = If(Row(other) >= 1 && Contains(other, obj), Block(
           obj.x := upCellExpr.x,
           obj.y := upCellExpr.y
-        )
+        )) 
         Some(expr.setPriority(5)) //TODO priority ? 
       } else {
         None
@@ -1168,8 +1162,6 @@ object CodeTemplates extends CodeHandler {
     def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
       s"Move ${obj.name.get} to the upper adjacent cell."
   }
-  
-  
   
   /** Top template */
   object TShape extends TemplateBlock[GameObject] with TemplateObject {
