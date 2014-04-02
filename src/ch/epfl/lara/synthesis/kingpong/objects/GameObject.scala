@@ -149,10 +149,9 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   /**
    * This method is called just before the physical world advances and after
    * the rules are evaluated. 
-   * @param time The time for the current step.
    */
-  def preStep(time: Long, ctx: Context): Unit = {
-    setExistenceAt(time)
+  def preStep(ctx: Context): Unit = {
+    setExistenceAt(ctx.time)
     historicalProperties foreach { p =>
       p.validate() 
       p.flush()
@@ -163,10 +162,10 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * This method is called directly after the physical world advances.
    * @param time The time for the current step.
    */
-  def postStep(time: Long, ctx: Context): Unit = {
+  def postStep(ctx: Context): Unit = {
     historicalProperties foreach { p =>
       p.load() 
-      p.save(time)
+      p.save(ctx.time)
     }
   }
   
@@ -401,7 +400,7 @@ trait Circular extends GameObject with Positionable {
     exprF = x.expr + radius.expr
   )
   
-  override def selectableBy(xCursor: Float, yCursor: Float):Boolean = {
+  override def selectableBy(xCursor: Float, yCursor: Float): Boolean = {
     xCursor > left.next &&
     xCursor < right.next &&
     yCursor > top.next &&
@@ -411,10 +410,14 @@ trait Circular extends GameObject with Positionable {
   override def distanceSelection(xCursor: Float, yCursor: Float): Float = {
     val dx = xCursor-x.next
     val dy = yCursor-y.next
-     val r = radius.next + selectableAreaRadius
-     val res = Math.sqrt(dx*dx + dy*dy).toFloat - radius.next
-     if(res < 0) 0 else res
+    val r = radius.next + selectableAreaRadius
+    val res = Math.sqrt(dx*dx + dy*dy).toFloat - radius.next
+    if(res < 0) 0 else res
   }
+}
+
+trait ResizableCircular extends Circular {
+  def radius: RWProperty[Float]
 }
 
 trait Point extends GameObject with Positionable {
@@ -458,17 +461,16 @@ trait Positionable extends GameObject {
     exprF = Tuple(Seq(x.expr, y.expr))
   )
   
-    
-  override def selectableBy(xCursor: Float, yCursor: Float):Boolean = {
+  override def selectableBy(xCursor: Float, yCursor: Float): Boolean = {
      xCursor*xCursor + yCursor*yCursor <= selectableAreaRadius * selectableAreaRadius
   }
   
   override def distanceSelection(xCursor: Float, yCursor: Float): Float = {
     val dx = xCursor-x.next
     val dy = yCursor-y.next
-     val r = selectableAreaRadius
-     val res = Math.sqrt(dx*dx + dy*dy).toFloat
-     if(res < 0) 0 else res
+    val r = selectableAreaRadius
+    val res = Math.sqrt(dx*dx + dy*dy).toFloat
+    if(res < 0) 0 else res
   }
 }
 

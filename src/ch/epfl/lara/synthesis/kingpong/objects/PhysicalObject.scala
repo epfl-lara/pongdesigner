@@ -361,7 +361,7 @@ case class Circle(val game: Game,
              init_tpe: BodyType = BodyType.DYNAMIC
             ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
                                      init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-              with Circular {
+              with ResizableCircular {
   
   tpe = init_tpe
   def className = "Circ"

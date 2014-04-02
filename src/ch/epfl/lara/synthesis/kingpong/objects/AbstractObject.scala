@@ -85,8 +85,8 @@ trait InputManager extends GameObject {
   
   def collectInput(from: Context)
 
-  override def postStep(time: Long, ctx: Context): Unit = {
-    super.postStep(time, ctx)
+  override def postStep(ctx: Context): Unit = {
+    super.postStep(ctx)
     // Maps the previous events to the input mechanisms
     collectInput(ctx)
   }
@@ -226,8 +226,11 @@ case class Array2D(
   }
     
   //TODO for the moment the array size is constant
-  lazy val cells = Array.tabulate(numColumns.get, numRows.get)(Cell(this, _, _))
-    
+  lazy val cells = Array.tabulate(numColumns.get, numRows.get) {
+    //TODO set a category tho these cells
+    Cell(this, _, _)
+  }
+  
   // Properties
   val numRows = simpleProperty[Int]("numRows", init_numRows)
   val numColumns = simpleProperty[Int]("numColumns", init_numColumns)

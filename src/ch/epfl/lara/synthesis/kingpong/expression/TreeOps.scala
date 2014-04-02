@@ -210,11 +210,11 @@ object TreeOps {
   }
   
   def exists(matcher: Expr => Boolean)(e: Expr): Boolean = {
-    foldRight[Boolean]({ (e: Expr, subs: Seq[Boolean]) =>  matcher(e) || subs.contains(true) } )(e)
+    foldRight[Boolean]({ (e, subs) =>  matcher(e) || subs.contains(true) } )(e)
   }
 
   def collect[T](matcher: Expr => Set[T])(e: Expr): Set[T] = {
-    foldRight[Set[T]]({ (e: Expr, subs: Seq[Set[T]]) => matcher(e) ++ subs.foldLeft(Set[T]())(_ ++ _) } )(e)
+    foldRight[Set[T]]({ (e, subs) => matcher(e) ++ subs.foldLeft(Set[T]())(_ ++ _) } )(e)
   }
 
   def filter(matcher: Expr => Boolean)(e: Expr): Set[Expr] = {
@@ -222,7 +222,7 @@ object TreeOps {
   }
 
   def count(matcher: Expr => Int)(e: Expr): Int = {
-    foldRight[Int]({ (e: Expr, subs: Seq[Int]) =>  matcher(e) + subs.foldLeft(0)(_ + _) } )(e)
+    foldRight[Int]({ (e, subs) =>  matcher(e) + subs.foldLeft(0)(_ + _) } )(e)
   }
 
   def replace(substs: Map[Expr,Expr], expr: Expr) : Expr = {
@@ -269,5 +269,27 @@ object TreeOps {
   def flattenNOP(exprs: Seq[Expr]): Seq[Expr] = {
     exprs.filterNot(_ == NOP)
   }
-
+  
+  def collectObjects(e: Expr): Set[GameObject] = {
+    collect[GameObject] { _ match {
+      case ObjectLiteral(o) => Set(o)
+      case _ => Set()
+    }}(e)
+  }
+  
+  /**
+   * Generalize an expression to the category of the given object.
+   * If the object is not in the expression, the expression is returned unchanged.
+   */
+  def generalizeToCategory(e: Expr, obj: GameObject): Expr = {
+    if (!collectObjects(e).contains(obj)) {
+      e
+    } else {
+      val cat = obj.category
+      val id = FreshIdentifier(cat.name)
+      val body = replace(Map(ObjectLiteral(obj) -> Variable(id)), e)
+      Foreach(cat, id, body)
+    }
+  }
+  
 }

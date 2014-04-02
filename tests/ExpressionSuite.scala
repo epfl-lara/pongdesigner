@@ -166,6 +166,34 @@ class ExpressionSuite extends FlatSpec with Matchers {
     flat should be (ParExpr(List(i1, i2, i3, i1, i4)))
   }
   
+  it should "correctly collect objects in an expression" in {
+    val e = If(game.ball1.visible && game.block1.visible, game.ball1.x := game.ball1.x + game.block1.y)
+    val objects = collectObjects(e)
+    objects should be (Set(game.ball1, game.block1))
+  }
+  
+  it should "correctly generalize an expression" in {
+    val obj = game.ball1
+    val e = If(obj.visible && game.block1.visible, obj.x := obj.x + game.block1.y)
+    val generalized = generalizeToCategory(e, obj)
+    assert(generalized.isInstanceOf[Foreach])
+    val foreach = generalized.asInstanceOf[Foreach]
+    val id = foreach.id
+    generalized should be (Foreach(obj.category, id, 
+      If(And(Select(Variable(id), "visible"), Select(ObjectLiteral(game.block1), "visible")), 
+        Assign(Seq((Variable(id), "x")), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
+        NOP)
+      )
+    )
+  }
+  
+  it should "not change an expression during generalization if it doesn't contain the given object" in {
+    val obj = game.ball1
+    val e = If(game.block1.visible, game.block1.y += 2)
+    val generalized = generalizeToCategory(e, obj)
+    generalized should be (e)
+  }
+  
   "TypesOps" should "have correct subtypes" in {
     isSubtypeOf(TInt, TFloat) should be (true)
     isSubtypeOf(TFloat, TInt) should be (false)
