@@ -85,8 +85,8 @@ trait InputManager extends GameObject {
   
   def collectInput(from: Context)
 
-  override def postStep(time: Long, ctx: Context): Unit = {
-    super.postStep(time, ctx)
+  override def postStep(ctx: Context): Unit = {
+    super.postStep(ctx)
     // Maps the previous events to the input mechanisms
     collectInput(ctx)
   }

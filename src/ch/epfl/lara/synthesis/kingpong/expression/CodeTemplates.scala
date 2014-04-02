@@ -1145,7 +1145,7 @@ object CodeTemplates extends CodeHandler {
   
   object TArrayMoveUp extends TemplateOtherCell[Movable] with TemplateMovable {
     def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
-      if (other.column >= 1 &&
+      if (other.row >= 1 &&
           other.contains(obj.center.get) &&
           other.array.cells(other.column)(other.row - 1).contains(obj.center.next)) {
         val upCellExpr = other.array.cell(Column(other), Row(other) - 1)

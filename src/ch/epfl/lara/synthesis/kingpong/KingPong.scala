@@ -422,7 +422,8 @@ class KingPong extends Activity
   configurationObject {
     if(task != null) {
       if(mGameView != null) task.game = mGameView.getGame
-      task.game.storeInitialState(false)
+      //TODO Mikael, what is the purpose of this?
+      //task.game.storeInitialState(false)
       task.detach()
     }
     task

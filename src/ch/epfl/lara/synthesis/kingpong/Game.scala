@@ -54,9 +54,6 @@ trait Game extends RuleManager with ColorConstants { self =>
 
   private val _objects = MSet.empty[GameObject]
   
-  /** Initial mappings between identifiers and game objects. */
-  private var _mappings = Map.empty[Identifier, Expr] 
-
   /** All objects in this game. */
   def objects: MSet[GameObject] = _objects
   
@@ -105,9 +102,9 @@ trait Game extends RuleManager with ColorConstants { self =>
     EventHistory.step()                                /// Opens saving for new coordinates
     
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
-    objects foreach {_.preStep(time, EventHistory)}
+    objects foreach {_.preStep(EventHistory)}
     world.step()                                       /// One step forward in the world
-    objects foreach {_.postStep(time, EventHistory)}
+    objects foreach {_.postStep(EventHistory)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
@@ -126,21 +123,14 @@ trait Game extends RuleManager with ColorConstants { self =>
 
   def add(o: GameObject) = {
     _objects.add(o)
-    //TODO remove
-//    _mappings += (o.identifier -> ObjectLiteral(o))
   }
   
   def remove(o: GameObject) = {
     _objects.remove(o)
-    //TODO remove
-//    _mappings -= o.identifier
   }
   
   def rename(o: GameObject, newName: String) = {
-    //_objects.add(o)
-    // _mappings -= o.identifier
     o.name set newName
-    //_mappings += (o.identifier -> ObjectLiteral(o))
   }
 
   /** Register this rule in this game engine. */
@@ -361,11 +351,11 @@ trait Game extends RuleManager with ColorConstants { self =>
 
     def collidesCircle(obj: GameObject): Boolean = {
       obj match {
-        case p:PhysicalObject =>
+        case p: PhysicalObject =>
           world.world.getPool().getCollision().testOverlap(p.body.getFixtureList().getShape(), 0, circle, 0, p.body.getTransform(), id)
           //world.world.getPool().getCollision().
           //obj.name.get == "Paddle1"
-        case e:AbstractObject =>
+        case e: AbstractObject =>
           world.world.getPool().getCollision().testOverlap(e.getShape, 0, circle, 0, id, id)
         case _ =>
           false
@@ -397,10 +387,10 @@ trait Game extends RuleManager with ColorConstants { self =>
 
   private val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
-    def initGC() =  EventHistory
+    def initGC() = EventHistory
     
     /** Initialize the recursive context used during evaluation. */
-    def initRC() = RecContext(_mappings)
+    def initRC() = RecContext(Map.empty)
   }
   
   /** Handle the history for events like fingers input and
@@ -462,14 +452,9 @@ trait Game extends RuleManager with ColorConstants { self =>
         }
         
         history += (time, history_events)
-        
       }
     }
     
-//    private var currentAssignments = MMap[Assign, List[PropertyRef]]()
-//    def addAssignment(a: Assign, p: PropertyRef) = currentAssignments(a) = p::currentAssignments.getOrElseUpdate(a, Nil)
-//    def resetAssignments() = currentAssignments = MMap[Assign, List[PropertyRef]]()
-
     /** Return the events from the last fully completed time step. 
      *  Should not be called by another thread than the one who 
      *  calls `step()`.
@@ -492,8 +477,6 @@ trait Game extends RuleManager with ColorConstants { self =>
             case _ : AccelerometerChanged => false
             case _ => true
           }
-          crtEvents += e
-        case e@BeginContact(_) =>
           crtEvents += e
         case _ => 
           crtEvents += e
@@ -663,15 +646,4 @@ trait Game extends RuleManager with ColorConstants { self =>
       }
     case _ => None
   }
-  //private var mGameView: GameViewInterface = null
-  //def setGameEngine(g: GameViewInterface) = {
-  //  mGameView = g
-  //}
-  // Abstract to implement
-  def storeInitialState(overwrite: Boolean)= {
-    // TODO
-  }
-  
-  def relative_dx: Expr = FingerCoordX2 - FingerCoordX1
-  def relative_dy: Expr = FingerCoordY2 - FingerCoordY1
 }
