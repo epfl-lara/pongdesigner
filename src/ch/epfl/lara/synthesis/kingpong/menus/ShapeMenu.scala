@@ -138,11 +138,11 @@ object MoveButton extends MenuButton {
       selectedShape match {
         case selectedShape: Movable =>
           if(modify_prev) {
-            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+2.5f)/5).toFloat * 5
-            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+2.5f)/5).toFloat * 5   
+            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+0.05f)/0.01).toFloat * 0.01f
+            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+0.05f)/0.01).toFloat * 0.01f
           } else {
-            if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+2.5f)/5).toFloat * 5
-            if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+2.5f)/5).toFloat * 5          
+            if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+0.05f)/0.01).toFloat * 0.01f
+            if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+0.05f)/0.01).toFloat * 0.01f   
           }
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
@@ -226,20 +226,20 @@ object SizeButton extends MenuButton {
     selectedShape match {
       case c:Circle =>
         if(modify_prev) {
-          c.radius set Math.floor((c.radius.get + 2.5f)/5).toFloat * 5
+          c.radius set Math.floor((c.radius.get + 0.05f)/0.01).toFloat * 0.01f
         } else {
-          c.radius setNext Math.floor((c.radius.next+2.5f)/5).toFloat * 5
+          c.radius setNext Math.floor((c.radius.next+0.05f)/0.01).toFloat * 0.01f
         }
         if(copy_to_prev) {
           c.radius set c.radius.next
         }
       case r:ResizableRectangular =>
         if(modify_prev) {
-          r.width set (Math.floor((r.width.get + 2.5f)/5) * 5).toInt
-          r.height set (Math.floor((r.height.get + 2.5f)/5) * 5).toInt
+          r.width set (Math.floor((r.width.get + 0.05f)/0.01) * 0.01).toInt
+          r.height set (Math.floor((r.height.get + 0.05f)/0.01) * 0.01).toInt
         } else {
-          r.width setNext (Math.floor((r.width.next + 2.5f)/5) * 5).toInt
-          r.height setNext (Math.floor((r.height.next + 2.5f)/5) * 5).toInt
+          r.width setNext (Math.floor((r.width.next + 0.05f)/0.01) * 0.01).toInt
+          r.height setNext (Math.floor((r.height.next + 0.05f)/0.01) * 0.01).toInt
         }
         if(copy_to_prev) {
           r.width set r.width.next
