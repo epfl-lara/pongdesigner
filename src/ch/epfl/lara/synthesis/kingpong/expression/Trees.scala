@@ -175,7 +175,7 @@ object Trees {
    */
   class TupleSelect(val tuple: Expr, val index: Int) extends Expr with FixedType {
     assert(index >= 1)
-    assert(tuple.getType.isInstanceOf[TTuple], "Applying TupleSelect on a non-tuple tree [%s] of type [%s].".format(tuple, tuple.getType))
+    //assert(tuple.getType.isInstanceOf[TTuple], "Applying TupleSelect on a non-tuple tree [%s] of type [%s].".format(tuple, tuple.getType))
 
     val fixedType: Type = tuple.getType match {
       case TTuple(ts) =>
@@ -236,6 +236,23 @@ object Trees {
   case object UnitLiteral extends Literal[Unit] with FixedType {
     val fixedType = TUnit
     val value = ()
+  }
+  
+  /**
+   * Converts a value to a literal
+   */
+  object Literal {
+    def apply(value: Any): Expr = {
+      value match {
+        case e: Float => FloatLiteral(e)
+        case e: Int => IntegerLiteral(e)
+        case e: String => StringLiteral(e)
+        case e: Boolean => BooleanLiteral(e)
+        case e: Unit => UnitLiteral
+        case e: GameObject => ObjectLiteral(e)
+        case _=> UnitLiteral
+      }
+    }
   }
   
   /* Arithmetics */

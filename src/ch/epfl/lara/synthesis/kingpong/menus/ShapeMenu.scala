@@ -31,7 +31,7 @@ object MenuOptions {
 
 /** Change the menu. */
 object ShapeMenu extends MenuCenter {
-  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, TrashButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton)
+  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton)
   menus = basicMenu
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     val top_shift = selectedShape match {
@@ -74,7 +74,7 @@ object ShapeMenu extends MenuCenter {
     VisibilityButton.setPos(3, top_shift)
     SizeButton.setPos(1, 1)
     PaintButton.setPos(2, 1)
-    TrashButton.setPos(3, 1)
+    SystemButton.setPos(3, 1)
     
     RenameButton.setText(selectedShape.name.get)
     RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
@@ -362,39 +362,38 @@ object PaintButton extends MenuButton {
   def hint_id = R.string.change_paint_hint
 }
 
-/** Sends a shape to trash
- *  TODO : This should demonstrate advanced functionality (aka: deletion is a property)
- **/
-object TrashButton extends MenuButton {
+object SystemButton extends MenuButton {
   import MenuOptions._
+
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    if(modify_prev) { // Nothing to be done here
-      //selectedShape.deletion_time set gameEngine.time
-    } else {
-      selectedShape.deletionTime setNext gameEngine.time.toInt
-    }
-    if(copy_to_prev) {
-      selectedShape.deletionTime set selectedShape.deletionTime.next
-    }
-    
-    val res = context.getResources()
-    /*CustomDialogs.launchOKCancelDialog(context,
-        String.format(res.getString(R.string.delete_title), selectedShape.name),
-        res.getString(R.string.confirm_delete), false, { _ => selectedShape.delete(); gameEngine.shapeEditor.unselect()}, {_ => ()})*/
+    // Nothing to declare
+    SystemMenu.onFingerUp(gameEngine, selectedShape, x, y)
     hovered = false
+    SystemMenu.activated = false
   }
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
-    // Nothing
+    if(selectedShape != null) {
+      SystemMenu.activated = true
+      SystemMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+    }
   }
- 
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.trashcan ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.trashcan :: Nil
+  
+  override def testHovering(atX: Float, atY: Float, button_size: Float): Boolean = {
+    super.testHovering(atX, atY, button_size)
+    if(hovered) {
+      SystemMenu.activated = true
+    }
+    hovered
+  }
+  
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.gear ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.gear :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
     (if(hovered) hovered_icons else normal_icons)
   
-  def hint_id = R.string.change_trash_hint
+  def hint_id = R.string.system_property_hint
 }
 
 /** Changes the visibility of a shape */

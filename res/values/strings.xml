@@ -103,6 +103,7 @@
     <string name="select_rule_hint">Enables selecting events based on objects to create rules</string>
     <string name="select_prevnext_hint">Toggles between modifying the previous or the new state</string>
     <string name="change_name_hint">Changes the name of the shape</string>
+    <string name="system_property_hint">Changes the system properties of the shape</string>
     <string name="change_text_hint">Changes the text of the shape</string>
     <string name="change_position_hint">Changes the position of the shape</string>
     <string name="change_increment_hint">Change the number by 1</string>
@@ -120,6 +121,8 @@
     <string name="event_fingerup_hint">When the finger gets off the shape.</string>
     <string name="event_fingermove_hint">When the finger moves from the shape.</string>
     <string name="change_rule_hint">Opens a rule for editing.</string>
+    <string name="change_back_hint">The object will be like that from the beginning.</string>
+    
     <string name="play_rule_hint">Plays the content of this rule.</string>
     <string name="trash_rule_hint">Delete this rule.</string>
     <string name="resize_layout_hint">Resize the layout of the game.</string>

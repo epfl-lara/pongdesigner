@@ -29,6 +29,12 @@ object Events {
       (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)
     }
   }
+  object SelectableEvent {
+    def unapply(e: Event): Option[(Float, Float)] = e match {
+      case e: SelectableEvent => Some((e.p.x, e.p.y))
+      case _ => None
+    }
+  }
   
   sealed trait PhysicalContactEvent extends SelectableEvent {
     def contact: Contact

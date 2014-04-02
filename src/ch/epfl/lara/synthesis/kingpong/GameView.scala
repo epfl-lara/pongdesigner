@@ -45,7 +45,11 @@ import android.widget.ExpandableListAdapter
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.common.History
 import android.widget.Toast
-import collection.mutable.{Set => MSet}
+import collection.mutable.{Set => MSet, HashMap => MMap}
+import android.graphics.DashPathEffect
+import android.content.res.Resources
+import android.util.DisplayMetrics
+import android.view.WindowManager
 
 object GameView {
   sealed trait GameState
@@ -566,31 +570,233 @@ class GameView(val context: Context, attrs: AttributeSet)
       paint.setColor(0xAAFF0000)
       canvas.drawCircle(currentFingerPos.x, currentFingerPos.y, game.FINGER_SIZE, paint)
     }
-    /*
-    game.world.beginContacts foreach { c =>
-      paint.setColor(0xFFFF0000)
-      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
+    drawMenuOn(canvas)
+  }
+  
+  /** Menu drawing */
+  private val res: Resources = context.getResources()
+  val bitmaps = new MMap[Int, Drawable]()
+  val drawables_to_load:List[Int] =
+    List(R.drawable.finger,
+        R.drawable.bing,
+        R.drawable.numbers,
+        R.drawable.flat_button,
+        R.drawable.flat_button_highlighted,
+        R.drawable.flat_button_selected,
+        R.drawable.flat_button_selected_highlighted,
+        R.drawable.flat_button_m1,
+        R.drawable.flat_button_p1,
+        R.drawable.cross_move,
+        R.drawable.move_velocity,
+        R.drawable.move_size,
+        R.drawable.nail,
+        R.drawable.nail_big,
+        R.drawable.trashcan,
+        R.drawable.eye,
+        R.drawable.menu_paint,
+        R.drawable.none,
+        R.drawable.menu_add_rect,
+        R.drawable.menu_add_circle,
+        R.drawable.menu_add_digit,
+        R.drawable.menu_add_text,
+        R.drawable.modify_text,
+        R.drawable.plus,
+        R.drawable.menu_add_accelerometer,
+        R.drawable.menu_add_force_field,
+        R.drawable.menu_rule_editor,
+        R.drawable.menu_rule_maker,
+        R.drawable.prev_effects,
+        R.drawable.next_effects,
+        R.drawable.menu_camera,
+        R.drawable.existing_rules,
+        R.drawable.flat_button_resizable,
+        R.drawable.flat_button_resizable_highlighted,
+        //R.drawable.cursor_square,
+        R.drawable.fingerdown_button,
+        R.drawable.fingermove_button,
+        R.drawable.fingerup_button,
+        //R.drawable.menu_rule_apply,
+        //R.drawable.no_collision,
+        //R.drawable.no_collision_effect,
+        R.drawable.collision_effect,
+        R.drawable.outscreen,
+        R.drawable.fingerdown,
+        R.drawable.fingerup,
+        R.drawable.fingermove
+        //R.drawable.timebutton3
+        )
+  drawables_to_load.foreach { id =>
+    bitmaps(id) = res.getDrawable(id)
+  }
+  
+  private val fingerDrawable: Drawable = bitmaps(R.drawable.finger)
+  
+  var selectPaint = new Paint()
+  selectPaint.setStrokeWidth(4)
+  selectPaint.setColor(0xAAFFFFFF)
+  selectPaint.setStyle(Paint.Style.STROKE)
+  selectPaint.setAntiAlias(true)
+  var circlePaint = new Paint()
+  circlePaint.setColor(0xFF000000)
+  circlePaint.setStyle(Paint.Style.STROKE)
+  circlePaint.setStrokeWidth(4)
+  circlePaint.setAntiAlias(true)
+  var touchDownPaint = new Paint()
+  touchDownPaint.setColor(0xAAFF0000)
+  touchDownPaint.setStyle(Paint.Style.FILL_AND_STROKE)
+  touchDownPaint.setStrokeWidth(2)
+  touchDownPaint.setAntiAlias(true)
+  var touchUpPaint = new Paint()
+  touchUpPaint.set(touchDownPaint)
+  touchUpPaint.setColor(0xAA00FF00)
+  var touchMovePaint = new Paint()
+  touchMovePaint.set(touchDownPaint)
+  touchMovePaint.setColor(0xAAFFFF00)
+  var touchSelectedPaint = new Paint()
+  touchSelectedPaint.set(touchDownPaint)
+  touchSelectedPaint.setStyle(Paint.Style.STROKE)
+  touchSelectedPaint.setColor(0xAAFFFFFF)
+  touchSelectedPaint.setStrokeWidth(4)
+  var distancePaint = new Paint()
+  distancePaint.set(touchMovePaint)
+  distancePaint.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
+  final val cross_size = 15
+    
+  // Draw events in the GameView referential
+  def drawEventOn(event: Event, timestamp: Int, canvas: Canvas): Unit = {
+    var paint: Paint = this.paint
+    val eventIsSelected = eventEditor.selectedEvent.exists(_ == event)
+    event match {
+      case e if eventIsSelected =>
+        if(event.isFinger) paint = touchSelectedPaint
+      case FingerRelated(_) =>
+        paint = touchDownPaint
+      case _ =>
     }
-
-    game.world.currentContacts foreach { c =>
-      paint.setColor(0xFF00FF00)
-      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
-    }
-
-    game.world.endContacts foreach { c =>
-      paint.setColor(0xFF0000FF)
-      canvas.drawCircle(c.point.x, c.point.y, mapRadiusI(10), paint)
-    }
-
-    game.events.find(_.isInstanceOf[AccelerometerChanged]) match {
-      case Some(e @ AccelerometerChanged(v)) =>
+    val dtime = (game.time - timestamp) * (if(event.isInstanceOf[FingerDown]) -1 else 1)
+    val power = if(eventIsSelected) 1f else (if(dtime < 0) 0f else (300-Math.min(Math.max(dtime, 0), 300))/300f)
+    var finger: List[(Float, Float, Int)] = Nil // The last int is the opacity
+    event match {
+      case BeginContact(c) => 
+        paint.setColor(0xFFFF0000)
+        val p = mapVectorFromGame(c.point)
+        canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
+      case CurrentContact(c) => 
+        paint.setColor(0xFF00FF00)
+        val p = mapVectorFromGame(c.point)
+        canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
+      case EndContact(c) => 
+        paint.setColor(0xFF0000FF)
+        val p = mapVectorFromGame(c.point)
+        canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
+      case AccelerometerChanged(v) =>
         paint.setStrokeWidth(mapRadiusI(2))
         paint.setColor(0xFFFF00FF)
         val pos = mapVectorToGame(Vec2(100, 100))
         canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
+      case FingerUp(v, obj) =>
+        val p = mapVectorFromGame(v)
+        canvas.drawCircle(p.x, p.y, cross_size, circlePaint)
+        canvas.drawCircle(p.x, p.y, cross_size, paint)
+        if(timestamp == game.time) finger = (p.x, p.y, 0xBA)::finger
+      case FingerDown(v, obj) =>
+        val p = mapVectorFromGame(v)
+        drawCross(canvas, p.x, p.y, paint)
+        if(timestamp == game.time) finger = (p.x, p.y, 0xBA)::finger
+      case FingerMove(v, v2, obj) =>
+        val p = mapVectorFromGame(v)
+        val p2 = mapVectorFromGame(v2)
+        if(event == eventEditor.selectedEvent) {
+          drawCross(canvas, p.x, p.y, touchSelectedPaint)
+          canvas.drawCircle(p2.x, p2.y, 15, touchSelectedPaint)
+        } else {
+          if(timestamp == game.time) finger = (p2.x, p2.y, 0xBA)::finger
+        }
+        canvas.drawLine(p.x, p.y, p2.x, p2.y, paint)
       case _ => //Do nothing
     }
-    */
+    def recDrawFinger(l: List[(Float, Float, Int)]): Unit = l match {
+      case Nil =>
+      case (x, y, alpha)::q => drawFinger(canvas, x, y, alpha)
+        recDrawFinger(q)
+    }
+    recDrawFinger(finger)
+  }
+
+  
+  /** Draws a cross at the given position */
+  def drawCross(canvas: Canvas, x: Float, y: Float, paint: Paint) = {
+    canvas.drawLine(x - cross_size, y - cross_size, x + cross_size, y + cross_size, paint)
+    canvas.drawLine(x - cross_size, y + cross_size, x + cross_size, y - cross_size, paint)
+  }
+  def drawFinger(canvas: Canvas, x: Float, y: Float, alpha: Int) = {
+    val width = 44
+    val height = 64
+    val xc = 8
+    val yc = 63
+    val left = (x - xc).toInt
+    val top = (y - yc).toInt
+    fingerDrawable.setBounds(left, top, left + width - 1, top + height - 1)
+    fingerDrawable.setAlpha(alpha)
+    fingerDrawable.draw(canvas)
+  }
+  
+  val metrics = new DisplayMetrics();    
+  context.getSystemService(Context.WINDOW_SERVICE).asInstanceOf[WindowManager].getDefaultDisplay().getMetrics(metrics);    
+  lazy val button_size:Float = if(3 * 80 * metrics.density >= Math.min(metrics.widthPixels, metrics.heightPixels)) 40 * metrics.density else 80 * metrics.density
+  
+  /** Draws the menu on the canvas */
+  def drawMenuOn(canvas: Canvas) = {
+    // Draw the fps on the top right of the screen
+    //mFPSPaint.setTextSize(20)
+    //canvas.drawText("fps:" + fps.toString(), mWidth - 90, 20, mFPSPaint)
+    
+    state match {
+      case Editing => 
+        eventEditor.selectedEvent match {
+          case Some(event) => drawEventOn(event, eventEditor.selectedTime.toInt, canvas)
+          case _ =>
+        }
+        if(mRuleState == STATE_SELECTING_EVENTS) {
+          game.foreachEvent{ (event, time) => drawEventOn(event, time, canvas) }
+        }
+        //StaticMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, button_size/2, button_size/2)
+        //if(game.currentTime == 0)
+        //GameMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, 0, 0)
+      case Running =>
+    }
+    if(shapeEditor.selectedShape != null) {
+      val (x, y) = shapeEditor.selectedShape match {
+        case selectedShape: Movable =>
+          if(MenuOptions.modify_prev) {
+            (selectedShape.x.get,
+             selectedShape.y.get)
+          } else {
+            (selectedShape.x.next,
+             selectedShape.y.next)
+          }
+        case _ =>
+          (0f, 0f)
+      }
+      val p = mapVectorFromGame(Vec2(x, y))
+      val selectionx = Math.min(Math.max(p.x, button_size), mWidth - button_size*3.5f)
+      val selectiony = Math.min(Math.max(p.y, button_size*1.5f), mHeight-button_size*1.5f)
+      
+      val cx = selectionx
+      val cy = selectiony
+      
+      // Display the shape's menu.
+      ShapeMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, cx, cy)
+      if(ColorMenu.activated && ColorMenu.registeredAction == null) {
+        ColorMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, PaintButton.getX(), PaintButton.getY())
+      }
+    }
+    eventEditor.selectedEvent match {
+      case Some(SelectableEvent(x, y)) =>
+        val p = mapVectorFromGame(Vec2(x, y))
+        EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, x, y)
+      case _ =>
+    }
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
@@ -625,6 +831,12 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   var currentFingerPos: Vec2 = null
   var fingerIsDown = false
+  var fingerUpCanceled = false
+  var touchDownOriginal = Vec2(0, 0)
+  var touchDownOriginalGame = Vec2(0, 0)
+  var selectedShapeCoords = Vec2(0 ,0)
+  var mDisplacementX: Float = 0
+  var mDisplacementY: Float = 0
 
   override def onFingerDown(pos: Vec2): Unit = {
     state match {
@@ -636,7 +848,45 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Editing =>
         super.onFingerDown(pos)
         //TODO: Add menus handling ?
+        fingerUpCanceled = false
+        val x = pos.x
+        val y = pos.y
+        var return_value = highLightMenu(x, y)
+        val p = mapVectorToGame(pos)
+        touchDownOriginalGame = p
+        touchDownOriginal = pos
+        shapeEditor.selectedShape match {
+          case selectedShape: Movable =>
+              if(MenuOptions.modify_prev) {
+                selectedShapeCoords = selectedShape.center.get
+              } else {
+                selectedShapeCoords = selectedShape.center.next
+              }
+              MenuOptions.selected_shape_first_x = selectedShapeCoords.x
+              MenuOptions.selected_shape_first_y = selectedShapeCoords.y
+          case _ =>
+        }
+        if(MoveButton.hovered) {
+          mDisplacementX = 0
+          mDisplacementY = 0
+        }
     }
+  }
+  
+  /** Highlights the corresponding menu under the finger
+   * Returns true if a menu has been highlighted.
+   **/
+  def highLightMenu(x: Float, y: Float): Boolean = {
+    var stg_hovered = false
+    gameEngineEditors foreach { editor =>
+      if(editor.isVisible && !stg_hovered) {
+        stg_hovered = editor.testHovering(x, y, button_size)
+        if(stg_hovered && Options.Access.showTooltips) {
+          editor.fireTooltips(context)
+        }
+      }
+    }
+    stg_hovered
   }
   
   /**
@@ -934,6 +1184,30 @@ class GameView(val context: Context, attrs: AttributeSet)
       //matrix.postTranslate(to.x - from.x, to.y - from.y)
       //push(matrix)
       super.onOneFingerMove(from, to)
+      // TODO: 
+      mDisplacementX = to.x - touchDownOriginal.x
+      mDisplacementY = to.y - touchDownOriginal.y
+      val touchCoords = mapVectorToGame(to)
+      val touchCoords2 = mapVectorToGame(from)
+      val shiftX = touchCoords.x - touchCoords2.x
+      val shiftY = touchCoords.y - touchCoords2.y
+      val simpleRelativeX = touchCoords.x - touchDownOriginalGame.x
+      val simpleRelativeY = touchCoords.y - touchDownOriginalGame.y
+      var relativeX = simpleRelativeX
+      var relativeY = simpleRelativeY
+      // Snap to grid.
+      if(Math.abs(relativeX) < 10) { relativeX = 0 }
+      if(Math.abs(relativeY) < 10) { relativeY = 0 }
+      ShapeMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      if(ColorMenu.activated) {
+        ColorMenu.testHovering(to.x, to.y, button_size)
+        ColorMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      }
+      if(EventMenu.isActivated) {
+        EventMenu.testHovering(to.x, to.y, button_size)
+        EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      }
+      
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {
