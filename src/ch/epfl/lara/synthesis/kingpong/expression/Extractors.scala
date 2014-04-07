@@ -8,7 +8,6 @@ object Extractors {
       case Not(e) => Some((e, Not))
       case Row(e) => Some((e, Row))
       case Column(e) => Some((e, Column))
-      case FingerMoveOver(e) => Some((e, FingerMoveOver))
       case FingerDownOver(e) => Some((e, FingerDownOver))
       case FingerUpOver(e)   => Some((e, FingerUpOver))
       case TupleSelect(e, i) => Some((e, TupleSelect(_, i)))
@@ -43,6 +42,7 @@ object Extractors {
       case Contains(t1,t2)  => Some((t1, t2, Contains))
       case Let(id, t1, t2)  => Some((t1, t2, Let(id, _, _)))
       case Copy(t1, id, t2) => Some((t1, t2, Copy(_, id, _)))
+      case FingerMoveOver(t1, id, t2) => Some((t1, t2, FingerMoveOver(_, id, _)))
       
       case _ => None
     }

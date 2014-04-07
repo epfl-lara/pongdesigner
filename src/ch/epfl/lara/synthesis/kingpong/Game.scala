@@ -295,40 +295,6 @@ trait Game extends RuleManager with ColorConstants { self =>
     r
   }
 
-  def foreach(category: Category)(body: ObjectProxy => Expr): Expr = {
-    val id = FreshIdentifier(category.name)
-    val ref = new ObjectProxy(id)
-    Foreach(category, id, body(ref))
-  }
-
-  def foreach(category1: Category, category2: Category)(body: (ObjectProxy, ObjectProxy) => Expr): Expr = {
-    val id1 = FreshIdentifier(category1.name)
-    val id2 = FreshIdentifier(category2.name)
-    val ref1 = new ObjectProxy(id1)
-    val ref2 = new ObjectProxy(id2)
-    Foreach(category1, id1, Foreach(category2, id2, body(ref1, ref2)))
-  }
-  
-  def foreach(category1: Category, category2: Category, category3: Category)(body: (ObjectProxy, ObjectProxy, ObjectProxy) => Expr): Expr = {
-    val id1 = FreshIdentifier(category1.name)
-    val id2 = FreshIdentifier(category2.name)
-    val id3 = FreshIdentifier(category3.name)
-    val ref1 = new ObjectProxy(id1)
-    val ref2 = new ObjectProxy(id2)
-    val ref3 = new ObjectProxy(id3)
-    Foreach(category1, id1, Foreach(category2, id2, Foreach(category3, id3, body(ref1, ref2, ref3))))
-  }
-  
-  def copy(obj: Expr)(body: ObjectProxy => Expr): Expr = {
-    val id = FreshIdentifier("copy")
-    val ref = new ObjectProxy(id)
-    Copy(obj, id, body(ref))
-  }
-
-  def whenever(cond: Expr)(actions: Expr*): Expr = {
-    If(cond, flatten(actions.toSeq))
-  }
-  
   def gc() = {
     //TODO write GC
     

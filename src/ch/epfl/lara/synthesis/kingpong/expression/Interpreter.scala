@@ -294,44 +294,15 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    case FingerMoveOver(e) =>
-      eval(e) match {
-        case ObjectLiteral(o) =>
-          var fromx = 0f
-          var fromy = 0f
-          var tox = 0f
-          var toy = 0f
-          var first = true
-          var n = 0
-          
-          //MIKAEL n is always 0
-          if (!(gctx.events.collect{ case e: FingerMove => e }).isEmpty) {
-            n *= 2
-          }
-          
-          gctx.fingerMoves(_.obj.exists(_ == o)) foreach { event => 
-            if (first) {
-              fromx = event.from.x
-              fromy = event.from.y
-              first = false
-            }
-            tox = event.to.x
-            toy = event.to.y
-            n += 1
-          }
-          
-          val result = if (n != 0) {
-//            context.set("from", Tuple(Seq(fromx, fromy)))
-//            context.set("to", Tuple(Seq(tox, toy)))
-//            context.set("dx", FloatLiteral(tox - fromx))
-//            context.set("dy", FloatLiteral(toy - fromy))
-            true
-          } else false
-          
-          BooleanLiteral(result)
-          
-        case _ => error(expr)
+    case FingerMoveOver(expr, id, block) =>
+      val obj = eval(expr).as[GameObject]
+      val moves = gctx.fingerMoves(_.obj.exists(_ == obj))
+      val from = moves.headOption.map(_.from)
+      if (from.isDefined) {
+        val to = moves.last.to
+        eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
       }
+      UnitLiteral
       
     case FingerDownOver(e) =>
       eval(e) match {
@@ -375,16 +346,7 @@ trait Interpreter {
         case ObjectLiteral(o: Cell) => IntegerLiteral(o.column)
         case _ => error(expr)
       }
-      
-//    case FingerCoordX1 =>
-//      FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
-//    case FingerCoordX2 =>
-//      FloatV(context.getOrElse("to", Vec2V(0, 0)).asInstanceOf[Vec2V].x)
-//    case FingerCoordY1 =>
-//      FloatV(context.getOrElse("from", Vec2V(0, 0)).asInstanceOf[Vec2V].y)
-//    case FingerCoordY2 =>
-//      FloatV(context.getOrElse("to", Vec2V(0, 0)).asInstanceOf[Vec2V].y)
-    
+
     case NOP => UnitLiteral
       
     case null =>

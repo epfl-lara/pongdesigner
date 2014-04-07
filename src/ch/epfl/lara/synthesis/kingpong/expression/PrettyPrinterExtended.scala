@@ -332,13 +332,9 @@ trait PrettyPrinterExtendedTypical {
     case Row(expr) => c + indent +< expr + ".row" +>
     case Column(expr) => c + indent +< expr + ".column" +>
     
-    case FingerMoveOver(o) => c + indent +< FINGER_MOVE_SYMBOL + o +>
+    case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + obj + (block, indent + INDENT) +>
     case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>
     case FingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + o +>
-    case FingerCoordX1 => c + indent +! "x1"
-    case FingerCoordY1 => c + indent +! "y1"
-    case FingerCoordX2 => c + indent +! "x2"
-    case FingerCoordY2 => c + indent +! "y2"
   }}
 }
 
