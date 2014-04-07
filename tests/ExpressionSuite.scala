@@ -41,6 +41,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     
     val ball1 = circle(balls)(name="ball1", x=2, y=2)
     val block1 = intbox(blocks)(name="block1", x=0, y=0)
+    val block2 = intbox(blocks)(name="block2", x=1, y=0)
     val arr = array(arrays)("array1", x=0, y=0, columns=2, rows=2)
     
     val rule1 = foreach(blocks, balls) { (block, ball) =>
@@ -114,6 +115,18 @@ class ExpressionSuite extends FlatSpec with Matchers {
     
     val e2 = If(i1 >= i2, i2 * i2, i2 * i1)
     interpreter.evaluate(e2) should be (i2)
+  }
+  
+  it should "handle Forall expression" in {
+    val e1 = forall(game.blocks) { block =>
+      block.x =:= 1f
+    }
+    interpreter.evaluate(e1) should be (bf)
+    
+    val e2 = forall(game.blocks) { block =>
+      block.y =:= 0f
+    }
+    interpreter.evaluate(e2) should be (bt)
   }
   
   it should "correctly assign properties" in {

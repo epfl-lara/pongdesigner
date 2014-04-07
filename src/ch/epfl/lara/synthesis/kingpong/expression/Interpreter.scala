@@ -79,6 +79,12 @@ trait Interpreter {
       }
       UnitLiteral
       
+    case Forall(cat, id, body) =>
+      val res = cat.objects.forall { o =>
+        eval(body)(gctx, rctx.withNewVar(id, o.expr)).as[Boolean]
+      }
+      BooleanLiteral(res)
+      
     case Block(stats) => 
       stats foreach eval
       UnitLiteral
