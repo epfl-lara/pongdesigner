@@ -27,13 +27,18 @@ object MenuOptions {
   
   /** Size of the button */
   var button_size = 25f
+  
+  var smallest_size = 0.05f
+  def smallest_size2 = 2*smallest_size
 }
 
 /** Change the menu. */
 object ShapeMenu extends MenuCenter {
   val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton)
   menus = basicMenu
+  
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
+    for(m <- menus) { m.visible = true }
     val top_shift = selectedShape match {
       case d: Box[_] if d.className == "Box[Int]" =>
         IncrementButton.setPos(0, -1)
@@ -79,6 +84,13 @@ object ShapeMenu extends MenuCenter {
     RenameButton.setText(selectedShape.name.get)
     RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
 
+    if(MoveButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      MoveButton.visible = true
+    } else if(SpeedButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      SpeedButton.visible = true
+    }
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
@@ -134,15 +146,14 @@ object MoveButton extends MenuButton {
   
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     if(selectedShape.noVelocity) {
-    // TODO : Snap to the grid.
       selectedShape match {
         case selectedShape: Movable =>
           if(modify_prev) {
-            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+0.05f)/0.01).toFloat * 0.01f
-            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+0.05f)/0.01).toFloat * 0.01f
+            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+smallest_size)/smallest_size2).toFloat * smallest_size2
+            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+smallest_size)/smallest_size2).toFloat * smallest_size2
           } else {
-            if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+0.05f)/0.01).toFloat * 0.01f
-            if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+0.05f)/0.01).toFloat * 0.01f   
+            if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+smallest_size)/smallest_size2).toFloat * smallest_size2
+            if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+smallest_size)/smallest_size2).toFloat * smallest_size2  
           }
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
@@ -159,11 +170,11 @@ object MoveButton extends MenuButton {
       selectedShape match {
         case selectedShape: Movable =>
       if(modify_prev) {
-        selectedShape.x set selected_shape_first_x + relativeX
-        selectedShape.y set selected_shape_first_y + relativeY
+        selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX)
+        selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY)
       } else {
-        selectedShape.x setNext selected_shape_first_x + relativeX
-        selectedShape.y setNext selected_shape_first_y + relativeY
+        selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX)
+        selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY)
       }
       if(copy_to_prev) {
         selectedShape.x set selectedShape.x.next
@@ -226,20 +237,20 @@ object SizeButton extends MenuButton {
     selectedShape match {
       case c:Circle =>
         if(modify_prev) {
-          c.radius set Math.floor((c.radius.get + 0.05f)/0.01).toFloat * 0.01f
+          c.radius set Math.floor((c.radius.get + smallest_size)/smallest_size2).toFloat * smallest_size2
         } else {
-          c.radius setNext Math.floor((c.radius.next+0.05f)/0.01).toFloat * 0.01f
+          c.radius setNext Math.floor((c.radius.next+smallest_size)/smallest_size2).toFloat * smallest_size2
         }
         if(copy_to_prev) {
           c.radius set c.radius.next
         }
       case r:ResizableRectangular =>
         if(modify_prev) {
-          r.width set (Math.floor((r.width.get + 0.05f)/0.01) * 0.01).toInt
-          r.height set (Math.floor((r.height.get + 0.05f)/0.01) * 0.01).toInt
+          r.width set (Math.floor((r.width.get + smallest_size)/smallest_size2) * smallest_size2).toInt
+          r.height set (Math.floor((r.height.get + smallest_size)/smallest_size2) * smallest_size2).toInt
         } else {
-          r.width setNext (Math.floor((r.width.next + 0.05f)/0.01) * 0.01).toInt
-          r.height setNext (Math.floor((r.height.next + 0.05f)/0.01) * 0.01).toInt
+          r.width setNext (Math.floor((r.width.next + smallest_size)/smallest_size2) * smallest_size2).toInt
+          r.height setNext (Math.floor((r.height.next + smallest_size)/smallest_size2) * smallest_size2).toInt
         }
         if(copy_to_prev) {
           r.width set r.width.next
@@ -255,20 +266,20 @@ object SizeButton extends MenuButton {
       selectedShape match {
         case c:Circle =>
           if(modify_prev) {
-            c.radius set Math.max(10, c.radius.get + shiftX)
+            c.radius set Math.max(smallest_size, c.radius.get + shiftX)
           } else {
-            c.radius setNext Math.max(10, c.radius.next + shiftX)
+            c.radius setNext Math.max(smallest_size, c.radius.next + shiftX)
           }
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
         case r:ResizableRectangular =>
           if(modify_prev) {
-            r.width set Math.max(10, r.width.get + shiftX.toInt)
-            r.height set Math.max(10, r.height.get + shiftY.toInt)
+            r.width set Math.max(smallest_size, r.width.get + shiftX.toInt)
+            r.height set Math.max(smallest_size, r.height.get + shiftY.toInt)
           } else {
-            r.width setNext Math.max(10, r.width.next + shiftX.toInt)
-            r.height setNext Math.max(10, r.height.next + shiftY.toInt)
+            r.width setNext Math.max(smallest_size, r.width.next + shiftX.toInt)
+            r.height setNext Math.max(smallest_size, r.height.next + shiftY.toInt)
           }
           if(copy_to_prev) {
             r.width set r.width.next

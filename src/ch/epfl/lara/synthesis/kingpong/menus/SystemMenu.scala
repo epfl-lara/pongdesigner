@@ -21,7 +21,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 object SystemMenu extends MenuCenter {
   var activated = false
   
-   menus = List(TrashButton, VisibilityButton)
+   menus = List(TrashButton, FixButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     //RenameButtonRule.setText(selectedShape.mName)

@@ -176,9 +176,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   def fromGame(e: Expr): Expr = {
     MethodCall("fromGame", List(e))
   }
-  def snap(e: Expr): Expr = {
+  /*def snap(e: Expr): Expr = {
     MethodCall("snap", List(e))
-  }
+  }*/
+  def snapX(i: Float): Float = grid.snap(i)
+  def snapY(i: Float): Float = grid.snap(i)
   
   var gameEngineEditors: List[GameEngineEditor] = _
   def addGameEngineEditor(g: GameEngineEditor) = {
@@ -274,6 +276,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
+    ColorMenu.createMenuFromColorArray(this.getContext(), R.array.colors)
     //updateCodeView(game.rules, game.objects)
     codeview.setText("")
   }
@@ -414,6 +417,22 @@ class GameView(val context: Context, attrs: AttributeSet)
     // Remove objects that have been created after the date.
     game.gc()
     game.setInstantProperties(false)
+      //computeMatrix()
+      
+      gameEngineEditors foreach (_.onExitEditMode())
+
+      //CategoryGroup.unselect()
+      setModeModifyGame()
+      //mAddRuleButton.text = res.getString(R.string.design_rule)
+      MenuCenter.registeredMenusCenters foreach {
+        _.menus.foreach { _.hovered = false}
+      }
+      
+      //timeTracker.unpause(game.currentTime - game.maxTime)
+      /*if(enteredEditTime != 0) {
+        totalNonPlayedTime += System.currentTimeMillis() - enteredEditTime - (game.currentTime - game.maxTime)
+        enteredEditTime = 0
+      }*/
     state = Running
   }
 
@@ -622,7 +641,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         R.drawable.outscreen,
         R.drawable.fingerdown,
         R.drawable.fingerup,
-        R.drawable.fingermove
+        R.drawable.fingermove,
+        R.drawable.gear
         //R.drawable.timebutton3
         )
   drawables_to_load.foreach { id =>
@@ -750,7 +770,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     // Draw the fps on the top right of the screen
     //mFPSPaint.setTextSize(20)
     //canvas.drawText("fps:" + fps.toString(), mWidth - 90, 20, mFPSPaint)
-    
+    MenuOptions.button_size = button_size
     state match {
       case Editing => 
         eventEditor.selectedEvent match {
@@ -787,8 +807,11 @@ class GameView(val context: Context, attrs: AttributeSet)
       
       // Display the shape's menu.
       ShapeMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, cx, cy)
-      if(ColorMenu.activated && ColorMenu.registeredAction == null) {
+      if(ColorMenu.activated && ColorMenu.registeredAction == None) {
         ColorMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, PaintButton.getX(), PaintButton.getY())
+      }
+      if(SystemMenu.activated) {
+        SystemMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, SystemButton.getX(), SystemButton.getY())
       }
     }
     eventEditor.selectedEvent match {
@@ -1196,8 +1219,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       var relativeX = simpleRelativeX
       var relativeY = simpleRelativeY
       // Snap to grid.
-      if(Math.abs(relativeX) < 10) { relativeX = 0 }
-      if(Math.abs(relativeY) < 10) { relativeY = 0 }
+      if(Math.abs(relativeX) < 0.05f) { relativeX = 0 }
+      if(Math.abs(relativeY) < 0.05f) { relativeY = 0 }
       ShapeMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
       if(ColorMenu.activated) {
         ColorMenu.testHovering(to.x, to.y, button_size)
