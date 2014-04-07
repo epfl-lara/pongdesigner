@@ -139,6 +139,8 @@ object Trees {
     val fixedType = leastUpperBound(thenn.getType, elze.getType).getOrElse(TAny)
   }
   
+  case class Forall(category: Category, id: Identifier, body: Expr) extends Expr with FixedBooleanType
+  
   /**
    * A variable XXX
    */

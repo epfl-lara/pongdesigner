@@ -143,6 +143,7 @@ object TreeDSL {
     def top = new PropertyProxySingleRef(expr, "top").setType(TFloat)
     def left = new PropertyProxySingleRef(expr, "left").setType(TFloat)
     def right = new PropertyProxySingleRef(expr, "right").setType(TFloat) 
+    def center = new PropertyProxySingleRef(expr, "center").setType(TVec2)
     
     def cell(column: Expr, row: Expr) = new ArrayApplyProxy(expr, column, row)
   }
@@ -197,5 +198,10 @@ object TreeDSL {
     }
   }
   
+  def forall(category: Category)(body: ObjectProxy => Expr): Expr = {
+    val id = FreshIdentifier(category.name)
+    val ref = new ObjectProxy(id)
+    Forall(category, id, body(ref))
+  }
   
 }
