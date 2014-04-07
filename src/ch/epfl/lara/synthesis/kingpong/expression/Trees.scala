@@ -141,8 +141,11 @@ object Trees {
   
   case class Forall(category: Category, id: Identifier, body: Expr) extends Expr with FixedBooleanType
   
-  /** Debug expression. When evaluated, prints the message. */
-  case class Debug(message: String) extends UnitExpr with Terminal
+  /** 
+   * Debug expression. When evaluated, prints the message.
+   * The interpretation of the formatting patterns is described in `java.util.Formatter`.
+   */
+  case class Debug(message: String, exprs: Seq[Expr]) extends UnitExpr with Terminal
   
   /**
    * A variable XXX
@@ -196,6 +199,8 @@ object Trees {
     })
 
     override def hashCode: Int = tuple.hashCode + index.hashCode
+    
+    override def toString() = "TupleSelect(" + tuple + ", " + index + ")"
   }
   
   /**

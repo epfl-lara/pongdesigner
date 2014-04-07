@@ -204,4 +204,8 @@ object TreeDSL {
     Forall(category, id, body(ref))
   }
   
+  def debug(msg: String, args: Expr*): Expr = {
+    Debug(msg, args.toSeq)
+  }
+  
 }

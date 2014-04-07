@@ -67,8 +67,10 @@ trait Interpreter {
     case Select(e, propertyName) =>
       eval(e).as[GameObject].get(propertyName).getExpr
 
-    case Debug(message) =>
-      Log.d("kingpong", message)
+    case Debug(message, exprs) =>
+      val formatter = new java.util.Formatter()
+      formatter.format(message, exprs.map(eval).map(_.toString): _*)
+      Log.d("kingpong", formatter.toString)
       UnitLiteral
       
     case ParExpr(a :: _) =>
