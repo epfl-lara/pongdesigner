@@ -141,6 +141,9 @@ object Trees {
   
   case class Forall(category: Category, id: Identifier, body: Expr) extends Expr with FixedBooleanType
   
+  /** Debug expression. When evaluated, prints the message. */
+  case class Debug(message: String) extends UnitExpr with Terminal
+  
   /**
    * A variable XXX
    */

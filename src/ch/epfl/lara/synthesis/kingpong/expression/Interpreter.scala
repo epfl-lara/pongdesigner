@@ -67,6 +67,10 @@ trait Interpreter {
     case Select(e, propertyName) =>
       eval(e).as[GameObject].get(propertyName).getExpr
 
+    case Debug(message) =>
+      Log.d("kingpong", message)
+      UnitLiteral
+      
     case ParExpr(a :: _) =>
       eval(a)
       
