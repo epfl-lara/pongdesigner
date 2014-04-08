@@ -149,7 +149,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     radius.get should be (5f)
     
     // test the assign with an indirect reference to the object.
-    val e2 = game.foreach(game.balls) { ball =>
+    val e2 = foreach(game.balls) { ball =>
       ball.radius := 2
     }
     interpreter.evaluate(e2) should be (UnitLiteral)
@@ -161,7 +161,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
   }
   
   it should "throw an exception when assigning a RO property" in {
-    val e1 = game.foreach(game.arr.cellsCategory) { cell =>
+    val e1 = foreach(game.arr.cellsCategory) { cell =>
       cell.x := 2
     }
     an [InterpreterException] should be thrownBy interpreter.evaluate(e1)

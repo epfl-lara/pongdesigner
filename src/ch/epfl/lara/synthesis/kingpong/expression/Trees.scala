@@ -159,7 +159,7 @@ object Trees {
     val fixedType = body.getType
   }
   
-  case class Select(expr: Expr, property: String) extends Expr
+  case class Select(expr: Expr, property: PropertyId) extends Expr
    
   case class Tuple(exprs: Seq[Expr]) extends Expr with FixedType {
     val fixedType = TTuple(exprs.map(_.getType))

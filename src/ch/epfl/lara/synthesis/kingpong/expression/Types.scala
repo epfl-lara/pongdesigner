@@ -27,7 +27,8 @@ object Types {
   }
   
   object TTuple {
-    def apply(types: Type*): TTuple = TTuple(types.toSeq)
+    def apply(t1: Type, t2: Type): TTuple = TTuple(Seq(t1, t2))
+    def apply(t1: Type, t2: Type, t3: Type): TTuple = TTuple(Seq(t1, t2, t3))
   }
   
   case class TTuple(types: Seq[Type]) extends Type {
