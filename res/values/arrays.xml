@@ -7,9 +7,9 @@
         <item>@array/menu_categories</item>
     </array>
     <array name="menu_arrays_drawable">
-        <item>@drawable/menu_add_rect</item>
-        <item>@drawable/menu_rule_maker</item>
-        <item>@drawable/menu_add_force_field</item>
+        <item>@drawable/menu_add_object</item>
+        <item>@drawable/menu_rule_editor</item>
+        <item>@drawable/menu_add_category</item>
     </array>
     <array name="menu_arrays_hint">
         <item>@string/menu_add_shape_hint</item>

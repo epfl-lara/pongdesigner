@@ -89,7 +89,10 @@ object ShapeMenu extends MenuCenter {
       MoveButton.visible = true
     } else if(SpeedButton.hovered) {
       for(m <- menus) { m.visible = false }
-      SpeedButton.visible = true
+      //SpeedButton.visible = true
+    } else if(SizeButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      SizeButton.visible = true
     }
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
@@ -169,17 +172,17 @@ object MoveButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
-      if(modify_prev) {
-        selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX)
-        selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY)
-      } else {
-        selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX)
-        selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY)
-      }
-      if(copy_to_prev) {
-        selectedShape.x set selectedShape.x.next
-        selectedShape.y set selectedShape.y.next
-      }
+          if(modify_prev) {
+            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX)
+            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY)
+          } else {
+            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX)
+            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY)
+          }
+          if(copy_to_prev) {
+            selectedShape.x set selectedShape.x.next
+            selectedShape.y set selectedShape.y.next
+          }
         case _ =>
       }
     }

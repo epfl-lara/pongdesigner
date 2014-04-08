@@ -9,7 +9,7 @@
 
     <uses-sdk
         android:minSdkVersion="13"
-        android:targetSdkVersion="16" />
+        android:targetSdkVersion="19" />
 
     <application
         android:hardwareAccelerated="true"
@@ -24,6 +24,10 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name="ch.epfl.lara.synthesis.kingpong.ImagePicker"
+            android:theme="@android:style/Theme.Dialog">
         </activity>
     </application>
 

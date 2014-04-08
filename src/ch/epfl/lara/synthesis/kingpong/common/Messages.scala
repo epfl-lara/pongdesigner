@@ -18,6 +18,7 @@ object Messages {
   final val FILE_SAVE_AND_EXPORT = 8
   final val SHOW_INITIAL_TOOLTIP = 9
   final val CANCEL_TUTORIAL = 10
+  final val PICK_IMAGE = 11
   final val FILENAME_TAG = "filename"
   final val TEXT_TAG = "progress_text"
   final val LINE_TAG = "progress_line"
@@ -120,5 +121,10 @@ object Messages {
   object CancelTutorial {
     def unapply(m: Message): Option[Nil.type] = check(m, CANCEL_TUTORIAL)
     def apply(): Message = CANCEL_TUTORIAL
+  }
+  
+  object PickImage {
+    def unapply(m: Message): Option[Nil.type] = check(m, PICK_IMAGE)
+    def apply(): Message = PICK_IMAGE
   }
 }

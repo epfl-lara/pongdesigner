@@ -31,7 +31,7 @@ abstract class PhysicalObject(init_name: Expr,
                               init_fixedRotation: Expr,
                               init_color: Expr
                              ) extends GameObject(init_name) 
-                               with Movable with Visiblable with Colorable with Rotationable { self =>
+                               with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
   
   private var _body: Body = null
   def body: Body = _body

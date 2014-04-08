@@ -50,6 +50,9 @@ import android.graphics.DashPathEffect
 import android.content.res.Resources
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import android.graphics.LinearGradient
+import android.graphics.Shader
+import ch.epfl.lara.synthesis.kingpong.common.Messages._
 
 object GameView {
   sealed trait GameState
@@ -276,7 +279,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
-    ColorMenu.createMenuFromColorArray(this.getContext(), R.array.colors)
     //updateCodeView(game.rules, game.objects)
     codeview.setText("")
   }
@@ -327,6 +329,10 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setActivity(activity: Activity): Unit = {
     this.activity = activity
     EventHolder.setSensorManager(activity.getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager])
+  }
+  
+  def pickImage(): Unit = {
+    this.activity.asInstanceOf[KingPong] ! PickImage()
   }
   
   // Testing section
@@ -417,22 +423,22 @@ class GameView(val context: Context, attrs: AttributeSet)
     // Remove objects that have been created after the date.
     game.gc()
     game.setInstantProperties(false)
-      //computeMatrix()
-      
-      gameEngineEditors foreach (_.onExitEditMode())
+    //computeMatrix()
+    
+    gameEngineEditors foreach (_.onExitEditMode())
 
-      //CategoryGroup.unselect()
-      setModeModifyGame()
-      //mAddRuleButton.text = res.getString(R.string.design_rule)
-      MenuCenter.registeredMenusCenters foreach {
-        _.menus.foreach { _.hovered = false}
-      }
-      
-      //timeTracker.unpause(game.currentTime - game.maxTime)
-      /*if(enteredEditTime != 0) {
-        totalNonPlayedTime += System.currentTimeMillis() - enteredEditTime - (game.currentTime - game.maxTime)
-        enteredEditTime = 0
-      }*/
+    //CategoryGroup.unselect()
+    setModeModifyGame()
+    //mAddRuleButton.text = res.getString(R.string.design_rule)
+    MenuCenter.registeredMenusCenters foreach {
+      _.menus.foreach { _.hovered = false}
+    }
+    
+    //timeTracker.unpause(game.currentTime - game.maxTime)
+    /*if(enteredEditTime != 0) {
+      totalNonPlayedTime += System.currentTimeMillis() - enteredEditTime - (game.currentTime - game.maxTime)
+      enteredEditTime = 0
+    }*/
     state = Running
   }
 
@@ -476,112 +482,165 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     def drawObject(o: GameObject): Unit = {
       if(o.existsAt(game.time)) {
-      o match {
-      case r: Rectangle =>
-        paint.setColor(r.color.get)
-        if (!r.visible.get)
-          paint.setAlpha(0x00)
-
-        canvas.save()
-        canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-        canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paint)
-        if (obj_to_highlight contains r) 
-          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintSelected)
-        canvas.restore()
-
-      case c: Circle => 
-        paint.setColor(c.color.get)
-        if (!c.visible.get)
-          paint.setAlpha(0x00)
-        canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
-        if (obj_to_highlight contains c) 
-          canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
-      
-      case arr: Array2D =>
-        paint.setStyle(Paint.Style.STROKE)
-        paint.setColor(arr.color.get)
-        if (!arr.visible.get)
-          paint.setAlpha(0x00)
-        canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paint)
-        if (obj_to_highlight contains arr) 
-          canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paintSelected)
         
-        // reset the paint style
-        paint.setStyle(Paint.Style.FILL)
-                
-      case cell: Cell =>
-        paint.setStyle(Paint.Style.STROKE)
-        paint.setColor(cell.color.get)
-        if (!cell.visible.get)
-          paint.setAlpha(0x00)          
-        canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paint)
-        if (obj_to_highlight contains cell) 
-          canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paintSelected)
-        
-        // reset the paint style
-        paint.setStyle(Paint.Style.FILL)
-          
-      case b: Box[_] => 
-        paint.setColor(b.color.get)
-        //if(b == obj_to_highlight) paint.setAlpha(0x88)
-        paint.setTextSize(b.height.get)
-        if(b.className == "Box[Boolean]") {
-          val c = b.value.get.asInstanceOf[Boolean]
-          canvas.drawText(b.name.get, b.x.get + b.height.get*3/2, b.y.get, paint)
-          canvas.drawRect(b.x.get, b.y.get, b.x.get + b.height.get, b.y.get + b.height.get, paint)
-          if(c) {
-            paint.setColor(0xFF00FF00)
-          } else {
-            paint.setColor(0xFFFF0000)
-          }
-          canvas.drawCircle(b.x.get - b.height.get/2, b.y.get - b.height.get/2, b.height.get/2, paint)
-        } else {
-          val value = b.name.get + ":" + b.value.get.toString
-          canvas.drawText(value, b.x.get, b.y.get, paint)
-          if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
+        o match {
+          case o: Positionable =>
+            val colorPrev = o.color.get
+            val colorNext = o.color.next
+            val visible_prev = o.visible.get
+            val visible_next = o.visible.next
+            if(colorPrev != colorNext || visible_prev != visible_next) {
+              val cPrev = if(visible_prev) colorPrev else (colorPrev & 0xFFFFFF) + (((colorPrev >>> 24)*0.5).toInt << 24)
+              val cNext = if(visible_next) colorNext else (colorNext & 0xFFFFFF) + (((colorNext >>> 24)*0.5).toInt << 24)
+              paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
+            } else {
+              paint.setColor(colorPrev)
+              if (!visible_prev)
+                paint.setAlpha(0x00)
+            }
         }
-      case j: Joystick =>
-        paint.setColor(j.color.get) 
-        paint.setAlpha(0x20)
-        canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paint)
-        paint.setAlpha(0x40)
-        canvas.drawCircle(j.x.get + j.relative_x.get, j.y.get + j.relative_y.get, j.radius.get/2, paint)
-        if(obj_to_highlight contains j) canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paintSelected)
         
-      case r: Character =>
-        paint.setColor(r.color.get)
-        if(!r.visible.get)
-          paint.setAlpha(0x00)
-        canvas.save()
-        canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-        canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
-        if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
-        canvas.restore()
-        
-      case r: ActiveBox =>
-        if(r.visible.get) {
+
+        o match {
+        case r: Rectangle =>
           canvas.save()
           canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-          retrieveDrawable(r.picture.get) match {
-            case Some(drawable) =>
-              drawable.setBounds((r.x.get - r.radius.get).toInt, (r.y.get - r.radius.get).toInt, (r.x.get + r.radius.get).toInt, (r.y.get + r.radius.get).toInt)
-              drawable.draw(canvas)
-            case None =>
-          }
+          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paint)
+          
+          if (obj_to_highlight contains r) 
+            canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintSelected)
           canvas.restore()
+  
+        case c: Circle => 
+          canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
+          if (obj_to_highlight contains c) 
+            canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
+        
+        case arr: Array2D =>
+          paint.setStyle(Paint.Style.STROKE)
+          canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paint)
+          if (obj_to_highlight contains arr) 
+            canvas.drawRect(arr.left.get, arr.top.get, arr.right.get, arr.bottom.get, paintSelected)
+          
+          // reset the paint style
+          paint.setStyle(Paint.Style.FILL)
+                  
+        case cell: Cell =>
+          paint.setStyle(Paint.Style.STROKE)   
+          canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paint)
+          if (obj_to_highlight contains cell) 
+            canvas.drawRect(cell.left.get, cell.top.get, cell.right.get, cell.bottom.get, paintSelected)
+          
+          // reset the paint style
+          paint.setStyle(Paint.Style.FILL)
+            
+        case b: Box[_] => 
+          //if(b == obj_to_highlight) paint.setAlpha(0x88)
+          paint.setTextSize(b.height.get)
+          if(b.className == "Box[Boolean]") {
+            val c = b.value.get.asInstanceOf[Boolean]
+            canvas.drawText(b.name.get, b.x.get + b.height.get*3/2, b.y.get, paint)
+            canvas.drawRect(b.x.get, b.y.get, b.x.get + b.height.get, b.y.get + b.height.get, paint)
+            if(c) {
+              paint.setColor(0xFF00FF00)
+            } else {
+              paint.setColor(0xFFFF0000)
+            }
+            canvas.drawCircle(b.x.get - b.height.get/2, b.y.get - b.height.get/2, b.height.get/2, paint)
+          } else {
+            val value = b.name.get + ":" + b.value.get.toString
+            canvas.drawText(value, b.x.get, b.y.get, paint)
+            if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
+          }
+        case j: Joystick =>
+          paint.setAlpha(0x20)
+          canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paint)
+          paint.setAlpha(0x40)
+          canvas.drawCircle(j.x.get + j.relative_x.get, j.y.get + j.relative_y.get, j.radius.get/2, paint)
+          if(obj_to_highlight contains j) canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paintSelected)
+          
+        case r: Character =>
+          canvas.save()
+          canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
+          canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
+          if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
+          canvas.restore()
+          
+        case r: ActiveBox =>
+          if(r.visible.get) {
+            canvas.save()
+            canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
+            retrieveDrawable(r.picture.get) match {
+              case Some(drawable) =>
+                drawable.setBounds((r.x.get - r.radius.get).toInt, (r.y.get - r.radius.get).toInt, (r.x.get + r.radius.get).toInt, (r.y.get + r.radius.get).toInt)
+                drawable.draw(canvas)
+              case None =>
+            }
+            canvas.restore()
+          }
         }
+        
+        o match {
+          case e: Positionable =>
+            val c = e.color.get
+            if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
+              canvas.restore()
+              
+              val d = bitmaps(c)
+              val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
+              val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
+              
+              d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
+              d.draw(canvas)
+              
+              canvas.save()
+              canvas.setMatrix(matrix)
+            }
+        }
+        //Draw a small red dot in the (x, y) position of each object
+        /*paint.setColor(0xFFFF0000)
+        o match {
+        case o: Movable =>
+          canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
+        case _ =>
+        }*/
+      }
     }
-    //Draw a small red dot in the (x, y) position of each object
-    paint.setColor(0xFFFF0000)
-    o match {
-      case o: Movable =>
-        canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
-      case _ =>
+  
+    /** Draw a velocity vector from the given point */
+    def drawVelocity(o: GameObject, x: Float, y: Float, velocity: Vec2, paint: Paint) {
+      o match { //canvas: Canvas, v: Float, x: Float, y: Float, vx: Float, vy: Float, paint: Paint
+        case o: Speed with Movable =>
+          val middleX = x
+          val middleY = y
+          val v = velocity.normalize()
+          if(v != 0) {
+            val vx = velocity.x
+            val vy = velocity.y
+            val toX = middleX + vx * 100
+            val toY = middleY + vy * 100
+            canvas.drawLine(middleX, middleY, toX, toY, paint)
+            val unitVectorX = vx / v
+            val unitVectorY = vy / v
+            val cosRot = -0.87f * 20
+            val sinRot = 0.5f * 20
+            canvas.drawLine(toX, toY, toX + cosRot*unitVectorX + sinRot*unitVectorY, toY - sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
+            canvas.drawLine(toX, toY, toX + cosRot*unitVectorX - sinRot*unitVectorY, toY + sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
+          }
+        case _ =>
+      }
     }
-    }}
     
     if(game == null) return;
     game.objects foreach drawObject
+    if(state == Editing) game.objects foreach {
+      case o: Speed with Movable =>
+        drawVelocity(o, o.x.next, o. y.next, o.velocity.next, velocityPaint)
+        if(o.velocity.next.x != o.velocity.get.x || o.velocity.next.y != o.velocity.get.y) {
+          drawVelocity(o, o.x.get, o.y.get, o.velocity.get, velocityPaintShaded)
+        }
+      case _ =>
+    }
     canvas.restore()
     //this.objects foreach drawObject
     
@@ -680,6 +739,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   var distancePaint = new Paint()
   distancePaint.set(touchMovePaint)
   distancePaint.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
+  var velocityPaint = new Paint()
+  velocityPaint.setColor(0x88FF00FF)
+  velocityPaint.setStyle(Paint.Style.STROKE)
+  velocityPaint.setStrokeWidth(4)
+  velocityPaint.setAntiAlias(true)
+  var velocityPaintShaded = new Paint()
+  velocityPaintShaded.set(velocityPaint)
+  velocityPaintShaded.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
   final val cross_size = 15
     
   // Draw events in the GameView referential
@@ -1172,6 +1239,27 @@ class GameView(val context: Context, attrs: AttributeSet)
       super.onFingerUp(pos)
   }
   
+  /**
+   * Sets an image for the selected shape
+   * @param i The Bitmap to apply to the shape.
+   */
+  def setImageSelectedShape(i: Bitmap) = {
+    if(shapeEditor.selectedShape != null) {
+      shapeEditor.selectedShape match {
+        case selectedShape: Colorable =>
+          val id = Stream.from(0).find(i => !(bitmaps contains i)).get
+          bitmaps(id) = new BitmapDrawable(i)
+          selectedShape.color setNext id
+        case _ =>
+      }
+    }
+  }
+  
+  /**
+   * Updates the code view
+   * @param rules The rules to display
+   * @param objects The objects to highlight.
+   */
   def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
     val header = PrettyPrinterExtended.printGameObjectDef(objects)
     val all = PrettyPrinterExtended.print(rules, header + "\n")
@@ -1191,6 +1279,10 @@ class GameView(val context: Context, attrs: AttributeSet)
     codeview.setText(rulesString)
   }
   
+  /**
+   * Puts a new matrix for the view.
+   * @param m The matrix for the new transformation.
+   */
   def push(m: Matrix) = {
     m.invert(matrixI)
     
@@ -1198,6 +1290,11 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(game != null) game.FINGER_SIZE = matrixI.mapRadius(35)
   }
 
+  /**
+   * One Finger moves
+   * @param from The first coordinate
+   * @param to   The second coordinate
+   */
   override def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
     case Running => 
       val res = mapVectorToGame(to)
@@ -1230,7 +1327,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         EventMenu.testHovering(to.x, to.y, button_size)
         EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
       }
-      
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {

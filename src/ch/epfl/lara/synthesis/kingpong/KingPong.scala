@@ -3,7 +3,6 @@ package ch.epfl.lara.synthesis.kingpong
 import java.util.ArrayList
 import scala.collection.mutable.ArrayBuffer
 import net.londatiga.android._
-
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -42,12 +41,11 @@ import android.widget.ImageView
 import android.view.ViewGroup
 import android.widget.ListView
 import android.widget.ExpandableListView
-
 import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
-
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Messages
 import ch.epfl.lara.synthesis.kingpong.examples.TestGame
+import java.io.FileNotFoundException
 
 object KingPong {
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -216,6 +214,8 @@ class KingPong extends Activity
 
     time_button.onClicked(onTimeButtonClick)
     back_button.onClicked(onBackButtonClick)
+    
+    menus.ColorMenu.createMenuFromColorArray(this, R.array.colors)
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
       override def onDown(event: MotionEvent): Boolean = { 
@@ -555,9 +555,33 @@ class KingPong extends Activity
           editor.putBoolean("startTutorial", false);
           editor.commit();
 
+        case PickImage() =>
+          val photoPickerIntent = new Intent(Intent.ACTION_PICK);
+          photoPickerIntent.setType("image/*");
+          startActivityForResult(photoPickerIntent, 1);
+          
         case _ =>
             Log.w("MyTag","Warning: message type \""+input_msg.what+"\" not supported");
         }
     }
   }
+  
+  override  protected def onActivityResult(requestCode: Int, resultCode: Int, imageReturnedIntent: Intent) { 
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent); 
+        requestCode match { 
+        case 1 =>
+            if(resultCode == Activity.RESULT_OK){
+                try {
+                    val imageUri = imageReturnedIntent.getData();
+                    val imageStream = getContentResolver().openInputStream(imageUri);
+                    val selectedImage = BitmapFactory.decodeStream(imageStream);
+                    mGameView.setImageSelectedShape(selectedImage)
+                } catch {
+                  case e: FileNotFoundException =>
+                    e.printStackTrace();
+                }
+ 
+            }
+        }
+    }
 }

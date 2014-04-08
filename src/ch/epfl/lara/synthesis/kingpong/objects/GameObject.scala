@@ -472,11 +472,24 @@ trait Positionable extends GameObject {
     val res = Math.sqrt(dx*dx + dy*dy).toFloat
     if(res < 0) 0 else res
   }
+  
+  def bottom: Property[Float]
+  def top: Property[Float]
+  def left: Property[Float]
+  def right: Property[Float]
 }
 
 trait Movable extends GameObject with Positionable {
   def x: RWProperty[Float]
   def y: RWProperty[Float]
+}
+
+trait Speed extends GameObject {
+  def velocity: Property[Vec2]
+}
+
+trait SpeedSettable extends GameObject with Speed {
+  def velocity: RWProperty[Vec2]
 }
 
 trait Directionable extends GameObject {

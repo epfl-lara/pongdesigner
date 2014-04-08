@@ -40,6 +40,7 @@ object ColorMenu extends MenuCenter {
       result.setColor(Color.parseColor(color))
       result
     }
+    menus = new ImagePickerMenu()::menus
   }
   
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
@@ -126,3 +127,56 @@ class ColorCircleMenu extends CustomMenu {
   
   def hint_id = R.string.change_paint_hint
 }
+
+/**
+ * Image picker menus
+ */
+class ImagePickerMenu extends MenuButton {
+  import MenuOptions._
+  var paint = new Paint()
+  paint.setStyle(Paint.Style.FILL_AND_STROKE)
+  paint.setAntiAlias(true)
+
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    // Do nothing
+    if(hovered) {
+      gameEngine.pickImage()
+      hovered = false
+    }
+  }
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = { 
+    if(hovered) {
+      if(selectedShape != null) {
+        selectedShape match {
+          case selectedShape: Colorable =>
+            if(MenuOptions.modify_prev) {
+              //selectedShape.color.set(color)
+            } else {
+              //selectedShape.color.setNext(color)
+            }
+            if(copy_to_prev) {
+              //selectedShape.color.set(selectedShape.color.next)
+            }
+            
+          case _ =>
+        }
+      } else {
+          ColorMenu.registeredExpr match {
+            case Some(p@IntegerLiteral(i)) if i > 0x10000/* == Expr.Subtype.COLOR_SUBTYPE*/ => // heuristic to know if it is a color
+              //p.value = color
+              //if(gameEngine.ruleEditor.selectedRule != null) gameEngine.ruleEditor.selectedRule.execute(gameEngine.getGame().context, false)
+            case _ => 
+          }
+        }
+    }
+  }
+  
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.jpeg ::   Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.jpeg :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) =
+    (if(hovered) hovered_icons else normal_icons)
+  
+  def hint_id = R.string.change_paint_hint
+}
+
