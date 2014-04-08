@@ -213,13 +213,19 @@ trait Interpreter {
     }
       
     case Times(lhs, rhs) => eval(lhs) match {
-      case IntegerLiteral(v1) => eval(rhs) match {
+      case num @ IntegerLiteral(v1) => eval(rhs) match {
         case IntegerLiteral(v2) => IntegerLiteral(v1 * v2)
         case FloatLiteral(v2) => FloatLiteral(v1 * v2)
+        case Tuple(exprs) => Tuple(exprs.map(e => eval(Times(num, e))))
         case _ => error(expr)
       }
-      case FloatLiteral(v1) => eval(rhs) match {
+      case num @ FloatLiteral(v1) => eval(rhs) match {
         case NumericLiteral(v2) => FloatLiteral(v1 * v2)
+        case Tuple(exprs) => Tuple(exprs.map(e => eval(Times(num, e))))
+        case _ => error(expr)
+      }
+      case Tuple(exprs) => eval(rhs) match {
+        case num @ NumericLiteral(_) => Tuple(exprs.map(e => eval(Times(num, e))))
         case _ => error(expr)
       }
       case _ => error(expr)
@@ -301,8 +307,10 @@ trait Interpreter {
       if (from.isDefined) {
         val to = moves.last.to
         eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
+        BooleanLiteral(true)
+      } else {
+        BooleanLiteral(false)
       }
-      UnitLiteral
       
     case FingerDownOver(e) =>
       eval(e) match {
