@@ -439,6 +439,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Reset the game to its initial state. */
   def backToBeginning(): Unit = {
     toEditing()
+    setProgressTime(0)
     game.reset()
   }
 
