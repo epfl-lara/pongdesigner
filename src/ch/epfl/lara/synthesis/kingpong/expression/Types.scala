@@ -26,11 +26,15 @@ object Types {
     override def toString = "Object"
   }
   
+  object TTuple {
+    def apply(types: Type*): TTuple = TTuple(types.toSeq)
+  }
+  
   case class TTuple(types: Seq[Type]) extends Type {
     override def toString = types.mkString("(", ", ", ")")
   }
     
-  val TVec2 = TTuple(List(TFloat, TFloat))
+  val TVec2 = TTuple(TFloat, TFloat)
   
   case object TAny extends Type {
     override def toString = "Any"

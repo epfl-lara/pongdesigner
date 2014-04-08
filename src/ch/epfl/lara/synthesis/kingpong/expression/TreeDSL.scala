@@ -202,7 +202,7 @@ object TreeDSL {
   }
   
   def fingerMoveOver(obj: Expr)(body: Proxy => Expr): Expr = {
-    val id = FreshIdentifier("move").setType(TTuple(Seq(TVec2, TVec2)))
+    val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
     val ref = new IdentifierProxy(id)
     FingerMoveOver(obj, id, body(ref))
   }
