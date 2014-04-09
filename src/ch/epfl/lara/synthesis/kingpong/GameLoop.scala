@@ -54,6 +54,9 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
             framesSkipped += 1
           }
         }
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
       } finally {
         if (canvas != null) holder.unlockCanvasAndPost(canvas)
       }

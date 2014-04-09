@@ -50,6 +50,18 @@ trait Interpreter {
   
   def evaluate(expr: Expr): Expr = eval(expr)(initGC(), initRC())
   
+  /**
+   * Used to extract values, especially for Method calls
+   */
+  object Eval {
+    def unapply[T](e: Expr)(implicit gctx: Context, rctx: RecContext): Option[T] = {
+      eval(e) match {
+        case e: Literal[T] => Some(e.value)
+        case _ => None
+      }
+    }
+  }
+  
   private def eval(expr: Expr)(implicit gctx: Context, rctx: RecContext): Expr = expr match {
     
     case lit: Literal[_] => lit
@@ -138,20 +150,17 @@ trait Interpreter {
       UnitLiteral
       
     case m @ MethodCall(name, args) =>
-      //TODO
-      ???
-      
-//      val m = context.getMethod(name)
-//      val lv = args map eval
-//      if (m.fastImplementation != null) {
-//        m.fastImplementation(lv)
-//      } else {
-//        m.args zip lv foreach {
-//          case (Formal(t, Val(name)), value) => context.set(name, value)
-//        }
-//        eval(m.stats)
-//        eval(m.retExpr)
-//      }
+      (name, args) match {
+        case ("importDrawings", ObjectLiteral(o:DrawingObject)::from::to::width::color::Nil) =>
+          (eval(from), eval(to), eval(width), eval(color)) match {
+            case (Tuple(Seq(FloatLiteral(fromx), FloatLiteral(fromy))), Tuple(Seq(FloatLiteral(tox), FloatLiteral(toy))), FloatLiteral(width), IntegerLiteral(color)) =>
+              o.drawings += DrawingElement(gctx.time, Vec2(fromx, fromy), Vec2(tox, toy), width, color)
+            case _ =>
+          }
+          UnitLiteral
+        case _ =>
+          error(expr)
+      }
 
     case Tuple(exprs) =>
       Tuple(exprs map eval)

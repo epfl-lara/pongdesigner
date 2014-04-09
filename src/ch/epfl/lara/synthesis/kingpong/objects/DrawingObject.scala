@@ -12,12 +12,13 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
 import scala.collection.mutable.ArrayBuffer
+import ch.epfl.lara.synthesis.kingpong.expression.Trees
 
 
 /**
  * An element drawn at a specific time.
  */
-case class DrawingElement(time: Int, xFrom: Float, yFrom: Float, xTo: Float, yTo: Float, width: Float, color: Int) {
+case class DrawingElement(time: Long, from: Vec2, to: Vec2, width: Float, color: Int) {
   var next: Option[DrawingElement] = None
   var pred: Option[DrawingElement] = None
 }
@@ -32,21 +33,28 @@ case class DrawingObject(val game: Game,
                         init_y: Expr,
                         init_angle: Expr,
                         init_width: Expr, 
-                        init_height: Expr, 
-                        init_value: Expr,
+                        init_height: Expr,
                         init_visible: Expr,
                         init_color: Expr
                        ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
                          with Rectangular
                          with Movable
-                         with Rotationable
                          with Visiblable
-                         with Colorable{
+                         with Colorable {
   def className = "DrawingObject"
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  val drawings = ArrayBuffer[List[DrawingElement]]() // Records all drawings.
+  val width_drawing= simpleProperty[Float]("width_drawing", 0.01f)
+  val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
+  val drawings = ArrayBuffer[DrawingElement]() // Records all drawings.
+  val defaultRule = { (g: Game) =>
+    import g._
+    import Trees._
+    fingerMoveOver(this) { move =>
+      MethodCall("importDrawings", List(ObjectLiteral(this), move._1, move._2, width_drawing, color_drawing))
+    }
+  }
   
   // --------------------------------------------------------------------------
   // Utility functions

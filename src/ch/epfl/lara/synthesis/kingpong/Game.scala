@@ -205,6 +205,22 @@ trait Game extends RuleManager { self =>
     r
   }
   
+  def drawingObject(category: CategoryObject)(name: Expr,
+                x: Expr,
+                y: Expr,
+                angle: Expr = category.angle,
+                width: Expr = category.width,
+                height: Expr = category.height,
+                visible: Expr = category.visible,
+                color: Expr = category.color): DrawingObject = {
+    val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color)
+    if(category != null) r.setCategory(category)
+    r.reset(interpreter)
+    r.flush()
+    this add r
+    r
+  }
+  
   def array(category: CategoryObject)(
              name: Expr,
              x: Expr,

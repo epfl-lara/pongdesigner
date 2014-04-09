@@ -28,6 +28,7 @@
         <item>@drawable/menu_add_text</item>
         <item>@drawable/menu_add_boolean</item>
         <item>@drawable/menu_add_array</item>
+        <item>@drawable/drawing_object</item>
     </array>
     <array name="menu_add_string">
         <item>@string/add_rectangle_hint</item>
@@ -36,12 +37,12 @@
         <item>@string/add_textbox_hint</item>
         <item>@string/add_boolbox_hint</item>
         <item>@string/add_arraybox_hint</item>
+        <item>@string/add_drawing_object_hint</item>
     </array>
     <array name="menu_constraint">
         
     </array>
     <array name="menu_constraint_string">
-        
     </array>
     <array name="menu_categories">
         <item>@drawable/menu_add_accelerometer</item>

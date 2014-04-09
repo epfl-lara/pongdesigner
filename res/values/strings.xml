@@ -95,6 +95,7 @@
     <string name="add_textbox_hint">Adds a text to the game</string>
     <string name="add_boolbox_hint">Adds a boolean to the game</string>
     <string name="add_arraybox_hint">Adds a 2D array to the game</string>
+    <string name="add_drawing_object_hint">Adds a drawing zone to the game</string>
     
     <string name="add_rule_hint">Adds a rule to the game</string>
     

@@ -166,6 +166,11 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Str(R.string.add_circle_hint) =>
         game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
         true
+      case Str(R.string.add_drawing_object_hint) =>
+        val d = game.drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)
+        game.addRule(d.defaultRule(game))
+        true
+        
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
@@ -557,6 +562,25 @@ class GameView(val context: Context, attrs: AttributeSet)
         
 
         o match {
+        case d : DrawingObject =>
+          canvas.save()
+          canvas.rotate(radToDegree(d.angle.get), d.x.get, d.y.get)
+          paint.setStyle(Paint.Style.STROKE)
+          if(state == Editing) {
+            canvas.drawRect(d.left.get, d.top.get, d.right.get, d.bottom.get, paint)
+          }
+          d.drawings foreach { case DrawingElement(time, from, to, width, color) =>
+            if(time <= game.time) {
+              paint.setColor(color)
+              paint.setStrokeWidth(width)
+              canvas.drawLine(from.x, from.y, to.x, to.y, paint)
+            }
+          }
+          
+          if (obj_to_highlight contains d) 
+            canvas.drawRect(d.left.get, d.top.get, d.right.get, d.bottom.get, paintSelected)
+          canvas.restore()
+          
         case r: Rectangle =>
           canvas.save()
           canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
@@ -1168,6 +1192,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         val touchCoords = res
         
         if(mRuleState == STATE_SELECTING_EVENTS) {
+          
+          // Detects objects and events.
+          
           // If we are making a rule, we select the events first
           var oneShapeSelectable = false
           var closestTimeStampDiff: Long = -1
