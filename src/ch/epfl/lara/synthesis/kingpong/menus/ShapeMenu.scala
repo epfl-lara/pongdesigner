@@ -284,11 +284,11 @@ object SizeButton extends MenuButton {
           }
         case r:ResizableRectangular =>
           if(modify_prev) {
-            r.width set Math.max(smallest_size, r.width.get + shiftX.toInt)
-            r.height set Math.max(smallest_size, r.height.get + shiftY.toInt)
+            r.width set Math.max(smallest_size, r.width.get + shiftX)
+            r.height set Math.max(smallest_size, r.height.get + shiftY)
           } else {
-            r.width setNext Math.max(smallest_size, r.width.next + shiftX.toInt)
-            r.height setNext Math.max(smallest_size, r.height.next + shiftY.toInt)
+            r.width setNext Math.max(smallest_size, r.width.next + shiftX)
+            r.height setNext Math.max(smallest_size, r.height.next + shiftY)
           }
           if(copy_to_prev) {
             r.width set r.width.next

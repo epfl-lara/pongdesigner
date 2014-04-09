@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">Pong designer</string>
+    <string name="pick_graphics">Pick a graphics</string>
     <string name="app_name_interview">Interview Pong designer</string>
     <string name="dummy">dummy</string>
     <string name="title_activity_game_designer">Pong designer</string>

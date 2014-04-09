@@ -7,6 +7,7 @@ import android.view.SurfaceView
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.Surface
+import android.view.View
 import android.widget.SeekBar
 import android.graphics.Canvas
 import android.content.Context
@@ -104,8 +105,8 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
  */
 trait ActionBarHandler extends common.ContextUtils {
   private var actionBar: ExpandableListView = _
-  private var actionBarAdapter: ExpandableListAdapter = _
-  def menuCallBacks: String => Unit
+  private var actionBarAdapter: adapters.ActionsAdapter = _
+  def menuCallBacks: String => Boolean
   
   var submenusLabels: IndexedSeq[IndexedSeq[String]] = _
   def setActionBar(actionBar: ExpandableListView): Unit = {
@@ -119,11 +120,24 @@ trait ActionBarHandler extends common.ContextUtils {
       
       val actions: IndexedSeq[String] = menuLabels
       val actionsCollection: Map[String, IndexedSeq[String]] = (menuLabels zip submenusLabels).toMap
-      val bitmaps: Map[String, Drawable] = ((menuLabels ++ submenusLabels.flatten) zip (menuDrawables ++ submenusDrawables.flatten)).toMap
-      val callbacks: String => Unit = menuCallBacks
+      val bitmaps: MMap[String, Drawable] = MMap()
+      bitmaps ++= ((menuLabels ++ submenusLabels.flatten) zip (menuDrawables ++ submenusDrawables.flatten))
+      val callbacks: String => Boolean = menuCallBacks
       actionBarAdapter = new adapters.ActionsAdapter(context, actions, actionsCollection, bitmaps, callbacks)
       actionBar.setAdapter(actionBarAdapter)
+      
+      actionBar.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
+          def onGroupClick(parent: ExpandableListView, v: View, groupPosition: Int, id: Long) = {
+            menuCallBacks(actions(groupPosition))
+          }
+      });
+      
     }
+  }
+  
+  def changeMenuIcon(position: String, drawable: Drawable) = {
+    actionBarAdapter.bitmaps(position) = drawable
+    actionBar.invalidate()
   }
 }
 
@@ -144,12 +158,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   private var grid: Grid = new Grid(step=1, offset=0, stroke_width=1, color=0x88000000)
   implicit val self: Game = this
   
-  def menuCallBacks: String => Unit = { s =>
+  def menuCallBacks: String => Boolean = { s =>
     s match {
       case Str(R.string.add_rectangle_hint) =>
         game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
+        true
       case Str(R.string.add_circle_hint) =>
         game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
+        true
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
@@ -157,6 +173,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         mRuleState match {
           case STATE_MODIFYING_GAME => 
             setModeSelectEvents()
+            
+
             menuSelected = true
             //mAddRuleButton.text = res.getString(R.string.select_event)
             Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
@@ -177,11 +195,13 @@ class GameView(val context: Context, attrs: AttributeSet)
             }*/
           }
           //hovered = false
+            true
         case STATE_MODIFYING_CATEGORY =>
           //hovered = false
       }
       menuSelected
       case _ =>
+        false
     }
   }
   
@@ -259,6 +279,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_prev = false // irrelevant
     MenuOptions.copy_to_prev = true // irrelevant
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_maker))
   }
   
   /** Switches the current mode to the global modification of the game */
@@ -266,6 +287,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_prev = false
     MenuOptions.copy_to_prev = true
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
     //EditRuleButton.selected = false
     //enterEditMode()
     //AddRuleButton.hovered = false
@@ -684,6 +706,13 @@ class GameView(val context: Context, attrs: AttributeSet)
       paint.setColor(0xAAFF0000)
       canvas.drawCircle(currentFingerPos.x, currentFingerPos.y, game.FINGER_SIZE, paint)
     }
+    if(mRuleState == STATE_SELECTING_EVENTS) {
+      game.foreachEvent{ (event, time) => drawEventOn(event, time, canvas) }
+      // Divide the luminosity by two
+      canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
+      // Add a quarter of the luminosity
+      canvas.drawColor(0xFF404040, PorterDuff.Mode.ADD)
+    }
     drawMenuOn(canvas)
   }
   
@@ -786,7 +815,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   velocityPaintShaded.set(velocityPaint)
   velocityPaintShaded.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
   final val cross_size = 15
-    
+  var rectFData = new RectF(0, 0, 0, 0)
+  var rectData = new Rect(0, 0, 0, 0)
+  
   // Draw events in the GameView referential
   def drawEventOn(event: Event, timestamp: Int, canvas: Canvas): Unit = {
     var paint: Paint = this.paint
@@ -801,22 +832,38 @@ class GameView(val context: Context, attrs: AttributeSet)
     val dtime = (game.time - timestamp) * (if(event.isInstanceOf[FingerDown]) -1 else 1)
     val power = if(eventIsSelected) 1f else (if(dtime < 0) 0f else (300-Math.min(Math.max(dtime, 0), 300))/300f)
     var finger: List[(Float, Float, Int)] = Nil // The last int is the opacity
+    val alpha = (0xEA*power + 0x20*(1-power)).round.toInt
+    if(paint != null ) {
+      // Emphasis for all events that appeared in the past.
+      paint.setStrokeWidth((5*power + 2 * (1-power)).round.toInt)
+      paint.setAlpha(alpha)
+    }
     event match {
       case BeginContact(c) => 
         paint.setColor(0xFFFF0000)
+        paint.setAlpha(alpha)
         val p = mapVectorFromGame(c.point)
-        canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
+        rectFData.set(p.x - 24, p.y - 21, p.x + 25, p.y + 21)
+        rectFData.round(rectData)
+        val bitmap = if(Some(event) == eventEditor.selectedEvent) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
+        bitmap.setBounds(rectData)
+        bitmap.setAlpha(alpha)
+        canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint) // TODO : Delete
+        bitmap.draw(canvas)
       case CurrentContact(c) => 
         paint.setColor(0xFF00FF00)
+        paint.setAlpha(alpha)
         val p = mapVectorFromGame(c.point)
         canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
       case EndContact(c) => 
         paint.setColor(0xFF0000FF)
+        paint.setAlpha(alpha)
         val p = mapVectorFromGame(c.point)
         canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
       case AccelerometerChanged(v) =>
         paint.setStrokeWidth(mapRadiusI(2))
         paint.setColor(0xFFFF00FF)
+        paint.setAlpha(alpha)
         val pos = mapVectorToGame(Vec2(100, 100))
         canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
       case FingerUp(v, obj) =>
@@ -868,7 +915,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   val metrics = new DisplayMetrics();    
   context.getSystemService(Context.WINDOW_SERVICE).asInstanceOf[WindowManager].getDefaultDisplay().getMetrics(metrics);    
-  lazy val button_size:Float = if(3 * 80 * metrics.density >= Math.min(metrics.widthPixels, metrics.heightPixels)) 40 * metrics.density else 80 * metrics.density
+  lazy val button_size:Float = if(5 * 80 * metrics.density >= Math.min(metrics.widthPixels, metrics.heightPixels)) 40 * metrics.density else 80 * metrics.density
   
   /** Draws the menu on the canvas */
   def drawMenuOn(canvas: Canvas) = {
@@ -881,9 +928,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         eventEditor.selectedEvent match {
           case Some(event) => drawEventOn(event, eventEditor.selectedTime.toInt, canvas)
           case _ =>
-        }
-        if(mRuleState == STATE_SELECTING_EVENTS) {
-          game.foreachEvent{ (event, time) => drawEventOn(event, time, canvas) }
         }
         //StaticMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, button_size/2, button_size/2)
         //if(game.currentTime == 0)
@@ -922,7 +966,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     eventEditor.selectedEvent match {
       case Some(SelectableEvent(x, y)) =>
         val p = mapVectorFromGame(Vec2(x, y))
-        EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, x, y)
+        EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, p.x, p.y)
       case _ =>
     }
   }
@@ -1375,7 +1419,6 @@ class GameView(val context: Context, attrs: AttributeSet)
       //matrix.postTranslate(to.x - from.x, to.y - from.y)
       //push(matrix)
       super.onOneFingerMove(from, to)
-      // TODO: 
       mDisplacementX = to.x - touchDownOriginal.x
       mDisplacementY = to.y - touchDownOriginal.y
       val touchCoords = mapVectorToGame(to)

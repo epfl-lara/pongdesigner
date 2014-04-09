@@ -20,7 +20,7 @@ import android.widget.ImageView
 import android.widget.TextView;
 import android.graphics.drawable.Drawable
 
-class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[String]], val bitmaps: Map[String, Drawable], val callbacks: String => Unit) extends BaseExpandableListAdapter with Implicits {
+class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[String]], val bitmaps: MMap[String, Drawable], val callbacks: String => Boolean) extends BaseExpandableListAdapter with Implicits {
 
   def getChild(groupPosition: Int, childPosition: Int) = {
     actionsCollection(actions(groupPosition))(childPosition);
@@ -41,7 +41,7 @@ class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val 
     
     view.setOnClickListener{
       val str = actionsCollection(actions(groupPosition))(childPosition)
-      () => callbacks(str)
+      () => { callbacks(str); () }
     }
     bitmaps.get(action) match {
       case Some(drawable) => item.setImageDrawable(drawable)
@@ -75,9 +75,10 @@ class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val 
     } else convertView
     
     val item = view.findViewById(R.id.menugroupdrawable).asInstanceOf[ImageView]
-    //item.onClicked{ v: View =>
-    //  callbacks(actions(groupPosition))
-    //}
+    /*view.setOnClickListener{
+      val str = actions(groupPosition)
+      () => callbacks(str)
+    }*/
     bitmaps.get(action) match {
       case Some(drawable) => item.setImageDrawable(drawable)
       case None =>

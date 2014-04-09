@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.ImageView
 import android.widget.ListView
 import language.implicitConversions
+import android.widget.GridView
 
 trait Implicits {
   implicit def toOnclickListener(f: ()=>Unit):View.OnClickListener = {
@@ -87,6 +88,7 @@ trait ActivityUtil extends Activity with Implicits { self =>
   private implicit val dMap = MMap[Int, Drawable]()
   private implicit val lMap = MMap[Int, LinearLayout]()
   private implicit val LWMap = MMap[Int, ListView]()
+  private implicit val GVWMap = MMap[Int, GridView]()
   
   def findView[A <: View](id: Int)(implicit v: MMap[Int, A]): A = v.getOrElseUpdate(id, findViewById(id).asInstanceOf[A])
   def findDrawable[A <: Drawable](id: Int)(implicit v: MMap[Int, A]): A = v.getOrElseUpdate(id, getResources().getDrawable(id).asInstanceOf[A])
@@ -97,6 +99,7 @@ trait ActivityUtil extends Activity with Implicits { self =>
   implicit def findViewTextView(id: Int): TextView = findView[TextView](id)
   implicit def findViewListView(id: Int): ListView = findView[ListView](id)
   implicit def findViewGameView(id: Int): GameView = findView[GameView](id)
+  implicit def findViewGridView(id: Int): GridView = findView[GridView](id)
   implicit def findDrawableTop(id: Int): Drawable = findDrawable[Drawable](id)
   implicit def findLinearLayout(id: Int): LinearLayout = findView[LinearLayout](id)
   implicit def findOnClicked(id: Int): RichView = toRichView(findView[View](id))
