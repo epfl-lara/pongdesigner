@@ -251,15 +251,17 @@ trait Interpreter {
       }
   
     case And(lhs, rhs) =>
-      (eval(lhs), eval(rhs)) match {
-        case (BooleanLiteral(v1), BooleanLiteral(v2)) => BooleanLiteral(v1 && v2)
-        case _ => throw InterpreterException(s"An AND is not possible between $lhs and $rhs.")
+      eval(lhs) match {
+        case BooleanLiteral(false) => BooleanLiteral(false)
+        case BooleanLiteral(true) => eval(rhs)
+        case _ => error(expr)
       }
       
     case Or(lhs, rhs) =>
-      (eval(lhs), eval(rhs)) match {
-        case (BooleanLiteral(v1), BooleanLiteral(v2)) => BooleanLiteral(v1 || v2)
-        case _ => throw InterpreterException(s"An OR is not possible between $lhs and $rhs.")
+      eval(lhs) match {
+        case BooleanLiteral(true) => BooleanLiteral(true)
+        case BooleanLiteral(false) => eval(rhs)
+        case _ => error(expr)
       }
       
     //TODO verify this
@@ -352,6 +354,15 @@ trait Interpreter {
     case Column(e) =>
       eval(e) match {
         case ObjectLiteral(o: Cell) => IntegerLiteral(o.column)
+        case _ => error(expr)
+      }
+      
+    case Apply(e1, e2, e3) =>
+      eval(e1) match {
+        case ObjectLiteral(o: Array2D) =>
+          val col = eval(e2).as[Int]
+          val row = eval(e3).as[Int]
+          ObjectLiteral(o.cells(col)(row))
         case _ => error(expr)
       }
 

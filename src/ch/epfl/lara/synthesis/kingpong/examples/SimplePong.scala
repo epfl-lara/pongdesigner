@@ -122,10 +122,9 @@ class SimplePong extends Game {
     )  
   }
   
-  //TODO find a way to handle the finger move in rules
-//  val r4 = whenever(FingerMoveOver(paddle1))(
-//    paddle1.x += Val("dx")
-//  )
+  val r4 = fingerMoveOver(paddle1) { move =>
+    paddle1.x += move._2._1 - move._1._1
+  }
 
   val r5 = foreach(duplicators, balls) { (duplicator, ball) =>
     whenever(Collision(duplicator, ball)) {
@@ -176,5 +175,5 @@ class SimplePong extends Game {
   register(r5)
   register(r6)
   register(r7)
-//  register(r4)
+  register(r4)
 }
