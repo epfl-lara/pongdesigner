@@ -131,13 +131,10 @@ trait PrettyPrinterTypical {
     case Row(expr) => indent + print(NO_INDENT, expr) + ".row"
     case Column(expr) => indent + print(NO_INDENT, expr) + ".column"
     
-    case FingerMoveOver(o) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, o)
+    case FingerMoveOver(obj, id, body) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, obj) + ": " + id + " =>" +
+      LF + print(indent, body)
     case FingerDownOver(o) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
     case FingerUpOver(o) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
-    case FingerCoordX1 => indent + "x1"
-    case FingerCoordY1 => indent + "y1"
-    case FingerCoordX2 => indent + "x2"
-    case FingerCoordY2 => indent + "y2"
   }
 }
 

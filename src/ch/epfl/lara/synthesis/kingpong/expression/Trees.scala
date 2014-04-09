@@ -159,7 +159,7 @@ object Trees {
     val fixedType = body.getType
   }
   
-  case class Select(expr: Expr, property: String) extends Expr
+  case class Select(expr: Expr, property: PropertyId) extends Expr
    
   case class Tuple(exprs: Seq[Expr]) extends Expr with FixedType {
     val fixedType = TTuple(exprs.map(_.getType))
@@ -294,24 +294,14 @@ object Trees {
 //    def alignRight(other: GameObjectRef) = this("right") =:= other("right")
 //    def collides(other: GameObjectRef) = Collision(this, other)
   
-  case class FingerMoveOver(o: Expr) extends Expr with FixedBooleanType
+  case class Collision(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
+  
+  /* Finger interactions */
+  
+  case class FingerMoveOver(obj: Expr, id: Identifier, block: Expr) extends Expr with FixedBooleanType
+  
   case class FingerDownOver(o: Expr) extends Expr with FixedBooleanType
   case class FingerUpOver(o: Expr) extends Expr with FixedBooleanType
-  
-  case object FingerCoordX1 extends Expr with Terminal with FixedType {
-    val fixedType = TFloat
-  }
-  case object FingerCoordY1 extends Expr with Terminal with FixedType {
-    val fixedType = TFloat
-  }
-  case object FingerCoordX2 extends Expr with Terminal with FixedType {
-    val fixedType = TFloat
-  }
-  case object FingerCoordY2 extends Expr with Terminal with FixedType {
-    val fixedType = TFloat
-  }
-  
-  case class Collision(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   
   /* Array operations */
   

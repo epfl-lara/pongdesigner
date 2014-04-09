@@ -19,7 +19,7 @@ object TreeDSL {
   
   implicit def proxyToExpr(ref: Proxy): Expr = ref.expr
   implicit def objectToExpr(obj: GameObject): Expr = obj.expr
-  implicit def objectToProxyExpr(obj: GameObject): ObjectProxyExpr = new ObjectProxyExpr(obj.expr)
+  implicit def objectToProxyExpr(obj: GameObject): ProxyExpr = new ProxyExpr(obj.expr)
   implicit def propertyToExpr(prop: Property[_]): Expr = prop.expr
   implicit def seqStatToStat(stats: Seq[Expr]) = stats match {
     case Seq()  => NOP
@@ -108,6 +108,9 @@ object TreeDSL {
     def >(e: Expr): Expr = GreaterThan(expr, e)
     def >=(e: Expr): Expr = GreaterEq(expr, e)
     def unary_! : Expr = Not(expr)
+    def _1: Expr = TupleSelect(expr, 1)
+    def _2: Expr = TupleSelect(expr, 2)
+    def _3: Expr = TupleSelect(expr, 3)
     def ::(e: Expr) : Expr = (expr, e) match{
       case (Block(a), Block(b)) => Block(a++b)
       case (Block(a), b) => Block(a++List(b))
@@ -148,11 +151,11 @@ object TreeDSL {
     def cell(column: Expr, row: Expr) = new ArrayApplyProxy(expr, column, row)
   }
   
-  class ObjectProxy(id: Identifier) extends Proxy {
-    def expr = Variable(id).setType(TObject)
+  class IdentifierProxy(id: Identifier) extends Proxy {
+    def expr = Variable(id)
   }
   
-  class ObjectProxyExpr(val expr: Expr) extends Proxy
+  class ProxyExpr(val expr: Expr) extends Proxy
 
   class ArrayApplyProxy(obj: Expr, column: Expr, row: Expr) extends Proxy {
     def expr = Apply(obj, column, row).setType(TObject)
@@ -198,10 +201,55 @@ object TreeDSL {
     }
   }
   
-  def forall(category: Category)(body: ObjectProxy => Expr): Expr = {
-    val id = FreshIdentifier(category.name)
-    val ref = new ObjectProxy(id)
+  def fingerMoveOver(obj: Expr)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
+    val ref = new IdentifierProxy(id)
+    FingerMoveOver(obj, id, body(ref))
+  }
+  
+  def isFingerMoveOver(obj: Expr): Expr = {
+    val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
+    FingerMoveOver(obj, id, NOP)
+  }
+  
+  def foreach(category: Category)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier(category.name).setType(TObject)
+    val ref = new IdentifierProxy(id)
+    Foreach(category, id, body(ref))
+  }
+
+  def foreach(category1: Category, category2: Category)(body: (Proxy, Proxy) => Expr): Expr = {
+    val id1 = FreshIdentifier(category1.name).setType(TObject)
+    val id2 = FreshIdentifier(category2.name).setType(TObject)
+    val ref1 = new IdentifierProxy(id1)
+    val ref2 = new IdentifierProxy(id2)
+    Foreach(category1, id1, Foreach(category2, id2, body(ref1, ref2)))
+  }
+  
+  def foreach(category1: Category, category2: Category, category3: Category)(body: (Proxy, Proxy, Proxy) => Expr): Expr = {
+    val id1 = FreshIdentifier(category1.name).setType(TObject)
+    val id2 = FreshIdentifier(category2.name).setType(TObject)
+    val id3 = FreshIdentifier(category3.name).setType(TObject)
+    val ref1 = new IdentifierProxy(id1)
+    val ref2 = new IdentifierProxy(id2)
+    val ref3 = new IdentifierProxy(id3)
+    Foreach(category1, id1, Foreach(category2, id2, Foreach(category3, id3, body(ref1, ref2, ref3))))
+  }
+  
+  def copy(obj: Expr)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier("copy").setType(TObject)
+    val ref = new IdentifierProxy(id)
+    Copy(obj, id, body(ref))
+  }
+  
+  def forall(category: Category)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier(category.name).setType(TObject)
+    val ref = new IdentifierProxy(id)
     Forall(category, id, body(ref))
+  }
+  
+  def whenever(cond: Expr)(actions: Expr*): Expr = {
+    If(cond, TreeOps.flatten(actions.toSeq))
   }
   
   def debug(msg: String, args: Expr*): Expr = {

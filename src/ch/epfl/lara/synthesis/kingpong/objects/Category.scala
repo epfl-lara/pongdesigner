@@ -5,6 +5,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import org.jbox2d.dynamics._
 import ch.epfl.lara.synthesis.kingpong.Game
 
@@ -22,7 +23,7 @@ object Category {
       friction: Expr = 0.2,
       restitution: Expr = 0.5,
       fixedRotation: Expr = true,
-      color: Expr = 0xFF000000,
+      color: Expr = ColorConstants.black,
       sensor: Expr = false,
       tpe: BodyType = BodyType.DYNAMIC)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, radius, value, visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe)
