@@ -151,7 +151,36 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Str(R.string.add_circle_hint) =>
         game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
       case Str(R.string.menu_add_constraint_hint) =>
-        
+        var menuSelected = false
+        val res = context.getResources()
+        val game = getGame()
+        mRuleState match {
+          case STATE_MODIFYING_GAME => 
+            setModeSelectEvents()
+            menuSelected = true
+            //mAddRuleButton.text = res.getString(R.string.select_event)
+            Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
+          case STATE_SELECTING_EVENTS =>
+            Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
+            setModeModifyGame()
+            //mAddRuleButton.text = res.getString(R.string.design_rule)
+            //hovered = false
+            eventEditor.select(null, 0)
+          case STATE_SELECTING_EFFECTS =>
+            if(eventEditor.selectedEvent != null) { // Means that the rule has been confirmed.
+              val causeEvent =  eventEditor.selectedEvent.getOrElse(null)
+              val timestamp = eventEditor.selectedTime
+              CodeGenerator.createRule(context, getGame(), Set(causeEvent), Set(), timestamp)
+            //}
+            /*if(!EditRuleButton.selected) {
+              setModeModifyGame(false)
+            }*/
+          }
+          //hovered = false
+        case STATE_MODIFYING_CATEGORY =>
+          //hovered = false
+      }
+      menuSelected
       case _ =>
     }
   }
@@ -620,7 +649,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         case o: Speed with Movable =>
           val middleX = x
           val middleY = y
-          val v = velocity.normalize()
+          val v = velocity.length()
           if(v != 0) {
             val vx = velocity.x
             val vy = velocity.y
@@ -1056,6 +1085,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       var menuSelected:Boolean = false
       //numberEditor.unselect()
       ColorMenu.activated = false
+      SystemMenu.activated = false
       //if(fingerUpCanceled) return
       //GameMenu.onFingerUp(this, selectedShape, x, y)
       val x = pos.x
@@ -1088,6 +1118,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         // We dissmiss all selection and we select something else depending on the game editor type.
         ShapeMenu.cancelHovered()
         ColorMenu.cancelHovered()
+        SystemMenu.cancelHovered()
         //RuleMenu.cancelHovered()
         
         val touchCoords = res
@@ -1275,26 +1306,22 @@ class GameView(val context: Context, attrs: AttributeSet)
   * Source: http://www.androiddevelopersolution.com/2012/09/crop-image-in-circular-shape-in-android.html
   */
  def getRoundedShape(scaleBitmapImage: Bitmap): Bitmap = {
-  val targetWidth = scaleBitmapImage.getWidth;
-  val targetHeight = scaleBitmapImage.getHeight;
-  val targetBitmap = Bitmap.createBitmap(targetWidth, 
-                            targetHeight,Bitmap.Config.ARGB_8888);
+  val targetSize = Math.min(scaleBitmapImage.getWidth, scaleBitmapImage.getHeight)
+  val targetBitmap = Bitmap.createBitmap(targetSize, 
+                            targetSize,Bitmap.Config.ARGB_8888);
   
   val canvas = new Canvas(targetBitmap);
   val path = new Path();
-  path.addCircle((targetWidth.toFloat - 1) / 2,
-  (targetHeight.toFloat - 1) / 2,
-  (Math.min(targetWidth.toFloat / 2, 
-            targetHeight.toFloat / 2)),
+  path.addCircle((targetSize.toFloat - 1) / 2,
+  (targetSize.toFloat - 1) / 2,
+  (targetSize / 2),
           Path.Direction.CCW);
   
   canvas.clipPath(path);
   val sourceBitmap = scaleBitmapImage;
   canvas.drawBitmap(sourceBitmap, 
-                                new Rect(0, 0, sourceBitmap.getWidth(),
-    sourceBitmap.getHeight()), 
-                                new Rect(0, 0, targetWidth,
-    targetHeight), null);
+                                new Rect(0, 0, sourceBitmap.getWidth(), sourceBitmap.getHeight()), 
+                                new Rect(0, 0, targetSize, targetSize), null);
   return targetBitmap;
  }
  
@@ -1366,6 +1393,10 @@ class GameView(val context: Context, attrs: AttributeSet)
       if(ColorMenu.activated) {
         ColorMenu.testHovering(to.x, to.y, button_size)
         ColorMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      }
+      if(SystemMenu.activated) {
+        SystemMenu.testHovering(to.x, to.y, button_size)
+        SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
       }
       if(EventMenu.isActivated) {
         EventMenu.testHovering(to.x, to.y, button_size)

@@ -33,6 +33,7 @@ abstract class PhysicalObject(init_name: Expr,
                              ) extends GameObject(init_name) 
                                with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
   
+  
   private var _body: Body = null
   def body: Body = _body
   
@@ -45,6 +46,18 @@ abstract class PhysicalObject(init_name: Expr,
   private def removeFromWorld() = {
     game.world.world.destroyBody(body)
     bodyRemovedFromWorld = true // We keep the old body for flushing and loading properties.
+  }
+  
+  def noVelocity_=(b: Boolean): Unit = {
+    if(noVelocity && !b) {
+      removeFromWorld() 
+      tpe = BodyType.DYNAMIC
+      addToWorld()
+    } else if(!noVelocity && b) {
+      removeFromWorld() 
+      tpe = BodyType.STATIC
+      addToWorld()
+    }
   }
   
   //MIKAEL this method always uses the initial values, is it intended ? 
@@ -192,15 +205,17 @@ case class Rectangle (val game: Game,
   
   def className = "Rect"
   
-  protected val bodyDef = {
-    val body_def = new BodyDef()
-    body_def.position = Vec2(game.evaluate[Float](init_x), 
-                             game.evaluate[Float](init_y))
-    body_def.`type` = init_tpe
+  private var mBodyDef = new BodyDef()
+  mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
+                           game.evaluate[Float](init_y))
+
+  protected def bodyDef = {
+    mBodyDef.`type` = tpe
+    mBodyDef.position = Vec2(x.get, y.get)
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
     //}
-    body_def
+    mBodyDef
   }
   
   protected val fixtureDef = {
@@ -366,17 +381,17 @@ case class Circle(val game: Game,
   tpe = init_tpe
   def className = "Circ"
   
-  // Create the physical JBox2D body with a circle shape.
-  protected val bodyDef = {
-    val body_def = new BodyDef()
-    body_def.position = Vec2(game.evaluate[Float](init_x), 
-                             game.evaluate[Float](init_y))
-    body_def.`type` = init_tpe
-    
+  private var mBodyDef = new BodyDef()
+  mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
+                           game.evaluate[Float](init_y))
+
+  protected def bodyDef = {
+    mBodyDef.position = Vec2(x.get, y.get)
+    mBodyDef.`type` = tpe
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
     //}
-    body_def
+    mBodyDef
   }
   
   protected val fixtureDef = {

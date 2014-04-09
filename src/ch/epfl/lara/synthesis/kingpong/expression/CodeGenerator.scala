@@ -7,6 +7,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.common._
 import org.jbox2d.common.Vec2
+import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 trait CodeHandler {
   /*import Expression.Subtype._*/
@@ -212,13 +214,13 @@ object CodeGenerator extends CodeHandler {
     }
     result map (game.giveRuleNewCoordinates(_))
   }
-  
+  */
   /**
    * Creates a rule based on the selected event and the status of the game.
    * This function generates the condition to which the code has been modified.
    **/
-  def createRule(context: Context, game: Game, existing_rule: ReactiveRule, causeEvent: TriggerEvent, causeTimestamp: Long, ruleHandler : ReactiveRule => Unit) = {
-    val res = context.getResources()
+  def createRule(context: Context, game: Game, conditionEvent: Set[Event], conditionConfig: Set[GameObject], causeTimestamp: Long): Unit = {
+    /*val res = context.getResources()
     def askChoicesIfNeeded(r: ReactiveRule) = {
       if(r.code != Nil) {
         r.removeCompiledBlocks()
@@ -263,13 +265,14 @@ object CodeGenerator extends CodeHandler {
         case None =>
           //CodeGenerator.recoverCodeFromWorldModification(game, causeEvent, Nil)
       }
-    }
+    }*/
   }
   
   /**
    * Duplicates all rules concerning shape1 for shape2
    * This function should be deprecated once the categories are used.
    **/
+  /*
   def duplicateRuleContaining(game: Game, shape1: GameShapes.Shape, shape2: GameShapes.Shape) = {
     game.init_rules foreach {
       rule =>

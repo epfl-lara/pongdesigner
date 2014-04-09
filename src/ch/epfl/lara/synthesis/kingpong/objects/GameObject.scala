@@ -65,7 +65,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   def color: Property[Int]
   var tpe: BodyType = BodyType.STATIC
   def noVelocity = tpe == BodyType.STATIC
-  def noVelocity_=(b: Boolean): Unit = ??? // TODO It means to change the way the shape is. Do it in subclasses
+  def noVelocity_=(b: Boolean): Unit // TODO It means to change the way the shape is. Do it in subclasses
 
   // --------------------------------------------------------------------------
   // Existence

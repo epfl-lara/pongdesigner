@@ -21,6 +21,7 @@ abstract class AbstractObject(init_name: Expr,
                               init_color: Expr
                              ) extends GameObject(init_name) {
   
+  def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)
   val y = simpleProperty[Float]("y", init_y)
   val angle = simpleProperty[Float]("angle", init_angle)
@@ -174,27 +175,6 @@ case class Joystick(val game: Game,
   }
 }
 
-/*
-case class PathMovement(val game: Game,
-                        init_name: Expr, 
-                        init_x: Expr,
-                        init_y: Expr,
-                        init_angle: Expr,
-                        init_visible: Expr,
-                        init_color: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) {
-  
-
-  def className = "Movement"
-
-  def contains(pos: Vec2): Boolean = false
-  def getAABB(): AABB = ???
-  protected def makecopy(name: String): GameObject = ???
-  def getShape: Shape = ???
-}
-*/
-
-
 object Array2D {
   
   val CELL_WIDTH = 1
@@ -274,6 +254,8 @@ case class Cell(
       with Rectangular with Positionable {
   
   import Array2D._
+  
+  def noVelocity_=(b: Boolean) = {}
   
   val className = "Cell"
   def game = array.game

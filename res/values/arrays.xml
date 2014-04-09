@@ -38,10 +38,10 @@
         <item>@string/add_arraybox_hint</item>
     </array>
     <array name="menu_constraint">
-        <item>@drawable/menu_rule_editor</item>
+        
     </array>
     <array name="menu_constraint_string">
-        <item>@string/add_rule_hint</item>
+        
     </array>
     <array name="menu_categories">
         <item>@drawable/menu_add_accelerometer</item>
