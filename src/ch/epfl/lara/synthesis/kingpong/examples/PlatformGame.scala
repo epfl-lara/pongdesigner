@@ -5,8 +5,7 @@ import scala.math.Numeric$DoubleIsFractional$
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
-import ch.epfl.lara.synthesis.kingpong.common.History
-import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
+import ch.epfl.lara.synthesis.kingpong.common.ColorConstants._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression._
@@ -26,7 +25,7 @@ class PlatformGame extends Game {
   val world = new PhysicalWorld(Vec2(0, 15f))
 
   val borders = Category("Borders")(friction=0, restitution=0.1, fixedRotation=true, tpe=BodyType.STATIC)
-  val coins= Category("Coins")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC, color=yellow, sensor=true)
+  val coins= Category("Coins")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC, color=orange, sensor=true)
   val characters = Category("Characters")(friction=0.5, restitution=0.1, fixedRotation=true, tpe=BodyType.DYNAMIC)
   val io = Category("IO")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.DYNAMIC)
   val balls = Category("Balls")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.DYNAMIC)

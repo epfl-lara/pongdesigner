@@ -48,7 +48,7 @@ trait RuleManager {
   def getRulesbyObject(o: Iterable[GameObject]): Iterable[Expr] = (o flatMap getRulesbyObject)
 }
 
-trait Game extends RuleManager with ColorConstants { self => 
+trait Game extends RuleManager { self => 
   implicit val seflImplicit = self
   val world: PhysicalWorld
 
