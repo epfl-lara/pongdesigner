@@ -9,12 +9,52 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 
 object TreeDSL {
-  implicit def NumericIsExpr[T: Numeric](n: T): Expr = FloatLiteral(implicitly[Numeric[T]].toFloat(n))
-  implicit def FloatIsExpr(f: Float): Expr = FloatLiteral(f)
-  implicit def IntegerIsExpr(i: Int): Expr = IntegerLiteral(i)
-  implicit def StringIsExpr(s: String): Expr = StringLiteral(s)
-  implicit def BooleanIsExpr(b: Boolean): Expr = BooleanLiteral(b)
-  implicit def Vec2IsExpr(v: Vec2): Expr = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
+  
+  final val booleanLiteralTrue = BooleanLiteral(true)
+  final val booleanLiteralFalse = BooleanLiteral(false)
+  final val integerLiteralZero = IntegerLiteral(0)
+  final val integerLiteralOne = IntegerLiteral(1)
+  final val integerLiteralTwo = IntegerLiteral(2)
+  final val integerLiteralThree = IntegerLiteral(3)
+  final val floatLiteralZero = FloatLiteral(0f)
+  final val floatLiteralOne = FloatLiteral(1f)
+  final val floatLiteralTwo = FloatLiteral(2f)
+  final val floatLiteralThree = FloatLiteral(3f)
+  
+  /**
+   * Converts a value to a literal.
+   * Use some optimization if possible to use the same objects.
+   */
+  object Literal {
+    def apply(value: Any): Expr = {
+      value match {
+        case 0 => integerLiteralZero
+        case 1 => integerLiteralOne
+        case 2 => integerLiteralTwo
+        case 3 => integerLiteralThree
+        case true  => booleanLiteralTrue
+        case false => booleanLiteralFalse
+        case 0f => floatLiteralZero
+        case 1f => floatLiteralOne
+        case 2f => floatLiteralTwo
+        case 3f => floatLiteralThree
+        case e: Float => FloatLiteral(e)
+        case e: Int => IntegerLiteral(e)
+        case e: String => StringLiteral(e)
+        case e: Boolean => BooleanLiteral(e)
+        case e: Unit => UnitLiteral
+        case e: GameObject => ObjectLiteral(e)
+        case _ => UnitLiteral
+      }
+    }
+  }
+  
+  implicit def NumericIsExpr[T: Numeric](n: T): Expr = Literal(implicitly[Numeric[T]].toFloat(n))
+  implicit def FloatIsExpr(f: Float): Expr = Literal(f)
+  implicit def IntegerIsExpr(i: Int): Expr = Literal(i)
+  implicit def StringIsExpr(s: String): Expr = Literal(s)
+  implicit def BooleanIsExpr(b: Boolean): Expr = Literal(b)
+  implicit def Vec2IsExpr(v: Vec2): Expr = Tuple(Seq(Literal(v.x), Literal(v.y)))
   implicit def ListIsExpr(v: List[Expr]): Tuple = Tuple(v)
   
   implicit def proxyToExpr(ref: Proxy): Expr = ref.expr

@@ -248,23 +248,6 @@ object Trees {
     val value = ()
   }
   
-  /**
-   * Converts a value to a literal
-   */
-  object Literal {
-    def apply(value: Any): Expr = {
-      value match {
-        case e: Float => FloatLiteral(e)
-        case e: Int => IntegerLiteral(e)
-        case e: String => StringLiteral(e)
-        case e: Boolean => BooleanLiteral(e)
-        case e: Unit => UnitLiteral
-        case e: GameObject => ObjectLiteral(e)
-        case _=> UnitLiteral
-      }
-    }
-  }
-  
   /* Arithmetics */
   case class Plus(lhs: Expr, rhs: Expr) extends Expr
   case class Minus(lhs: Expr, rhs: Expr) extends Expr
