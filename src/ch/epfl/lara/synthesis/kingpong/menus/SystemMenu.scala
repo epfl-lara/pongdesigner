@@ -91,8 +91,8 @@ object FixButton extends MenuButton {
     // Nothing
   }
  
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.back ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.back :: Nil
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.back_arrow ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.back_arrow :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
     (if(hovered) hovered_icons else normal_icons)

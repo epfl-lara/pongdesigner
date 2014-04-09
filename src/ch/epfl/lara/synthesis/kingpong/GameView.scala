@@ -20,6 +20,7 @@ import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuff.Mode
 import android.graphics.drawable.Drawable
+import android.graphics.Path
 import android.util.Log
 import android.util.AttributeSet
 import android.os.Handler
@@ -149,6 +150,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
       case Str(R.string.add_circle_hint) =>
         game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
+      case Str(R.string.menu_add_constraint_hint) =>
+        
       case _ =>
     }
   }
@@ -539,14 +542,17 @@ class GameView(val context: Context, attrs: AttributeSet)
           paint.setTextSize(b.height.get)
           if(b.className == "Box[Boolean]") {
             val c = b.value.get.asInstanceOf[Boolean]
-            canvas.drawText(b.name.get, b.x.get + b.height.get*3/2, b.y.get, paint)
-            canvas.drawRect(b.x.get, b.y.get, b.x.get + b.height.get, b.y.get + b.height.get, paint)
+            val h = b.height.get
+            val x = b.x.get
+            val y = b.y.get
+            canvas.drawText(b.name.get, x + h*3/2, y, paint)
+            canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
             if(c) {
               paint.setColor(0xFF00FF00)
             } else {
               paint.setColor(0xFFFF0000)
             }
-            canvas.drawCircle(b.x.get - b.height.get/2, b.y.get - b.height.get/2, b.height.get/2, paint)
+            canvas.drawCircle(x + h/2, y, h/2, paint)
           } else {
             val value = b.name.get + ":" + b.value.get.toString
             canvas.drawText(value, b.x.get, b.y.get, paint)
@@ -617,13 +623,13 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(v != 0) {
             val vx = velocity.x
             val vy = velocity.y
-            val toX = middleX + vx * 100
-            val toY = middleY + vy * 100
+            val toX = middleX + vx * 1
+            val toY = middleY + vy * 1
             canvas.drawLine(middleX, middleY, toX, toY, paint)
             val unitVectorX = vx / v
             val unitVectorY = vy / v
-            val cosRot = -0.87f * 20
-            val sinRot = 0.5f * 20
+            val cosRot = -0.87f * 0.5f
+            val sinRot = 0.5f * 0.5f
             canvas.drawLine(toX, toY, toX + cosRot*unitVectorX + sinRot*unitVectorY, toY - sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
             canvas.drawLine(toX, toY, toX + cosRot*unitVectorX - sinRot*unitVectorY, toY + sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
           }
@@ -701,7 +707,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         R.drawable.fingerdown,
         R.drawable.fingerup,
         R.drawable.fingermove,
-        R.drawable.gear
+        R.drawable.gear,
+        R.drawable.back_arrow,
+        R.drawable.jpeg
         //R.drawable.timebutton3
         )
   drawables_to_load.foreach { id =>
@@ -742,7 +750,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var velocityPaint = new Paint()
   velocityPaint.setColor(0x88FF00FF)
   velocityPaint.setStyle(Paint.Style.STROKE)
-  velocityPaint.setStrokeWidth(4)
+  velocityPaint.setStrokeWidth(0.1f)
   velocityPaint.setAntiAlias(true)
   var velocityPaintShaded = new Paint()
   velocityPaintShaded.set(velocityPaint)
@@ -1247,13 +1255,48 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(shapeEditor.selectedShape != null) {
       shapeEditor.selectedShape match {
         case selectedShape: Colorable =>
+          val finalbitmap = selectedShape match {
+            case c: Circle =>
+              getRoundedShape(i)
+            case _ =>
+              i
+          }
           val id = Stream.from(0).find(i => !(bitmaps contains i)).get
-          bitmaps(id) = new BitmapDrawable(i)
+          bitmaps(id) = new BitmapDrawable(finalbitmap)
           selectedShape.color setNext id
         case _ =>
       }
     }
   }
+  
+ /**
+  * Making image in circular shape
+  * Source: http://www.androiddevelopersolution.com/2012/09/crop-image-in-circular-shape-in-android.html
+  */
+ def getRoundedShape(scaleBitmapImage: Bitmap): Bitmap = {
+  val targetWidth = scaleBitmapImage.getWidth;
+  val targetHeight = scaleBitmapImage.getHeight;
+  val targetBitmap = Bitmap.createBitmap(targetWidth, 
+                            targetHeight,Bitmap.Config.ARGB_8888);
+  
+  val canvas = new Canvas(targetBitmap);
+  val path = new Path();
+  path.addCircle((targetWidth.toFloat - 1) / 2,
+  (targetHeight.toFloat - 1) / 2,
+  (Math.min(targetWidth.toFloat / 2, 
+            targetHeight.toFloat / 2)),
+          Path.Direction.CCW);
+  
+  canvas.clipPath(path);
+  val sourceBitmap = scaleBitmapImage;
+  canvas.drawBitmap(sourceBitmap, 
+                                new Rect(0, 0, sourceBitmap.getWidth(),
+    sourceBitmap.getHeight()), 
+                                new Rect(0, 0, targetWidth,
+    targetHeight), null);
+  return targetBitmap;
+ }
+ 
   
   /**
    * Updates the code view

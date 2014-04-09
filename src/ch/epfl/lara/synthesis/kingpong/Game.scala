@@ -519,7 +519,7 @@ trait Game extends RuleManager with ColorConstants { self =>
       var postFix = 1
       
       //TODO find postfix
-      prefix + 42
+      prefix //+ 42
       //Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
     }
     

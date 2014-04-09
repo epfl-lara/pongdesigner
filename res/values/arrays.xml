@@ -3,23 +3,23 @@
     
     <array name="menu_arrays">
         <item>@array/menu_add</item>
-        <item>@array/menu_constraint</item>
         <item>@array/menu_categories</item>
-    </array>
+        <item>@array/menu_constraint</item>
+        </array>
     <array name="menu_arrays_drawable">
         <item>@drawable/menu_add_object</item>
-        <item>@drawable/menu_rule_editor</item>
         <item>@drawable/menu_add_category</item>
+        <item>@drawable/menu_rule_editor</item>
     </array>
     <array name="menu_arrays_hint">
         <item>@string/menu_add_shape_hint</item>
-        <item>@string/menu_add_constraint_hint</item>
         <item>@string/menu_add_category_hint</item>
+        <item>@string/menu_add_constraint_hint</item>
     </array>
     <array name="menu_arrays_strings">
         <item>@array/menu_add_string</item>
-        <item>@array/menu_constraint_string</item>
         <item>@array/menu_categories_string</item>
+        <item>@array/menu_constraint_string</item>
     </array>
     <array name="menu_add">
         <item>@drawable/menu_add_rect</item>
@@ -38,7 +38,7 @@
         <item>@string/add_arraybox_hint</item>
     </array>
     <array name="menu_constraint">
-        <item>@drawable/menu_rule_maker</item>
+        <item>@drawable/menu_rule_editor</item>
     </array>
     <array name="menu_constraint_string">
         <item>@string/add_rule_hint</item>

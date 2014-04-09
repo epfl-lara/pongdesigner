@@ -93,6 +93,12 @@ object ShapeMenu extends MenuCenter {
     } else if(SizeButton.hovered) {
       for(m <- menus) { m.visible = false }
       SizeButton.visible = true
+    } else if(PaintButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      PaintButton.visible = true
+    } else if(SystemButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      SystemButton.visible = true
     }
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
@@ -208,9 +214,9 @@ object SpeedButton extends MenuButton {
       selectedShape match {
         case selectedShape: PhysicalObject =>
           if(modify_prev) {
-            selectedShape.velocity set (selectedShape.velocity.get + Vec2(shiftX.toFloat / 1000f, shiftY.toFloat / 1000f))
+            selectedShape.velocity set (selectedShape.velocity.get + Vec2(shiftX.toFloat, shiftY.toFloat))
           } else {
-            selectedShape.velocity setNext (selectedShape.velocity.next + Vec2(shiftX.toFloat / 1000f, shiftY.toFloat / 1000f))
+            selectedShape.velocity setNext (selectedShape.velocity.next + Vec2(shiftX.toFloat, shiftY.toFloat))
           }
           if(copy_to_prev) {
             selectedShape.velocity set selectedShape.velocity.next

@@ -8,7 +8,6 @@ import language.implicitConversions
  */
 object Messages {
   final val SHOW_PROGRESS_DIALOG = 1
-  final val SHOW_PROGRESS_DIALOG_SAVE = 11
   final val HIDE_PROGRESS_DIALOG = 2
   final val TEXT_PROGRESS_DIALOG = 3
   final val FILE_LOAD= 4
@@ -18,7 +17,8 @@ object Messages {
   final val FILE_SAVE_AND_EXPORT = 8
   final val SHOW_INITIAL_TOOLTIP = 9
   final val CANCEL_TUTORIAL = 10
-  final val PICK_IMAGE = 11
+  final val SHOW_PROGRESS_DIALOG_SAVE = 11
+  final val PICK_IMAGE = 12
   final val FILENAME_TAG = "filename"
   final val TEXT_TAG = "progress_text"
   final val LINE_TAG = "progress_line"

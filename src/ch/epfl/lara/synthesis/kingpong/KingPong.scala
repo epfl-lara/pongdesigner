@@ -216,6 +216,7 @@ class KingPong extends Activity
     back_button.onClicked(onBackButtonClick)
     
     menus.ColorMenu.createMenuFromColorArray(this, R.array.colors)
+    menus.MenuOptions.context = this
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
       override def onDown(event: MotionEvent): Boolean = { 
