@@ -261,14 +261,14 @@ trait Interpreter {
   
     case And(lhs, rhs) =>
       eval(lhs) match {
-        case BooleanLiteral(false) => BooleanLiteral(false)
+        case BooleanLiteral(false) => booleanLiteralFalse
         case BooleanLiteral(true) => eval(rhs)
         case _ => error(expr)
       }
       
     case Or(lhs, rhs) =>
       eval(lhs) match {
-        case BooleanLiteral(true) => BooleanLiteral(true)
+        case BooleanLiteral(true) => booleanLiteralTrue
         case BooleanLiteral(false) => eval(rhs)
         case _ => error(expr)
       }
@@ -276,38 +276,38 @@ trait Interpreter {
     //TODO verify this
     case Equals(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (lit1: Literal[_], lit2: Literal[_]) => BooleanLiteral(lit1 == lit2)
+        case (lit1: Literal[_], lit2: Literal[_]) => Literal(lit1 == lit2)
         case (Tuple(l1), Tuple(l2)) => BooleanLiteral(l1.size == l2.size && (true /: (l1 zip l2)){ case (b, (t1, t2)) => b && (t1 == t2) })
-        case _ => BooleanLiteral(false)
+        case _ => booleanLiteralFalse
       }
       
     case LessThan(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (NumericLiteral(v1), NumericLiteral(v2)) => BooleanLiteral(v1 < v2)
+        case (NumericLiteral(v1), NumericLiteral(v2)) => Literal(v1 < v2)
         case _ => throw InterpreterException(s"A LessThan is not possible between $lhs and $rhs.")
       }
 
     case LessEq(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (NumericLiteral(v1), NumericLiteral(v2)) => BooleanLiteral(v1 <= v2)
+        case (NumericLiteral(v1), NumericLiteral(v2)) => Literal(v1 <= v2)
         case _ => throw InterpreterException(s"A LessEq is not possible between $lhs and $rhs.")
       }
 
     case GreaterThan(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (NumericLiteral(v1), NumericLiteral(v2)) => BooleanLiteral(v1 > v2)
+        case (NumericLiteral(v1), NumericLiteral(v2)) => Literal(v1 > v2)
         case _ => throw InterpreterException(s"A GreaterThan is not possible between $lhs and $rhs.")
       }
 
     case GreaterEq(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (NumericLiteral(v1), NumericLiteral(v2)) => BooleanLiteral(v1 >= v2)
+        case (NumericLiteral(v1), NumericLiteral(v2)) => Literal(v1 >= v2)
         case _ => throw InterpreterException(s"A GreaterEq is not possible between $lhs and $rhs.")
       }
       
     case Not(e) =>
       eval(e) match {
-        case BooleanLiteral(v) => BooleanLiteral(!v)
+        case BooleanLiteral(v) => Literal(!v)
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
@@ -318,22 +318,22 @@ trait Interpreter {
       if (from.isDefined) {
         val to = moves.last.to
         eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
-        BooleanLiteral(true)
+        booleanLiteralTrue
       } else {
-        BooleanLiteral(false)
+        booleanLiteralFalse
       }
       
     case FingerDownOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
-          BooleanLiteral(gctx.existsFingerDown(_.obj.exists(_ == o)))
+          Literal(gctx.existsFingerDown(_.obj.exists(_ == o)))
         case _ => error(expr)
       }
 
     case FingerUpOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
-          BooleanLiteral(gctx.existsFingerUp(_.obj.exists(_ == o)))
+          Literal(gctx.existsFingerUp(_.obj.exists(_ == o)))
         case _ => error(expr)
       }
 
@@ -344,13 +344,13 @@ trait Interpreter {
             (c.contact.objectA == o1 && c.contact.objectB == o2) ||
             (c.contact.objectA == o2 && c.contact.objectB == o1)
           }
-          BooleanLiteral(isCollision)
+          Literal(isCollision)
         case _ => error(expr)
       }
       
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
-        case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) => BooleanLiteral(o1.contains(o2.center.get))
+        case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) => Literal(o1.contains(o2.center.get))
         case _ => error(expr)
       }
       

@@ -9,10 +9,8 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.content.Context
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression._
-//import ch.epfl.lara.synthesis.kingpong.ast.Expr
-//import ch.epfl.lara.synthesis.kingpong.ast.Action
-//import ch.epfl.lara.synthesis.kingpong.ast.EConstantNumber
 import android.graphics.RectF
 import android.graphics.Rect
 import android.graphics.Paint
