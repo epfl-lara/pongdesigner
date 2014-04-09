@@ -29,19 +29,18 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   /** All properties. */
   def properties = _properties.values
   
-  //TODO performance issue?
   /** Only writable properties of this object. */
-  def writableProperties = _properties.values.view.collect {
+  val writableProperties = _properties.values.view.collect {
     case p: RWProperty[_] => p
   }
   
   /** Only historical properties of this object. */
-  def historicalProperties = _properties.values.view.collect {
+  val historicalProperties = _properties.values.view.collect {
     case p: HistoricalProperty[_] => p
   }
   
   /** Only snappable properties of this object. */
-  def snappableProperties = _properties.values.view.collect {
+  val snappableProperties = _properties.values.view.collect {
     case p: SnappableProperty[_] => p
   }
   

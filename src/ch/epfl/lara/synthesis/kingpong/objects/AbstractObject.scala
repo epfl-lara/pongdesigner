@@ -74,9 +74,14 @@ case class Box[T : PongType](val game: Game,
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
   }
-
-  def contains(pos: Vec2) = getAABB.contains(pos)
   
+  def contains(pos: Vec2) = {
+    pos.x >= left.get &&
+    pos.x <= right.get &&
+    pos.y >= top.get &&
+    pos.y <= bottom.get
+  }
+
   def makecopy(name: String): GameObject = {
     this.copy[T](init_name = name)
   }
@@ -240,9 +245,14 @@ case class Array2D(
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
-    
-  def contains(pos: Vec2) = getAABB.contains(pos)
   
+  def contains(pos: Vec2) = {
+    pos.x >= left.get &&
+    pos.x <= right.get &&
+    pos.y >= top.get &&
+    pos.y <= bottom.get
+  }
+    
   protected def makecopy(name: String) = this.copy(init_name = name)
 }
 
@@ -327,9 +337,14 @@ case class Cell(
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
-    
-  def contains(pos: Vec2) = getAABB.contains(pos)
   
+  def contains(pos: Vec2) = {
+    pos.x >= left.get &&
+    pos.x <= right.get &&
+    pos.y >= top.get &&
+    pos.y <= bottom.get
+  }
+    
   //TODO we cannot copy a cell!!!
   protected def makecopy(name: String) = ???
   
