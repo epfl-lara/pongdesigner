@@ -368,6 +368,7 @@ class KingPong extends Activity
 
   onPause {
     mGameView.onPause()
+    time_button.setImageDrawable(timeButtonPlay)
   }
   
   onDestroy {
