@@ -514,7 +514,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     game = newGame
   }
 
-  override def update(): Unit = {
+  def update(): Unit = {
     //super.update()
     state match {
       case Running =>
@@ -1016,17 +1016,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     stopLoop()
   }
 
-  override def onAccelerometerChanged(vector: Vec2): Unit = {
-    // do NOT touch the given vector! 
-    // It is mutable for performance purposes.
-    state match {
-      case Running => 
-        game.onAccelerometerChanged(vector.clone)
-      case Editing =>
-        //super.onAccelerometerChanged(vector.clone)
-    } 
-  }
-  
   var currentFingerPos: Vec2 = null
   var fingerIsDown = false
   var fingerUpCanceled = false
@@ -1036,7 +1025,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var mDisplacementX: Float = 0
   var mDisplacementY: Float = 0
 
-  override def onFingerDown(pos: Vec2): Unit = {
+  def onFingerDown(pos: Vec2): Unit = {
     state match {
       case Running => 
         val res = mapVectorToGame(pos)
@@ -1142,7 +1131,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Called when a finger is up
    */
-  override def onFingerUp(pos: Vec2): Unit = state match {
+  def onFingerUp(pos: Vec2): Unit = state match {
     case Running => 
       val res = mapVectorToGame(pos)
       game.onFingerUp(res)
@@ -1439,7 +1428,7 @@ class GameView(val context: Context, attrs: AttributeSet)
    * @param from The first coordinate
    * @param to   The second coordinate
    */
-  override def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
+  def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
     case Running => 
       val res = mapVectorToGame(to)
       game.onOneFingerMove(mapVectorToGame(from), res)
