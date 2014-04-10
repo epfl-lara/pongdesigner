@@ -72,22 +72,11 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Existence
   // --------------------------------------------------------------------------  
   
-  private var _creationTime: Long = -1
   val creationTime = simpleProperty[Long]("creation time", -1)
   val deletionTime = simpleProperty[Long]("deletion time", Long.MaxValue)
   
-  /**
-   * Set the creation time. By default, it is set to 0.
-   * The creation time should only be set once.
-   */
-  def setCreationTime(time: Long): self.type = {
-    assert(time >= 0)
-    _creationTime = time
-    self
-  }
-  
   /** Checks whether this object exists at the given time. */
-  def existsAt(time: Long) = _creationTime <= time && (deletionTime.get < 0 || time < deletionTime.get)
+  def existsAt(time: Long) = creationTime.get <= time && (deletionTime.get < 0 || time < deletionTime.get)
   
   /**
    * Update the internal state according to the current time. Particularly, remove the object from the 

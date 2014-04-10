@@ -44,7 +44,7 @@ object TrashButton extends MenuButton {
     if(modify_prev) { // Nothing to be done here
       //selectedShape.deletion_time set gameEngine.time
     } else {
-      selectedShape.deletionTime setNext gameEngine.getGame.time
+      selectedShape.deletionTime setNext gameEngine.getGame().time.toInt
     }
     if(copy_to_prev) {
       selectedShape.deletionTime set selectedShape.deletionTime.next
