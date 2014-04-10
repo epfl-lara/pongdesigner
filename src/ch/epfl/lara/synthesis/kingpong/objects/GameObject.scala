@@ -2,7 +2,11 @@ package ch.epfl.lara.synthesis.kingpong.objects
 
 import scala.Dynamic
 import scala.language.dynamics
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{ HashMap => MMap }
+
+import org.jbox2d.dynamics.BodyType
+
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -13,7 +17,6 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import org.jbox2d.dynamics.BodyType
 import ch.epfl.lara.synthesis.kingpong.Options.Event._
 
 object GameObject {
@@ -24,32 +27,31 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   def game: Game
   def className: String
   
-  private val _properties = MMap.empty[String, Property[_]]
+  /** All properties mapped from their name. */
+  private val _propertiesMap = MMap.empty[String, Property[_]]
+  private val _writableProperties = ArrayBuffer.empty[RWProperty[_]]
+  private val _historicalProperties =  ArrayBuffer.empty[HistoricalProperty[_]]
+  private val _snappableProperties = ArrayBuffer.empty[SnappableProperty[_]]
   
   /** All properties. */
-  def properties = _properties.values
+  def properties: Traversable[Property[_]] = _propertiesMap.values
   
   /** Only writable properties of this object. */
-  val writableProperties = _properties.values.view.collect {
-    case p: RWProperty[_] => p
-  }
+  def writableProperties: Traversable[RWProperty[_]] = _writableProperties
   
   /** Only historical properties of this object. */
-  val historicalProperties = _properties.values.view.collect {
-    case p: HistoricalProperty[_] => p
-  }
+  def historicalProperties: Traversable[HistoricalProperty[_]] = _historicalProperties
   
   /** Only snappable properties of this object. */
-  val snappableProperties = _properties.values.view.collect {
-    case p: SnappableProperty[_] => p
-  }
+  def snappableProperties: Traversable[SnappableProperty[_]] = _snappableProperties
   
-  private val _ephemeralProperties = MMap.empty[String, EphemeralProperty[_]]
+  private val _ephemeralPropertiesMap = MMap.empty[String, EphemeralProperty[_]]
+  private val _ephemeralProperties = ArrayBuffer.empty[EphemeralProperty[_]]
   
   /** All ephemeral properties. */
-  def ephemeralProperties = _ephemeralProperties.values
+  def ephemeralProperties: Traversable[EphemeralProperty[_]] = _ephemeralProperties
   /** Get a specific ephemeral property. */
-  def getEphemeralProperty(name: String) = _ephemeralProperties.get(name)
+  def getEphemeralProperty(name: String) = _ephemeralPropertiesMap.get(name)
 
   // --------------------------------------------------------------------------
   // Properties
@@ -123,23 +125,23 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------
 
   /** Do a snapshot on all properties. */
-  def snapshot() = snappableProperties.foreach { _.snapshot() }
+  def snapshot() = _snappableProperties.foreach { _.snapshot() }
 
   /** Revert to the latest snapshot for all properties. */
-  def revert() = snappableProperties.foreach { _.revert() }
+  def revert() = _snappableProperties.foreach { _.revert() }
 
   // --------------------------------------------------------------------------
   // History functions
   // --------------------------------------------------------------------------
 
   /** Save the current state to the history. */
-  def save(t: Long) = historicalProperties.foreach { _.save(t) }
+  def save(t: Long) = _historicalProperties.foreach { _.save(t) }
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Long) = historicalProperties.foreach { _.restore(t) }
+  def restore(t: Long) = _historicalProperties.foreach { _.restore(t) }
 
   /** Clear the history of this object. */
-  def clear() = historicalProperties.foreach { _.clear() }
+  def clear() = _historicalProperties.foreach { _.clear() }
 
   // --------------------------------------------------------------------------
   // Utility functions
@@ -151,7 +153,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    */
   def preStep(ctx: Context): Unit = {
     setExistenceAt(ctx.time)
-    historicalProperties foreach { p =>
+    _historicalProperties foreach { p =>
       p.validate() 
       p.flush()
     }
@@ -162,7 +164,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * @param time The time for the current step.
    */
   def postStep(ctx: Context): Unit = {
-    historicalProperties foreach { p =>
+    _historicalProperties foreach { p =>
       p.load() 
       p.save(ctx.time)
     }
@@ -172,26 +174,26 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * Validate the next values of the underlying structure
    *  and replace the current value with it.
    */
-  def validate() = historicalProperties.foreach { _.validate() }
+  def validate() = _historicalProperties.foreach { _.validate() }
 
   /**
    * Write the properties values to the underlying structure. The common case
    *  is to force these values to the physical world, but it could also do
    *  nothing.
    */
-  def flush() = historicalProperties.foreach { _.flush() }
+  def flush() = _historicalProperties.foreach { _.flush() }
 
   /**
    * Load the properties values from the underlying structure, typically
    *  the physical world.
    */
-  def load() = historicalProperties.foreach { _.load() }
+  def load() = _historicalProperties.foreach { _.load() }
 
   /**
    * Reset all properties to their initial values.
    */
   def reset(interpreter: Interpreter) = {
-    historicalProperties.foreach { _.reset(interpreter) }
+    _historicalProperties.foreach { _.reset(interpreter) }
   }
   
   /**
@@ -204,25 +206,13 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    */
   def copyPropertiesFrom(other: GameObject): self.type = {
     //MIKAEL check if this is always correct
-    (writableProperties zip other.writableProperties).foreach { case (v1, v2) => v1.set(v2.getExpr) }
+    (_writableProperties zip other._writableProperties).foreach { case (v1, v2) => v1.set(v2.getExpr) }
     self
   }
   
   /** Get a specific property. */
-  def getProperty(property: String): Option[Property[_]] = property match {
-    case _ if _properties contains property =>
-      _properties.get(property)
-    
-    case _ if _ephemeralProperties contains property =>
-      _ephemeralProperties.get(property)
-      
-//    case GameObject.EphemeralEndings(propertyName, extension) if _properties contains propertyName =>
-//      // Create a new ephemeral
-//      val res = _properties(propertyName).copyEphemeral(property)
-//      _ephemeralProperties(property) = res
-//      res.expr
-    
-    case _ => None
+  def getProperty(property: String): Option[Property[_]] = {
+    _propertiesMap.get(property).orElse(_ephemeralPropertiesMap.get(property))
   }
   
   def get(property: String): Property[_] = getProperty(property) match {
@@ -243,7 +233,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Property with no relationship with the physical world
   protected def simpleProperty[T: PongType](name: String, init: Expr): HistoricalRWProperty[T] = {
     val p = new SimpleProperty[T](name, init, this)
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
 
@@ -252,7 +242,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
 
@@ -262,7 +252,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       val flusher = f
       val loader = l
     }
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
   
@@ -272,7 +262,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       def next = nextF
       def expr = exprF
     }
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
   
@@ -282,7 +272,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       def next = constF
       def expr = tpe.toExpr(constF)
     }
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
   
@@ -292,10 +282,19 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       def next = property.next
       def expr = property.expr
     }
-    _properties(p.name) = p
+    addProperty(p)
     p
   }
-
+  
+  private def addProperty(property: Property[_]): Unit = {
+    _propertiesMap(property.name) = property
+    if (property.isInstanceOf[RWProperty[_]])
+      _writableProperties += property.asInstanceOf[RWProperty[_]]
+    if (property.isInstanceOf[SnappableProperty[_]])
+      _snappableProperties += property.asInstanceOf[SnappableProperty[_]]
+    if (property.isInstanceOf[HistoricalProperty[_]])
+      _historicalProperties += property.asInstanceOf[HistoricalProperty[_]]
+  }
 
   def getCopy(name: String): GameObject = {
     makecopy(name)

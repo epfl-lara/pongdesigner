@@ -76,11 +76,8 @@ object TrashButton extends MenuButton {
 object FixButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    selectedShape.properties.foreach { p =>
-      p match {
-        case p: HistoricalProperty[_] =>
-          p.setInit(Literal(p.get))
-      }
+    selectedShape.historicalProperties foreach { p =>
+      p.setInit(Literal(p.get))
     }
     hovered = false
   }

@@ -1,7 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import scala.Dynamic
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MMap}
 import scala.collection.mutable.{Set => MSet, Seq => MSeq}
 import scala.language.dynamics
@@ -25,14 +25,15 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
 
 trait RuleManager {
-  private val _rules = ListBuffer[Expr]()
+  // Use an ArrayBuffer for performance reasons when using `foreach`.
+  // An ArrayBuffer will use a simple while loop.
+  private val _rules = ArrayBuffer.empty[Expr]
   private val _rulesByObject = MMap.empty[GameObject, MSet[Expr]]
   
-  /** All the rules iterators in this game. */
-  def rules: Iterable[Expr] = _rules
-  def getRules(): Iterable[Expr] = _rules
-  def getRulesbyObject(o: GameObject): Iterable[Expr] = _rulesByObject.getOrElse(o, List())
-  def addRule(r: Expr) = {
+  /** All the rules in this game. */
+  def rules: Traversable[Expr] = _rules
+  def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
+  def addRule(r: Expr): Unit = {
     
     //TODO
 //    r traverse {
@@ -52,10 +53,10 @@ trait Game extends RuleManager { self =>
   implicit val seflImplicit = self
   val world: PhysicalWorld
 
-  private val _objects = MSet.empty[GameObject]
+  private val _objects = ArrayBuffer.empty[GameObject]
   
   /** All objects in this game. */
-  def objects: MSet[GameObject] = _objects
+  def objects: Traversable[GameObject] = _objects
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
@@ -122,11 +123,11 @@ trait Game extends RuleManager { self =>
   }
 
   def add(o: GameObject) = {
-    _objects.add(o)
+    _objects += o
   }
   
   def remove(o: GameObject) = {
-    _objects.remove(o)
+    _objects -= o
   }
   
   def rename(o: GameObject, newName: String) = {
@@ -344,7 +345,10 @@ trait Game extends RuleManager { self =>
       }
     }
     
-    val objects_containing_pos = objects filter collidesCircle
+    val objects_containing_pos = MSet.empty[GameObject]
+    _objects foreach { o =>
+      if (collidesCircle(o)) objects_containing_pos += o
+    }
     objects_containing_pos
   }
 
@@ -387,9 +391,9 @@ trait Game extends RuleManager { self =>
     private var max_time: Long = 0
 
     // Oldest first (head), more recent at the end (last). Both in O(1).
-    private var history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
+    private val history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
-    private var crtEvents = ListBuffer[Event]()
+    private val crtEvents = ArrayBuffer.empty[Event]
 
     /** Time for the last fully completed step. */
     def time = recording_time - 1
@@ -415,7 +419,11 @@ trait Game extends RuleManager { self =>
 
     /* Advance the time and store the current events in the history. */
     def step(): Unit = {
-      val c = crtEvents.synchronized {val res = crtEvents.toList; crtEvents.clear(); res }
+      val c = crtEvents.synchronized {
+        val res = crtEvents.toSeq
+        crtEvents.clear()
+        res
+      }
       recording_time += 1
       
       if (max_time < time)
@@ -423,7 +431,7 @@ trait Game extends RuleManager { self =>
 
       if (c.nonEmpty) {
         // Here we find the objects under the finger events.
-        val history_events = c.toSeq.map {
+        val history_events = c.map {
           case FingerMove(from, to, null) =>
             FingerMove(from, to, objectFingerAt(from))
           case FingerDown(pos, null) =>
@@ -454,12 +462,13 @@ trait Game extends RuleManager { self =>
      */
     def addEvent(e: Event): Unit = crtEvents.synchronized {
       e match {
-        case AccelerometerChanged(_) => 
-          crtEvents = crtEvents.filter{
-            case _ : AccelerometerChanged => false
-            case _ => true
-          }
-          crtEvents += e
+        case AccelerometerChanged(_) =>
+          // Remove the old AccelerometerChanged, if any
+          val i = crtEvents.indexWhere(_.isInstanceOf[AccelerometerChanged])
+          if (i >= 0) 
+            crtEvents(i) = e
+          else
+            crtEvents += e
         case _ => 
           crtEvents += e
       }      

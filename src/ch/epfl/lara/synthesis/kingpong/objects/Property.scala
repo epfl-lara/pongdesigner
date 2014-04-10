@@ -65,7 +65,7 @@ trait AssignableProperty[T] { self: RWProperty[T] =>
   def assign(e: Expr): self.type = assign(tpe.toScalaValue(e))
 }
 
-trait HistoricalProperty[T] extends History { self: RWProperty[T]  =>
+trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
   
   private var _setNext: T => self.type = setNextInternal _
   

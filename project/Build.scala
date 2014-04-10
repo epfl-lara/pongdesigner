@@ -38,6 +38,7 @@ object General {
     libraryDependencies += "com.android.support" % "support-v4" % "18.0.0",
     
     scalacOptions ++= Seq(
+      "-optimize",
       "-feature",                      // Enable language feature warnings
       "-deprecation",                  // Enable detailed deprecation warnings 
       "-unchecked",                    // Enable detailed unchecked warnings 
