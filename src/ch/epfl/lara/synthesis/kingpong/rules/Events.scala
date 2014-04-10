@@ -5,13 +5,12 @@ import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import scala.collection.mutable.{Set => MSet}
 import ch.epfl.lara.synthesis.kingpong.Options
 
 object Events {
 
   sealed trait Event {
-    def obj = MSet[GameObject]()
+    def obj = Set[GameObject]()
     def selectableBy(x: Float, y: Float) = false
     def distanceSquareTo(x: Float, y: Float) = Float.PositiveInfinity
     def isNumerical = false
@@ -42,7 +41,7 @@ object Events {
   }
   
   object FingerRelated {
-    def unapply(e: Event): Option[(Vec2, MSet[GameObject])] = e match {
+    def unapply(e: Event): Option[(Vec2, Set[GameObject])] = e match {
       case FingerDown(p, obj) => Some((p, obj))
       case FingerUp(p, obj) => Some((p, obj))
       case FingerMove(p, _, obj) => Some((p, obj))
@@ -50,13 +49,13 @@ object Events {
     }
   }
 
-  case class FingerDown(p: Vec2, override val obj: MSet[GameObject]) extends Event with SelectableEvent {
+  case class FingerDown(p: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent {
     override def isFinger = true
   }
-  case class FingerUp(p: Vec2, override val obj: MSet[GameObject]) extends Event with SelectableEvent{
+  case class FingerUp(p: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent{
     override def isFinger = true
   }
-  case class FingerMove(from: Vec2, to: Vec2, override val obj: MSet[GameObject]) extends Event with SelectableEvent{
+  case class FingerMove(from: Vec2, to: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent{
     override def isFinger = true
     def p = from
   }

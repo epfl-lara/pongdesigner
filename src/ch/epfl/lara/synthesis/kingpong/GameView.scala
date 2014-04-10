@@ -141,13 +141,15 @@ trait ActionBarHandler extends common.ContextUtils {
   }
 }
 
+/**
+ * The game view containing menus for editing shapes and the game itself.
+ */
 class GameView(val context: Context, attrs: AttributeSet)
   extends SurfaceView(context, attrs) 
   with SurfaceHolder.Callback
   with ProgressBarHandler
   with ActionBarHandler
   with common.ContextUtils
-  with Game
   {
   import GameView._
   import expression.Types._
@@ -156,7 +158,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
   private var grid: Grid = new Grid(step=1, offset=0, stroke_width=1, color=0x88000000)
-  implicit val self: Game = this
+  //implicit val self: Game = this
   
   def menuCallBacks: String => Boolean = { s =>
     s match {
@@ -300,13 +302,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   /** All game stuff from the Game trait */
-  val world = new PhysicalWorld(Vec2(0, 0))
+  //val world = new PhysicalWorld(Vec2(0, 0))
   
-  val menus = Category("Menus")()
+  //val menus = Category("Menus")()
   //val FingerUps = CategoryInput("FingerUps", { case e: FingerUp => true case _ => false} )
   //val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
   
-  val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
+  //val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
   
   var whitePaint = new Paint()
   whitePaint.setColor(0xFFFFFFFF)
@@ -513,7 +515,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   override def update(): Unit = {
-    super.update()
+    //super.update()
     state match {
       case Running =>
         game.update()
@@ -542,7 +544,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     def drawObject(o: GameObject): Unit = {
       if(o.existsAt(game.time)) {
-        
+        paint.setStyle(Paint.Style.FILL)
         o match {
           case o: Positionable =>
             val colorPrev = o.color.get
@@ -1021,7 +1023,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Running => 
         game.onAccelerometerChanged(vector.clone)
       case Editing =>
-        super.onAccelerometerChanged(vector.clone)
+        //super.onAccelerometerChanged(vector.clone)
     } 
   }
   
@@ -1042,7 +1044,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         currentFingerPos = res
         fingerIsDown = true
       case Editing =>
-        super.onFingerDown(pos)
+        //super.onFingerDown(pos)
         //TODO: Add menus handling ?
         fingerUpCanceled = false
         val x = pos.x
@@ -1233,8 +1235,8 @@ class GameView(val context: Context, attrs: AttributeSet)
                   //TODO : val p = game.triggerEvents.addEvent(game.currentTime, INTEGER_CHANGE_EVENT, d, null, d.x, d.y, d.value, d.value)
                   //closestEvent = p
                 case d: Positionable =>
-                  val p  = game.addEvent(FingerDown(Vec2(d.x.get, d.y.get), MSet(d: GameObject)), game.time.toInt)
-                  val p2 = game.addEvent(FingerUp(Vec2(d.x.get, d.y.get), MSet(d: GameObject)), game.time.toInt)
+                  val p  = game.addEvent(FingerDown(Vec2(d.x.get, d.y.get), Set(d)), game.time.toInt)
+                  val p2 = game.addEvent(FingerUp(Vec2(d.x.get, d.y.get), Set(d)), game.time.toInt)
                   closestEvent = p
               }
               shapeEditor.select(null)
@@ -1347,7 +1349,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           performSelection(res)
         }
       }
-      super.onFingerUp(pos)
+      //super.onFingerUp(pos)
   }
   
   /**
@@ -1445,7 +1447,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     case Editing =>
       //matrix.postTranslate(to.x - from.x, to.y - from.y)
       //push(matrix)
-      super.onOneFingerMove(from, to)
+      //super.onOneFingerMove(from, to)
       mDisplacementX = to.x - touchDownOriginal.x
       mDisplacementY = to.y - touchDownOriginal.y
       val touchCoords = mapVectorToGame(to)

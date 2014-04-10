@@ -49,7 +49,7 @@ object FingerDownEventMenu extends MenuButton {
         val event = gameEngine.getGame.getFingerDownEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
           case Some(event) =>
-            event.obj += EventMenu.shape
+            //event.obj += EventMenu.shape
             if(event.obj.isEmpty) 
             gameEngine.eventEditor.select(event, gameEngine.eventEditor.selectedTime)
           case None =>
@@ -86,7 +86,7 @@ object FingerMoveEventMenu extends MenuButton {
         val event = gameEngine.getGame.getFingerMoveEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
           case Some(event) =>
-            event.obj += EventMenu.shape
+            //event.obj += EventMenu.shape
             if(event.obj.isEmpty) 
             gameEngine.eventEditor.select(event, gameEngine.eventEditor.selectedTime)
           case None =>
@@ -122,7 +122,7 @@ object FingerUpEventMenu extends MenuButton {
         val event = gameEngine.getGame.getFingerUpEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
           case Some(event) =>
-            event.obj += EventMenu.shape
+            //event.obj += EventMenu.shape
             if(event.obj.isEmpty) 
             gameEngine.eventEditor.select(event, gameEngine.eventEditor.selectedTime)
           case None =>

@@ -45,7 +45,7 @@ case class DrawingObject(val game: Game,
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  val width_drawing= simpleProperty[Float]("width_drawing", 0.01f)
+  val width_drawing= simpleProperty[Float]("width_drawing", 0.1f)
   val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
   val drawings = ArrayBuffer[DrawingElement]() // Records all drawings.
   val defaultRule = { (g: Game) =>

@@ -328,7 +328,7 @@ trait Game extends RuleManager { self =>
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
   
-  def objectFingerAt(pos: Vec2): MSet[GameObject] = {
+  def objectFingerAt(pos: Vec2): Set[GameObject] = {
     circle.m_p.set(pos.x, pos.y)
     circle.m_radius = FINGER_SIZE
 
@@ -345,7 +345,7 @@ trait Game extends RuleManager { self =>
       }
     }
     
-    val objects_containing_pos = MSet.empty[GameObject]
+    var objects_containing_pos = Set.empty[GameObject]
     _objects foreach { o =>
       if (collidesCircle(o)) objects_containing_pos += o
     }
@@ -580,7 +580,7 @@ trait Game extends RuleManager { self =>
    * Collect all objects below the line.
    * Events are "linked"
    */
-  def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: MSet[GameObject]=MSet()): Option[FingerMove] = e match {
+  def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: Set[GameObject]=Set()): Option[FingerMove] = e match {
     case e@FingerUp(v,o) =>
       start match {
         case Some(a) => Some(FingerMove(a, v, objects++o))
@@ -627,10 +627,10 @@ trait Game extends RuleManager { self =>
               }
             case None => // By default, we look for the start first, then for the end.
               events match {
-                case q ::> (e@FingerMove(a, b, o2)) if b == m => getFingerMoveEvent(e, time)(q, None, None, MSet())
-                case q ::> (e@FingerDown(a, o2)) if a == m => getFingerMoveEvent(e, time)(start=Some(a),end=None, objects=MSet())
-                case q ::> _ => getFingerMoveEvent(e, time)(q,None,None,MSet())
-                case Nil if time > 0 => getFingerMoveEvent(e, time-1)(start=None,end=None,objects=MSet())
+                case q ::> (e@FingerMove(a, b, o2)) if b == m => getFingerMoveEvent(e, time)(q, None, None, Set())
+                case q ::> (e@FingerDown(a, o2)) if a == m => getFingerMoveEvent(e, time)(start=Some(a),end=None, objects=Set())
+                case q ::> _ => getFingerMoveEvent(e, time)(q,None,None,Set())
+                case Nil if time > 0 => getFingerMoveEvent(e, time-1)(start=None,end=None,objects=Set())
                 case Nil => None
               }
           }

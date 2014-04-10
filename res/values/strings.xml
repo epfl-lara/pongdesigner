@@ -56,6 +56,7 @@
     <string name="savedGame9">Brick breaker 3 players</string>
     <string name="brickbreaker">Brick breaker</string>
     <string name="supermario">Super Maria</string>
+    <string name="sliding">Sliding Puzzle</string>
     <string name="saveFileAs">Save game as:</string>
     <string name="exportFileAs">Save and export game as:</string>
     <string name="export">Export</string>

@@ -18,6 +18,9 @@
         <item android:id="@+id/supermario"
           android:title="@string/supermario"
           android:showAsAction="ifRoom"/>
+        <item android:id="@+id/sliding"
+          android:title="@string/sliding"
+          android:showAsAction="ifRoom"/>
 	    <item android:id="@+id/tutorial_game"
           android:title="@string/tutorial"
           android:showAsAction="ifRoom"/>

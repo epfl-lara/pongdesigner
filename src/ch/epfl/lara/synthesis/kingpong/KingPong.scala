@@ -58,9 +58,12 @@ object KingPong {
   
   final val PONGNAME_SIMPLEBRICKBREAKER = "BrickBreaker"
   final val PONGNAME_SUPERMARIO = "Mario"  
+  final val PONGNAME_SLIDING = "SlidingPuzzle"  
+  final val PONGNAME_THREEINAROW = "ThreeInARow"  
   private var mapgames: Map[String,()=>Game] = Map.empty
   mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
   mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
+  mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -347,6 +350,9 @@ class KingPong extends Activity
             true
           case R.id.supermario =>
             self ! Messages.FileLoad(PONGNAME_SUPERMARIO)
+            true
+          case R.id.sliding =>
+            self ! Messages.FileLoad(PONGNAME_SLIDING)
             true
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
