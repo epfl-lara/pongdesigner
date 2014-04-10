@@ -42,7 +42,7 @@ object TrashButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     if(modify_prev) { // Nothing to be done here
-      //selectedShape.deletion_time set gameEngine.time
+      selectedShape.deletionTime set gameEngine.getGame().time.toInt
     } else {
       selectedShape.deletionTime setNext gameEngine.getGame().time.toInt
     }

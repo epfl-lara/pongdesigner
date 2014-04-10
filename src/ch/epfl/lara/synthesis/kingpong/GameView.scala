@@ -1625,14 +1625,17 @@ class GameView(val context: Context, attrs: AttributeSet)
 
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
-          if (me.getPointerCount() == 1) {
-            val pointerIndex = Math.min(me.getPointerId(0), FINGERS - 1)
-            val from = last(pointerIndex)
-            val to = Vec2(me.getX(0), me.getY(0))
-            //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
-            onOneFingerMove(from, to)
-            last(pointerIndex) = to
-            
+          if(me.getPointerCount() == 1 || state == Running) {
+            var i = me.getPointerCount()-1
+            while(i>=0) {
+              val pointerIndex = Math.min(me.getPointerId(i), FINGERS - 1)
+              val from = last(pointerIndex)
+              val to = Vec2(me.getX(0), me.getY(0))
+              //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
+              onOneFingerMove(from, to)
+              last(pointerIndex) = to
+              i-=1
+            }
           } else if (me.getPointerCount() == 2) {
             val pointerIndex1 = Math.min(me.getPointerId(0), FINGERS - 1)
             val pointerIndex2 = Math.min(me.getPointerId(1), FINGERS - 1)
