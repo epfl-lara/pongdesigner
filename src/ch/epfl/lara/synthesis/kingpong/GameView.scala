@@ -633,6 +633,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             canvas.drawCircle(x + h/2, y, h/2, paint)
           } else {
             val value = b.name.get + ":" + b.value.get.toString
+            paint.setLinearText(true)
             canvas.drawText(value, b.x.get, b.y.get, paint)
             if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
           }
