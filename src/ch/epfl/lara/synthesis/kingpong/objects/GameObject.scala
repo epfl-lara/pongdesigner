@@ -142,20 +142,31 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    */
   def preStep(ctx: Context): Unit = {
     setExistenceAt(ctx.time)
-    _historicalProperties foreach { p =>
+    // This is very low level for performance reasons since it is called
+    // very often and we don't want allocation of anonymous functions.
+    var i = 0
+    val top = _historicalProperties.size
+    while (i < top) {
+      val p = _historicalProperties(i)
       p.validate() 
       p.flush()
+      i += 1
     }
   }
   
   /**
    * This method is called directly after the physical world advances.
-   * @param time The time for the current step.
    */
   def postStep(ctx: Context): Unit = {
-    _historicalProperties foreach { p =>
-      p.load() 
+    // This is very low level for performance reasons since it is called
+    // very often and we don't want allocation of anonymous functions.
+    var i = 0
+    val top = _historicalProperties.size
+    while (i < top) {
+      val p = _historicalProperties(i)
+      p.load()
       p.save(ctx.time)
+      i += 1
     }
   }
   
@@ -227,7 +238,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   // Property that can be pushed to the physical world
-  protected def simplePhysicalProperty[T: PongType](name: String, init: Expr)(f: T => Unit): HistoricalRWProperty[T] = {
+  protected def simplePhysicalProperty[@specialized T: PongType](name: String, init: Expr)(f: T => Unit): HistoricalRWProperty[T] = {
     val p = new SimplePhysicalProperty[T](name, init, this) {
       val flusher = f
     }
@@ -236,7 +247,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   // Property that can be both pushed to the physical world and retrieved
-  protected def property[T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): HistoricalRWProperty[T] = {
+  protected def property[@specialized T: PongType](name: String, init: Expr)(f: T => Unit)(l: () => T): HistoricalRWProperty[T] = {
     val p = new PhysicalProperty[T](name, init, this) {
       val flusher = f
       val loader = l

@@ -159,7 +159,9 @@ object TreeDSL {
     }
   }
   
-  implicit class RichExprLiteral(val expr: Expr) extends RichExpr
+  implicit class RichExprLiteral(e: Expr) extends RichExpr {
+    def expr = e
+  }
   implicit class RichExprProxy(ref: Proxy) extends RichExpr {
     def expr = ref.expr
   }
@@ -195,7 +197,9 @@ object TreeDSL {
     def expr = Variable(id)
   }
   
-  class ProxyExpr(val expr: Expr) extends Proxy
+  class ProxyExpr(e: Expr) extends Proxy {
+    def expr = e
+  }
 
   class ArrayApplyProxy(obj: Expr, column: Expr, row: Expr) extends Proxy {
     def expr = Apply(obj, column, row).setType(TObject)
