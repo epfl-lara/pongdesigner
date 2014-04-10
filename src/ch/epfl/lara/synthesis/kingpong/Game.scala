@@ -420,7 +420,7 @@ trait Game extends RuleManager { self =>
     /* Advance the time and store the current events in the history. */
     def step(): Unit = {
       val c = crtEvents.synchronized {
-        val res = crtEvents.toSeq
+        val res = crtEvents.toList
         crtEvents.clear()
         res
       }
