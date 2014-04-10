@@ -8,7 +8,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
-abstract class Property[T : PongType]() { self => 
+abstract class Property[@specialized T : PongType]() { self => 
   
   def parent: GameObject
   def name: String

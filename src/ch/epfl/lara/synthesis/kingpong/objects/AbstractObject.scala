@@ -222,16 +222,16 @@ case class Array2D(
     
   val width = readOnlyProperty[Float] (
     name  = "width", 
-    getF  = numColumns.get  * CELL_WIDTH,
-    nextF = numColumns.next * CELL_WIDTH,
-    exprF = numColumns.expr * CELL_WIDTH
+    getF  = () => numColumns.get  * CELL_WIDTH,
+    nextF = () => numColumns.next * CELL_WIDTH,
+    exprF = () => numColumns.expr * CELL_WIDTH
   )
   
   val height = readOnlyProperty[Float] (
     name  = "height", 
-    getF  = numRows.get  * CELL_HEIGHT,
-    nextF = numRows.next * CELL_HEIGHT,
-    exprF = numRows.expr * CELL_HEIGHT
+    getF  = () => numRows.get  * CELL_HEIGHT,
+    nextF = () => numRows.next * CELL_HEIGHT,
+    exprF = () => numRows.expr * CELL_HEIGHT
   )
   
   private val shape = new PolygonShape()
@@ -272,54 +272,54 @@ case class Cell(
   
   val x = readOnlyProperty[Float] (
     name  = "x", 
-    getF  = array.left.get  + width.get  * (column + 0.5f),
-    nextF = array.left.next + width.next * (column + 0.5f),
-    exprF = array.left.expr + width.expr * (column + 0.5f) 
+    getF  = () => array.left.get  + width.get  * (column + 0.5f),
+    nextF = () => array.left.next + width.next * (column + 0.5f),
+    exprF = () => array.left.expr + width.expr * (column + 0.5f) 
   )
   
   val y = readOnlyProperty[Float] (
     name  = "y", 
-    getF  = array.top.get  + height.get  * (row + 0.5f),
-    nextF = array.top.next + height.next * (row + 0.5f),
-    exprF = array.top.expr + height.expr * (row + 0.5f)
+    getF  = () => array.top.get  + height.get  * (row + 0.5f),
+    nextF = () => array.top.next + height.next * (row + 0.5f),
+    exprF = () => array.top.expr + height.expr * (row + 0.5f)
   )
   
   val width = constProperty[Float] (
     name   = "width", 
-    constF = CELL_WIDTH
+    constF = () => CELL_WIDTH
   )
   
   val height = constProperty[Float] (
     name   = "height", 
-    constF = CELL_HEIGHT
+    constF = () => CELL_HEIGHT
   )
   
   override val bottom = readOnlyProperty[Float] (
     name  = "bottom", 
-    getF  = array.top.get  + height.get  * (row + 1),
-    nextF = array.top.next + height.next * (row + 1),
-    exprF = array.top.expr + height.expr * (row + 1)
+    getF  = () => array.top.get  + height.get  * (row + 1),
+    nextF = () => array.top.next + height.next * (row + 1),
+    exprF = () => array.top.expr + height.expr * (row + 1)
   )
   
   override val top = readOnlyProperty[Float] (
     name  = "top", 
-    getF  = array.top.get  + height.get  * row,
-    nextF = array.top.next + height.next * row,
-    exprF = array.top.expr + height.expr * row
+    getF  = () => array.top.get  + height.get  * row,
+    nextF = () => array.top.next + height.next * row,
+    exprF = () => array.top.expr + height.expr * row
   )
   
   override val left = readOnlyProperty[Float] (
     name  = "left", 
-    getF  = array.left.get  + width.get  * column,
-    nextF = array.left.next + width.next * column,
-    exprF = array.left.expr + width.expr * column
+    getF  = () => array.left.get  + width.get  * column,
+    nextF = () => array.left.next + width.next * column,
+    exprF = () => array.left.expr + width.expr * column
   )
   
   override val right = readOnlyProperty[Float] (
     name  = "right", 
-    getF  = array.left.get  + width.get  * (column + 1),
-    nextF = array.left.next + width.next * (column + 1),
-    exprF = array.left.expr + width.expr * (column + 1)
+    getF  = () => array.left.get  + width.get  * (column + 1),
+    nextF = () => array.left.next + width.next * (column + 1),
+    exprF = () => array.left.expr + width.expr * (column + 1)
   )
   
   val angle = proxyProperty(array.angle)
