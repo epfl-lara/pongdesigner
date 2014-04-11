@@ -991,7 +991,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
     }
     eventEditor.selectedEvent match {
-      case Some(SelectableEvent(x, y)) =>
+      case Some(SelectableEvent(x, y)) if EventMenu.isActivated =>
         val p = mapVectorFromGame(Vec2(x, y))
         EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, p.x, p.y)
       case _ =>
