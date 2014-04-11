@@ -137,7 +137,7 @@ trait ActionBarHandler extends common.ContextUtils {
   
   def changeMenuIcon(position: String, drawable: Drawable) = {
     actionBarAdapter.bitmaps(position) = drawable
-    (actionBar.getAdapter().asInstanceOf[adapters.ActionsAdapter]).notifyDataSetChanged(); 
+    actionBarAdapter.notifyDataSetChanged()
   }
 }
 
