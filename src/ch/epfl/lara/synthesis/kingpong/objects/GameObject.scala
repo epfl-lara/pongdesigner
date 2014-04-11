@@ -360,6 +360,8 @@ trait Rectangular extends GameObject with Positionable {
     } else 0
     Math.sqrt(dx*dx + dy*dy).toFloat
   }
+  
+  override def toString = name.get
 }
 
 trait ResizableRectangular extends Rectangular {

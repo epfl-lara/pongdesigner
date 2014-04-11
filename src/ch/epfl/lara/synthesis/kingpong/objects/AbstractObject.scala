@@ -32,7 +32,7 @@ abstract class AbstractObject(init_name: Expr,
 }
 
 
-case class Box[T : PongType](val game: Game,
+class Box[T : PongType](val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
@@ -83,7 +83,8 @@ case class Box[T : PongType](val game: Game,
   }
 
   def makecopy(name: String): GameObject = {
-    this.copy[T](init_name = name)
+    new Box[T](game, name, init_x, init_y, init_angle, init_width,  init_height, 
+               init_value, init_visible, init_color)
   }
 }
 
@@ -102,19 +103,19 @@ trait InputManager extends GameObject {
 /**
  * Input class already defining some methods
  */
-case class Joystick(val game: Game,
-                        init_name: Expr, 
-                        init_x: Expr,
-                        init_y: Expr,
-                        init_angle: Expr,
-                        init_radius: Expr, 
-                        init_visible: Expr,
-                        init_color: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
-                         with Circular
-                         with Movable
-                         with InputManager
-                         with Visiblable {
+class Joystick(val game: Game,
+               init_name: Expr, 
+               init_x: Expr,
+               init_y: Expr,
+               init_angle: Expr,
+               init_radius: Expr, 
+               init_visible: Expr,
+               init_color: Expr
+              ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+                with Circular
+                with Movable
+                with InputManager
+                with Visiblable {
   
   def className = "Joystick"
   
@@ -176,7 +177,7 @@ case class Joystick(val game: Game,
   def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
-    this.copy(init_name = name)
+    new Joystick(game, name, init_x, init_y, init_angle, init_radius, init_visible, init_color)
   }
 }
 
@@ -187,8 +188,8 @@ object Array2D {
   
 }
 
-case class Array2D(
-    game: Game,
+class Array2D(
+    val game: Game,
     init_name: Expr,
     init_x: Expr,
     init_y: Expr,
@@ -253,7 +254,9 @@ case class Array2D(
     pos.y <= bottom.get
   }
     
-  protected def makecopy(name: String) = this.copy(init_name = name)
+  protected def makecopy(name: String) = {
+    new Array2D(game, name, init_x, init_y, init_visible, init_color, init_numColumns, init_numRows)
+  }
 }
 
 case class Cell(

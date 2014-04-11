@@ -180,7 +180,7 @@ abstract class PhysicalObject(init_name: Expr,
   
 }
 
-case class Rectangle (val game: Game,
+class Rectangle (val game: Game,
                  init_name: Expr,
                  init_x: Expr,
                  init_y: Expr,
@@ -251,12 +251,13 @@ case class Rectangle (val game: Game,
   }
   
   def makecopy(name: String): GameObject = {
-    val thecopy = this.copy(game=game, init_name=name)
-    thecopy
+    new Rectangle(game, name, init_x, init_y, init_angle, init_width, init_height, init_visible,
+                 init_velocity, init_angularVelocity, init_density, init_friction, init_restitution,
+                 init_fixedRotation, init_color, init_sensor, init_tpe)
   }
 }
 
-case class Character (val game: Game,
+class Character (val game: Game,
                  init_name: Expr,
                  init_x: Expr,
                  init_y: Expr,
@@ -352,14 +353,15 @@ case class Character (val game: Game,
   val grounded = simpleProperty[Boolean]("grounded", false)
   
   def makecopy(name: String): GameObject = {
-    val thecopy = this.copy(game=game, init_name=name)
-    thecopy
+    new Character(game, name, init_x,  init_y, init_angle, init_width, init_height, init_visible,
+                  init_velocity, init_angularVelocity, init_density, init_friction,  init_restitution,
+                  init_fixedRotation, init_color, init_tpe)
   }
 }
 
 
 
-case class Circle(val game: Game,
+class Circle(val game: Game,
              init_name: Expr,
              init_x: Expr,
              init_y: Expr,
@@ -418,7 +420,8 @@ case class Circle(val game: Game,
   }
   
   def makecopy(name: String): GameObject = {
-    val thecopy = this.copy(game=game, init_name=name)
-    thecopy
+    new Circle(game, name, init_x, init_y, init_radius, init_visible, init_velocity, init_angularVelocity,
+               init_density, init_friction, init_restitution, init_fixedRotation,
+               init_color, init_sensor, init_tpe)
   }
 }

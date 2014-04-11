@@ -231,7 +231,7 @@ trait Game extends RuleManager { self =>
              angle: Expr = category.angle,
              visible: Expr = category.visible,
              color: Expr = category.color): Array2D = {
-    val array = Array2D(this, name, x, y, visible, color, columns, rows)
+    val array = new Array2D(this, name, x, y, visible, color, columns, rows)
     if(category != null) array.setCategory(category)
     array.reset(interpreter)
     this add array
