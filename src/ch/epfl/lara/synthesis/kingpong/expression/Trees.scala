@@ -141,6 +141,10 @@ object Trees {
   
   case class Forall(category: Category, id: Identifier, body: Expr) extends Expr with FixedBooleanType
   
+  case class Find(category: Category, id: Identifier, body: Expr) extends Expr with FixedType {
+    val fixedType = TObject
+  }
+  
   /** 
    * Debug expression. When evaluated, prints the message.
    * The interpretation of the formatting patterns is described in `java.util.Formatter`.

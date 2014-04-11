@@ -28,12 +28,12 @@ object TreeDSL {
   object Literal {
     def apply(value: Any): Expr = {
       value match {
+        case true  => booleanLiteralTrue
+        case false => booleanLiteralFalse
         case 0 => integerLiteralZero
         case 1 => integerLiteralOne
         case 2 => integerLiteralTwo
         case 3 => integerLiteralThree
-        case true  => booleanLiteralTrue
-        case false => booleanLiteralFalse
         case 0f => floatLiteralZero
         case 1f => floatLiteralOne
         case 2f => floatLiteralTwo
@@ -290,6 +290,12 @@ object TreeDSL {
     val id = FreshIdentifier(category.name).setType(TObject)
     val ref = new IdentifierProxy(id)
     Forall(category, id, body(ref))
+  }
+  
+  def find(category: Category)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier(category.name).setType(TObject)
+    val ref = new IdentifierProxy(id)
+    Find(category, id, body(ref))
   }
   
   def whenever(cond: Expr)(actions: Expr*): Expr = {

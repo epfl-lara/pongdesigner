@@ -16,6 +16,7 @@ object Extractors {
       
       case Foreach(cat, id, e) => Some((e, Foreach(cat, id, _)))
       case Forall(cat, id, e)  => Some((e, Forall(cat, id, _)))
+      case Find(cat, id, e)    => Some((e, Find(cat, id, _)))
       case Delete(e) => Some((e, Delete))
       
       case _ => None

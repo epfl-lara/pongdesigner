@@ -107,6 +107,12 @@ trait Interpreter {
       }
       BooleanLiteral(res)
       
+    case Find(cat, id, body) =>
+      val res = cat.objects.find { o =>
+        eval(body)(gctx, rctx.withNewVar(id, o.expr)).as[Boolean]
+      }
+      ObjectLiteral(res.getOrElse(null))
+      
     case Block(stats) => 
       stats foreach eval
       UnitLiteral
@@ -277,9 +283,9 @@ trait Interpreter {
         case _ => error(expr)
       }
       
-    //TODO verify this
     case Equals(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
+        case (NumericLiteral(v1), NumericLiteral(v2)) => Literal(v1 == v2) // permits to have 1 == 1f
         case (lit1: Literal[_], lit2: Literal[_]) => Literal(lit1 == lit2)
         case (Tuple(l1), Tuple(l2)) => BooleanLiteral(l1.size == l2.size && (true /: (l1 zip l2)){ case (b, (t1, t2)) => b && (t1 == t2) })
         case _ => booleanLiteralFalse

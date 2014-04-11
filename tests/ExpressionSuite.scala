@@ -129,24 +129,36 @@ class ExpressionSuite extends FlatSpec with Matchers {
     interpreter.evaluate(e2) should be (bt)
   }
   
+  it should "handle Find expression" in {
+    val e1 = find(game.blocks) { block =>
+      block.x =:= 1f
+    }
+    interpreter.evaluate(e1) should be (ObjectLiteral(game.block2))
+    
+    val e2 = find(game.blocks) { block =>
+      block.y =:= 1f
+    }
+    interpreter.evaluate(e2) should be (ObjectLiteral(null))
+  }
+  
   it should "correctly assign properties" in {
     game.ball1.snapshot()
     val radius = game.ball1.radius
     radius.set(1)
     
-    val e1 = radius += 2f
-    e1 should be (Assign(Seq((ObjectLiteral(game.ball1), "radius")), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2f))))
+    val e1 = radius += 2.5f
+    e1 should be (Assign(Seq((ObjectLiteral(game.ball1), "radius")), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2.5f))))
     radius.get should be (1f)
     interpreter.evaluate(e1) should be (UnitLiteral)
-    radius.next should be (3f)
+    radius.next should be (3.5f)
     radius.validate()
-    radius.get should be (3f)
+    radius.get should be (3.5f)
     
     // redo the assign to test the validate and the mutability.
     interpreter.evaluate(e1) should be (UnitLiteral)
-    radius.next should be (5f)
+    radius.next should be (6f)
     radius.validate()
-    radius.get should be (5f)
+    radius.get should be (6f)
     
     // test the assign with an indirect reference to the object.
     val e2 = foreach(game.balls) { ball =>
