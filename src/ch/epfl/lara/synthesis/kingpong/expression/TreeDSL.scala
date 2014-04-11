@@ -173,6 +173,7 @@ object TreeDSL {
   trait Proxy extends AnyRef {
     def expr: Expr
     
+    def name = new PropertyProxySingleRef(expr, "name").setType(TString)
     def x = new PropertyProxySingleRef(expr, "x").setType(TFloat)
     def y = new PropertyProxySingleRef(expr, "y").setType(TFloat)
     def angle = new PropertyProxySingleRef(expr, "angle").setType(TFloat)
@@ -254,6 +255,12 @@ object TreeDSL {
   def isFingerMoveOver(obj: Expr): Expr = {
     val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
     FingerMoveOver(obj, id, NOP)
+  }
+  
+  def let(name: String, expr: Expr)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier(name).setType(expr.getType)
+    val ref = new IdentifierProxy(id)
+    Let(id, expr, body(ref))
   }
   
   def foreach(category: Category)(body: Proxy => Expr): Expr = {
