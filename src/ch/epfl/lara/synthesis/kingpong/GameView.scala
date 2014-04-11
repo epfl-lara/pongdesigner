@@ -137,7 +137,7 @@ trait ActionBarHandler extends common.ContextUtils {
   
   def changeMenuIcon(position: String, drawable: Drawable) = {
     actionBarAdapter.bitmaps(position) = drawable
-    actionBar.invalidate()
+    (actionBar.getAdapter().asInstanceOf[adapters.ActionsAdapter]).notifyDataSetChanged(); 
   }
 }
 
@@ -1082,7 +1082,7 @@ class GameView(val context: Context, attrs: AttributeSet)
    */
   var previousSelectedShape: GameObject = null
   def performSelection(res: Vec2) = {
-    val objectsTouched = game.objectFingerAt(res)
+    val objectsTouched = game.abstractObjectFingerAt(res)
     obj_to_highlight = objectsTouched.toSet
     val rulesConcerned = game.getRulesbyObject(objectsTouched)
     updateCodeView(rulesConcerned, objectsTouched)

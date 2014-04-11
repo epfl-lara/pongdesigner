@@ -329,7 +329,10 @@ trait Game extends RuleManager { self =>
   val id = new org.jbox2d.common.Transform()
   id.setIdentity()
   
-  def objectFingerAt(pos: Vec2): Set[GameObject] = {
+  /**
+   * Returns the set of objects touching the finger at pos, only for the real.
+   */
+  def physicalObjectFingerAt(pos: Vec2): Set[GameObject] = {
     circle.m_p.set(pos.x, pos.y)
     circle.m_radius = FINGER_SIZE
 
@@ -349,6 +352,17 @@ trait Game extends RuleManager { self =>
     var objects_containing_pos = Set.empty[GameObject]
     _objects foreach { o =>
       if (collidesCircle(o)) objects_containing_pos += o
+    }
+    objects_containing_pos
+  }
+  
+  /**
+   * Returns the set of objects containing at this position.
+   */
+  def abstractObjectFingerAt(pos: Vec2): Set[GameObject] = {
+    var objects_containing_pos = Set.empty[GameObject]
+    _objects foreach { o =>
+      if (o.contains(pos)) objects_containing_pos += o
     }
     objects_containing_pos
   }
@@ -434,11 +448,11 @@ trait Game extends RuleManager { self =>
         // Here we find the objects under the finger events.
         val history_events = c.map {
           case FingerMove(from, to, null) =>
-            FingerMove(from, to, objectFingerAt(from))
+            FingerMove(from, to, physicalObjectFingerAt(from))
           case FingerDown(pos, null) =>
-            FingerDown(pos, objectFingerAt(pos))
+            FingerDown(pos, physicalObjectFingerAt(pos))
           case FingerUp(pos, null) =>
-            FingerUp(pos, objectFingerAt(pos))
+            FingerUp(pos, physicalObjectFingerAt(pos))
           case e => e
         }
         
