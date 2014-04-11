@@ -51,7 +51,8 @@ object Extractors {
   object NAryOperator {
     def unapply(expr: Expr): Option[(Seq[Expr], (Seq[Expr]) => Expr)] = expr match {
       case Tuple(args) => Some((args, (as: Seq[Expr]) => Tuple(as)))
-      case If(cond, thenn, elze) => Some((Seq(cond, thenn, elze), (as: Seq[Expr]) => If(as(0), as(1), as(2))))
+      case If(t1, t2, t3) => Some((Seq(t1, t2, t3), (as: Seq[Expr]) => If(as(0), as(1), as(2))))
+      case Apply(t1, t2, t3) => Some((Seq(t1, t2, t3), (as: Seq[Expr]) => Apply(as(0), as(1), as(2))))
       
       case Block(exprs) => Some((exprs, (as: Seq[Expr]) => Block(as)))
       case ParExpr(exprs) => Some((exprs, (as: Seq[Expr]) => ParExpr(as.toList)))
