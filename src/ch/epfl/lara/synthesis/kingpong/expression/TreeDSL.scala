@@ -67,8 +67,11 @@ object TreeDSL {
     case _      => Block(stats)
   }
   
-  trait RichExpr extends AnyRef {
-    def expr: Expr
+  implicit def literalToRichExpr(e: Expr): RichExpr = new RichExpr(e)
+  implicit def proxyToRichExpr(ref: Proxy): RichExpr = new RichExpr(ref.expr)
+  implicit def propertyToRichExpr(prop: Property[_]): RichExpr = new RichExpr(prop.expr)
+  
+  class RichExpr(val expr: Expr) extends AnyVal {
     
     def as[T : PongType]: T = implicitly[PongType[T]].toScalaValue(expr)
     
@@ -159,18 +162,7 @@ object TreeDSL {
     }
   }
   
-  implicit class RichExprLiteral(e: Expr) extends RichExpr {
-    def expr = e
-  }
-  implicit class RichExprProxy(ref: Proxy) extends RichExpr {
-    def expr = ref.expr
-  }
-  implicit class RichExprProperty(prop: Property[_]) extends RichExpr {
-    def expr = prop.expr
-  }
-  
-  
-  trait Proxy extends AnyRef {
+  trait Proxy extends Any {
     def expr: Expr
     
     def name = new PropertyProxySingleRef(expr, "name").setType(TString)
@@ -191,21 +183,17 @@ object TreeDSL {
     def right = new PropertyProxySingleRef(expr, "right").setType(TFloat) 
     def center = new PropertyProxySingleRef(expr, "center").setType(TVec2)
     
-    def cell(column: Expr, row: Expr) = new ArrayApplyProxy(expr, column, row)
+    def cell(column: Expr, row: Expr) = {
+      new ProxyExpr(Apply(expr, column, row))
+    }
   }
   
   class IdentifierProxy(id: Identifier) extends Proxy {
     def expr = Variable(id)
   }
   
-  class ProxyExpr(e: Expr) extends Proxy {
-    def expr = e
-  }
+  class ProxyExpr(val expr: Expr) extends Proxy
 
-  class ArrayApplyProxy(obj: Expr, column: Expr, row: Expr) extends Proxy {
-    def expr = Apply(obj, column, row).setType(TObject)
-  }
-  
   trait PropertyProxy extends Proxy with Typed {
     protected def properties: Seq[(Expr, PropertyId)]
     def :=(e: Expr): Expr = Assign(properties, e)
