@@ -33,6 +33,10 @@ trait Interpreter {
     }
   }
   
+  object RecContext {
+    val empty = RecContext(Map.empty)
+  }
+  
   case class RecContext(mappings: Map[Identifier, Expr]) {
     def withNewVar(id: Identifier, e: Expr) = RecContext(mappings + (id -> e))
     

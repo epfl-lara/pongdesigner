@@ -161,6 +161,11 @@ object Trees {
   
   case class Select(expr: Expr, property: PropertyId) extends Expr
    
+  object Tuple {
+    def apply(e1: Expr, e2: Expr): Tuple = Tuple(Seq(e1, e2))
+    def apply(e1: Expr, e2: Expr, e3: Expr): Tuple = Tuple(Seq(e1, e2, e3))
+  }
+  
   case class Tuple(exprs: Seq[Expr]) extends Expr with FixedType {
     val fixedType = TTuple(exprs.map(_.getType))
   }

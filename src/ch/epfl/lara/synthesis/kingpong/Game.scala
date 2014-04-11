@@ -376,7 +376,7 @@ trait Game extends RuleManager { self =>
     def initGC() = EventHistory
     
     /** Initialize the recursive context used during evaluation. */
-    def initRC() = RecContext(Map.empty)
+    def initRC() = RecContext.empty
   }
   
   /** Handle the history for events like fingers input and
