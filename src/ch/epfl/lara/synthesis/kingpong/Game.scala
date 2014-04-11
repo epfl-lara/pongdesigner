@@ -81,6 +81,7 @@ trait Game extends RuleManager { self =>
 
   private[kingpong] def reset(): Unit = {
     objects.foreach(_.reset(interpreter))
+    gc()
     objects.foreach(_.clear())
     world.clear()
     EventHistory.clear()
@@ -313,14 +314,14 @@ trait Game extends RuleManager { self =>
   }
 
   def gc() = {
-    //TODO write GC
-    
-//    _objects.retain(obj => if(!(obj.doesNotYetExist(time))) {
-//      true
-//    } else {
-//      obj.setExistenceAt(time)
-//      false
-//    }) // TODO: remove those who are too old to be resurrected and also rules applying to them.
+    //TODO performance...
+    val toDelete = _objects.filter { obj =>
+      obj.creationTime.get > time
+    }
+    // Remove objects from world and categories
+    toDelete foreach (_.setExistenceAt(time)) 
+    _objects --= toDelete
+    // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
   
   var FINGER_SIZE = 20f

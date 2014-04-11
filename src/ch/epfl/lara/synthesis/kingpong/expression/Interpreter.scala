@@ -147,7 +147,8 @@ trait Interpreter {
       val o = eval(obj).as[GameObject]
       val freshName = gctx.getNewName(id.name)
       val fresh = o.getCopy(freshName)
-      fresh.creationTime.set(gctx.time)
+      fresh.creationTime.setInit(gctx.time)
+      fresh.reset(this)
       fresh.flush()
       gctx.add(fresh)
       
