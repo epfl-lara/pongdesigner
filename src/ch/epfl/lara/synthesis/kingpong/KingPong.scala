@@ -64,6 +64,7 @@ object KingPong {
   mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
   mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
   mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
+  mapgames += (PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -353,6 +354,9 @@ class KingPong extends Activity
             true
           case R.id.sliding =>
             self ! Messages.FileLoad(PONGNAME_SLIDING)
+            true
+          case R.id.three_in_a_row =>
+            self ! Messages.FileLoad(PONGNAME_THREEINAROW)
             true
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
