@@ -678,6 +678,8 @@ class GameView(val context: Context, attrs: AttributeSet)
               d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
               d.draw(canvas)
               canvas.restore()
+              canvas.save()
+              canvas.setMatrix(matrix)
             }
           case _ =>
         }
