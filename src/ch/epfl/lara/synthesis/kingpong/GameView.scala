@@ -663,11 +663,12 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
         
         o match {
-          case e: Positionable =>
+          case e: Positionable with Directionable =>
             val c = e.color.get
             if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
               canvas.restore()
-              
+              val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
+              canvas.rotate(e.angle.get, center.x, center.y)
               val d = bitmaps(c)
               val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
               val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
