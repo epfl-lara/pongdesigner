@@ -1188,7 +1188,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           val eventList = ListBuffer[(Event, Long)]()
           game.foreachEvent((a,b) => eventList += ((a, b)))
           val eventListFiltered = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y))
-          val eventListSorted = eventListFiltered.sort(event_time =>
+          val eventListSorted = eventListFiltered.sortBy(event_time =>
             (Math.abs(game.time - event_time._2),event_time._1.distanceSquareTo(res.x, res.y)))(scala.Ordering.Tuple2(scala.Ordering.Long, scala.Ordering.Float))
           val objectList = game.abstractObjectFingerAt(res).toList
           
