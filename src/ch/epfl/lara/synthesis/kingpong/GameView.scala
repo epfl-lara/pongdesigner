@@ -79,7 +79,7 @@ object GameView {
  * Handler for the time bar to change the time displayed on it.
  */
 trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
-  private var progressBar: SeekBar = null
+  protected var progressBar: SeekBar = null
   def setProgressBar(progressBar: SeekBar): Unit = {
     this.progressBar = progressBar
     if(progressBar != null) {
@@ -535,6 +535,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
     canvas.save()
     canvas.setMatrix(matrix)
+    Options.Event.selectableAreaRadius = mapRadiusI(30)
     
     paint.setStyle(Paint.Style.FILL)
     paint.setStrokeWidth(mapRadiusI(3))
@@ -743,6 +744,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   val drawables_to_load:List[Int] =
     List(R.drawable.finger,
         R.drawable.bing,
+        R.drawable.bingselected,
         R.drawable.numbers,
         R.drawable.flat_button,
         R.drawable.flat_button_highlighted,
@@ -1095,13 +1097,11 @@ class GameView(val context: Context, attrs: AttributeSet)
           case shape: Movable =>
             val x = res.x + (if(MenuOptions.modify_prev) shape.x.next - shape.x.get else 0)
             val y = res.y + (if(MenuOptions.modify_prev) shape.y.next - shape.y.get else 0)// - shape.y + shape.prev_y
-            //if(shape.selectableBy(x, y)) {
-              val dist = shape.distanceSelection(x, y)
-              if(dist < minDistance || minDistance == -1) {
-                minDistance = dist
-                shapeToSelect = shape
-              }
-            //}
+            val dist = shape.distanceSelection(x, y)
+            if(dist < minDistance || minDistance == -1) {
+              minDistance = dist
+              shapeToSelect = shape
+            }
           case _ =>
         }
       }
@@ -1204,7 +1204,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           val objectList = game.abstractObjectFingerAt(res).toList
           
           // Disambiguate event selection: make a list and submit it to quickaction review.
-          disambiguateMultipleSelection(eventListSorted, objectList, eventEditor.selectedEventTime, eventEditor.selectedObjects){ case result =>
+          disambiguateMultipleSelection(res, eventListSorted, objectList, eventEditor.selectedEventTime, eventEditor.selectedObjects){ case result =>
             result match {
               case (eventListSelected, objectListSelected) =>
                 eventEditor.selectedEventTime = eventListSelected
@@ -1231,8 +1231,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     implicit def convert(i: ActionType): Int = i.id
   }
   import ActionType._
-  lazy val str = (i: Int) => res.getString(i)
-  lazy val str2 = (i: Int, j: String) => String.format(res.getString(i), j)
+  def str(i: Int, j: String*) = String.format(res.getString(i), j: _*)
   lazy val drw = (i: Int) => res.getDrawable(i)
   lazy val drw2 = (i: Int, j: Int) => {
     val d1 = res.getDrawable(i)
@@ -1250,7 +1249,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip if there are multiple items to check.
    */
-  def disambiguateMultipleSelection(eventList: List[(Event, Int)], objectList: List[GameObject],
+  def disambiguateMultipleSelection(res: Vec2, eventList: List[(Event, Int)], objectList: List[GameObject],
       currentEventSelection: List[(Event, Int)], currentObjectSelection: List[GameObject]
   )(remaining: (List[(Event, Int)], List[GameObject]) => Unit): Unit = {
     val mQuickAction  = new QuickAction(activity)
@@ -1261,12 +1260,21 @@ class GameView(val context: Context, attrs: AttributeSet)
     var moveTaken = Set[FingerMove]()
     for(e@(event, time) <- eventList) {
       event match {
+        case BeginContact(contact) =>
+          if(currentEventSelection contains e) {
+            mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect)))
+          } else {
+            mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect)))
+          }
+          mapIndex += index -> (e)
+          index += 1
+        
         case FingerUp(pos, objs) =>
           for(obj <- objs) {
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
             }
             mapIndex += index -> (FingerUp(pos, Set(obj)), time)
             index += 1
@@ -1279,9 +1287,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 moveTaken += movement
                 for(obj <- objs) {
                   if(currentEventSelection contains e) {
-                    mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button)))
+                    mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button)))
                   } else {
-                    mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
+                    mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
                   }
                   mapIndex += index -> (FingerMove(from, to, Set(obj)), time)
                   index += 1
@@ -1292,9 +1300,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         case FingerDown(pos, objs) =>
           for(obj <- objs) {
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerdown_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerdown_button)))
             }
             mapIndex += index -> (FingerUp(pos, Set(obj)), time)
             index += 1
@@ -1317,6 +1325,11 @@ class GameView(val context: Context, attrs: AttributeSet)
         case _ =>
       }
     }
+    val pos = mapVectorFromGame(res)
+    val rect = new RectF(pos.x, pos.y, pos.x, pos.y)
+    val rectd = new Rect()
+    rect.round(rectd)
+    mQuickAction.show(rectd, progressBar)
   }
   
   /**

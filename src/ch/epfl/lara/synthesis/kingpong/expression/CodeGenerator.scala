@@ -9,6 +9,7 @@ import ch.epfl.lara.synthesis.kingpong.common._
 import org.jbox2d.common.Vec2
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import CodeTemplates._
 
 trait CodeHandler {
   /*import Expression.Subtype._*/
@@ -53,11 +54,7 @@ trait CodeHandler {
  * CodeGenerator contains methods used to generate code given a set of shapes that has been modified.
  */
 object CodeGenerator extends CodeHandler {
-  //import TriggerEvent._
-  //import GameShapes._
-  //import Expression._
-  //import Expression.Subtype._
-
+  
   //implicit def funcConvertToExpressionFloat(i: Float): Expression = { val res = EConstant(i); res.setSubtype(NO_TYPE); res }
 
   //implicit def funcConvertToExpressionString(i: String): Expression = { EConstant(i) }
@@ -215,13 +212,31 @@ object CodeGenerator extends CodeHandler {
     result map (game.giveRuleNewCoordinates(_))
   }
   */
+  
+  import JBox2DInterface._
   /**
    * Creates a rule based on the selected event and the status of the game.
    * This function generates the condition to which the code has been modified.
    **/
   def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], conditionConfig: List[GameObject]): Unit = {
     // Need to store the conditions so that we can rely on them rather than on code.
+    //val templaceContext = new TemplateContext(conditionEvent.head._1, game.objects)
+    val stmts = CodeTemplates.inferStatements(conditionEvent, game.objects)
+    // Now we try to merge these statement with the conditions.
+    conditionEvent map {
+      case (FingerDown(v, objs), i) if objs.size > 0 =>
+        (objs, 1, (obj: List[TreeDSL.Proxy]) => FingerDownOver(obj.head))
+      case (FingerUp(v, objs), i) if objs.size > 0 =>
+        (objs, 1, (obj: List[TreeDSL.Proxy]) => FingerUpOver(obj.head))
+      case (FingerMove(u, v, objs), i) if objs.size > 0 =>
+        (objs, 1, (obj: List[TreeDSL.Proxy]) => isFingerMoveOver(obj.head))
+      case (BeginContact(contact), i) =>
+        (Set(contact.objectA, contact.objectB), 2, (obj: List[TreeDSL.Proxy]) => Collision(obj.head, obj.tail.head))
+      case _ => NOP
+    }
     
+    
+    //The condition firing the event.
     
     /*val res = context.getResources()
     def askChoicesIfNeeded(r: ReactiveRule) = {

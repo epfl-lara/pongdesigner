@@ -150,7 +150,7 @@ class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
   def select(i: Event, time: Int, applyRule: Boolean = true) = {
     if(i != null && applyRule) {
       val game = gameEngineView.getGame()
-      selectedEventTime = (i, time)::selectedEventTime
+      selectedEventTime = (i, time.toInt)::selectedEventTime
       
       // TODO : Select code portion to modify
       //val ruleToStopBefore = CodeGenerator.getRuleFromEvent(game, i.value) match { case Some(r) => r; case _ => null }

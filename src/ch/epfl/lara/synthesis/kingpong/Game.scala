@@ -23,6 +23,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
+import scala.annotation.tailrec
 
 trait RuleManager {
   // Use an ArrayBuffer for performance reasons when using `foreach`.
@@ -542,25 +543,28 @@ trait Game extends RuleManager { self =>
   
   def getNewName(baseName: String): String = EventHistory.getNewName(baseName)
   
+  object ::> {def unapply[A] (l: Seq[A]): Option[(Seq[A],A)] = if(l.nonEmpty) Some( (l.init, l.last) ) else None }
+  object <:: {def unapply[A] (l: Seq[A]): Option[(A, Seq[A])] = if(l.nonEmpty) Some( (l.head, l.tail) ) else None }
+
   /**
    * Retrieves a corresponding finger down event from a given finger event.
    * Events are "linked"
    */
-  def getFingerDownEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time).reverse): Option[FingerDown] = e match {
+  @tailrec final def getFingerDownEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time).reverse): Option[FingerDown] = e match {
     case e@FingerDown(_,_) => Some(e)
     case e@FingerUp(v,_) =>
       events match {
-        case (e@FingerMove(a, b, _))::q if b == v =>  getFingerDownEvent(e, time)(q)
-        case (e@FingerDown(a, _))::q if a == v => Some(e)
-        case _::q => getFingerDownEvent(e, time)(q)
+        case (e@FingerMove(a, b, _))<::q if b == v =>  getFingerDownEvent(e, time)(q)
+        case (e@FingerDown(a, _))<::q if a == v => Some(e)
+        case _ <::q => getFingerDownEvent(e, time)(q)
         case Nil if time > 0 => getFingerDownEvent(e, time-1)()
         case Nil => None
       }
     case e@FingerMove(a,b,_) =>
       events match {
-        case (e@FingerMove(c, d, _))::q if d == a =>  getFingerDownEvent(e, time)(q)
-        case (e@FingerDown(c, _))::q if c == a => Some(e)
-        case _::q => getFingerDownEvent(e, time)(q)
+        case (e@FingerMove(c, d, _))<::q if d == a =>  getFingerDownEvent(e, time)(q)
+        case (e@FingerDown(c, _))<::q if c == a => Some(e)
+        case _ <::q => getFingerDownEvent(e, time)(q)
         case Nil if time > 0 => getFingerDownEvent(e, time-1)()
         case Nil => None
       }
@@ -571,35 +575,35 @@ trait Game extends RuleManager { self =>
    * Retrieves a corresponding finger Up event from a given finger event.
    * Events are "linked"
    */
-  def getFingerUpEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time)): Option[FingerUp] = e match {
+  @tailrec final def getFingerUpEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time)): Option[FingerUp] = e match {
     case e@FingerUp(_,_) => Some(e)
     case e@FingerDown(v,_) =>
       events match {
-        case (e@FingerMove(a, b, _))::q if a == v =>  getFingerUpEvent(e, time)(q)
-        case (e@FingerUp(a, _))::q if a == v => Some(e)
-        case _::q => getFingerUpEvent(e, time)(q)
+        case (e@FingerMove(a, b, _)) <::q if a == v =>  getFingerUpEvent(e, time)(q)
+        case (e@FingerUp(a, _)) <::q if a == v => Some(e)
+        case _ <::q => getFingerUpEvent(e, time)(q)
         case Nil if time > 0 => getFingerUpEvent(e, time-1)()
         case Nil => None
       }
     case e@FingerMove(a,b,_) =>
       events match {
-        case (e@FingerMove(c, d, _))::q if b == c =>  getFingerUpEvent(e, time)(q)
-        case (e@FingerUp(c, _))::q if c == a => Some(e)
-        case _::q => getFingerUpEvent(e, time)(q)
+        case (e@FingerMove(c, d, _)) <::q if b == c =>  getFingerUpEvent(e, time)(q)
+        case (e@FingerUp(c, _)) <::q if c == a => Some(e)
+        case _ <::q => getFingerUpEvent(e, time)(q)
         case Nil if time < maxTime => getFingerUpEvent(e, time+1)()
         case Nil => None
       }
     case _ => None
   }
   
-  object ::> {def unapply[A] (l: List[A]): Option[(List[A],A)] = if(l.nonEmpty) Some( (l.init, l.last) ) else None }
+  
   
   /**
    * Retrieves a corresponding finger Move event from a given finger event.
    * Collect all objects below the line.
    * Events are "linked"
    */
-  def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: Set[GameObject]=Set()): Option[FingerMove] = e match {
+  @tailrec final def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: Set[GameObject]=Set()): Option[FingerMove] = e match {
     case e@FingerUp(v,o) =>
       start match {
         case Some(a) => Some(FingerMove(a, v, objects++o))
@@ -617,10 +621,10 @@ trait Game extends RuleManager { self =>
         case Some(a) => Some(FingerMove(v, a, objects++o))
         case None => // We are looking for the next finger up event
           events match {
-            case (e@FingerMove(a, b, o2))::q if a == v => getFingerMoveEvent(e, time)(q, Some(v), None, objects++o++o2)
-            case (e@FingerUp(a, o2))::q if a == v => Some(FingerMove(v,a,objects++o++o2))
-            case _ ::q => getFingerMoveEvent(e, time)(q,Some(v),None,objects++o)
-            case Nil if time < maxTime => getFingerMoveEvent(e, time-1)(start=start,end=None,objects=objects)
+            case (e@FingerMove(a, b, o2))<::q if a == v => getFingerMoveEvent(e, time)(q, Some(v), None, objects++o++o2)
+            case (e@FingerUp(a, o2))<::q if a == v => Some(FingerMove(v,a,objects++o++o2))
+            case _ <::q => getFingerMoveEvent(e, time)(q,Some(v),None,objects++o)
+            case Nil if time < maxTime => getFingerMoveEvent(e, time+1)(start=start,end=None,objects=objects)
             case Nil => None
           }
       }
@@ -628,10 +632,10 @@ trait Game extends RuleManager { self =>
       start match {
         case Some(v) => // We look for the end.
           events match {
-            case (e@FingerMove(a, b, o2))::q if a == n => getFingerMoveEvent(e, time)(q, start, None, objects++o++o2)
-            case (e@FingerUp(a, o2))::q if a == n => Some(FingerMove(v,a,objects++o++o2))
-            case _ ::q => getFingerMoveEvent(e, time)(q,start,None,objects++o)
-            case Nil if time < maxTime => getFingerMoveEvent(e, time-1)(start=start,end=None,objects=objects)
+            case (e@FingerMove(a, b, o2))<::q if a == n => getFingerMoveEvent(e, time)(q, start, None, objects++o++o2)
+            case (e@FingerUp(a, o2))<::q if a == n => Some(FingerMove(v,a,objects++o++o2))
+            case _ <::q => getFingerMoveEvent(e, time)(q,start,None,objects++o)
+            case Nil if time < maxTime => getFingerMoveEvent(e, time+1)(start=start,end=None,objects=objects)
             case Nil => None
           }
         case None => // We first look for the start.

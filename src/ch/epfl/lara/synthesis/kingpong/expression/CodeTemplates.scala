@@ -13,18 +13,17 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object CodeTemplates extends CodeHandler {
   
-  class TemplateContext(val event: Event, val objects: Traversable[GameObject]) {
-    val (from, to, eventObjects) = event match {
-      case FingerDown(v, objs) => (v, Vec2(0, 0), objs)
-      case FingerUp(v, objs) => (v, Vec2(0, 0), objs)
-      case FingerMove(from, to, objs) => (from, to, objs)
-      case _ => (Vec2(0, 0), Vec2(0, 0), Set.empty[GameObject])
+  class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject]) {
+    val eventMove = events.flatMap { case (e@FingerMove(from, to, objs), i) => List(e) case _=> Nil} headOption
+    val (dx, dy, eventObjects) = eventMove match {
+      /*case Some(FingerDown(v, objs)) => (0, 0, objs)
+      case Some(FingerUp(v, objs))=> (0, 0, objs)*/
+      case Some(FingerMove(from, to, objs)) => (0, 0, objs)
+      case _ => (0, 0, Set.empty[GameObject])
     }
-    val dx = to.x - from.x
-    val dy = to.y - from.y
     val isMovementHorizontal = Math.abs(dx) > 10 * Math.abs(dy)
     val isMovementVertical = Math.abs(dy) > 10 * Math.abs(dx)
-    val isTouchMoveEvent = event.isInstanceOf[FingerMove]
+    val isTouchMoveEvent = eventMove.nonEmpty
     
     lazy val integers: Traversable[Box[Int]] = objects.collect{ case b: Box[_] if b.className == "Box[Int]" => b.asInstanceOf[Box[Int]] }
     lazy val texts: Traversable[Box[String]] = objects.collect{ case b: Box[_] if b.className == "Box[String]" => b.asInstanceOf[Box[String]] }
@@ -36,8 +35,8 @@ object CodeTemplates extends CodeHandler {
     lazy val cells: Traversable[Cell] = objects.collect{ case c: Cell => c }
   }
   
-  def inferStatements(event: Event, objects: Traversable[GameObject]): Seq[Expr] = {
-    implicit val ctx = new TemplateContext(event, objects)
+  def inferStatements(events: Seq[(Event, Int)], objects: Traversable[GameObject]): Seq[Expr] = {
+    implicit val ctx = new TemplateContext(events, objects)
     val exprs = objects.flatMap(TShape.applyForObject).toList
     flattenNOP(exprs.map(flatten))
   }
