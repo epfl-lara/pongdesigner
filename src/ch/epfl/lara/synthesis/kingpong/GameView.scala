@@ -58,6 +58,7 @@ import ch.epfl.lara.synthesis.kingpong.common.Messages._
 import net.londatiga.android.QuickAction
 import net.londatiga.android.ActionItem
 import scala.collection.mutable.ListBuffer
+import scala.package$._
 
 object GameView {
   sealed trait GameState
@@ -668,7 +669,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
               canvas.restore()
               val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
-              canvas.rotate(e.angle.get, center.x, center.y)
+              canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
               val d = bitmaps(c)
               val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
               val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
@@ -679,6 +680,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               canvas.save()
               canvas.setMatrix(matrix)
             }
+          case _ =>
         }
         //Draw a small red dot in the (x, y) position of each object
         /*paint.setColor(0xFFFF0000)
@@ -1189,8 +1191,22 @@ class GameView(val context: Context, attrs: AttributeSet)
           val eventList = ListBuffer[(Event, Long)]()
           game.foreachEvent((a,b) => eventList += ((a, b)))
           val eventListFiltered = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y))
-          val eventListSorted = eventListFiltered.sortBy(event_time =>
-            (Math.abs(game.time - event_time._2),event_time._1.distanceSquareTo(res.x, res.y)))(scala.Ordering.Tuple2(scala.Ordering.Long, scala.Ordering.Float))
+          // sort by age and then distance
+          object EventCompare extends scala.math.Ordering[(Event, Long)] {
+            def compare(a:(Event, Long), b:(Event, Long)) = {
+              val db = Math.abs(game.time - b._2)
+              val da = Math.abs(game.time - a._2)
+              if(da < db) {
+                -1
+              } else if(da == db) {
+                val ca = a._1.distanceSquareTo(res.x, res.y)
+                val cb = b._1.distanceSquareTo(res.x, res.y)
+                if(ca < cb) -1 else if(ca == cb) 0 else 1
+              } else 1
+            }
+          }
+          
+          val eventListSorted = eventListFiltered.sorted(EventCompare)
           val objectList = game.abstractObjectFingerAt(res).toList
           
           // Disambiguate event selection: make a list and submit it to quickaction review.
