@@ -141,7 +141,6 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * the rules are evaluated. 
    */
   def preStep(ctx: Context): Unit = {
-    setExistenceAt(ctx.time.toInt)
     // This is very low level for performance reasons since it is called
     // very often and we don't want allocation of anonymous functions.
     var i = 0
@@ -152,6 +151,9 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
       p.flush()
       i += 1
     }
+    
+    // Set the existence *after* validating properties.
+    setExistenceAt(ctx.time)
   }
   
   /**

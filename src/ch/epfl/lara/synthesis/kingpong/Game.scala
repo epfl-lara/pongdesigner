@@ -56,7 +56,11 @@ trait Game extends RuleManager { self =>
   private val _objects = ArrayBuffer.empty[GameObject]
   
   /** All objects in this game. */
+  @inline
   def objects: Traversable[GameObject] = _objects
+
+  /** All objects currently alive in this game. */
+  val aliveObjects: Traversable[GameObject] = _objects.view.filter(_.existsAt(time))
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
@@ -104,9 +108,9 @@ trait Game extends RuleManager { self =>
     EventHistory.step()                                /// Opens saving for new coordinates
     
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
-    objects foreach {_.preStep(EventHistory)}
+    aliveObjects foreach {_.preStep(EventHistory)}
     world.step()                                       /// One step forward in the world
-    objects foreach {_.postStep(EventHistory)}
+    aliveObjects foreach {_.postStep(EventHistory)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.

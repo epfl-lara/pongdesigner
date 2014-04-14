@@ -344,7 +344,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   def layoutResize() = {
     if(game != null) {
-      val a = (Array(0f, 0f, 0f, 0f) /: game.objects) { case (a, obj) =>
+      val a = (Array(0f, 0f, 0f, 0f) /: game.aliveObjects) { case (a, obj) =>
         val aabb = obj.getAABB()
         val V(xmin, ymin) = aabb.lowerBound
         val V(xmax, ymax) = aabb.upperBound
@@ -541,27 +541,28 @@ class GameView(val context: Context, attrs: AttributeSet)
     paintSelected.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
-      if(o.existsAt(game.time)) {
-        paint.setStyle(Paint.Style.FILL)
-        o match {
-          case o: Positionable =>
-            val colorPrev = o.color.get
-            val colorNext = o.color.next
-            val visible_prev = o.visible.get
-            val visible_next = o.visible.next
-            if(colorPrev != colorNext || visible_prev != visible_next) {
-              val cPrev = if(visible_prev) colorPrev else (colorPrev & 0xFFFFFF) + (((colorPrev >>> 24)*0.5).toInt << 24)
-              val cNext = if(visible_next) colorNext else (colorNext & 0xFFFFFF) + (((colorNext >>> 24)*0.5).toInt << 24)
-              paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
-            } else {
-              paint.setColor(colorPrev)
-              if (!visible_prev)
-                paint.setAlpha(0x00)
-            }
-        }
+      paint.setStyle(Paint.Style.FILL)
+      o match {
+        case o: Positionable =>
+          val colorPrev = o.color.get
+          val colorNext = o.color.next
+          val visible_prev = o.visible.get
+          val visible_next = o.visible.next
+          if(colorPrev != colorNext || visible_prev != visible_next) {
+            val cPrev = if(visible_prev) colorPrev else (colorPrev & 0xFFFFFF) + (((colorPrev >>> 24)*0.5).toInt << 24)
+            val cNext = if(visible_next) colorNext else (colorNext & 0xFFFFFF) + (((colorNext >>> 24)*0.5).toInt << 24)
+            paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
+          } else {
+            paint.setColor(colorPrev)
+            if (!visible_prev)
+              paint.setAlpha(0x00)
+          }
         
+        case _ => //MIKAEL what to do here ?
+      }
+      
 
-        o match {
+      o match {
         case d : DrawingObject =>
           canvas.save()
           canvas.rotate(radToDegree(d.angle.get), d.x.get, d.y.get)
@@ -661,35 +662,27 @@ class GameView(val context: Context, attrs: AttributeSet)
             }
             canvas.restore()
           }
-        }
-        
-        o match {
-          case e: Positionable with Directionable =>
-            val c = e.color.get
-            if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
-              canvas.restore()
-              canvas.save()
-              val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
-              canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
-              val d = bitmaps(c)
-              val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
-              val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
-              
-              d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
-              d.draw(canvas)
-              canvas.restore()
-              canvas.save()
-              canvas.setMatrix(matrix)
-            }
-          case _ =>
-        }
-        //Draw a small red dot in the (x, y) position of each object
-        /*paint.setColor(0xFFFF0000)
-        o match {
-        case o: Movable =>
-          canvas.drawCircle(o.x.get, o.y.get, mapRadiusI(3), paint)
+      }
+      
+      o match {
+        case e: Positionable with Directionable =>
+          val c = e.color.get
+          if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
+            canvas.restore()
+            canvas.save()
+            val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
+            canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
+            val d = bitmaps(c)
+            val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
+            val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
+            
+            d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
+            d.draw(canvas)
+            canvas.restore()
+            canvas.save()
+            canvas.setMatrix(matrix)
+          }
         case _ =>
-        }*/
       }
     }
   
@@ -718,8 +711,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
     
     if(game == null) return;
-    game.objects foreach drawObject
-    if(state == Editing) game.objects foreach {
+    game.aliveObjects foreach drawObject
+    if(state == Editing) game.aliveObjects foreach {
       case o: Speed with Movable =>
         drawVelocity(o, o.x.next, o. y.next, o.velocity.next, velocityPaint)
         if(o.velocity.next.x != o.velocity.get.x || o.velocity.next.y != o.velocity.get.y) {

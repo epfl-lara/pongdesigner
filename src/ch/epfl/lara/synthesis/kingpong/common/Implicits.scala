@@ -86,6 +86,8 @@ object Implicits {
     def toScalaValue(e: Expr) = e match {
       case Tuple(Seq(FloatLiteral(x), FloatLiteral(y))) => Vec2(x, y)
       case Tuple(Seq(IntegerLiteral(x), IntegerLiteral(y))) => Vec2(x, y)
+      case Tuple(Seq(IntegerLiteral(x), FloatLiteral(y))) => Vec2(x, y)
+      case Tuple(Seq(FloatLiteral(x), IntegerLiteral(y))) => Vec2(x, y)
       case _ => throw InterpreterException(s"The value $e is incompatible with Vec2.")
     }
     def toExpr(v: Vec2) = Tuple(Seq(FloatLiteral(v.x), FloatLiteral(v.y)))
