@@ -57,6 +57,7 @@ import android.graphics.Shader
 import ch.epfl.lara.synthesis.kingpong.common.Messages._
 import net.londatiga.android.QuickAction
 import net.londatiga.android.ActionItem
+import scala.collection.mutable.ListBuffer
 
 object GameView {
   sealed trait GameState
@@ -1181,36 +1182,23 @@ class GameView(val context: Context, attrs: AttributeSet)
           // Detects objects and events.
           
           // If we are making a rule, we select the events first
-          var oneShapeSelectable = false
-          var closestTimeStampDiff: Long = -1
-          var closestSpaceDistance: Float = -1
-          var closestEvent: Event = null
-          var closestEventTime: Int = 0
-          eventEditor.select(null, 0)
-          def updateClosest(i: Event, timestamp: Int): Unit = {
-            i match {
-              case FingerDown(_,_) |  FingerUp(_,_) |  FingerMove(_,_,_) | BeginContact(_) |  CurrentContact(_) |  EndContact(_) => 
-                //canvas.drawCircle(i.x1, i.y1, 20, touchMovePaint)
-                if(i.selectableBy(res.x, res.y)) {
-                  val distTime = Math.abs(timestamp - game.time)
-                  val distSpace = i.distanceSquareTo(res.x, res.y)
-                  if(distTime < closestTimeStampDiff || (distTime == closestTimeStampDiff && (distSpace < closestSpaceDistance || closestSpaceDistance == -1)) || closestTimeStampDiff == -1) {
-                    closestEvent = i
-                    closestEventTime = timestamp
-                    if(distTime < closestTimeStampDiff || closestSpaceDistance == -1) {
-                      closestSpaceDistance = distSpace
-                    }
-                    closestTimeStampDiff = distTime
-                  }
-                }
-              case _ =>
-            }
-          }
-          game.foreachEvent(updateClosest(_, _))
-          //game.triggerEvents foreach (updateClosest(_))
+          // Sorts selectable events.
+          val eventList = ListBuffer[(Event, Long)]()
+          game.foreachEvent((a,b) => eventList += ((a, b)))
+          val eventListSorted = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y)).sortBy(event_time =>
+            (Math.abs(game.time - event_time._2), event_time._1.distanceSquareTo(res.x, res.y))
+          )
+          val objectList = game.abstractObjectFingerAt(res).toList
           
+          // Disambiguate event selection: make a list and submit it to quickaction review.
+          disambiguateMultipleSelection(eventListSorted, objectList){ case result =>
+            
+          }
+          
+          val closestEvent = eventListSorted.headOption.map(_._1).getOrElse(null)
+          val closestEventTime = eventListSorted.headOption.map(_._2).getOrElse(-1L)
           // Try to get number events even if no event on it
-          if(closestEvent == null) {
+          /*if(closestEvent == null) {
             performSelection(res)
             if(shapeEditor.selectedShape != null) {
               shapeEditor.selectedShape match {
@@ -1224,7 +1212,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               }
               shapeEditor.select(null)
             }
-          }
+          }*/
           
           // If we got an event:
           if(closestEvent != null) {
@@ -1350,7 +1338,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip if there are multiple items to check.
    */
-  def disambiguateMultipleSelection(): Unit = {
+  def disambiguateMultipleSelection(eventList: List[(Event, Long)], objectList: List[GameObject])(remaining: (List[(Event, Long)], List[GameObject]) => Unit): Unit = {
     val mQuickAction  = new QuickAction(activity)
     
    /* val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
