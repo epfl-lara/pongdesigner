@@ -668,6 +668,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             val c = e.color.get
             if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
               canvas.restore()
+              canvas.save()
               val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
               canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
               val d = bitmaps(c)
@@ -676,9 +677,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               
               d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
               d.draw(canvas)
-              
-              canvas.save()
-              canvas.setMatrix(matrix)
+              canvas.restore()
             }
           case _ =>
         }
