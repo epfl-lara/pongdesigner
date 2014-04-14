@@ -271,6 +271,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_SELECTING_EFFECTS
     MenuOptions.copy_to_prev = false
     MenuOptions.modify_prev = false
+    game.setInstantProperties(false)
     Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
   }
   
@@ -280,6 +281,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_prev = false // irrelevant
     MenuOptions.copy_to_prev = true // irrelevant
+    game.setInstantProperties(true)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_maker))
   }
   
@@ -288,6 +290,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_prev = false
     MenuOptions.copy_to_prev = true
+    game.setInstantProperties(true)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
     //EditRuleButton.selected = false
     //enterEditMode()
@@ -1197,124 +1200,6 @@ class GameView(val context: Context, attrs: AttributeSet)
                 eventEditor.selectedObjects = objectListSelected
             }
           }
-          
-          val closestEvent = eventListSorted.headOption.map(_._1).getOrElse(null)
-          val closestEventTime = eventListSorted.headOption.map(_._2).getOrElse(-1L)
-          // Try to get number events even if no event on it
-          /*if(closestEvent == null) {
-            performSelection(res)
-            if(shapeEditor.selectedShape != null) {
-              shapeEditor.selectedShape match {
-                case d:Box[Int] if d.className == "Box[Int]" =>
-                  //TODO : val p = game.triggerEvents.addEvent(game.currentTime, INTEGER_CHANGE_EVENT, d, null, d.x, d.y, d.value, d.value)
-                  //closestEvent = p
-                case d: Positionable =>
-                  val p  = game.addEvent(FingerDown(Vec2(d.x.get, d.y.get), Set(d)), game.time.toInt)
-                  val p2 = game.addEvent(FingerUp(Vec2(d.x.get, d.y.get), Set(d)), game.time.toInt)
-                  closestEvent = p
-              }
-              shapeEditor.select(null)
-            }
-          }*/
-          
-          // If we got an event:
-          if(closestEvent != null) {
-            //game.storeInitialState(game.currentTime == 0)
-            //game.prepareNewValues()
-            if(closestEvent.isNumerical) {
-              /*EventMenu.activate(false)
-              val d = closestEvent.value.shape1.asInstanceOf[IntegerBox]
-              val name = d.mName
-              val newValue = closestEvent.value.y2.toInt
-              val integer = new Integer(newValue)
-              CustomDialogs.launchChoiceDialog(context, String.format(res.getString(R.string.choose_trigger), name),
-                  List(
-                    String.format(res.getString(R.string.trigger_integer_1), name),
-                    String.format(res.getString(R.string.trigger_integer_2), name, integer),
-                    String.format(res.getString(R.string.trigger_integer_3), name, integer),
-                    String.format(res.getString(R.string.trigger_integer_4), name, integer))
-                    ++ (
-                      if(newValue != 0) {
-                        if(newValue > 0) {
-                          List(String.format(res.getString(R.string.trigger_integer_5), name),
-                               String.format(res.getString(R.string.trigger_integer_7), name))
-                        } else if(newValue < 0) {
-                          List(String.format(res.getString(R.string.trigger_integer_6), name),
-                               String.format(res.getString(R.string.trigger_integer_8), name))
-                        } else Nil
-                      } else Nil)
-                    ,
-                       {i:Int =>
-                         closestEvent.value.code = INTEGER_CHANGE_EVENT + i
-                         if(i == 4) {
-                           if(newValue > 0) {
-                             closestEvent.value.code = INTEGER_POSITIVE_EVENT
-                           } else if(newValue == 0) {
-                             // Normally this should not happen
-                             throw new Exception("newValue == 0 but the point 4 was chosen")
-                           } else {
-                             closestEvent.value.code = INTEGER_NEGATIVE_EVENT
-                           }
-                           
-                         } else if(i == 5) {
-                            if(newValue > 0) {
-                             closestEvent.value.code = INTEGER_GREATER_EQUAL_EVENT
-                             closestEvent.value.y2 = 0
-                           } else if(newValue == 0) {
-                             // Normally this should not happen
-                             throw new Exception("newValue == 0 but the point 4 was chosen")
-                           } else {
-                             closestEvent.value.code = INTEGER_LESS_EQUAL_EVENT
-                             closestEvent.value.y2 = 0
-                           }
-                         }
-                         eventEditor.select(closestEvent)
-                         setModeSelectEffects()
-                       },
-                       {() =>})*/
-            } else if(closestEvent.isCrossing) {
-              /*val d = closestEvent.value.shape1
-              val name = d.mName
-              EventMenu.activate(false)
-              CustomDialogs.launchChoiceDialog(context, String.format(res.getString(R.string.choose_trigger_outofscreen), name),
-                  List(
-                    String.format(res.getString(R.string.trigger_outscreen_1), name),
-                    String.format(res.getString(R.string.trigger_outscreen_2), name)),
-                       {i:Int =>
-                         closestEvent.value.code = BEYOND_SCREEN_EVENT + i
-                         eventEditor.select(closestEvent)
-                         setModeSelectEffects()},
-                       {() =>
-                         
-                       })*/
-            } else if(closestEvent.isContact) {
-              eventEditor.select(closestEvent, closestEventTime)
-              EventMenu.activate(true)
-            } else closestEvent match {
-              case FingerRelated(coord, obj) => 
-                eventEditor.select(closestEvent, closestEventTime, false)
-                var shapesBelow = obj
-                var shapeBelow = if(obj.nonEmpty) obj.head else null
-                var minDistance = -1f
-                shapesBelow foreach { shape =>
-                  val x = coord.x
-                  val y = coord.y
-                  if(shape.selectableBy(x, y)) {
-                    val newDist = shape.distanceSelection(x, y)
-                    if(newDist < minDistance || minDistance == -1) {
-                      shapeBelow = shape
-                      minDistance = newDist
-                    }
-                  }
-                }
-                //closestEvent.value.shape1 = shapeBelow
-                EventMenu.activate(true, shapeBelow)
-              case _ =>
-                EventMenu.activate(false)
-                eventEditor.select(closestEvent, closestEventTime)
-                setModeSelectEffects()
-            }
-          }
         } else if(mRuleState == STATE_MODIFYING_CATEGORY /*|| CameraButton.isSelected*/) {
           //categoryEditor.onFingerUp(touchCoords(0), touchCoords(1))
         } else if(mRuleState == STATE_SELECTING_EFFECTS) {
@@ -1403,7 +1288,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             mapIndex += index -> (FingerUp(pos, Set(obj)), time)
             index += 1
           }
-        case _ =>
+        case _ => // TODO : Add more actions to disambiguate.
       }
     }
     
