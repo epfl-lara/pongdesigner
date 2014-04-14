@@ -140,6 +140,7 @@ class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
   
   def unselect() = {
     selectedEventTime = Nil
+    selectedObjects = Nil
   }
   def isVisible() = EventMenu.isActivated && selectedEventTime.nonEmpty
   /**

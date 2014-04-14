@@ -182,21 +182,20 @@ class GameView(val context: Context, attrs: AttributeSet)
         val game = getGame()
         mRuleState match {
           case STATE_MODIFYING_GAME => 
+            eventEditor.unselect()
             setModeSelectEvents()
-            
-
             menuSelected = true
             //mAddRuleButton.text = res.getString(R.string.select_event)
             Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
           case STATE_SELECTING_EVENTS =>
             Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
-            setModeModifyGame()
-            //mAddRuleButton.text = res.getString(R.string.design_rule)
-            //hovered = false
-            eventEditor.select(null, 0)
+            if(eventEditor.selectedEventTime.nonEmpty || eventEditor.selectedObjects.nonEmpty) {
+              setModeSelectEffects()
+            } else {
+              setModeModifyGame()
+            }
           case STATE_SELECTING_EFFECTS =>
             CodeGenerator.createRule(context, getGame(), eventEditor.selectedEventTime, eventEditor.selectedObjects)
-          //hovered = false
             true
         case STATE_MODIFYING_CATEGORY =>
           //hovered = false
@@ -1191,8 +1190,12 @@ class GameView(val context: Context, attrs: AttributeSet)
           val objectList = game.abstractObjectFingerAt(res).toList
           
           // Disambiguate event selection: make a list and submit it to quickaction review.
-          disambiguateMultipleSelection(eventListSorted, objectList){ case result =>
-            
+          disambiguateMultipleSelection(eventListSorted, objectList, eventEditor.selectedEventTime, eventEditor.selectedObjects){ case result =>
+            result match {
+              case (eventListSelected, objectListSelected) =>
+                eventEditor.selectedEventTime = eventListSelected
+                eventEditor.selectedObjects = objectListSelected
+            }
           }
           
           val closestEvent = eventListSorted.headOption.map(_._1).getOrElse(null)
@@ -1338,8 +1341,12 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip if there are multiple items to check.
    */
-  def disambiguateMultipleSelection(eventList: List[(Event, Long)], objectList: List[GameObject])(remaining: (List[(Event, Long)], List[GameObject]) => Unit): Unit = {
+  def disambiguateMultipleSelection(eventList: List[(Event, Long)], objectList: List[GameObject],
+      alreadySelectedEventList: List[(Event, Long)], alreadySelectedObjectList: List[GameObject]
+  )(remaining: (List[(Event, Long)], List[GameObject]) => Unit): Unit = {
     val mQuickAction  = new QuickAction(activity)
+    
+    // Displays a list of icons selected and not.
     
    /* val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
     mQuickAction.addStickyActionItem(changeStateItem)
