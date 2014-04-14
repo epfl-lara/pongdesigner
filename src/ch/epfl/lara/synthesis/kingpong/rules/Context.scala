@@ -12,7 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 trait Context extends Any {
 
   def events: Iterable[Event]
-  def time: Long  
+  def time: Int  
   def getNewName(s: String): String
   def add(c: GameObject)
   
@@ -73,7 +73,7 @@ trait Context extends Any {
 
 trait EmptyContext extends Context {
   def events: Iterable[Event] = Seq.empty
-  def time: Long = 0 
+  def time: Int = 0 
   def getNewName(s: String): String = s + "FRESH"
   def add(c: GameObject) = ()
 }

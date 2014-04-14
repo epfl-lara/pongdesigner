@@ -98,8 +98,8 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
   }
   def onStopTrackingTouch(seekBar: SeekBar):Unit = {
   }
-  def setTimeProgressAbsolute(i: Long) = {
-    progressBar.setProgress(Math.max(0, (i - History.MAX_HISTORY_SIZE).toInt))
+  def setTimeProgressAbsolute(i: Int) = {
+    progressBar.setProgress(Math.max(0, (i - History.MAX_HISTORY_SIZE)))
   }
   def getGame: Game
 }
@@ -517,7 +517,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     state match {
       case Running =>
         game.update()
-        setProgressTime(game.time.toInt)
+        setProgressTime(game.time)
       case Editing =>
         //TODO
     }
@@ -541,7 +541,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     paintSelected.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
-      if(o.existsAt(game.time.toInt)) {
+      if(o.existsAt(game.time)) {
         paint.setStyle(Paint.Style.FILL)
         o match {
           case o: Positionable =>
@@ -1189,12 +1189,12 @@ class GameView(val context: Context, attrs: AttributeSet)
           
           // If we are making a rule, we select the events first
           // Sorts selectable events.
-          val eventList = ListBuffer[(Event, Long)]()
+          val eventList = ListBuffer[(Event, Int)]()
           game.foreachEvent((a,b) => eventList += ((a, b)))
           val eventListFiltered = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y))
           // sort by age and then distance
-          object EventCompare extends scala.math.Ordering[(Event, Long)] {
-            def compare(a:(Event, Long), b:(Event, Long)) = {
+          object EventCompare extends scala.math.Ordering[(Event, Int)] {
+            def compare(a:(Event, Int), b:(Event, Int)) = {
               val db = Math.abs(game.time - b._2)
               val da = Math.abs(game.time - a._2)
               if(da < db) {
@@ -1257,14 +1257,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip if there are multiple items to check.
    */
-  def disambiguateMultipleSelection(eventList: List[(Event, Long)], objectList: List[GameObject],
-      currentEventSelection: List[(Event, Long)], currentObjectSelection: List[GameObject]
-  )(remaining: (List[(Event, Long)], List[GameObject]) => Unit): Unit = {
+  def disambiguateMultipleSelection(eventList: List[(Event, Int)], objectList: List[GameObject],
+      currentEventSelection: List[(Event, Int)], currentObjectSelection: List[GameObject]
+  )(remaining: (List[(Event, Int)], List[GameObject]) => Unit): Unit = {
     val mQuickAction  = new QuickAction(activity)
     
     //mQuickAction.addStickyActionItem(changeStateItem)
     var index = 0
-    var mapIndex = Map[Int, (Event, Long)]()
+    var mapIndex = Map[Int, (Event, Int)]()
     var moveTaken = Set[FingerMove]()
     for(e@(event, time) <- eventList) {
       event match {
@@ -1279,7 +1279,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             index += 1
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
-          val relevantMove = getGame.getFingerMoveEvent(event, time.toInt)()
+          val relevantMove = getGame.getFingerMoveEvent(event, time)()
           relevantMove match {
             case Some(movement@FingerMove(from, to, objs)) =>
               if(!moveTaken(movement)) {

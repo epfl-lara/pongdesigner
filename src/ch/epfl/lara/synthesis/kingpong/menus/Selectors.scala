@@ -136,7 +136,7 @@ class ShapeEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
  */
 class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
   var selectedObjects: List[GameObject] = Nil
-  var selectedEventTime: List[(Event, Long)] = Nil
+  var selectedEventTime: List[(Event, Int)] = Nil
   
   def unselect() = {
     selectedEventTime = Nil
@@ -147,7 +147,7 @@ class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
    * Selects the given event by returning to the time this event occurred
    * Changes the game new values by the rule.
    **/
-  def select(i: Event, time: Long, applyRule: Boolean = true) = {
+  def select(i: Event, time: Int, applyRule: Boolean = true) = {
     if(i != null && applyRule) {
       val game = gameEngineView.getGame()
       selectedEventTime = (i, time)::selectedEventTime

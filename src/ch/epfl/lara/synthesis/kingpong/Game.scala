@@ -71,7 +71,7 @@ trait Game extends RuleManager { self =>
   /*** Maximum time achieved in this game. */
   def maxTime = EventHistory.maxTime
 
-  private[kingpong] def restore(t: Long): Unit = {
+  private[kingpong] def restore(t: Int): Unit = {
     if (t >= 0 && t <= maxTime) {
       objects.foreach(_.restore(t))
       EventHistory.restore(t)
@@ -319,7 +319,7 @@ trait Game extends RuleManager { self =>
       obj.creationTime.get > time
     }
     // Remove objects from world and categories
-    toDelete foreach (_.setExistenceAt(time.toInt)) 
+    toDelete foreach (_.setExistenceAt(time)) 
     _objects --= toDelete
     // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
@@ -402,11 +402,11 @@ trait Game extends RuleManager { self =>
    */
   protected object EventHistory extends Context {
 
-    private var recording_time: Long = 0
-    private var max_time: Long = 0
+    private var recording_time: Int = 0
+    private var max_time: Int = 0
 
     // Oldest first (head), more recent at the end (last). Both in O(1).
-    private val history: RingBuffer[(Long, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
+    private val history: RingBuffer[(Int, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
     private val crtEvents = ArrayBuffer.empty[Event]
 
@@ -414,7 +414,7 @@ trait Game extends RuleManager { self =>
     def time = recording_time - 1
     def maxTime = max_time
 
-    def restore(t: Long): Unit = {
+    def restore(t: Int): Unit = {
       if (time >= 0 && time <= max_time) {
         recording_time = t + 1
         crtEvents.clear()
@@ -424,11 +424,11 @@ trait Game extends RuleManager { self =>
       }
     }
     
-    def getEvents(i: Long): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
+    def getEvents(i: Int): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
     
     def foreachEvent(f: (Event, Int) => Unit) = {
       for((k, s) <- history.iterator; e <- s) {
-        f(e, k.toInt)
+        f(e, k)
       }
     }
 
