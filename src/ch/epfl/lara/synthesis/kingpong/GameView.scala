@@ -540,7 +540,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     paintSelected.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
-      if(o.existsAt(game.time)) {
+      if(o.existsAt(game.time.toInt)) {
         paint.setStyle(Paint.Style.FILL)
         o match {
           case o: Positionable =>
@@ -1187,9 +1187,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           // Sorts selectable events.
           val eventList = ListBuffer[(Event, Long)]()
           game.foreachEvent((a,b) => eventList += ((a, b)))
-          val eventListSorted = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y)).sortBy(event_time =>
-            (Math.abs(game.time - event_time._2), event_time._1.distanceSquareTo(res.x, res.y))
-          )
+          val eventListFiltered = eventList.toList.filter(event_time => event_time._1.selectableBy(res.x, res.y))
+          val eventListSorted = eventListFiltered.sort(event_time =>
+            (Math.abs(game.time - event_time._2),event_time._1.distanceSquareTo(res.x, res.y)))(scala.Ordering.Tuple2(scala.Ordering.Long, scala.Ordering.Float))
           val objectList = game.abstractObjectFingerAt(res).toList
           
           // Disambiguate event selection: make a list and submit it to quickaction review.

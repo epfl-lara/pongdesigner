@@ -36,7 +36,7 @@ object Implicits {
   }
   
   // Type only for internal use. Should not be used in Trees.
-  implicit object LongIsPongType extends PongType[Long] {
+  /*implicit object LongIsPongType extends PongType[Long] {
     def getPongType = TInt
     def toScalaValue(e: Expr) = e match {
       case FloatLiteral(f) if f.isWhole => f.toLong
@@ -45,7 +45,7 @@ object Implicits {
     }
     def toExpr(v: Long) = IntegerLiteral(v.toInt)
     def clone(v: Long) = v
-  }
+  }*/
 
   implicit object FloatIsPongType extends PongType[Float] {
     def getPongType = TFloat

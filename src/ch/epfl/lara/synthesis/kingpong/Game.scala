@@ -319,7 +319,7 @@ trait Game extends RuleManager { self =>
       obj.creationTime.get > time
     }
     // Remove objects from world and categories
-    toDelete foreach (_.setExistenceAt(time)) 
+    toDelete foreach (_.setExistenceAt(time.toInt)) 
     _objects --= toDelete
     // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }

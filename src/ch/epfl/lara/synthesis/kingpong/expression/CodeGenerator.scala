@@ -220,6 +220,9 @@ object CodeGenerator extends CodeHandler {
    * This function generates the condition to which the code has been modified.
    **/
   def createRule(context: Context, game: Game, conditionEvent: List[(Event, Long)], conditionConfig: List[GameObject]): Unit = {
+    // Need to store the conditions so that we can rely on them rather than on code.
+    
+    
     /*val res = context.getResources()
     def askChoicesIfNeeded(r: ReactiveRule) = {
       if(r.code != Nil) {

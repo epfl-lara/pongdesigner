@@ -42,6 +42,7 @@ object TreeDSL {
         case e: Int => IntegerLiteral(e)
         case e: String => StringLiteral(e)
         case e: Boolean => BooleanLiteral(e)
+        case e: Long => IntegerLiteral(e.toInt)
         case e: Unit => UnitLiteral
         case e: GameObject => ObjectLiteral(e)
         case _ => UnitLiteral

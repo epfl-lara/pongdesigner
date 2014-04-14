@@ -72,17 +72,17 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // Existence
   // --------------------------------------------------------------------------  
   
-  val creationTime = simpleProperty[Long]("creation time", -1)
-  val deletionTime = simpleProperty[Long]("deletion time", Long.MaxValue)
+  val creationTime = simpleProperty[Int]("creation time", -1)
+  val deletionTime = simpleProperty[Int]("deletion time", Int.MaxValue)
   
   /** Checks whether this object exists at the given time. */
-  def existsAt(time: Long) = creationTime.get <= time && (deletionTime.get < 0 || time < deletionTime.get)
+  def existsAt(time: Int) = creationTime.get <= time && (deletionTime.get < 0 || time < deletionTime.get)
   
   /**
    * Update the internal state according to the current time. Particularly, remove the object from the 
    * physical world if it doesn't exist and vice-versa. 
    */ 
-  def setExistenceAt(time: Long): Boolean = {
+  def setExistenceAt(time: Int): Boolean = {
     val exists = existsAt(time)
     if (!exists && _attachedToCategory) {
       category.remove(this)
@@ -141,7 +141,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    * the rules are evaluated. 
    */
   def preStep(ctx: Context): Unit = {
-    setExistenceAt(ctx.time)
+    setExistenceAt(ctx.time.toInt)
     // This is very low level for performance reasons since it is called
     // very often and we don't want allocation of anonymous functions.
     var i = 0

@@ -26,7 +26,7 @@ object Menus {
     var radius = 1.0//Math.max(1f, n/6f)
     var offsetAngle = 0.0
     for(menu <- menus) {
-      val angle = (2*Math.PI * i) / n + offsetAngle;
+      val angle = (2*Math.PI * i) / 6 + offsetAngle;
       menu.setPos(radius.toFloat * Math.cos(angle).toFloat, radius.toFloat * Math.sin(angle).toFloat)
       i += 1
       if(i == 6) {

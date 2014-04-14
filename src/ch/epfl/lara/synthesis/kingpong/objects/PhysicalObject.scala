@@ -72,7 +72,7 @@ abstract class PhysicalObject(init_name: Expr,
     bodyRemovedFromWorld = false
   }
   
-  override def setExistenceAt(time: Long) = {
+  override def setExistenceAt(time: Int) = {
     val exists = super.setExistenceAt(time)
     if(bodyRemovedFromWorld && exists) {
       addToWorld()
