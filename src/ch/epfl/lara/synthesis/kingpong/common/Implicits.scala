@@ -2,15 +2,21 @@ package ch.epfl.lara.synthesis.kingpong.common
 
 // Remove implicit warnings
 import language.implicitConversions
-
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import net.londatiga.android.QuickAction
 
 object Implicits {
-  
+  implicit def actionConvert(f: (QuickAction, Int, Int) => Any): QuickAction.OnActionItemClickListener = {
+    new QuickAction.OnActionItemClickListener() {
+        override def onItemClick(quickAction: QuickAction, pos: Int, actionId: Int) {
+          f(quickAction, pos, actionId)
+        }
+    }
+  }
   
   implicit class toDelimiter(s: String) {
     def andThen(other: String) = StringDelimiter(s, other)

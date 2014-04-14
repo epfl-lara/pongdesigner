@@ -1331,35 +1331,96 @@ class GameView(val context: Context, attrs: AttributeSet)
    */
   object ActionType extends Enumeration {
     type ActionType = Value
-    val ID_SKIP_TUTORIAL, ID_SHOW_TUTORIAL, ID_TIME_START, ID_DESCRIPTION, ID_CONTINUE = Value
+    val ID_CONTINUE = Value
     implicit def convert(i: ActionType): Int = i.id
   }
   import ActionType._
   lazy val str = (i: Int) => res.getString(i)
+  lazy val str2 = (i: Int, j: String) => String.format(res.getString(i), j)
   lazy val drw = (i: Int) => res.getDrawable(i)
+  lazy val drw2 = (i: Int, j: Int) => {
+    val d1 = res.getDrawable(i)
+    val d2 = res.getDrawable(j)
+    val big = Bitmap.createBitmap(d1.getIntrinsicWidth(), d1.getIntrinsicHeight(), Bitmap.Config.ARGB_8888)
+    val canvas = new Canvas(big);
+    d1.setBounds(0, 0, d1.getIntrinsicWidth()-1, d1.getIntrinsicHeight()-1)
+    d1.draw(canvas)
+    d2.setBounds(0, 0, d1.getIntrinsicWidth()-1, d1.getIntrinsicHeight()-1)
+    d2.draw(canvas)
+    new BitmapDrawable(big)
+  }
+  //lazy val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
   
   /**
    * Displays a tooltip if there are multiple items to check.
    */
   def disambiguateMultipleSelection(eventList: List[(Event, Long)], objectList: List[GameObject],
-      alreadySelectedEventList: List[(Event, Long)], alreadySelectedObjectList: List[GameObject]
+      currentEventSelection: List[(Event, Long)], currentObjectSelection: List[GameObject]
   )(remaining: (List[(Event, Long)], List[GameObject]) => Unit): Unit = {
     val mQuickAction  = new QuickAction(activity)
     
-    // Displays a list of icons selected and not.
-    
-   /* val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
-    mQuickAction.addStickyActionItem(changeStateItem)
-    mQuickAction.addActionItem(continueItem)
-    mQuickAction.setOnActionItemClickListener{ (quickAction: QuickAction, pos: Int, actionId: Int) =>
-      ActionType(actionId) match {
-        case ID_DESCRIPTION =>
-        case ID_CONTINUE =>
-          mQuickAction.dismiss()
-          executeNextAction()
+    //mQuickAction.addStickyActionItem(changeStateItem)
+    var index = 0
+    var mapIndex = Map[Int, (Event, Long)]()
+    var moveTaken = Set[FingerMove]()
+    for(e@(event, time) <- eventList) {
+      event match {
+        case FingerUp(pos, objs) =>
+          for(obj <- objs) {
+            if(currentEventSelection contains e) {
+              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button)))
+            } else {
+              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
+            }
+            mapIndex += index -> (FingerUp(pos, Set(obj)), time)
+            index += 1
+          }
+        case FingerMove(_, _, _) => // Display only the relevant one.
+          val relevantMove = getGame.getFingerMoveEvent(event, time.toInt)()
+          relevantMove match {
+            case Some(movement@FingerMove(from, to, objs)) =>
+              if(!moveTaken(movement)) {
+                moveTaken += movement
+                for(obj <- objs) {
+                  if(currentEventSelection contains e) {
+                    mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button)))
+                  } else {
+                    mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
+                  }
+                  mapIndex += index -> (FingerMove(from, to, Set(obj)), time)
+                  index += 1
+                }
+              }
+            case _ =>
+          }
+        case FingerDown(pos, objs) =>
+          for(obj <- objs) {
+            if(currentEventSelection contains e) {
+              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
+            } else {
+              mQuickAction.addActionItem(new ActionItem(index, str2(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerdown_button)))
+            }
+            mapIndex += index -> (FingerUp(pos, Set(obj)), time)
+            index += 1
+          }
         case _ =>
       }
-    }*/
+    }
+    
+    mQuickAction.setOnActionItemClickListener{ (quickAction: QuickAction, pos: Int, actionId: Int) =>
+      mapIndex.get(actionId) match {
+        case Some(event) =>
+          mQuickAction.dismiss()
+          if(currentEventSelection contains event){
+            remaining(currentEventSelection.filterNot(_ == event), currentObjectSelection)
+          } else {
+            remaining(event::currentEventSelection, currentObjectSelection)
+          }
+        case None =>
+          mQuickAction.dismiss()
+        case _ =>
+      }
+    }
   }
   
   /**

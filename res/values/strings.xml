@@ -37,6 +37,10 @@
     <string name="trigger_integer_6">When %1$s &lt; 0</string>
     <string name="trigger_integer_7">When %1$s >= 0</string>
     <string name="trigger_integer_8">When %1$s &lt;= 0</string>
+    <string name="when_finger_up">When the finger releases %1$s</string>
+    <string name="when_finger_down">When the finger presses %1$s</string>
+    <string name="when_finger_move">When the finger moves on %1$s</string>
+    <string name="when_collision">When %1$s and %1$s collide</string>
     <string name="choose_trigger_outofscreen">Choose n trigger event for %1$s:</string>
     <string name="trigger_outscreen_1">When %1$s lefts the game</string>
     <string name="trigger_outscreen_2">When %1$s crosses this border</string>

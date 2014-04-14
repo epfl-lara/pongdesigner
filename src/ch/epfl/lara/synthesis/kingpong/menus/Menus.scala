@@ -23,11 +23,32 @@ object Menus {
   def spaceMenusOnCircle(menus: List[CustomMenu]) = {
     val n = menus.size
     var i = 0
-    val radius = Math.max(1f, n/6f)
+    var radius = 1.0//Math.max(1f, n/6f)
+    var offsetAngle = 0.0
     for(menu <- menus) {
-      val angle = (2*Math.PI * i) / n;
-      menu.setPos(radius * Math.cos(angle).toFloat, radius * Math.sin(angle).toFloat)
+      val angle = (2*Math.PI * i) / n + offsetAngle;
+      menu.setPos(radius.toFloat * Math.cos(angle).toFloat, radius.toFloat * Math.sin(angle).toFloat)
       i += 1
+      if(i == 6) {
+        radius = 1.732
+        offsetAngle = 2*Math.PI/12
+      }
+      if(i == 12) {
+        radius = 2.0
+        offsetAngle = 0
+      }
+      if(i == 18) {
+        radius = 2.645745
+        offsetAngle = 0.333474
+      }
+      if(i == 24) {
+        offsetAngle = 0.713724
+      }
+      if(i == 30) {
+        radius = 3
+        offsetAngle = 0
+      }
+      if(i >= 36) radius = 3+(i-36.0)/6 // Should not happen.
     }
   }
 }

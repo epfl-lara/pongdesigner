@@ -120,13 +120,18 @@
         <item>#FF000000</item>
     </string-array -->
     <string-array name="colors">
-        <item>#FF00FFFF</item>  
-        <item>#FF34B27D</item>  
-        <item>#FFDBDB57</item>
-        <item>#FFE09952</item>
-        <item>#FFCB4D4D</item>
-        <item>#FF9933CC</item>
-        <item>#FF000000</item>
+			<item>#FF33B5E5</item>
+			<item>#FFAA66CC</item>
+			<item>#FF99CC00</item>
+			<item>#FFFFBB33</item>
+			<item>#FFFF4444</item>
+			<item>#FF0099CC</item>
+			<item>#FF9933CC</item>
+			<item>#FF669900</item>
+			<item>#FFFF8800</item>
+			<item>#FFCC0000</item>
+			<item>#FF000000</item>
+			<item>#FFFFFFFF</item>
     </string-array>
     <string-array name="locales">
         <item>english</item>
