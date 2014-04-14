@@ -327,8 +327,12 @@ trait Interpreter {
       val moves = gctx.fingerMoves(_.obj.exists(_ == obj))
       val from = moves.headOption.map(_.from)
       if (from.isDefined) {
-        val to = moves.last.to
-        eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
+        // The block is NOP if the expression is only used for its returned value.
+        // No need to instantiate a new RecContext.
+        if (block != NOP) {
+          val to = moves.last.to
+          eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
+        }
         booleanLiteralTrue
       } else {
         booleanLiteralFalse

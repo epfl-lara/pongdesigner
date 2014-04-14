@@ -171,7 +171,7 @@ object Trees {
   }
   
   case class Tuple(exprs: Seq[Expr]) extends Expr with FixedType {
-    val fixedType = TTuple(exprs.map(_.getType))
+    lazy val fixedType = TTuple(exprs.map(_.getType))
   }
 
   object TupleSelect {
