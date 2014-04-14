@@ -252,6 +252,14 @@ object TreeDSL {
     Let(id, expr, body(ref))
   }
   
+  def let(name1: String, name2: String, expr1: Expr, expr2: Expr)(body: (Proxy, Proxy) => Expr): Expr = {
+    val id1 = FreshIdentifier(name1).setType(expr1.getType)
+    val id2 = FreshIdentifier(name2).setType(expr2.getType)
+    val ref1 = new IdentifierProxy(id1)
+    val ref2 = new IdentifierProxy(id2)
+    Let(id1, expr1, Let(id2, expr2, body(ref1, ref2)))
+  }
+  
   def foreach(category: Category)(body: Proxy => Expr): Expr = {
     val id = FreshIdentifier(category.name).setType(TObject)
     val ref = new IdentifierProxy(id)
@@ -301,5 +309,8 @@ object TreeDSL {
   def debug(msg: String, args: Expr*): Expr = {
     Debug(msg, args.toSeq)
   }
+
+  def isNull(expr: Expr): Expr  = expr =:= ObjectLiteral(null)
+  def notNull(expr: Expr): Expr = expr =!= ObjectLiteral(null)
   
 }
