@@ -55,6 +55,8 @@ import android.view.WindowManager
 import android.graphics.LinearGradient
 import android.graphics.Shader
 import ch.epfl.lara.synthesis.kingpong.common.Messages._
+import net.londatiga.android.QuickAction
+import net.londatiga.android.ActionItem
 
 object GameView {
   sealed trait GameState
@@ -192,15 +194,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             //hovered = false
             eventEditor.select(null, 0)
           case STATE_SELECTING_EFFECTS =>
-            if(eventEditor.selectedEvent != null) { // Means that the rule has been confirmed.
-              val causeEvent =  eventEditor.selectedEvent.getOrElse(null)
-              val timestamp = eventEditor.selectedTime
-              CodeGenerator.createRule(context, getGame(), Set(causeEvent), Set(), timestamp)
-            //}
-            /*if(!EditRuleButton.selected) {
-              setModeModifyGame(false)
-            }*/
-          }
+            CodeGenerator.createRule(context, getGame(), eventEditor.selectedEventTime, eventEditor.selectedObjects)
           //hovered = false
             true
         case STATE_MODIFYING_CATEGORY =>
@@ -848,7 +842,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   // Draw events in the GameView referential
   def drawEventOn(event: Event, timestamp: Int, canvas: Canvas): Unit = {
     var paint: Paint = this.paint
-    val eventIsSelected = eventEditor.selectedEvent.exists(_ == event)
+    val eventIsSelected = eventEditor.selectedEventTime.exists(_._1 == event)
     event match {
       case e if eventIsSelected =>
         if(event.isFinger) paint = touchSelectedPaint
@@ -872,7 +866,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         val p = mapVectorFromGame(c.point)
         rectFData.set(p.x - 24, p.y - 21, p.x + 25, p.y + 21)
         rectFData.round(rectData)
-        val bitmap = if(Some(event) == eventEditor.selectedEvent) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
+        val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
         bitmap.setBounds(rectData)
         bitmap.setAlpha(alpha)
         canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint) // TODO : Delete
@@ -905,7 +899,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       case FingerMove(v, v2, obj) =>
         val p = mapVectorFromGame(v)
         val p2 = mapVectorFromGame(v2)
-        if(event == eventEditor.selectedEvent) {
+        if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) {
           drawCross(canvas, p.x, p.y, touchSelectedPaint)
           canvas.drawCircle(p2.x, p2.y, 15, touchSelectedPaint)
         } else {
@@ -952,9 +946,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.button_size = button_size
     state match {
       case Editing => 
-        eventEditor.selectedEvent match {
-          case Some(event) => drawEventOn(event, eventEditor.selectedTime.toInt, canvas)
-          case _ =>
+        for((event, time) <- eventEditor.selectedEventTime) {
+          drawEventOn(event, time.toInt, canvas)
         }
         //StaticMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, button_size/2, button_size/2)
         //if(game.currentTime == 0)
@@ -990,8 +983,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, SystemButton.getX(), SystemButton.getY())
       }
     }
-    eventEditor.selectedEvent match {
-      case Some(SelectableEvent(x, y)) if EventMenu.isActivated =>
+    for((event, time) <- eventEditor.selectedEventTime) event match {
+      case SelectableEvent(x, y) if EventMenu.isActivated =>
         val p = mapVectorFromGame(Vec2(x, y))
         EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, p.x, p.y)
       case _ =>
@@ -1340,6 +1333,38 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
       }
       //super.onFingerUp(pos)
+  }
+  
+  /**
+   * Type of actions when selecting/deselecting events or objects.
+   */
+  object ActionType extends Enumeration {
+    type ActionType = Value
+    val ID_SKIP_TUTORIAL, ID_SHOW_TUTORIAL, ID_TIME_START, ID_DESCRIPTION, ID_CONTINUE = Value
+    implicit def convert(i: ActionType): Int = i.id
+  }
+  import ActionType._
+  lazy val str = (i: Int) => res.getString(i)
+  lazy val drw = (i: Int) => res.getDrawable(i)
+  
+  /**
+   * Displays a tooltip if there are multiple items to check.
+   */
+  def disambiguateMultipleSelection(): Unit = {
+    val mQuickAction  = new QuickAction(activity)
+    
+   /* val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
+    mQuickAction.addStickyActionItem(changeStateItem)
+    mQuickAction.addActionItem(continueItem)
+    mQuickAction.setOnActionItemClickListener{ (quickAction: QuickAction, pos: Int, actionId: Int) =>
+      ActionType(actionId) match {
+        case ID_DESCRIPTION =>
+        case ID_CONTINUE =>
+          mQuickAction.dismiss()
+          executeNextAction()
+        case _ =>
+      }
+    }*/
   }
   
   /**

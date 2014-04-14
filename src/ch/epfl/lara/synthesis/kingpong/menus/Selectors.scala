@@ -135,13 +135,13 @@ class ShapeEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
  * Wrapper to the menu to edit events.
  */
 class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
-  var selectedEvent: Option[Event] = None
-  var selectedTime: Long = 0
+  var selectedObjects: List[GameObject] = Nil
+  var selectedEventTime: List[(Event, Long)] = Nil
   
   def unselect() = {
-    selectedEvent = None
+    selectedEventTime = Nil
   }
-  def isVisible() = EventMenu.isActivated && selectedEvent.nonEmpty
+  def isVisible() = EventMenu.isActivated && selectedEventTime.nonEmpty
   /**
    * Selects the given event by returning to the time this event occurred
    * Changes the game new values by the rule.
@@ -149,11 +149,11 @@ class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
   def select(i: Event, time: Long, applyRule: Boolean = true) = {
     if(i != null && applyRule) {
       val game = gameEngineView.getGame()
-      selectedEvent = Some(i) //TODO : Event.getInputEvent(i) // Generalize finger input
+      selectedEventTime = (i, time)::selectedEventTime
       
       // TODO : Select code portion to modify
       //val ruleToStopBefore = CodeGenerator.getRuleFromEvent(game, i.value) match { case Some(r) => r; case _ => null }
-      game.restore(selectedTime/*, ruleToStopBefore*/)
+      game.restore(time/*, ruleToStopBefore*/)
       // Apply the rule that corresponds to the event.
       gameEngineView.setTimeProgressAbsolute(time)
       /*if(ruleToStopBefore != null) {

@@ -219,7 +219,7 @@ object CodeGenerator extends CodeHandler {
    * Creates a rule based on the selected event and the status of the game.
    * This function generates the condition to which the code has been modified.
    **/
-  def createRule(context: Context, game: Game, conditionEvent: Set[Event], conditionConfig: Set[GameObject], causeTimestamp: Long): Unit = {
+  def createRule(context: Context, game: Game, conditionEvent: List[(Event, Long)], conditionConfig: List[GameObject]): Unit = {
     /*val res = context.getResources()
     def askChoicesIfNeeded(r: ReactiveRule) = {
       if(r.code != Nil) {

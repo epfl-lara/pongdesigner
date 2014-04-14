@@ -24,12 +24,12 @@ object EventMenu extends MenuCenter {
   val menu2 = List(NormalCollisionButton)//, NoCollisionButRecordedEffectsButton, NoCollisionButton)
   menus = menu1
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
-    gameEngine.eventEditor.selectedEvent match {
+    /*gameEngine.eventEditor.selectedEventTime match {
       case Some(BeginContact(c)) =>
         menus = menu2
       case _ =>
         menus = menu1
-    }
+    }*/
     Menus.spaceMenusOnCircle(menus)
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
@@ -44,7 +44,7 @@ object FingerDownEventMenu extends MenuButton {
   
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     hovered = false
-    gameEngine.eventEditor.selectedEvent match {
+    /*gameEngine.eventEditor.selectedEvent match {
       case e@Some(_:FingerUp | _:FingerMove) =>
         val event = gameEngine.getGame.getFingerDownEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
@@ -55,7 +55,7 @@ object FingerDownEventMenu extends MenuButton {
           case None =>
         }
       case _ =>
-    }
+    }*/
     gameEngine.setModeSelectEffects()
     EventMenu.activate(false)
   }
@@ -81,7 +81,7 @@ object FingerMoveEventMenu extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     hovered = false
     
-    gameEngine.eventEditor.selectedEvent match {
+    /*gameEngine.eventEditor.selectedEvent match {
       case e@Some(_:FingerUp | _:FingerMove) =>
         val event = gameEngine.getGame.getFingerMoveEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
@@ -92,7 +92,7 @@ object FingerMoveEventMenu extends MenuButton {
           case None =>
         }
       case _ =>
-    }
+    }*/
     gameEngine.setModeSelectEffects()
     EventMenu.activate(false)
   }
@@ -117,7 +117,7 @@ object FingerUpEventMenu extends MenuButton {
   
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     hovered = false
-    gameEngine.eventEditor.selectedEvent match {
+    /*gameEngine.eventEditor.selectedEvent match {
       case e@Some(_:FingerUp | _:FingerMove) =>
         val event = gameEngine.getGame.getFingerUpEvent(e.get, gameEngine.eventEditor.selectedTime.toInt)()
         event match {
@@ -128,7 +128,7 @@ object FingerUpEventMenu extends MenuButton {
           case None =>
         }
       case _ =>
-    }
+    }*/
     gameEngine.setModeSelectEffects()
     EventMenu.activate(false)
   }
