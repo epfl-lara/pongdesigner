@@ -95,58 +95,55 @@ abstract class PhysicalObject(init_name: Expr,
   // Properties
   // --------------------------------------------------------------------------
 
-  val x = property[Float]("x", init_x) { x =>
-    body.setTransform(Vec2(x, body.getPosition().y), body.getAngle())
-  } { () =>
-    body.getPosition().x
-  }
+  val x = property[Float]("x", init_x,
+    x => body.setTransform(Vec2(x, body.getPosition().y), body.getAngle()),
+    () => body.getPosition().x
+  )
 
-  val y = property[Float]("y", init_y) { y =>
-    body.setTransform(Vec2(body.getPosition().x, y), body.getAngle())
-  } { () =>
-    body.getPosition().y
-  }
+  val y = property[Float]("y", init_y,
+    y => body.setTransform(Vec2(body.getPosition().x, y), body.getAngle()),
+    () => body.getPosition().y
+  )
 
-  val angle = property[Float]("angle", init_angle) { a =>
-    body.setTransform(body.getPosition(), a)
-  } { () =>
-    body.getAngle()
-  }
+  val angle = property[Float]("angle", init_angle,
+    a => body.setTransform(body.getPosition(), a),
+    () => body.getAngle()
+  )
 
-  val velocity = property[Vec2]("velocity", init_velocity) { v =>
-    body.setLinearVelocity(v)
-  } { () =>
-    body.getLinearVelocity()
-  }
+  val velocity = property[Vec2]("velocity", init_velocity,
+    v => body.setLinearVelocity(v),
+    () => body.getLinearVelocity()
+  )
   
   val color = simpleProperty[Int]("color", init_color)
 
-  val angularVelocity = property[Float]("angular-velocity", init_angularVelocity) { av =>
-    body.setAngularVelocity(av)
-  } { () =>
-    body.getAngularVelocity()
-  }
+  val angularVelocity = property[Float]("angular-velocity", init_angularVelocity,
+    av => body.setAngularVelocity(av),
+    () => body.getAngularVelocity()
+  )
 
-  val visible = simplePhysicalProperty[Boolean]("visible", init_visible) { b =>
-    body.setActive(b)
-  }
+  val visible = simplePhysicalProperty[Boolean]("visible", init_visible,
+    b => body.setActive(b)
+  )
 
-  val density = simplePhysicalProperty[Float]("density", init_density) { d =>
-    fixture.setDensity(d)
-    body.resetMassData() // update the body mass
-  }
+  val density = simplePhysicalProperty[Float]("density", init_density, 
+    d => {
+      fixture.setDensity(d)
+      body.resetMassData() // update the body mass
+    }
+  )
+    
+  val friction = simplePhysicalProperty[Float]("friction", init_friction, 
+    f => fixture.setFriction(f)
+  )
 
-  val friction = simplePhysicalProperty[Float]("friction", init_friction) { f =>
-    fixture.setFriction(f)
-  }
+  val restitution = simplePhysicalProperty[Float]("restitution", init_restitution,
+    r => fixture.setRestitution(r)
+  )
 
-  val restitution = simplePhysicalProperty[Float]("restitution", init_restitution) { r =>
-    fixture.setRestitution(r)
-  }
-
-  val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation) { b =>
-    body.setFixedRotation(b)
-  }
+  val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation,
+    b => body.setFixedRotation(b)
+  )
   
   //TODO !!!!
   /*
@@ -236,19 +233,23 @@ class Rectangle (val game: Game,
 
   protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
-  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
-    shape.setAsBox(w/2, height.get/2)
-    body.resetMassData() // update the body mass
-  }
-
-  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
-    shape.setAsBox(width.get/2, h/2)
-    body.resetMassData() // update the body mass
-  }
+  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width, 
+    w => {
+      shape.setAsBox(w/2, height.get/2)
+      body.resetMassData() // update the body mass
+    }
+  )
+    
+  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
+    h => {
+      shape.setAsBox(width.get/2, h/2)
+      body.resetMassData() // update the body mass
+    }
+  )
   
-  val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor) { h =>
-    body.getFixtureList().setSensor(h)
-  }
+  val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor,
+    h => body.getFixtureList().setSensor(h)
+  )
   
   def makecopy(name: String): GameObject = {
     new Rectangle(game, name, init_x, init_y, init_angle, init_width, init_height, init_visible,
@@ -341,15 +342,20 @@ class Character (val game: Game,
   // Properties
   // --------------------------------------------------------------------------
   
-  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width) { w =>
-    shape.setAsBox(w/2, height.get/2)
-    body.resetMassData() // update the body mass
-  }
-
-  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height) { h =>
-    shape.setAsBox(width.get/2, h/2)
-    body.resetMassData() // update the body mass
-  }
+  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width,
+    w => {
+      shape.setAsBox(w/2, height.get/2)
+      body.resetMassData() // update the body mass
+    }
+  )
+  
+  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
+    h => {
+      shape.setAsBox(width.get/2, h/2)
+      body.resetMassData() // update the body mass
+    }
+  )
+    
   val grounded = simpleProperty[Boolean]("grounded", false)
   
   def makecopy(name: String): GameObject = {
@@ -410,14 +416,16 @@ class Circle(val game: Game,
   
   addToWorld()
 
-  val radius = simplePhysicalProperty[Float]("radius", init_radius) { r =>
-    fixture.getShape().m_radius = r
-    body.resetMassData() // update the body mass
-  }
+  val radius = simplePhysicalProperty[Float]("radius", init_radius, 
+    r => {
+      fixture.getShape().m_radius = r
+      body.resetMassData() // update the body mass
+    }
+  )
   
-  val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor) { h =>
-    body.getFixtureList().setSensor(h)
-  }
+  val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor, 
+    h => body.getFixtureList().setSensor(h)
+  )
   
   def makecopy(name: String): GameObject = {
     new Circle(game, name, init_x, init_y, init_radius, init_visible, init_velocity, init_angularVelocity,

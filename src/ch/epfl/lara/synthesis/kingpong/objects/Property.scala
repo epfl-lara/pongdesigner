@@ -243,7 +243,7 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, pa
     super.reset(interpreter)
   }
   
-  def load() = this
+  @inline def load() = this
 
   val flusher: T => Unit
 }
@@ -252,6 +252,6 @@ class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject)
   extends HistoricalRWProperty[T](name, init, parent) {
   
   override def toString = s"SimpleProperty($name)"
-  def flush() = this
-  def load() = this
+  @inline def flush() = this
+  @inline def load() = this
 }
