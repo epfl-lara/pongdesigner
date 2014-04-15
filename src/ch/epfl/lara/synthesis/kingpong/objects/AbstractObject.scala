@@ -63,8 +63,9 @@ class Box[T : PongType](val game: Game,
   // --------------------------------------------------------------------------  
   
   def getAABB = {
+    //TODO fix this
     val bottomLeft = Vec2(x.get, y.get)
-    val upperRight = bottomLeft add Vec2(width.get, height.get)
+    val upperRight = Vec2(x.get + width.get, y.get + height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
   

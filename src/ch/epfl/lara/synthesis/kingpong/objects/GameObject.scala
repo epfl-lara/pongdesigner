@@ -76,7 +76,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   val deletionTime = simpleProperty[Int]("deletion time", Int.MaxValue)
   
   /** Checks whether this object exists at the given time. */
-  def existsAt(time: Int) = creationTime.get <= time && (deletionTime.get < 0 || time < deletionTime.get)
+  def existsAt(time: Int) = creationTime.get <= time && time < deletionTime.get
   
   /**
    * Update the internal state according to the current time. Particularly, remove the object from the 

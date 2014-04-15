@@ -57,7 +57,6 @@ trait Game extends RuleManager { self =>
   private val _objects = ArrayBuffer.empty[GameObject]
   
   /** All objects in this game. */
-  @inline
   def objects: Traversable[GameObject] = _objects
 
   /** All objects currently alive in this game. */
@@ -354,22 +353,14 @@ trait Game extends RuleManager { self =>
       }
     }
     
-    var objects_containing_pos = Set.empty[GameObject]
-    _objects foreach { o =>
-      if (collidesCircle(o)) objects_containing_pos += o
-    }
-    objects_containing_pos
+    (aliveObjects filter collidesCircle).toSet
   }
   
   /**
    * Returns the set of objects containing at this position.
    */
   def abstractObjectFingerAt(pos: Vec2): Set[GameObject] = {
-    var objects_containing_pos = Set.empty[GameObject]
-    _objects foreach { o =>
-      if (o.contains(pos)) objects_containing_pos += o
-    }
-    objects_containing_pos
+    (aliveObjects filter (_.contains(pos))).toSet
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
