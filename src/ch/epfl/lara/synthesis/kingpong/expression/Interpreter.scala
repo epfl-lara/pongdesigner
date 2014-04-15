@@ -1,6 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
+import scala.collection.mutable.{HashMap => MMap}
+
 import android.util.Log
+
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -33,23 +36,30 @@ trait Interpreter {
     }
   }
   
-  object RecContext {
-    val empty = RecContext(Map.empty)
+  trait RecContext {
+    def withNewVar(id: Identifier, e: Expr): RecContext
+    def get(id: Identifier): Option[Expr]
+  } 
+  
+  object MutableRecContext {
+    def empty = new MutableRecContext(MMap.empty)
   }
   
-  case class RecContext(mappings: Map[Identifier, Expr]) {
-    def withNewVar(id: Identifier, e: Expr) = RecContext(mappings + (id -> e))
-    
-    def getObjectExpr(id: Identifier)(implicit gctx: Context, rctx: RecContext): ObjectLiteral = mappings.get(id) match {
-      case Some(e) => eval(e) match {
-        case lit: ObjectLiteral => lit
-        case _ => throw InterpreterException(s"The value for identifier ${id} in mappings is $e, expected an object literal.")
-      }
-      case None => 
-        throw InterpreterException(s"No value for identifier ${id} in mapping.")
+  class MutableRecContext(mappings: MMap[Identifier, Expr]) extends RecContext {
+    def withNewVar(id: Identifier, e: Expr) = {
+      mappings += (id -> e)
+      this
     }
-    
-    def getObject(id: Identifier)(implicit gctx: Context, rctx: RecContext): GameObject = getObjectExpr(id).value
+    def get(id: Identifier) = mappings.get(id)
+  }
+  
+  object ImmutableRecContext {
+    val empty = ImmutableRecContext(Map.empty)
+  }
+  
+  case class ImmutableRecContext(mappings: Map[Identifier, Expr]) extends RecContext {
+    def withNewVar(id: Identifier, e: Expr) = ImmutableRecContext(mappings + (id -> e))
+    def get(id: Identifier) = mappings.get(id)
   }
   
   def evaluate(expr: Expr): Expr = eval(expr)(initGC(), initRC())
@@ -71,7 +81,7 @@ trait Interpreter {
     case lit: Literal[_] => lit
     
     case Variable(id) =>
-      rctx.mappings.get(id) match {
+      rctx.get(id) match {
         case Some(e) => e
         case None => throw InterpreterException(s"No value for identifier ${id} in mapping.")
       }
