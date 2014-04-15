@@ -60,7 +60,12 @@ trait Game extends RuleManager { self =>
   def objects: Traversable[GameObject] = _objects
 
   /** All objects currently alive in this game. */
-  val aliveObjects: Traversable[GameObject] = _objects.view.filter(_.existsAt(time))
+  val aliveObjects: Traversable[GameObject] = {
+    val c = ArrayBuffer[String]()
+    c ++= classOf[scala.collection.mutable.IndexedSeqView[_, _]].getDeclaredMethods().map(_.getName())
+    println(c.mkString(","))
+    _objects.view.withFilter(_.existsAt(time))
+  }
   
   //TODO what should be the right way to get back events, 
   // particularly for a time interval
