@@ -11,11 +11,11 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
 class ThreeInARow extends Game {
-  val world = new PhysicalWorld(Vec2(0, 0))
+  val world = new PhysicalWorld(Vec2(0, 3))
 
   val arrays = Category("Arrays")()
   val pieces = Category("Pieces")(width = 0.9, height = 0.9)
-  val borders = Category("Borders")(tpe = BodyType.STATIC, color = red)
+  val borders = Category("Borders")(tpe = BodyType.STATIC, color = red, friction = 0)
   val counters = Category("Counters")()
   
   val gameboard = array(arrays)("MyArray", x = 0, y = 0, columns = 6, rows = 10)
@@ -25,21 +25,20 @@ class ThreeInARow extends Game {
     name = "piece", 
     x = gameboard.cells(gameboard.numColumns.get/2)(0).x, 
     y = gameboard.cells(gameboard.numColumns.get/2)(0).y,
-    velocity = Tuple(0f, 3f),
     color = blue,
     restitution = 0,
     friction = 0)
     
   // Borders
-  val right  = rectangle(borders)("right", x = gameboard.right + 0.5, y = gameboard.y, width = 1, height = gameboard.height, friction = 0)
-  val left   = rectangle(borders)("left", x = gameboard.left - 0.5, y = gameboard.y, width = 1, height = gameboard.height, friction = 0)
-  val bottom = rectangle(borders)("bottom", x = gameboard.x, y = gameboard.bottom + 0.5, width = gameboard.width + 2, height = 1, restitution = 0)
+  rectangle(borders)("right", x = gameboard.right + 0.5, y = gameboard.y, width = 1, height = gameboard.height)
+  rectangle(borders)("left", x = gameboard.left - 0.5, y = gameboard.y, width = 1, height = gameboard.height)
+  rectangle(borders)("bottom", x = gameboard.x, y = gameboard.bottom + 0.5, width = gameboard.width + 2, height = 1)
   
   // Counter
-  val counter = intbox(counters)("pieces", 
+  val counter = intbox(counters)("score", 
       x = gameboard.left,
       y = gameboard.top - 0.5,
-      value = 1)
+      value = 0)
   
   // Moving pieces rule
   val r1 = foreach(pieces) { piece =>
@@ -60,28 +59,52 @@ class ThreeInARow extends Game {
   
   // Spawning piece rule
   val r3 = let("piece", find(pieces)(_.name =:= "piece")) { piece =>
-    //TODO this test should be an expression "IsNull" or "NotNull"
-    whenever(piece =!= ObjectLiteral(null)) (
+    whenever(notNull(piece)) (
       foreach(gameboard.cellsCategory) { cell =>
         whenever(Contains(cell, piece) &&
                  ((Row(cell) =:= (gameboard.numRows - 1)) || 
                   (!forall(pieces)(p => !Contains(Apply(gameboard, Column(cell), Row(cell) + 1), p))
                  ))) (
           piece.name := "still",
-          counter.value += 1,
           copy(piece) { clone => Seq(
             clone.name := "piece",
             clone.x := gameboard.cell(gameboard.numColumns.get / 2, 0).x, 
             clone.y := gameboard.cell(gameboard.numColumns.get / 2, 0).y,
-            clone.velocity := Tuple(0f, 3f)
+            clone.color := blue // Set a random color
           )}
         )
       }
     )
   }
- 
+  
+  // Removing pieces rule
+  val r4 = foreach(gameboard.cellsCategory) { cell =>
+    whenever(Column(cell) > 0 && 
+            Column(cell) < gameboard.numColumns - 1) (
+                
+      let("centerPiece", find(pieces)(Contains(cell, _))) { centerPiece =>
+        whenever(notNull(centerPiece)) (
+          let("leftCell", "rightCell", 
+              gameboard.cell(Column(cell) - 1, Row(cell)), gameboard.cell(Column(cell) + 1, Row(cell))) { (leftCell, rightCell) =>
+            let("leftPiece", "rightPiece", 
+                find(pieces)(Contains(leftCell, _)), find(pieces)(Contains(rightCell, _))) { (leftPiece, rightPiece) =>
+              whenever(notNull(leftPiece) && notNull(rightPiece) && 
+                       leftPiece.color =:= centerPiece.color && rightPiece.color =:= centerPiece.color) (
+                counter.value += 1,
+                Delete(leftPiece),
+                Delete(centerPiece),
+                Delete(rightPiece)
+              )
+            }
+          }
+        )
+      }
+    )
+  }
+    
   register(r1)
   register(r2)
   register(r3)
+  register(r4)
 
 }
