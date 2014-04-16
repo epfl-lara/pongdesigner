@@ -366,6 +366,31 @@ trait Rectangular extends GameObject with Positionable {
   override def toString = name.get
 }
 
+trait FixedRectangularContains { self: Rectangular =>
+  def contains(pos: Vec2) = {
+    pos.x >= left.get &&
+    pos.x <= right.get &&
+    pos.y >= top.get &&
+    pos.y <= bottom.get
+  }
+}
+
+trait AngularRectangularContains { self: Rectangular with Directionable =>
+  def contains(pos: Vec2) = {
+    val a = angle.get
+    val xget = x.get
+    val yget = y.get
+    val dx = pos.x - xget
+    val dy = pos.y - yget
+    val posx = Math.cos(a)*dx + Math.sin(a)*dy + xget
+    val posy = -Math.sin(a)*dx + Math.cos(a)*dy + yget
+    posx >= left.get &&
+    posx <= right.get &&
+    posy >= top.get &&
+    posy <= bottom.get
+  }
+}
+
 trait ResizableRectangular extends Rectangular {
   def width: RWProperty[Float]
   def height: RWProperty[Float]
@@ -415,6 +440,13 @@ trait Circular extends GameObject with Positionable {
     val r = radius.next + selectableAreaRadius
     val res = Math.sqrt(dx*dx + dy*dy).toFloat - radius.next
     if(res < 0) 0 else res
+  }
+  
+  override def contains(pos: Vec2): Boolean = {
+    val dx = x.get - pos.x
+    val dy = y.get - pos.y
+    val r = radius.get
+    dx*dx + dy*dy <= r*r
   }
 }
 

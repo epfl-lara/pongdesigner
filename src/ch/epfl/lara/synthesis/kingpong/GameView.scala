@@ -189,14 +189,16 @@ class GameView(val context: Context, attrs: AttributeSet)
             //mAddRuleButton.text = res.getString(R.string.select_event)
             Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
           case STATE_SELECTING_EVENTS =>
-            Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
             if(eventEditor.selectedEventTime.nonEmpty || eventEditor.selectedObjects.nonEmpty) {
+              Toast.makeText(context, res.getString(R.string.select_effects_toast), 2000).show()
               setModeSelectEffects()
             } else {
+              Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
               setModeModifyGame()
             }
           case STATE_SELECTING_EFFECTS =>
             CodeGenerator.createRule(context, getGame(), eventEditor.selectedEventTime, eventEditor.selectedObjects)
+            setModeModifyGame()
             true
         case STATE_MODIFYING_CATEGORY =>
           //hovered = false
@@ -527,6 +529,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   private val rectF = new RectF()
   private val paint = new Paint()
   paint.setAntiAlias(true)
+  private val paintPrev = new Paint(paint)
   private val paintSelected = new Paint(paint)
   paintSelected.setStyle(Paint.Style.STROKE)
   paintSelected.setColor(color(R.color.selection))
@@ -545,6 +548,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     paint.setStyle(Paint.Style.FILL)
     paint.setStrokeWidth(mapRadiusI(3))
     paintSelected.setStrokeWidth(mapRadiusI(3))
+    paintPrev.setStyle(Paint.Style.FILL)
+    paintPrev.setStrokeWidth(mapRadiusI(3))
     
     def drawObject(o: GameObject): Unit = {
       paint.setStyle(Paint.Style.FILL)
@@ -559,6 +564,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             val cNext = if(visible_next) colorNext else (colorNext & 0xFFFFFF) + (((colorNext >>> 24)*0.5).toInt << 24)
             paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
           } else {
+            paint.setShader(null)
             paint.setColor(colorPrev)
             if (!visible_prev)
               paint.setAlpha(0x00)
@@ -591,12 +597,15 @@ class GameView(val context: Context, attrs: AttributeSet)
         case r: Rectangle =>
           canvas.save()
           canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paint)
+          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintPrev)
+          canvas.restore()
+          canvas.save()
+          canvas.rotate(radToDegree(r.angle.next), r.x.next, r.y.next)
+          canvas.drawRect(r.left.next, r.top.next, r.right.next, r.bottom.next, paint)
           
           if (obj_to_highlight contains r) 
             canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintSelected)
           canvas.restore()
-  
         case c: Circle => 
           canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
           if (obj_to_highlight contains c) 

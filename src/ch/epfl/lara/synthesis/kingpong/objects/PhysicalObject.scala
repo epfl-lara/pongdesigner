@@ -196,7 +196,8 @@ class Rectangle (val game: Game,
                  init_tpe: BodyType = BodyType.DYNAMIC
                 ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                                          init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-                  with ResizableRectangular {
+                  with ResizableRectangular
+                  with AngularRectangularContains {
 
   tpe = init_tpe
   

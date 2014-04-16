@@ -226,7 +226,7 @@ object Trees {
     def getContraintForSolving = if(expandedConstraint == null) constraint else expandedConstraint
   }
   
-  case class MethodCall(name: String, l: List[Expr]) extends Expr
+  case class MethodCall(name: String, l: Seq[Expr]) extends Expr
   
   case class Count(category: Category) extends Expr with Terminal with FixedType {
     val fixedType = TInt

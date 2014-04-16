@@ -47,7 +47,8 @@ class Box[T : PongType](val game: Game,
                          with Movable
                          with Rotationable
                          with Visiblable
-                         with Colorable{
+                         with Colorable
+                         with AngularRectangularContains {
   
   def className = "Box[" + implicitly[PongType[T]].getPongType.toString() + "]"
   // --------------------------------------------------------------------------
@@ -76,12 +77,12 @@ class Box[T : PongType](val game: Game,
     shape
   }
   
-  def contains(pos: Vec2) = {
+  /*def contains(pos: Vec2) = {
     pos.x >= left.get &&
     pos.x <= right.get &&
     pos.y >= top.get &&
     pos.y <= bottom.get
-  }
+  }*/
 
   def makecopy(name: String): GameObject = {
     new Box[T](game, name, init_x, init_y, init_angle, init_width,  init_height, 
@@ -175,7 +176,7 @@ class Joystick(val game: Game,
   }
 
   // MIKEAL shouldn't we use the shape instead of the AABB ?
-  def contains(pos: Vec2) = getAABB.contains(pos)
+  //def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
     new Joystick(game, name, init_x, init_y, init_angle, init_radius, init_visible, init_color)
@@ -200,7 +201,8 @@ class Array2D(
     init_numRows: Expr
     ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
       with Rectangular
-      with Movable { self =>
+      with Movable
+      with FixedRectangularContains { self =>
  
   import Array2D._
   
@@ -247,14 +249,7 @@ class Array2D(
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
-  
-  def contains(pos: Vec2) = {
-    pos.x >= left.get &&
-    pos.x <= right.get &&
-    pos.y >= top.get &&
-    pos.y <= bottom.get
-  }
-    
+
   protected def makecopy(name: String) = {
     new Array2D(game, name, init_x, init_y, init_visible, init_color, init_numColumns, init_numRows)
   }
@@ -265,7 +260,8 @@ case class Cell(
     column: Int,
     row: Int
     ) extends GameObject(array.name.get + "[" + row + "," + column + "]") 
-      with Rectangular with Positionable {
+      with Rectangular with Positionable
+      with FixedRectangularContains {
   
   import Array2D._
   
@@ -340,13 +336,6 @@ case class Cell(
     val bottomLeft = Vec2(left.get, top.get)
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
-  }
-  
-  def contains(pos: Vec2) = {
-    pos.x >= left.get &&
-    pos.x <= right.get &&
-    pos.y >= top.get &&
-    pos.y <= bottom.get
   }
     
   //TODO we cannot copy a cell!!!

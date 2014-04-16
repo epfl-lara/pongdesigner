@@ -40,7 +40,8 @@ case class DrawingObject(val game: Game,
                          with ResizableRectangular
                          with Movable
                          with Visiblable
-                         with Colorable {
+                         with Colorable
+                         with AngularRectangularContains {
   def className = "DrawingObject"
   
   val width = simpleProperty[Float]("width", init_width)
@@ -75,7 +76,7 @@ case class DrawingObject(val game: Game,
     shape
   }
 
-  def contains(pos: Vec2) = getAABB.contains(pos)
+  //def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
     this.copy(init_name = name)

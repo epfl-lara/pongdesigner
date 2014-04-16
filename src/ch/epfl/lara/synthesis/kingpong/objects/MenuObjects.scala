@@ -68,7 +68,7 @@ trait MenuObjects extends AbstractObject {
 /**
  * Input class already defining some methods
  */
-case class ActiveBox(override val game: Game,
+/*case class ActiveBox(override val game: Game,
                         init_name: Expr, 
                         init_x: Expr,
                         init_y: Expr,
@@ -126,4 +126,4 @@ case class ActiveBox(override val game: Game,
   def makecopy(name: String): GameObject = {
     this.copy(init_name=StringIsExpr(name))
   }
-}
+}*/

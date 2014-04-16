@@ -60,6 +60,7 @@ object Extractors {
       case Assign(props, rhs) => Some((rhs +: props.map(_._1), (as: Seq[Expr]) => 
         Assign(as.tail.zip(props).map{ case (a, (_, p)) => (a, p)}, as.head)
       ))
+      case MethodCall(n, l) => Some((l, MethodCall(n, _)))
       
       case _ => None
     }

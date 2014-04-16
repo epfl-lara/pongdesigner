@@ -35,16 +35,10 @@ trait RuleManager {
   def rules: Traversable[Expr] = _rules
   def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
   def addRule(r: Expr): Unit = {
-    
-    //TODO
-//    r traverse {
-//      case p: PropertyRef => _rulesByObject.getOrElseUpdate(p.property.parent, MSet()) += r
-//        TraverseMode.ContinueSiblings
-//      case c: GameObjectRef if c.obj != null  => _rulesByObject.getOrElseUpdate(c.obj, MSet()) += r
-//        TraverseMode.ContinueSiblings
-//      case _ =>
-//        TraverseMode.ContinueWithChildren
-//    }
+    TreeOps.preTraversal(_ match {
+      case ObjectLiteral(o) => _rulesByObject.getOrElseUpdate(o, MSet()) += r
+      case c =>
+    })(r)
     _rules += r
   }
   def getRulesbyObject(o: Iterable[GameObject]): Iterable[Expr] = (o flatMap getRulesbyObject)
