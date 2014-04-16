@@ -95,6 +95,7 @@ trait PrettyPrinterTypical {
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
         case _:Contains => "contains"
+        case _ => "["+b.getClass().getName()+"]"
       }
       print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
     case Assign(List((e, prop)), rhs) => indent + print(NO_INDENT, e) + "." + prop + "' = " + print(NO_INDENT, rhs)

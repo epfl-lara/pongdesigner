@@ -60,11 +60,9 @@ trait Game extends RuleManager { self =>
   def objects: Traversable[GameObject] = _objects
 
   /** All objects currently alive in this game. */
-  val aliveObjects: Traversable[GameObject] = {
-    val c = ArrayBuffer[String]()
-    c ++= classOf[scala.collection.mutable.IndexedSeqView[_, _]].getDeclaredMethods().map(_.getName())
-    println(c.mkString(","))
-    _objects.view.withFilter(_.existsAt(time))
+  def aliveObjects: Traversable[GameObject] = {
+    val res = for(o <- _objects.toTraversable if o.existsAt(time)) yield o
+    res // todo: convert this to a val with view when it will work on mikael's machine.
   }
   
   //TODO what should be the right way to get back events, 

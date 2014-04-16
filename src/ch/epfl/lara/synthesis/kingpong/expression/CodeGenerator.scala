@@ -223,18 +223,41 @@ object CodeGenerator extends CodeHandler {
     //val templaceContext = new TemplateContext(conditionEvent.head._1, game.objects)
     val stmts = CodeTemplates.inferStatements(conditionEvent, game.objects)
     // Now we try to merge these statement with the conditions.
-    conditionEvent map {
+    val objs_for_conditions = conditionEvent map {
       case (FingerDown(v, objs), i) if objs.size > 0 =>
-        (objs, 1, (obj: List[TreeDSL.Proxy]) => FingerDownOver(obj.head))
+        (objs.toList, 1, (obj: List[Expr]) => FingerDownOver(obj.head))
       case (FingerUp(v, objs), i) if objs.size > 0 =>
-        (objs, 1, (obj: List[TreeDSL.Proxy]) => FingerUpOver(obj.head))
+        (objs.toList, 1, (obj: List[Expr]) => FingerUpOver(obj.head))
       case (FingerMove(u, v, objs), i) if objs.size > 0 =>
-        (objs, 1, (obj: List[TreeDSL.Proxy]) => isFingerMoveOver(obj.head))
+        (objs.toList, 1, (obj: List[Expr]) => isFingerMoveOver(obj.head))
       case (BeginContact(contact), i) =>
-        (Set(contact.objectA, contact.objectB), 2, (obj: List[TreeDSL.Proxy]) => Collision(obj.head, obj.tail.head))
-      case _ => NOP
+        (List[GameObject](contact.objectA, contact.objectB), 2, (obj: List[Expr]) => Collision(obj.head, obj.tail.head))
+      case _ => (List[GameObject](), 0, (obj: List[Expr]) => NOP)
+    }
+    import language.postfixOps 
+    // Get the categories
+    val categories = objs_for_conditions flatMap {
+      case (objs, num, cond) =>
+        objs.map(obj => obj.category)
+      case _ => Nil
+    }
+    def instances(proxies: Seq[Proxy]): Seq[Expr] = {
+      val proxies_instances = categories.zip(proxies).toMap
+      objs_for_conditions map {
+        case (objs, num, fun) => fun(objs.map( obj => proxies_instances.get(obj.category) match { case Some(proxy) => proxy.expr case None => obj: Expr}))
+      }
     }
     
+    val rule = foreach(categories) { objs =>
+      whenever(and(instances(objs))){
+        stmts
+      }
+    }
+    
+    game.addRule(rule)
+    
+    // TODO : Detect rule conditions
+    // TODO : Store conditions to later check.
     
     //The condition firing the event.
     

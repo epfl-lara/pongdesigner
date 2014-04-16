@@ -284,6 +284,13 @@ object TreeDSL {
     Foreach(category1, id1, Foreach(category2, id2, Foreach(category3, id3, body(ref1, ref2, ref3))))
   }
   
+  // Generic foreach
+  def foreach(categories: Seq[Category])(body: Seq[Proxy] => Expr): Expr = {
+    val ids = categories.map(category => FreshIdentifier(category.name).setType(TObject))
+    val refs = ids map { id => new IdentifierProxy(id) }
+    ((categories zip ids) :\ body(refs)) { case ((category, id), body) => Foreach(category, id, body) }
+  }
+  
   def copy(obj: Expr)(body: Proxy => Expr): Expr = {
     val id = FreshIdentifier("copy").setType(TObject)
     val ref = new IdentifierProxy(id)
@@ -313,4 +320,9 @@ object TreeDSL {
   def isNull(expr: Expr): Expr  = expr =:= ObjectLiteral(null)
   def notNull(expr: Expr): Expr = expr =!= ObjectLiteral(null)
   
+  def and(exprs: Seq[Expr]): Expr = exprs.size match {
+    case 0 => BooleanLiteral(true)
+    case 1 => exprs.head
+    case n if n>=2 => and(And(exprs.head, exprs.tail.head)::exprs.tail.tail.toList)
+  }
 }

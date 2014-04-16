@@ -37,7 +37,7 @@ object Events {
   
   sealed trait PhysicalContactEvent extends SelectableEvent {
     def contact: Contact
-    def p: Vec2 = contact.getManifold().localPoint
+    def p: Vec2 = contact.point
   }
   
   object FingerRelated {

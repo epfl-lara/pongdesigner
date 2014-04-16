@@ -145,7 +145,9 @@ trait PrettyPrinterExtendedTypical {
       print(this, NO_INDENT, other)
     }
     def +(other: Category): StringMaker = {
-      +!(other.name, other)
+      if(other.name != null) {
+        +!(other.name, other)
+      } else this
     }
     def +(other: Tree, newIndentation: String = NO_INDENT): StringMaker = { // Care about this new expression by storing its position.
       val result = print(this, newIndentation, other)
@@ -274,23 +276,6 @@ trait PrettyPrinterExtendedTypical {
         case _ =>
           (((c + indent +< "(" + exprs.head) /: exprs.tail) { case (i, el) => i + "," + el }) + ")" +>
       }
-    case b @ BinaryOperator(lhs, rhs, _) => val op = b match {
-        case _:Plus => "+"
-        case _:Minus => "-"
-        case _:Times => TIMES_SYMBOL
-        case _:Div => "/"
-        case _:Mod => "%"
-        case _:And => AND_SYMBOL
-        case _:Or => OR_SYMBOL
-        case _:Equals => "="
-        case _:LessThan => "<"
-        case _:LessEq => LESSEQ_SYMBOL
-        case _:GreaterThan => ">"
-        case _:GreaterEq => GREATEREQ_SYMBOL
-        case _:Collision => COLLIDES_SYMBOL
-        case _:Contains => "contains"
-      }
-      c + indent +< lhs + s" $op " + rhs +>
     case Assign(Nil, rhs: Expr) => c
     case Assign(List((e, prop)), rhs: Expr) => 
       c + indent +< e + "." + prop + "' = " + rhs +>
@@ -335,6 +320,25 @@ trait PrettyPrinterExtendedTypical {
     case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + obj + (block, indent + INDENT) +>
     case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>
     case FingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + o +>
+    
+    case b @ BinaryOperator(lhs, rhs, _) => val op = b match {
+        case _:Plus => "+"
+        case _:Minus => "-"
+        case _:Times => TIMES_SYMBOL
+        case _:Div => "/"
+        case _:Mod => "%"
+        case _:And => AND_SYMBOL
+        case _:Or => OR_SYMBOL
+        case _:Equals => "="
+        case _:LessThan => "<"
+        case _:LessEq => LESSEQ_SYMBOL
+        case _:GreaterThan => ">"
+        case _:GreaterEq => GREATEREQ_SYMBOL
+        case _:Collision => COLLIDES_SYMBOL
+        case _:Contains => "contains"
+        case _ => "["+b.getClass().getName()+"]"
+      }
+      c + indent +< lhs + s" $op " + rhs +>
   }}
 }
 

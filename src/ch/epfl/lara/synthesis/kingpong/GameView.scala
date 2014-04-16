@@ -530,6 +530,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   private val paintSelected = new Paint(paint)
   paintSelected.setStyle(Paint.Style.STROKE)
   paintSelected.setColor(color(R.color.selection))
+  private val render_out_vec = Vec2(0f, 0f)
+  private val render_out_vec2 = Vec2(0f, 0f)
+  private val render_out_vec3 = Vec2(0f, 0f)
+  private val render_in_array = Array.ofDim[Float](2)
+  
   def render(canvas: Canvas): Unit = {
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
     if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
@@ -671,12 +676,20 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
             canvas.restore()
             canvas.save()
-            val center = mapVectorFromGame(Vec2(e.x.get, e.y.get))
+            val center = render_out_vec
+            render_in_array(0) = e.x.get
+            render_in_array(1) = e.y.get
+            mapVectorFromGame(render_in_array, center)
             canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
             val d = bitmaps(c)
-            val leftTop = mapVectorFromGame(Vec2(e.left.get, e.top.get))
-            val rightBottom = mapVectorFromGame(Vec2(e.right.get, e.bottom.get))
-            
+            val leftTop = render_out_vec2
+            render_in_array(0) = e.left.get
+            render_in_array(1) = e.top.get
+            mapVectorFromGame(render_in_array, leftTop)
+            val rightBottom = render_out_vec2
+            render_in_array(0) = e.right.get
+            render_in_array(1) = e.bottom.get
+            mapVectorFromGame(render_in_array, rightBottom)
             d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
             d.draw(canvas)
             canvas.restore()
@@ -865,7 +878,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       case BeginContact(c) => 
         paint.setColor(0xFFFF0000)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(c.point)
+        val p = mapVectorFromGame(c.point, render_in_array, render_out_vec)
         rectFData.set(p.x - 24, p.y - 21, p.x + 25, p.y + 21)
         rectFData.round(rectData)
         val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
@@ -876,12 +889,12 @@ class GameView(val context: Context, attrs: AttributeSet)
       case CurrentContact(c) => 
         paint.setColor(0xFF00FF00)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(c.point)
+        val p = mapVectorFromGame(c.point, render_in_array, render_out_vec)
         canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
       case EndContact(c) => 
         paint.setColor(0xFF0000FF)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(c.point)
+        val p = mapVectorFromGame(c.point, render_in_array, render_out_vec)
         canvas.drawCircle(p.x, p.y, mapRadiusI(10), paint)
       case AccelerometerChanged(v) =>
         paint.setStrokeWidth(mapRadiusI(2))
@@ -890,17 +903,17 @@ class GameView(val context: Context, attrs: AttributeSet)
         val pos = mapVectorToGame(Vec2(100, 100))
         canvas.drawLine(pos.x, pos.y, pos.x + v.x*5, pos.y + v.y*5, paint)
       case FingerUp(v, obj) =>
-        val p = mapVectorFromGame(v)
+        val p = mapVectorFromGame(v, render_in_array, render_out_vec)
         canvas.drawCircle(p.x, p.y, cross_size, circlePaint)
         canvas.drawCircle(p.x, p.y, cross_size, paint)
         if(timestamp == game.time) finger = (p.x, p.y, 0xBA)::finger
       case FingerDown(v, obj) =>
-        val p = mapVectorFromGame(v)
+        val p = mapVectorFromGame(v, render_in_array, render_out_vec)
         drawCross(canvas, p.x, p.y, paint)
         if(timestamp == game.time) finger = (p.x, p.y, 0xBA)::finger
       case FingerMove(v, v2, obj) =>
-        val p = mapVectorFromGame(v)
-        val p2 = mapVectorFromGame(v2)
+        val p = mapVectorFromGame(v, render_in_array, render_out_vec)
+        val p2 = mapVectorFromGame(v2, render_in_array, render_out_vec)
         if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) {
           drawCross(canvas, p.x, p.y, touchSelectedPaint)
           canvas.drawCircle(p2.x, p2.y, 15, touchSelectedPaint)
@@ -1477,6 +1490,21 @@ class GameView(val context: Context, attrs: AttributeSet)
     val toMap = Array(p.x, p.y)
     matrix.mapPoints(toMap)
     Vec2(toMap(0), toMap(1))
+  }
+  
+  def mapVectorFromGame(in: Array[Float], out: Vec2): Vec2 = {
+    matrix.mapPoints(in)
+    out.x = in(0)
+    out.y = in(1)
+    out
+  }
+  def mapVectorFromGame(in: Vec2, inarray: Array[Float], out: Vec2): Vec2 = {
+    inarray(0) = in.x
+    inarray(1) = in.y
+    matrix.mapPoints(inarray)
+    out.x = inarray(0)
+    out.y = inarray(1)
+    out
   }
   
   /** meters to pixels */
