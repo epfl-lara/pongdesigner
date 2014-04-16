@@ -29,7 +29,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
   
   val interpreter = new Interpreter {
     def initGC() = new EmptyContext {}
-    def initRC() = RecContext(Map.empty)
+    def initRC() = ImmutableRecContext.empty
   }
 
   val game = new Game() {
