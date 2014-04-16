@@ -76,6 +76,8 @@ trait Interpreter {
     }
   }
   
+  private val eval_vec2 = Vec2(0, 0)
+  
   private def eval(expr: Expr)(implicit gctx: Context, rctx: RecContext): Expr = expr match {
     
     case lit: Literal[_] => lit
@@ -376,6 +378,10 @@ trait Interpreter {
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
         case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) => Literal(o1.contains(o2.center.get))
+        case (ObjectLiteral(o1), Tuple(Seq(NumericLiteral(x), NumericLiteral(y)))) =>
+          eval_vec2.x = x
+          eval_vec2.y = y
+          Literal(o1.contains(eval_vec2))
         case _ => error(expr)
       }
       

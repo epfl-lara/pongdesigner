@@ -52,7 +52,9 @@ case class DrawingObject(val game: Game,
     import g._
     import Trees._
     fingerMoveOver(this) { move =>
-      MethodCall("importDrawings", List(ObjectLiteral(this), move._1, move._2, width_drawing, color_drawing))
+      whenever(move._2 in this) {
+        MethodCall("importDrawings", List(ObjectLiteral(this), move._1, move._2, width_drawing, color_drawing))
+      }
     }
   }
   

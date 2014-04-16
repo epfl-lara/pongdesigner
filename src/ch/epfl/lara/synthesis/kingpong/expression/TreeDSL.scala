@@ -161,6 +161,7 @@ object TreeDSL {
       case (a, Block(b)) => Block(a::b.toList)
       case (a, b) => Block(List(a, b))
     }
+    def in(e: Expr): Expr = Contains(e, expr)
   }
   
   trait Proxy extends Any {

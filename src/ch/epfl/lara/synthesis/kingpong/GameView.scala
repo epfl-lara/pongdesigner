@@ -573,9 +573,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           canvas.save()
           canvas.rotate(radToDegree(d.angle.get), d.x.get, d.y.get)
           paint.setStyle(Paint.Style.STROKE)
-          if(state == Editing) {
+          //if(state == Editing) {
             canvas.drawRect(d.left.get, d.top.get, d.right.get, d.bottom.get, paint)
-          }
+          //}
           d.drawings foreach { case DrawingElement(time, from, to, width, color) =>
             if(time <= game.time) {
               paint.setColor(color)
@@ -1284,12 +1284,13 @@ class GameView(val context: Context, attrs: AttributeSet)
         
         case FingerUp(pos, objs) =>
           for(obj <- objs) {
+            val e = (FingerUp(pos, Set(obj)), time)
             if(currentEventSelection contains e) {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button)))
             } else {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
             }
-            mapIndex += index -> (FingerUp(pos, Set(obj)), time)
+            mapIndex += index -> e
             index += 1
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
@@ -1299,12 +1300,13 @@ class GameView(val context: Context, attrs: AttributeSet)
               if(!moveTaken(movement)) {
                 moveTaken += movement
                 for(obj <- objs) {
+                  val e =  (FingerMove(from, to, Set(obj)), time)
                   if(currentEventSelection contains e) {
                     mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button)))
                   } else {
                     mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
                   }
-                  mapIndex += index -> (FingerMove(from, to, Set(obj)), time)
+                  mapIndex += index -> e
                   index += 1
                 }
               }
@@ -1312,12 +1314,13 @@ class GameView(val context: Context, attrs: AttributeSet)
           }
         case FingerDown(pos, objs) =>
           for(obj <- objs) {
+            val e = (FingerDown(pos, Set(obj)), time)
             if(currentEventSelection contains e) {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
             } else {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button)))
             }
-            mapIndex += index -> (FingerDown(pos, Set(obj)), time)
+            mapIndex += index -> e
             index += 1
           }
         case _ => // TODO : Add more actions to disambiguate.
