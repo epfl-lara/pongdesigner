@@ -1313,11 +1313,11 @@ class GameView(val context: Context, attrs: AttributeSet)
         case FingerDown(pos, objs) =>
           for(obj <- objs) {
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerdown_button)))
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button)))
             }
-            mapIndex += index -> (FingerUp(pos, Set(obj)), time)
+            mapIndex += index -> (FingerDown(pos, Set(obj)), time)
             index += 1
           }
         case _ => // TODO : Add more actions to disambiguate.

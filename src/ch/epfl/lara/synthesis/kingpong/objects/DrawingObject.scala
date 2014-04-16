@@ -61,7 +61,7 @@ case class DrawingObject(val game: Game,
   // --------------------------------------------------------------------------  
   
   def getAABB = {
-    val bottomLeft = Vec2(x.get - width.get/2, y.get - height.get)
+    val bottomLeft = Vec2(x.get - width.get/2, y.get - height.get/2)
     val upperRight = bottomLeft add Vec2(width.get, height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
