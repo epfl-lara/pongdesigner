@@ -562,7 +562,12 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(colorPrev != colorNext || visible_prev != visible_next) {
             val cPrev = if(visible_prev) colorPrev else (colorPrev & 0xFFFFFF) + (((colorPrev >>> 24)*0.5).toInt << 24)
             val cNext = if(visible_next) colorNext else (colorNext & 0xFFFFFF) + (((colorNext >>> 24)*0.5).toInt << 24)
-            paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
+            if(o.x.get != o.x.next || o.y.get != o.y.next) {
+              paintPrev.setColor(cPrev)
+              paint.setColor(cNext)
+            } else {
+              paint.setShader(new LinearGradient(o.left.get, o.y.get, o.right.get, o.y.get, Array(cPrev, cPrev,cNext,cNext), Array(0, 0.4375f,0.5625f,1), Shader.TileMode.MIRROR));
+            }
           } else {
             paint.setShader(null)
             paint.setColor(colorPrev)
@@ -595,18 +600,23 @@ class GameView(val context: Context, attrs: AttributeSet)
           canvas.restore()
           
         case r: Rectangle =>
-          canvas.save()
-          canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-          canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintPrev)
-          canvas.restore()
+          if(r.x.get != r.x.next || r.y.get != r.y.next || r.width.get != r.width.next || r.height.get != r.height.next) {
+            canvas.save()
+            canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
+            canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintPrev)
+            canvas.restore()
+          }
           canvas.save()
           canvas.rotate(radToDegree(r.angle.next), r.x.next, r.y.next)
           canvas.drawRect(r.left.next, r.top.next, r.right.next, r.bottom.next, paint)
           
           if (obj_to_highlight contains r) 
-            canvas.drawRect(r.left.get, r.top.get, r.right.get, r.bottom.get, paintSelected)
+            canvas.drawRect(r.left.next, r.top.next, r.right.next, r.bottom.next, paintSelected)
           canvas.restore()
         case c: Circle => 
+          if(c.x.get != c.x.next || c.y.get != c.y.next || c.radius.get != c.radius.next) {
+            canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintPrev)
+          }
           canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
           if (obj_to_highlight contains c) 
             canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
