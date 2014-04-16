@@ -41,6 +41,7 @@ case class DrawingObject(val game: Game,
                          with Movable
                          with Visiblable
                          with Colorable
+                         with Directionable
                          with AngularRectangularContains {
   def className = "DrawingObject"
   

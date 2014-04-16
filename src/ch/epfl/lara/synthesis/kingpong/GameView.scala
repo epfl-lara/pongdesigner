@@ -665,7 +665,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
           canvas.restore()
           
-        case r: ActiveBox =>
+        /*case r: ActiveBox =>
           if(r.visible.get) {
             canvas.save()
             canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
@@ -676,7 +676,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               case None =>
             }
             canvas.restore()
-          }
+          }*/
       }
       
       o match {

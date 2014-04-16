@@ -168,7 +168,7 @@ trait Game extends RuleManager { self =>
     c
   }
   
-  def activeBox(category: CategoryObject)(name: Expr,
+  /*def activeBox(category: CategoryObject)(name: Expr,
              x: Expr,
              y: Expr,
              angle: Expr = category.angle,
@@ -181,7 +181,7 @@ trait Game extends RuleManager { self =>
     b.reset(interpreter)
     this add b
     b
-  }
+  }*/
 
   def rectangle(category: CategoryObject)(name: Expr,
                 x: Expr,
