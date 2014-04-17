@@ -12,14 +12,14 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 class TestGame extends Game {
   val world = new PhysicalWorld(Vec2(0, 1.5f))
 
-  val cat = Category("Moving objects")()
-  val catAdd = Category("Moving objects2")()
+  val moving_objects = Category("Moving_objects")()
+  val moving_objects2 = Category("Moving_objects2")()
 
-  val rect1 = rectangle(cat)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
-  val rect2 = rectangle(cat)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
+  val rect1 = rectangle(moving_objects)(name="Rectangle 1", x=2, y=0, width = 1, height = 1, fixedRotation = false)
+  val rect2 = rectangle(moving_objects)(name="Rectangle 2", x=3.4, y=0, width = 1, height = 2, fixedRotation = false)
 
-  circle(cat)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
-  val c2 = circle(catAdd)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
+  circle(moving_objects)("Circle 1", 3, 2, radius = 1, fixedRotation = false)
+  val c2 = circle(moving_objects2)("Circle 2", 2.5, 4, radius = 0.5, fixedRotation = false)
   
   val score = intbox(Category("scores")())("Score", 1, 1, value = 0)
 
@@ -31,20 +31,20 @@ class TestGame extends Game {
   val arr = array(catArray)("MyArray", 1.3, 4, 2, 3)
   
   
-  val r1 = foreach(cat, base.category) { (obj, base) =>
+  val r1 = foreach(moving_objects, base.category) { (obj, base) =>
     whenever(base.y < obj.y)(
       obj.y := 0, 
       obj.velocity := Vec2(0, 0)
     )
   }
   
-  val r2 = foreach(cat, cat2, score.category) { (o1, o2, score) =>
+  val r2 = foreach(moving_objects, cat2, score.category) { (o1, o2, score) =>
     whenever(Collision(o1, o2)) (
       score.value += 1
     )
   }
   
-  val r3 = foreach(catAdd) { obj =>
+  val r3 = foreach(moving_objects2) { obj =>
     whenever(FingerDownOver(obj)) {
       obj.radius += 0.1
     } 

@@ -294,6 +294,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.modify_prev = false
     MenuOptions.copy_to_prev = true
     game.setInstantProperties(true)
+    game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
     //EditRuleButton.selected = false
     //enterEditMode()

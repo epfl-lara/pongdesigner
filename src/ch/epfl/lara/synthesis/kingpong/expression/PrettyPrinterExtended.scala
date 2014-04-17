@@ -282,7 +282,7 @@ trait PrettyPrinterExtendedTypical {
     case Assign(List((e, prop)), rhs: Expr) => 
       c + indent +< e + "." + prop + "' = " + rhs +>
     case Assign(l, rhs: Expr) =>
-      (((c + indent +< l.head._1 + "." +l.head._2) /: l.tail) { case (i, el) => i + "," + el._1+"."+el._2}) + rhs +>
+      (((c + indent +< l.head._1 + "." +l.head._2) /: l.tail) { case (i, el) => i + "," + el._1+"."+el._2}) + " = " + rhs +>
     case Block(exprs) =>
       exprs.toList match {
         case Nil => c + indent +! "{}"

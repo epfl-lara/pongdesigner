@@ -35,8 +35,14 @@ trait RuleManager {
   def rules: Traversable[Expr] = _rules
   def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
   def addRule(r: Expr): Unit = {
+    def addToCategory(category: Category) {
+      for(o<-category.objects) _rulesByObject.getOrElseUpdate(o, MSet()) += r
+    }
     TreeOps.preTraversal(_ match {
       case ObjectLiteral(o) => _rulesByObject.getOrElseUpdate(o, MSet()) += r
+      case Foreach(category, id, body) => addToCategory(category)
+      case Forall(category, id, body) => addToCategory(category)
+      case Find(category, id, body) => addToCategory(category)
       case c =>
     })(r)
     _rules += r
