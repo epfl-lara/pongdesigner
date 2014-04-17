@@ -692,23 +692,23 @@ class GameView(val context: Context, attrs: AttributeSet)
       
       o match {
         case e: Positionable with Directionable =>
-          val c = e.color.get
+          val c = e.color.next
           if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
             canvas.restore()
             canvas.save()
             val center = render_out_vec
-            render_in_array(0) = e.x.get
-            render_in_array(1) = e.y.get
+            render_in_array(0) = e.x.next
+            render_in_array(1) = e.y.next
             mapVectorFromGame(render_in_array, center)
-            canvas.rotate(radToDegree(e.angle.get), center.x, center.y)
+            canvas.rotate(radToDegree(e.angle.next), center.x, center.y)
             val d = bitmaps(c)
             val leftTop = render_out_vec2
-            render_in_array(0) = e.left.get
-            render_in_array(1) = e.top.get
+            render_in_array(0) = e.left.next
+            render_in_array(1) = e.top.next
             mapVectorFromGame(render_in_array, leftTop)
-            val rightBottom = render_out_vec2
-            render_in_array(0) = e.right.get
-            render_in_array(1) = e.bottom.get
+            val rightBottom = render_out_vec3
+            render_in_array(0) = e.right.next
+            render_in_array(1) = e.bottom.next
             mapVectorFromGame(render_in_array, rightBottom)
             d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
             d.draw(canvas)
@@ -824,7 +824,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         R.drawable.fingermove,
         R.drawable.gear,
         R.drawable.back_arrow,
-        R.drawable.jpeg
+        R.drawable.jpeg,
+        R.drawable.copy_menu
         //R.drawable.timebutton3
         )
   drawables_to_load.foreach { id =>
@@ -1285,7 +1286,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def disambiguateMultipleSelection(res: Vec2, eventList: List[(Event, Int)], objectList: List[GameObject],
       currentEventSelection: List[(Event, Int)], currentObjectSelection: List[GameObject]
   )(remaining: (List[(Event, Int)], List[GameObject]) => Unit): Unit = {
-    val mQuickAction  = new QuickAction(activity, sticky=false)
+    val mQuickAction  = new QuickAction(activity, false)
     
     //mQuickAction.addStickyActionItem(changeStateItem)
     var index = 0

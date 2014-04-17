@@ -10,7 +10,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 
 class TestGame extends Game {
-  val world = new PhysicalWorld(Vec2(0, 1.5f))
+  val world = new PhysicalWorld(Vec2(0, 3.5f))
 
   val moving_objects = Category("Moving_objects")()
   val moving_objects2 = Category("Moving_objects2")()

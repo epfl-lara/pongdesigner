@@ -24,7 +24,7 @@ object SystemMenu extends MenuCenter {
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     //RenameButtonRule.setText(selectedShape.mName)
     //RenameButtonRule.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
-    Menus.spaceMenusOnCircle(canvas, menus)
+    Menus.spaceMenusOnCircle(canvas, cx, cy, menus)
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }

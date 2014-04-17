@@ -21,7 +21,7 @@ object Menus {
     
   }
   
-  def spaceMenusOnCircle(canvas: Canvas, menus: List[CustomMenu]) = {
+  def spaceMenusOnCircle(canvas: Canvas, cx: Float, cy: Float, menus: List[CustomMenu]) = {
     val n = menus.size
     var i = -1
     var radius = 1.0//Math.max(1f, n/6f)
@@ -54,8 +54,11 @@ object Menus {
       val dx = radius.toFloat * Math.cos(angle).toFloat
       val dy = radius.toFloat * Math.sin(angle).toFloat
       menu.setPos(dx, dy)
-      if((menu.x_final >= button_size/2 && menu.x_final <= canvas.getWidth() - button_size/2
-       && menu.y_final >= button_size/2 && menu.y_final <= canvas.getHeight() - button_size/2)
+      val x_final = menu.x_final(cx)
+      val y_final = menu.y_final(cy)
+      
+      if((x_final >= button_size/2 && x_final <= canvas.getWidth() - button_size/2
+       && y_final >= button_size/2 && y_final <= canvas.getHeight() - button_size/2)
        || i>=36) {
         lm = lm.tail
       }
@@ -123,8 +126,8 @@ trait CustomMenu {
     dx = new_dx
     dy = new_dy
   }
-  @inline def x_final = x + button_size * dx
-  @inline def y_final = y + button_size * dy
+  @inline def x_final(cx: Float) = cx + button_size * dx
+  @inline def y_final(cy: Float) = cy + button_size * dy
   
   /** Marks the button as hovered if the finger is on it */
   def testHovering(atX: Float, atY: Float, button_size: Float): Boolean
@@ -171,8 +174,8 @@ abstract class MenuButton extends CustomMenu {
   var rectData = new Rect(0, 0, 0, 0)
   var rectFData = new RectF(0, 0, 0, 0)
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
-    x = x_final
-    y = y_final
+    x = x_final(cx)
+    y = y_final(cy)
     if(visible) {
       icons(gameEngine, selectedShape) foreach {
         id => val d = bitmaps.getOrElse(id, null)
