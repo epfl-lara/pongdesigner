@@ -18,7 +18,7 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import ch.epfl.lara.synthesis.kingpong.R;
-//import ch.epfl.lara.synthesis.kingpong.menus.MenuButton;
+import ch.epfl.lara.synthesis.kingpong.menus.MenuButton;
 
 /**
  * QuickAction dialog, shows action list as icon and text like the one in Gallery3D app. Currently supports vertical 
@@ -63,8 +63,8 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
      * 
      * @param context  Context
      */
-    public QuickAction(Context context) {
-        this(context, VERTICAL);
+    public QuickAction(Context context, boolean sticky) {
+        this(context, VERTICAL, sticky);
     }
 
     /**
@@ -73,11 +73,11 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
      * @param context    Context
      * @param orientation Layout orientation, can be vartical or horizontal
      */
-    public QuickAction(Context context, int orientation) {
-        super(context);
+    public QuickAction(Context context, int orientation, boolean sticky) {
+        super(context, sticky);
         
         mOrientation = orientation;
-//        
+        
         mInflater 	 = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         if (mOrientation == HORIZONTAL) {
@@ -234,7 +234,7 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 		
 		show(new Rect(location[0], location[1], location[0]+anchor.getWidth(), location[1]+anchor.getHeight()), anchor);
 	}
-/*
+
 	public void show (MenuButton anchor, View parent) {
 	  int[] location     = new int[2];
 
@@ -244,7 +244,7 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 	  int topOffset = location[1];
 	  Rect anchorRect = new Rect(inputRect.left, inputRect.top + topOffset, inputRect.right, inputRect.bottom + topOffset);
     show(anchorRect, parent);
-  }*/
+  }
 	
   public void show(Rect anchorRect, View parent) {
     int xPos, yPos, arrowPos;
@@ -263,10 +263,8 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 			rootWidth		= mRootView.getMeasuredWidth();
 		}
 		
-		@SuppressWarnings("deprecation")
-    int screenWidth 	= mWindowManager.getDefaultDisplay().getWidth();
-		@SuppressWarnings("deprecation")
-    int screenHeight	= mWindowManager.getDefaultDisplay().getHeight();
+		int screenWidth 	= mWindowManager.getDefaultDisplay().getWidth();
+		int screenHeight	= mWindowManager.getDefaultDisplay().getHeight();
 		
 		//automatically get X coord of popup (top left)
 		if ((anchorRect.left + rootWidth) > screenWidth || forceNextLeft) {
@@ -381,8 +379,8 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
     }
 	
 	/**
-	 * Set listener for window dismissed. This listener will only be fired if the quicakction dialog is dismissed
-	 * by clicking outside the dialog or clicking on sticky item.
+	 * Set listener for window dismissed. This listener will only be fired if the quickaction dialog is dismissed
+	 * by clicking outside the dialog or clicking on non-sticky item.
 	 */
 	public void setOnDismissListener(QuickAction.OnDismissListener listener) {
 		setOnDismissListener(this);

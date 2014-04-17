@@ -14,7 +14,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 object CodeTemplates extends CodeHandler {
   
   class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject]) {
-    val eventMove = events.flatMap { case (e@FingerMove(from, to, objs), i) => List(e) case _=> Nil} headOption
+    val eventMove = (events.flatMap { case (e@FingerMove(from, to, objs), i) => List(e) case _=> Nil}).headOption
     val (dx, dy, eventObjects) = eventMove match {
       /*case Some(FingerDown(v, objs)) => (0, 0, objs)
       case Some(FingerUp(v, objs))=> (0, 0, objs)*/

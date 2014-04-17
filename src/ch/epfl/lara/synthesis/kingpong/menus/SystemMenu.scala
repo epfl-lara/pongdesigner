@@ -19,12 +19,12 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 object SystemMenu extends MenuCenter {
   var activated = false
   
-   menus = List(TrashButton, FixButton)
+   menus = List(TrashButton, FixButton, CopyButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     //RenameButtonRule.setText(selectedShape.mName)
     //RenameButtonRule.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
-    Menus.spaceMenusOnCircle(menus)
+    Menus.spaceMenusOnCircle(canvas, menus)
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
@@ -94,4 +94,32 @@ object FixButton extends MenuButton {
     (if(hovered) hovered_icons else normal_icons)
   
   def hint_id = R.string.change_back_hint
+}
+
+/** Sends a shape to trash
+ *  TODO : This should demonstrate advanced functionality (aka: creation/duplication)
+ **/
+object CopyButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    val freshName = gameEngine.getGame.getNewName(selectedShape.name.get)
+    val fresh = selectedShape.getCopy(freshName)
+    fresh.creationTime.setInit(gameEngine.getGame.time)
+    fresh.flush()
+    gameEngine.getGame.add(fresh)
+      
+    hovered = false
+  }
+  
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+    // Nothing
+  }
+ 
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.copy_menu ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.copy_menu :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) =
+    (if(hovered) hovered_icons else normal_icons)
+  
+  def hint_id = R.string.change_copy_hint
 }

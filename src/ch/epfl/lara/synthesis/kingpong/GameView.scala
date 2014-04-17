@@ -618,9 +618,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(c.x.get != c.x.next || c.y.get != c.y.next || c.radius.get != c.radius.next) {
             canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintPrev)
           }
-          canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paint)
+          canvas.drawCircle(c.x.next, c.y.next, c.radius.next, paint)
           if (obj_to_highlight contains c) 
-            canvas.drawCircle(c.x.get, c.y.get, c.radius.get, paintSelected)
+            canvas.drawCircle(c.x.next, c.y.next, c.radius.next, paintSelected)
         
         case arr: Array2D =>
           paint.setStyle(Paint.Style.STROKE)
@@ -1018,12 +1018,12 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, SystemButton.getX(), SystemButton.getY())
       }
     }
-    for((event, time) <- eventEditor.selectedEventTime) event match {
+    /*for((event, time) <- eventEditor.selectedEventTime) event match {
       case SelectableEvent(x, y) if EventMenu.isActivated =>
         val p = mapVectorFromGame(Vec2(x, y))
         EventMenu.draw(canvas, this, shapeEditor.selectedShape, bitmaps, p.x, p.y)
       case _ =>
-    }
+    }*/
   }
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
@@ -1182,9 +1182,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           //ColorMenu.onFingerUp(this, selectedShape, x, y)
         //}
       }
-      if(!menuSelected && EventMenu.isActivated) {
+      /*if(!menuSelected && EventMenu.isActivated) {
         menuSelected = EventMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
-      }
+      }*/
       /*if(!menuSelected && ruleEditor.selectedRule != null && mRuleState != STATE_SELECTING_EVENTS) { // Test is top left menu activated
         menuSelected = RuleMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
       }*/
@@ -1285,7 +1285,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def disambiguateMultipleSelection(res: Vec2, eventList: List[(Event, Int)], objectList: List[GameObject],
       currentEventSelection: List[(Event, Int)], currentObjectSelection: List[GameObject]
   )(remaining: (List[(Event, Int)], List[GameObject]) => Unit): Unit = {
-    val mQuickAction  = new QuickAction(activity)
+    val mQuickAction  = new QuickAction(activity, sticky=false)
     
     //mQuickAction.addStickyActionItem(changeStateItem)
     var index = 0
@@ -1486,10 +1486,10 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.testHovering(to.x, to.y, button_size)
         SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
       }
-      if(EventMenu.isActivated) {
+      /*if(EventMenu.isActivated) {
         EventMenu.testHovering(to.x, to.y, button_size)
         EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
-      }
+      }*/
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {

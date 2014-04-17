@@ -134,7 +134,7 @@ class ShapeEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
  * 
  * Wrapper to the menu to edit events.
  */
-class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
+class EventEditor(gameEngineView: GameView) /*extends GameEngineEditor(gameEngineView)*/ {
   var selectedObjects: List[GameObject] = Nil
   var selectedEventTime: List[(Event, Int)] = Nil
   
@@ -180,9 +180,9 @@ class EventEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineV
     e.execute(game.context, false)
   }*/
   
-  def testHovering(x: Float, y: Float, button_size: Float): Boolean = EventMenu.testHovering(x, y, button_size)
+  //def testHovering(x: Float, y: Float, button_size: Float): Boolean = EventMenu.testHovering(x, y, button_size)
   
-  def menus: List[CustomMenu] = EventMenu.menus
+  //def menus: List[CustomMenu] = EventMenu.menus
 }
 
 /**

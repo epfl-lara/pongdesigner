@@ -16,7 +16,7 @@ import android.content.Context;
  * Custom popup window.
  * 
  * @author Lorensius W. L. T <lorenz@londatiga.net>
- *
+ * Modified by Mikael Mayer 17/04/2014 to add Sticky Popup.
  */
 public class PopupWindows {
 	protected Context mContext;
@@ -24,20 +24,22 @@ public class PopupWindows {
 	protected View mRootView;
 	protected Drawable mBackground = null;
 	protected WindowManager mWindowManager;
+	protected boolean sticky = false;
 	
 	/**
 	 * Constructor.
 	 * 
 	 * @param context Context
 	 */
-	public PopupWindows(Context context) {
+	public PopupWindows(Context context, boolean sticky) {
 		mContext	= context;
 		mWindow 	= new PopupWindow(context);
+		this.sticky = sticky;
 
 		mWindow.setTouchInterceptor(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
-				if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
+				if (event.getAction() == MotionEvent.ACTION_OUTSIDE && !PopupWindows.this.sticky) {
 					mWindow.dismiss();
 					
 					return true;
@@ -65,8 +67,7 @@ public class PopupWindows {
 	/**
 	 * On pre show
 	 */
-	@SuppressWarnings("deprecation")
-  protected void preShow() {
+	protected void preShow() {
 		if (mRootView == null) 
 			throw new IllegalStateException("setContentView was not called with a view to display.");
 	

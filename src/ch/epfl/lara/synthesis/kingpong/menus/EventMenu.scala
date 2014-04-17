@@ -12,7 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 /**
  * This menu appears when an event is selected to describe a rule, when it can be ambiguous.
  */
-object EventMenu extends MenuCenter {
+object EventMenu /*extends MenuCenter*/ {
   private var activated = false
   var shape: GameObject = null
   def isActivated = activated
@@ -20,7 +20,7 @@ object EventMenu extends MenuCenter {
     activated = b
     if(activated) shape = newShape
   }
-  val menu1 = List(FingerDownEventMenu, FingerUpEventMenu, FingerMoveEventMenu)
+  /*val menu1 = List(FingerDownEventMenu, FingerUpEventMenu, FingerMoveEventMenu)
   val menu2 = List(NormalCollisionButton)//, NoCollisionButRecordedEffectsButton, NoCollisionButton)
   menus = menu1
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
@@ -30,14 +30,14 @@ object EventMenu extends MenuCenter {
       case _ =>
         menus = menu1
     }*/
-    Menus.spaceMenusOnCircle(menus)
+    Menus.spaceMenusOnCircle(canvas, menus)
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
-  }
+  }*/
 }
 
-
+/*
 /** Buttons that allows to choose the finger down event */
 object FingerDownEventMenu extends MenuButton {
   import MenuOptions._
@@ -225,3 +225,5 @@ object NormalCollisionButton extends MenuButton {
   
   def hint_id = R.string.event_nocollide_hint
 }*/
+
+*/
