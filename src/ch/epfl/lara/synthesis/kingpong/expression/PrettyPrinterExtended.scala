@@ -263,6 +263,8 @@ trait PrettyPrinterExtendedTypical {
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
     s match {  
+      case ParExpr(Nil) => c
+      case ParExpr(a::_) => print(c, indent, a) +< "//<-->" +>
       case TupleSelect(expr, index) =>
         c + indent + expr + "." + (if(index == 0) "x" else "y")
       case Foreach(cat, id, body) =>
@@ -280,9 +282,7 @@ trait PrettyPrinterExtendedTypical {
     case Assign(List((e, prop)), rhs: Expr) => 
       c + indent +< e + "." + prop + "' = " + rhs +>
     case Assign(l, rhs: Expr) =>
-      //TODO update the printer for Assign
-      val ids = l.mkString(",")
-      c + indent +< ids + "' = " + rhs +>
+      (((c + indent +< l.head._1 + "." +l.head._2) /: l.tail) { case (i, el) => i + "," + el._1+"."+el._2}) + rhs +>
     case Block(exprs) =>
       exprs.toList match {
         case Nil => c + indent +! "{}"

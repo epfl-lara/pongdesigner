@@ -258,7 +258,7 @@ class Rectangle (val game: Game,
                  init_fixedRotation, init_color, init_sensor, init_tpe)
   }
   
-  override def contains(pos: Vec2) = this.asInstanceOf[AngularRectangularContains].contains(pos)
+  override def contains(pos: Vec2) = super[AngularRectangularContains].contains(pos)
 }
 
 class Character (val game: Game,
