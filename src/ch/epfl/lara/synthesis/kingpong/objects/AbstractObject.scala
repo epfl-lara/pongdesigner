@@ -1,12 +1,16 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import android.util.Log
+
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.Shape
 
 import ch.epfl.lara.synthesis.kingpong.Game
+import ch.epfl.lara.synthesis.kingpong.common.Random
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
@@ -76,13 +80,6 @@ class Box[T : PongType](val game: Game,
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
   }
-  
-  /*def contains(pos: Vec2) = {
-    pos.x >= left.get &&
-    pos.x <= right.get &&
-    pos.y >= top.get &&
-    pos.y <= bottom.get
-  }*/
 
   def makecopy(name: String): GameObject = {
     new Box[T](game, name, init_x, init_y, init_angle, init_width,  init_height, 
@@ -183,6 +180,83 @@ class Joystick(val game: Game,
   }
 }
 
+class RandomGenerator(
+    val game: Game,
+    init_name: Expr,
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr, 
+    init_minValue: Expr, 
+    init_maxValue: Expr, 
+    init_visible: Expr,
+    init_color: Expr
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+      with ResizableRectangular
+      with Movable
+      with Rotationable
+      with Visiblable
+      with Colorable
+      with FixedRectangularContains { self =>
+  
+  def className = "RandomGenerator"
+  
+  private val rnd = Random()
+  private var currentValue: Int = -1
+  
+  private def nextValue(): Unit = {
+    currentValue = rnd.nextInt(maxValue.get + 1 - minValue.get) + minValue.get
+  }
+  
+  override def reset(interpreter: Interpreter) = {
+    super.reset(interpreter)
+    nextValue()
+  }
+  
+  override def postStep(ctx: Context) = {
+    super.postStep(ctx)
+    nextValue()
+  }
+    
+  // --------------------------------------------------------------------------
+  // Properties
+  // --------------------------------------------------------------------------
+  
+  val width = simpleProperty[Float]("width", init_width)
+  val height = simpleProperty[Float]("height", init_height)
+  val minValue = simpleProperty[Int]("min value", init_minValue)
+  val maxValue = simpleProperty[Int]("max value", init_maxValue) // inclusive
+  val value = namedProperty[Int] (
+    name  = "value", 
+    getF  = () => currentValue,
+    nextF = () => currentValue
+  )
+  
+  // --------------------------------------------------------------------------
+  // Utility functions
+  // --------------------------------------------------------------------------  
+  
+  def getAABB = {
+    val bottomLeft = Vec2(left.get, top.get)
+    val upperRight = Vec2(left.get + width.get, top.get + height.get)
+    new org.jbox2d.collision.AABB(bottomLeft, upperRight)
+  }
+  
+  private val shape = new PolygonShape()
+  
+  def getShape = {
+    shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
+    shape
+  }
+
+  def makecopy(name: String): GameObject = {
+    new RandomGenerator(game, name, init_x, init_y, init_angle, init_width, 
+      init_height, init_minValue, init_maxValue, init_visible, init_color)
+  }
+  
+}
+
 object Array2D {
   
   val CELL_WIDTH = 1
@@ -224,14 +298,14 @@ class Array2D(
   val numRows = simpleProperty[Int]("numRows", init_numRows)
   val numColumns = simpleProperty[Int]("numColumns", init_numColumns)
     
-  val width = readOnlyProperty[Float] (
+  val width = aliasProperty[Float] (
     name  = "width", 
     getF  = () => numColumns.get  * CELL_WIDTH,
     nextF = () => numColumns.next * CELL_WIDTH,
     exprF = () => numColumns.expr * CELL_WIDTH
   )
   
-  val height = readOnlyProperty[Float] (
+  val height = aliasProperty[Float] (
     name  = "height", 
     getF  = () => numRows.get  * CELL_HEIGHT,
     nextF = () => numRows.next * CELL_HEIGHT,
@@ -270,52 +344,46 @@ case class Cell(
   val className = "Cell"
   def game = array.game
   
-  val x = readOnlyProperty[Float] (
+  val x = aliasProperty[Float] (
     name  = "x", 
     getF  = () => array.left.get  + width.get  * (column + 0.5f),
     nextF = () => array.left.next + width.next * (column + 0.5f),
     exprF = () => array.left.expr + width.expr * (column + 0.5f) 
   )
   
-  val y = readOnlyProperty[Float] (
+  val y = aliasProperty[Float] (
     name  = "y", 
     getF  = () => array.top.get  + height.get  * (row + 0.5f),
     nextF = () => array.top.next + height.next * (row + 0.5f),
     exprF = () => array.top.expr + height.expr * (row + 0.5f)
   )
   
-  val width = constProperty[Float] (
-    name   = "width", 
-    constF = () => CELL_WIDTH
-  )
+  val width = constProperty[Float] ("width", CELL_WIDTH)
   
-  val height = constProperty[Float] (
-    name   = "height", 
-    constF = () => CELL_HEIGHT
-  )
+  val height = constProperty[Float] ("height", CELL_HEIGHT)
   
-  override val bottom = readOnlyProperty[Float] (
+  override val bottom = aliasProperty[Float] (
     name  = "bottom", 
     getF  = () => array.top.get  + height.get  * (row + 1),
     nextF = () => array.top.next + height.next * (row + 1),
     exprF = () => array.top.expr + height.expr * (row + 1)
   )
   
-  override val top = readOnlyProperty[Float] (
+  override val top = aliasProperty[Float] (
     name  = "top", 
     getF  = () => array.top.get  + height.get  * row,
     nextF = () => array.top.next + height.next * row,
     exprF = () => array.top.expr + height.expr * row
   )
   
-  override val left = readOnlyProperty[Float] (
+  override val left = aliasProperty[Float] (
     name  = "left", 
     getF  = () => array.left.get  + width.get  * column,
     nextF = () => array.left.next + width.next * column,
     exprF = () => array.left.expr + width.expr * column
   )
   
-  override val right = readOnlyProperty[Float] (
+  override val right = aliasProperty[Float] (
     name  = "right", 
     getF  = () => array.left.get  + width.get  * (column + 1),
     nextF = () => array.left.next + width.next * (column + 1),

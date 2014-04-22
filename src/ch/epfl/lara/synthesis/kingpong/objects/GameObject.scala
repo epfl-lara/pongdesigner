@@ -258,8 +258,8 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     p
   }
   
-  protected def readOnlyProperty[@specialized T: PongType](name: String, getF: () => T, nextF: () => T, exprF: () => Expr): ROProperty[T] = {
-    val p = new ROProperty[T](name, this) {
+  protected def aliasProperty[@specialized T: PongType](name: String, getF: () => T, nextF: () => T, exprF: () => Expr): ROProperty[T] = {
+    val p = new AliasProperty[T](name, this) {
       def get = getF()
       def next = nextF()
       def expr = exprF()
@@ -268,18 +268,23 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     p
   }
   
-  protected def constProperty[@specialized T: PongType](name: String, constF: () => T): ROProperty[T] = {
-    val p = new ROProperty[T](name, this) {
-      def get = constF()
-      def next = constF()
-      def expr = tpe.toExpr(constF())
+  protected def namedProperty[@specialized T: PongType](name: String, getF: () => T, nextF: () => T): ROProperty[T] = {
+    val p = new NamedProperty[T](name, this) {
+      def get = getF()
+      def next = nextF()
     }
     addProperty(p)
     p
   }
   
+  protected def constProperty[@specialized T: PongType](name: String, const: T): ROProperty[T] = {
+    val p = new ConstProperty[T](name, this, const)
+    addProperty(p)
+    p
+  }
+  
   protected def proxyProperty[T: PongType](property: Property[T]): ROProperty[T] = {
-    val p = new ROProperty[T](property.name, this) {
+    val p = new AliasProperty[T](property.name, this) {
       def get = property.get
       def next = property.next
       def expr = property.expr
@@ -314,28 +319,28 @@ trait Rectangular extends GameObject with Positionable {
   def width: Property[Float]
   def height: Property[Float]
   
-  val bottom = readOnlyProperty (
+  val bottom = aliasProperty (
     name  = "bottom", 
     getF  = () => y.get + height.get / 2f,
     nextF = () => y.next + height.next / 2f,
     exprF = () => y.expr + height.expr / 2f
   )
   
-  val top = readOnlyProperty (
+  val top = aliasProperty (
     name  = "top", 
     getF  = () => y.get - height.get / 2f,
     nextF = () => y.next - height.next / 2f,
     exprF = () => y.expr - height.expr / 2f
   )
   
-  val left = readOnlyProperty (
+  val left = aliasProperty (
     name  = "left", 
     getF  = () => x.get - width.get / 2f,
     nextF = () => x.next - width.next / 2f,
     exprF = () => x.expr - width.expr / 2f
   )
   
-  val right = readOnlyProperty (
+  val right = aliasProperty (
     name  = "right", 
     getF  = () => x.get + width.get / 2f,
     nextF = () => x.next + width.next / 2f,
@@ -399,28 +404,28 @@ trait ResizableRectangular extends Rectangular {
 trait Circular extends GameObject with Positionable {
   def radius: Property[Float]
 
-  val bottom = readOnlyProperty (
+  val bottom = aliasProperty[Float] (
     name  = "bottom", 
     getF  = () => y.get + radius.get,
     nextF = () => y.next + radius.next,
     exprF = () => y.expr + radius.expr
   )
   
-  val top = readOnlyProperty (
+  val top = aliasProperty[Float] (
     name  = "top", 
     getF  = () => y.get - radius.get,
     nextF = () => y.next - radius.next,
     exprF = () => y.expr - radius.expr
   )
   
-  val left = readOnlyProperty (
+  val left = aliasProperty[Float] (
     name  = "left", 
     getF  = () => x.get - radius.get,
     nextF = () => x.next - radius.next,
     exprF = () => x.expr - radius.expr
   )
   
-  val right = readOnlyProperty (
+  val right = aliasProperty[Float] (
     name  = "right", 
     getF  = () => x.get + radius.get,
     nextF = () => x.next + radius.next,
@@ -455,28 +460,28 @@ trait ResizableCircular extends Circular {
 }
 
 trait Point extends GameObject with Positionable {
-  val bottom = readOnlyProperty (
+  val bottom = aliasProperty[Float] (
     name  = "bottom", 
     getF  = () => center.get.y,
     nextF = () => center.next.y,
     exprF = () => TupleSelect(center.expr, 2)
   )
   
-  val top = readOnlyProperty (
+  val top = aliasProperty[Float] (
     name  = "top", 
     getF  = () => center.get.y,
     nextF = () => center.next.y,
     exprF = () => TupleSelect(center.expr, 2)
   )
   
-  val left = readOnlyProperty (
+  val left = aliasProperty[Float] (
     name  = "left", 
     getF  = () => center.get.x,
     nextF = () => center.next.x,
     exprF = () => TupleSelect(center.expr, 1)
   )
   
-  val right = readOnlyProperty (
+  val right = aliasProperty[Float] (
     name  = "right", 
     getF  = () => center.get.x,
     nextF = () => center.next.x,
@@ -488,7 +493,7 @@ trait Positionable extends GameObject {
   def x: Property[Float]
   def y: Property[Float]
 
-  val center = readOnlyProperty[Vec2] (
+  val center = aliasProperty[Vec2] (
     name  = "center", 
     getF  = () => Vec2(x.get, y.get),
     nextF = () => Vec2(x.next, y.next),

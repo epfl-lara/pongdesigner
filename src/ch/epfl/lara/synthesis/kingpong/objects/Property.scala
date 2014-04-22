@@ -38,7 +38,32 @@ abstract class Property[@specialized T : PongType]() { self =>
   }
 }
 
-abstract class ROProperty[T : PongType](val name: String, val parent: GameObject) extends Property[T]
+/** All properties that are only readable. */
+trait ROProperty[T] extends Property[T]
+
+/**
+ * Property that references other ones. 
+ * The field `expr` should only reference other properties, constants and arithmetic operations.
+ */
+abstract class AliasProperty[T : PongType](val name: String, val parent: GameObject) extends ROProperty[T]
+
+/**
+ * Constant property. The current and next values are always the same.
+ * The expression of this property is just the value translated to an expression.
+ */
+class ConstProperty[T : PongType](val name: String, val parent: GameObject, value: T) extends ROProperty[T] {
+  def get = value
+  def next = value
+  def expr = tpe.toExpr(value)
+}
+
+/**
+ * Read-only property that have a dedicated value (as opposed to `AliasProperty`).
+ */
+abstract class NamedProperty[T : PongType](val name: String, val parent: GameObject) extends ROProperty[T] {
+  /** Get the reference of this property. */
+  lazy val expr = Select(parent.expr, name).setType(getPongType)
+}
 
 abstract class RWProperty[T : PongType]() extends Property[T] with AssignableProperty[T] { self => 
   

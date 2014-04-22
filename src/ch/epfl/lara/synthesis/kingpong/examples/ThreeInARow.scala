@@ -17,8 +17,10 @@ class ThreeInARow extends Game {
   val pieces = Category("Pieces")(width = 0.9, height = 0.9)
   val borders = Category("Borders")(tpe = BodyType.STATIC, color = red, friction = 0)
   val counters = Category("Counters")()
+  val randoms = Category("Randoms")()
   
   val gameboard = array(arrays)("MyArray", x = 0, y = 0, columns = 6, rows = 10)
+  val random = randomGenerator(randoms)("random", x = gameboard.right + 2, y = gameboard.y, minValue = 0, maxValue = gameboard.numColumns-1)
   
   // First piece
   rectangle(pieces)(
@@ -68,9 +70,11 @@ class ThreeInARow extends Game {
           piece.name := "still",
           copy(piece) { clone => Seq(
             clone.name := "piece",
-            clone.x := gameboard.cell(gameboard.numColumns.get / 2, 0).x, 
-            clone.y := gameboard.cell(gameboard.numColumns.get / 2, 0).y,
-            clone.color := blue // Set a random color
+            let("col", random.value) { col => Seq(
+              clone.x := gameboard.cell(col, 0).x, 
+              clone.y := gameboard.cell(col, 0).y
+            )},
+            clone.color := blue //TODO Set a random color
           )}
         )
       }

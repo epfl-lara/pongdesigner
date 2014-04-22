@@ -662,6 +662,13 @@ class GameView(val context: Context, attrs: AttributeSet)
             canvas.drawText(value, b.x.get, b.y.get, paint)
             if(obj_to_highlight contains b) canvas.drawText(value, b.x.get, b.y.get, paint)
           }
+          
+        case r: RandomGenerator =>
+          paint.setTextSize(r.height.get)
+          val value = r.value.get.toString
+          paint.setLinearText(true)
+          canvas.drawText(value, r.x.get, r.y.get, paint)
+          
         case j: Joystick =>
           paint.setAlpha(0x20)
           canvas.drawCircle(j.x.get, j.y.get, j.radius.get, paint)
@@ -675,19 +682,6 @@ class GameView(val context: Context, attrs: AttributeSet)
           canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paint)
           if(obj_to_highlight contains r) canvas.drawRect(r.x.get - r.width.get/2, r.y.get - r.height.get/2, r.x.get + r.width.get/2, r.y.get + r.height.get/2, paintSelected)
           canvas.restore()
-          
-        /*case r: ActiveBox =>
-          if(r.visible.get) {
-            canvas.save()
-            canvas.rotate(radToDegree(r.angle.get), r.x.get, r.y.get)
-            retrieveDrawable(r.picture.get) match {
-              case Some(drawable) =>
-                drawable.setBounds((r.x.get - r.radius.get).toInt, (r.y.get - r.radius.get).toInt, (r.x.get + r.radius.get).toInt, (r.y.get + r.radius.get).toInt)
-                drawable.draw(canvas)
-              case None =>
-            }
-            canvas.restore()
-          }*/
       }
       
       o match {

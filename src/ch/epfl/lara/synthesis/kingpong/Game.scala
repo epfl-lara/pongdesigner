@@ -173,21 +173,6 @@ trait Game extends RuleManager { self =>
     this add c
     c
   }
-  
-  /*def activeBox(category: CategoryObject)(name: Expr,
-             x: Expr,
-             y: Expr,
-             angle: Expr = category.angle,
-             radius: Expr = category.radius,
-             visible: Expr = category.visible,
-             color: Expr = category.color,
-             picture: Expr = StringLiteral("")): ActiveBox = {
-    val b = new ActiveBox(this, name, x, y, angle, radius, visible, color, picture)
-    if(category != null) b.setCategory(category)
-    b.reset(interpreter)
-    this add b
-    b
-  }*/
 
   def rectangle(category: CategoryObject)(name: Expr,
                 x: Expr,
@@ -207,6 +192,24 @@ trait Game extends RuleManager { self =>
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                          density, friction, restitution, fixedRotation, color, sensor, tpe)
+    if(category != null) r.setCategory(category)
+    r.reset(interpreter)
+    r.flush()
+    this add r
+    r
+  }
+  
+  def randomGenerator(category: CategoryObject)(name: Expr,
+                      x: Expr,
+                      y: Expr,
+                      angle: Expr = category.angle,
+                      width: Expr = category.width,
+                      height: Expr = category.height,
+                      minValue: Expr = category.height,
+                      maxValue: Expr = category.height,
+                      visible: Expr = category.visible,
+                      color: Expr = category.color): RandomGenerator = {
+    val r = new RandomGenerator(this, name, x, y, angle, width, height, minValue, maxValue, visible, color)
     if(category != null) r.setCategory(category)
     r.reset(interpreter)
     r.flush()
