@@ -7,7 +7,7 @@ object General {
   // Parameters:
   val buildName           = "pong_designer_experimental"
   val buildOrganization   = "ch.epfl.lara.synthesis"
-  val buildScalaVersion   = "2.10.3"
+  val buildScalaVersion   = "2.10.4"
   val buildAndroidVersion = "16"
 
   val settings = Defaults.defaultSettings ++ 
@@ -39,7 +39,7 @@ object General {
     
     scalacOptions ++= Seq(
       "-Yinline-warnings",
-      "-optimize",
+      //"-optimize",
       "-feature",                      // Enable language feature warnings
       "-deprecation",                  // Enable detailed deprecation warnings 
       "-unchecked",                    // Enable detailed unchecked warnings 
