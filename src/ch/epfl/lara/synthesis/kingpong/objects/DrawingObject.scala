@@ -18,7 +18,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees
 /**
  * An element drawn at a specific time.
  */
-case class DrawingElement(time: Long, from: Vec2, to: Vec2, width: Float, color: Int) {
+case class DrawingElement(time: Long, fromx: Float, fromy: Float, tox: Float, toy: Float, width: Float, color: Int) {
   var next: Option[DrawingElement] = None
   var pred: Option[DrawingElement] = None
 }
@@ -49,7 +49,20 @@ case class DrawingObject(val game: Game,
   val height = simpleProperty[Float]("height", init_height)
   val width_drawing= simpleProperty[Float]("width_drawing", 0.1f)
   val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
-  val drawings = ArrayBuffer[DrawingElement]() // Records all drawings.
+  private val mDrawings = ArrayBuffer[DrawingElement]() // Records all drawings.
+  def getDrawingElements = mDrawings
+  def addDrawingElement(time: Long, fromx: Float, fromy: Float, tox: Float, toy: Float, stroke_width: Float, color: Int) = {
+    // Convert it into relative coordinates [0, 1] and rotation.
+    val cosa = Math.cos(-Math.toRadians(angle.get)).toFloat
+    val sina = Math.sin(-Math.toRadians(angle.get)).toFloat
+    @inline def scaleX(a: Float): Float = (a - (x.get - width.get / 2))/width.get
+    @inline def scaleY(a: Float): Float = (a - (y.get - height.get / 2))/height.get
+    val unrotatedfromX = scaleX(fromx * cosa - fromy * sina)
+    val unrotatedfromY = scaleY(fromy * sina + fromy * cosa)
+    val unrotatedToX = scaleX(tox * cosa - toy * sina)
+    val unrotatedToY = scaleY(toy * sina + toy * cosa)
+    mDrawings += DrawingElement(time, fromx: Float, fromy: Float, tox: Float, toy: Float, stroke_width, color)
+  }
   val defaultRule = { (g: Game) =>
     import g._
     import Trees._

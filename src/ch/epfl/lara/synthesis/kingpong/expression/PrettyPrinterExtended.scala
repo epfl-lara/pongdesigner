@@ -262,7 +262,9 @@ trait PrettyPrinterExtendedTypical {
     implicit val s_implicit = s
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
-    s match {  
+    s match {
+      case MethodCall(method, Nil) => c +< method + "()" +>
+      case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>
       case ParExpr(Nil) => c
       case ParExpr(a::_) => print(c, indent, a) +< "//<-->" +>
       case TupleSelect(expr, index) =>

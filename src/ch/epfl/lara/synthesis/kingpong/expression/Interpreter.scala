@@ -177,7 +177,7 @@ trait Interpreter {
         case ("importDrawings", ObjectLiteral(o:DrawingObject)::from::to::width::color::Nil) =>
           (eval(from), eval(to), eval(width), eval(color)) match {
             case (Tuple(Seq(FloatLiteral(fromx), FloatLiteral(fromy))), Tuple(Seq(FloatLiteral(tox), FloatLiteral(toy))), FloatLiteral(width), IntegerLiteral(color)) =>
-              o.drawings += DrawingElement(gctx.time, Vec2(fromx, fromy), Vec2(tox, toy), width, color)
+              o.addDrawingElement(gctx.time, fromx, fromy, tox, toy, width, color)
             case _ =>
           }
           UnitLiteral
