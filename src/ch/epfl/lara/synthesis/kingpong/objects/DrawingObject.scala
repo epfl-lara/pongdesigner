@@ -47,7 +47,7 @@ case class DrawingObject(val game: Game,
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  val width_drawing= simpleProperty[Float]("width_drawing", 0.1f)
+  val width_drawing= simpleProperty[Float]("width_drawing", 0.02f)
   val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
   private val mDrawings = ArrayBuffer[DrawingElement]() // Records all drawings.
   def getDrawingElements = mDrawings
@@ -61,7 +61,7 @@ case class DrawingObject(val game: Game,
     val unrotatedfromY = scaleY(fromy * sina + fromy * cosa)
     val unrotatedToX = scaleX(tox * cosa - toy * sina)
     val unrotatedToY = scaleY(toy * sina + toy * cosa)
-    mDrawings += DrawingElement(time, fromx: Float, fromy: Float, tox: Float, toy: Float, stroke_width, color)
+    mDrawings += DrawingElement(time, unrotatedfromX, unrotatedfromY, unrotatedToX, unrotatedToY, stroke_width, color)
   }
   val defaultRule = { (g: Game) =>
     import g._

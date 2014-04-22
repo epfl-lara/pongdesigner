@@ -34,7 +34,7 @@ object MenuOptions {
 
 /** Change the menu. */
 object ShapeMenu extends MenuCenter {
-  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton)
+  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton)
   menus = basicMenu
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
@@ -80,6 +80,7 @@ object ShapeMenu extends MenuCenter {
     SizeButton.setPos(1, 1)
     PaintButton.setPos(2, 1)
     SystemButton.setPos(3, 1)
+    RotateButton.setPos(-1, 1)
     
     RenameButton.setText(selectedShape.name.get)
     RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
@@ -93,6 +94,9 @@ object ShapeMenu extends MenuCenter {
     } else if(SizeButton.hovered) {
       for(m <- menus) { m.visible = false }
       SizeButton.visible = true
+    } else if(RotateButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      RotateButton.visible = true
     } else if(PaintButton.hovered) {
       for(m <- menus) { m.visible = false }
       PaintButton.visible = true
@@ -100,6 +104,8 @@ object ShapeMenu extends MenuCenter {
       for(m <- menus) { m.visible = false }
       SystemButton.visible = true
     }
+    
+    
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
@@ -551,3 +557,47 @@ object RenameButton extends MenuTextButton {
 }
 
 
+/** Button to change the speed of the shape */
+object RotateButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape match {
+      case c:Rotationable =>
+        if(modify_prev) {
+          c.angle set Math.floor((c.angle.get + 7.5f)/15).toFloat * 15
+        } else {
+          c.angle setNext Math.floor((c.angle.next+7.5f)/15).toFloat * 15
+        }
+        if(copy_to_prev) {
+          c.angle set c.angle.next
+        }
+      case _ =>
+    }
+    hovered = false
+  }
+  
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+    if(selectedShape != null) {
+      selectedShape match {
+        case c:Rotationable =>
+          if(modify_prev) {
+            c.angle set (Math.atan2(relativeX, -relativeY).toFloat)
+          } else {
+            c.angle setNext (Math.atan2(relativeX, -relativeY).toFloat)
+          }
+          if(copy_to_prev) {
+            c.angle set c.angle.next
+          }
+        case _ =>
+      }
+    }
+  }
+  
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_rotate ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.move_rotate :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) =
+    (if(hovered) hovered_icons else normal_icons)
+  
+  def hint_id = R.string.change_rotate_hint
+}

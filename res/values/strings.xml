@@ -94,6 +94,9 @@
     <string name="menu_add_shape_hint">Adds a shape to the game</string>
     <string name="menu_add_constraint_hint">Add or edit a constraint/rule to the game</string>
     <string name="menu_add_category_hint">Add or modify a category to the game</string>
+    <string name="menu_fix_hint">Fix a rule which went wrong</string>
+    
+    
     
     <string name="add_rectangle_hint">Adds a rectangle to the game</string>
     <string name="add_circle_hint">Adds a circle to the game</string>
@@ -117,6 +120,7 @@
     <string name="change_increment_hint">Change the number by 1</string>
     <string name="change_decrement_hint">Change the number by -1</string>
     <string name="change_speed_hint">Drag to change the speed</string>
+    <string name="change_rotate_hint">Drag to change the angle</string>
     <string name="change_size_hint">Drag to change the size</string>
     <string name="change_paint_hint">Drag to select the paint</string>
     <string name="change_nail_hint">Switches between a static and a dynamic shape</string>

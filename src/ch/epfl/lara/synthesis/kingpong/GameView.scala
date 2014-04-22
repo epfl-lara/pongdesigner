@@ -184,7 +184,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         val d = game.drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)
         game.addRule(d.defaultRule(game))
         true
-        
+      
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
@@ -212,6 +212,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           //hovered = false
       }
       menuSelected
+      case Str(R.string.menu_fix_hint) => 
+        // Allows to select objects to which a rule was applied recently.
+        false
       case _ =>
         false
     }
@@ -462,7 +465,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def toRunning(): Unit = if (state == Editing) {
     Log.d("kingpong", "toRunning()")
     // Remove objects that have been created after the date.
-    game.objects.foreach(_.flush)
+    game.objects.foreach(obj => { obj.validate(); obj.flush() } )
     game.setInstantProperties(false)
     //computeMatrix()
     
@@ -524,6 +527,8 @@ class GameView(val context: Context, attrs: AttributeSet)
         R.drawable.cross_move,
         R.drawable.move_velocity,
         R.drawable.move_size,
+        R.drawable.move_rotate,
+        R.drawable.wrench,
         R.drawable.nail,
         R.drawable.nail_big,
         R.drawable.trashcan,

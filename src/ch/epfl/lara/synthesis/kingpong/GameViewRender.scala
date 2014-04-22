@@ -22,6 +22,7 @@ import Events._
 import android.content.res.Resources
 import android.util._
 import android.view.WindowManager
+import android.graphics.Path
 
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
@@ -123,6 +124,12 @@ class GameViewRender(val context: Context) extends ContextUtils {
     Vec2(toMap(0), toMap(1))
   }
   
+  private val tmpPath = new Path()
+  var lastx = 0f
+  var lasty = 0f
+  var lastwidth = 0f
+  var lastcolor = 0x0
+  
   def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
     if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
@@ -135,6 +142,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     paintSelected.setStrokeWidth(mapRadiusI(matrixI, 3))
     paintPrev.setStyle(Paint.Style.FILL)
     paintPrev.setStrokeWidth(mapRadiusI(matrixI, 3))
+    distancePaint.setStrokeWidth(mapRadiusI(matrixI, 2))
     
     def drawObject(o: GameObject): Unit = {
       paint.setStyle(Paint.Style.FILL)
@@ -167,27 +175,47 @@ class GameViewRender(val context: Context) extends ContextUtils {
       o match {
         case d : DrawingObject =>
           canvas.save()
-          canvas.rotate(radToDegree(d.angle.get), d.x.get, d.y.get)
+          canvas.rotate(radToDegree(d.angle.next), d.x.next, d.y.next)
           paint.setStyle(Paint.Style.STROKE)
 
-          canvas.setMatrix(tmpMatrix)
+          //canvas.setMatrix(tmpMatrix)
           //if(state == Editing) {
-            canvas.drawRect(d.left.get, d.top.get, d.right.get, d.bottom.get, paint)
+            canvas.drawRect(d.left.next, d.top.next, d.right.next, d.bottom.next, paint)
           //}
-          tmpDrawingObjectRect2.set(d.left.get, d.top.get, d.right.get, d.bottom.get)
-          tmpMatrix.setRectToRect(tmpDrawingObjectRect1, tmpDrawingObjectRect2, Matrix.ScaleToFit.CENTER)
+            if (obj_to_highlight contains d) 
+            canvas.drawRect(d.left.next, d.top.next, d.right.next, d.bottom.next, paintSelected)
+            
+          tmpDrawingObjectRect2.set(d.left.next, d.top.next, d.right.next, d.bottom.next)
+          tmpMatrix.setRectToRect(tmpDrawingObjectRect1, tmpDrawingObjectRect2, Matrix.ScaleToFit.FILL)
           canvas.concat(tmpMatrix)
           
           d.getDrawingElements foreach { case d@DrawingElement(time, fromx, fromy, tox, toy, width, color) =>
             if(time <= game.time) {
-              paint.setColor(color)
-              paint.setStrokeWidth(width)
-              canvas.drawLine(fromx, fromy, tox, toy, paint)
+              if(fromx == lastx && fromy == lasty && width == lastwidth && color == lastcolor) {
+                tmpPath.lineTo(tox, toy)
+              } else {
+                if(!tmpPath.isEmpty()) {
+                  paint.setColor(lastcolor)
+                  paint.setStrokeWidth(lastwidth)
+                  canvas.drawPath(tmpPath, paint)
+                  tmpPath.reset()
+                }
+                tmpPath.moveTo(fromx, fromy)
+                tmpPath.lineTo(tox, toy)
+                lastx = tox
+                lasty = toy
+                lastwidth = width
+                lastcolor = color
+              }
             }
           }
+          if(!tmpPath.isEmpty()) {
+            paint.setColor(lastcolor)
+            paint.setStrokeWidth(lastwidth)
+            canvas.drawPath(tmpPath, paint)
+            tmpPath.reset()
+          }
           
-          if (obj_to_highlight contains d) 
-            canvas.drawRect(d.left.get, d.top.get, d.right.get, d.bottom.get, paintSelected)
           canvas.restore()
           
         case r: Rectangle =>

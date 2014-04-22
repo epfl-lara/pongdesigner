@@ -5,21 +5,25 @@
         <item>@array/menu_add</item>
         <item>@array/menu_categories</item>
         <item>@array/menu_constraint</item>
-        </array>
+        <item>@array/menu_fix</item>
+    </array>
     <array name="menu_arrays_drawable">
         <item>@drawable/menu_add_object</item>
         <item>@drawable/menu_add_category</item>
         <item>@drawable/menu_rule_editor</item>
+        <item>@drawable/wrench</item>
     </array>
     <array name="menu_arrays_hint">
         <item>@string/menu_add_shape_hint</item>
         <item>@string/menu_add_category_hint</item>
         <item>@string/menu_add_constraint_hint</item>
+        <item>@string/menu_fix_hint</item>
     </array>
     <array name="menu_arrays_strings">
         <item>@array/menu_add_string</item>
         <item>@array/menu_categories_string</item>
         <item>@array/menu_constraint_string</item>
+        <item>@array/menu_fix_string</item>
     </array>
     <array name="menu_add">
         <item>@drawable/menu_add_rect</item>
@@ -42,8 +46,14 @@
     <array name="menu_constraint">
         
     </array>
+    <array name="menu_fix">
+        
+    </array>
     <array name="menu_constraint_string">
     </array>
+    <array name="menu_fix_string">
+    </array>
+    
     <array name="menu_categories">
         <item>@drawable/menu_add_accelerometer</item>
         <item>@drawable/menu_add_force_field</item>
