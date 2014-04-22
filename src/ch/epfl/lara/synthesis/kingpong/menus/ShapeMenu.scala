@@ -73,6 +73,13 @@ object ShapeMenu extends MenuCenter {
         TrashButton.visible = true
         VisibilityButton.visible = true
     }
+    selectedShape match {
+      case c: Rotationable =>
+        RotateButton.visible = true
+      case _ =>
+        RotateButton.visible = false
+    }
+    
     MoveButton.setPos(0, 0)
     SpeedButton.setPos(1, top_shift)
     PinButton.setPos(2, top_shift)
@@ -564,9 +571,9 @@ object RotateButton extends MenuButton {
     selectedShape match {
       case c:Rotationable =>
         if(modify_prev) {
-          c.angle set Math.floor((c.angle.get + 7.5f)/15).toFloat * 15
+          c.angle set Math.toRadians(Math.floor((Math.toDegrees(c.angle.get) + 7.5f)/15) * 15).toFloat
         } else {
-          c.angle setNext Math.floor((c.angle.next+7.5f)/15).toFloat * 15
+          c.angle setNext Math.toRadians(Math.floor((Math.toDegrees(c.angle.next) + 7.5f)/15) * 15).toFloat
         }
         if(copy_to_prev) {
           c.angle set c.angle.next

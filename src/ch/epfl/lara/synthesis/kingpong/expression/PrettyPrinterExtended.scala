@@ -263,6 +263,7 @@ trait PrettyPrinterExtendedTypical {
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
     s match {
+      case i: Identifier => c +< i.name +>
       case Find(category: Category, id: Identifier, body: Expr) =>
         c +! (id.name, category) + ".find{" + id + " => " + body +>
       case MethodCall(method, Nil) => c +< method + "()" +>
