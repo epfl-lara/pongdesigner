@@ -278,37 +278,15 @@ class GameView(val context: Context, attrs: AttributeSet)
     game.setInstantProperties(true)
     game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
-    //EditRuleButton.selected = false
-    //enterEditMode()
-    //AddRuleButton.hovered = false
     eventEditor.unselect()
   }
 
-  /** All game stuff from the Game trait */
-  //val world = new PhysicalWorld(Vec2(0, 0))
-  
-  //val menus = Category("Menus")()
-  //val FingerUps = CategoryInput("FingerUps", { case e: FingerUp => true case _ => false} )
-  //val FingerMoves = CategoryInput("FingerMoves", { case e: FingerMove => true case _ => false} )
-  
-  //val moveMenu = activeBox(menus)(name="Move", x=0, y=0, radius=42, visible=false, picture="cross_move")
-  
   var whitePaint = new Paint()
   whitePaint.setColor(0xFFFFFFFF)
   whitePaint.setStyle(Paint.Style.FILL_AND_STROKE)
   whitePaint.setStrokeWidth(1)
   whitePaint.setAntiAlias(true)
-  
-//  val moveRule2 = whenever(FingerMoveOver(moveMenu))(
-//    List(moveMenu("x"), moveMenu("y")) := List(moveMenu("x"), moveMenu("y")) + VecExpr(List(Val("dx"), Val("dy")))
-//  )
-//  // TODO : it currently updates their next state, not their current.
-//  val moveRule2bis = whenever(moveMenu("obj") =!= ObjectLiteral(null))(
-//     List(moveMenu("obj")("x"), moveMenu("obj")("y")) := snap(toGame(List(moveMenu("x"), moveMenu("y"))))
-//  )
-  
-//  register(moveRule2)
-//  register(moveRule2bis)
+ 
 
   /** The game model currently rendered. */
   private var game: Game = null
@@ -465,24 +443,21 @@ class GameView(val context: Context, attrs: AttributeSet)
   def toRunning(): Unit = if (state == Editing) {
     Log.d("kingpong", "toRunning()")
     // Remove objects that have been created after the date.
+    mRuleState = STATE_MODIFYING_GAME
+    MenuOptions.modify_prev = false
+    MenuOptions.copy_to_prev = true
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
+
+    eventEditor.unselect()
     game.objects.foreach(obj => { obj.validate(); obj.flush() } )
     game.setInstantProperties(false)
-    //computeMatrix()
     
     gameEngineEditors foreach (_.onExitEditMode())
 
-    //CategoryGroup.unselect()
-    setModeModifyGame()
-    //mAddRuleButton.text = res.getString(R.string.design_rule)
     MenuCenter.registeredMenusCenters foreach {
       _.menus.foreach { _.hovered = false}
     }
     
-    //timeTracker.unpause(game.currentTime - game.maxTime)
-    /*if(enteredEditTime != 0) {
-      totalNonPlayedTime += System.currentTimeMillis() - enteredEditTime - (game.currentTime - game.maxTime)
-      enteredEditTime = 0
-    }*/
     state = Running
   }
 
@@ -504,7 +479,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         game.update()
         setProgressTime(game.time)
       case Editing =>
-        //TODO
     }
   }
 
@@ -610,8 +584,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         currentFingerPos = res
         fingerIsDown = true
       case Editing =>
-        //super.onFingerDown(pos)
-        //TODO: Add menus handling ?
         fingerUpCanceled = false
         val x = pos.x
         val y = pos.y
@@ -726,26 +698,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       val y = pos.y
       if(shapeEditor.selectedShape != null) {
         menuSelected = ShapeMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
-        //if(ColorMenu.activated) {
-          //ColorMenu.onFingerUp(this, selectedShape, x, y)
-        //}
       }
-      /*if(!menuSelected && EventMenu.isActivated) {
-        menuSelected = EventMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
-      }*/
-      /*if(!menuSelected && ruleEditor.selectedRule != null && mRuleState != STATE_SELECTING_EVENTS) { // Test is top left menu activated
-        menuSelected = RuleMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
-      }*/
-      /*if(!menuSelected) { // Test is top left menu activated
-        menuSelected = StaticMenu.onFingerUp(this, shapeEditor.selectedShape, x, y)
-      }*/
-      
-      /*if(EditRuleButton.selected) {
-        ruleEditor.updateSelectedRule()
-      }*/
-      /*for(action <- ruleEditor.selectedRuleActions) { // Convert this to a menu ?
-        action.hovered = false
-      }*/
   
       if(!menuSelected) {
         // If the previous attempts to select a menu failed,
@@ -891,7 +844,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             mapIndex += index -> e
             index += 1
           }
-        case _ => // TODO : Add more actions to disambiguate.
+        case _ => // TODO : Add more actions to disambiguate (position?)
       }
     }
     
