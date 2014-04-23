@@ -223,12 +223,12 @@ class GameView(val context: Context, attrs: AttributeSet)
   def snapX(i: Float): Float = grid.snap(i)
   def snapY(i: Float): Float = grid.snap(i)
 
-  def snapX(i: Float, other: Seq[Float]): Float = {
+  def snapX(i: Float, other: Float*): Float = {
     val res = grid.snap(i) - i
     val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
     i + minDiff
   }
-  def snapY(i: Float, other: Seq[Float]): Float = {
+  def snapY(i: Float, other: Float*): Float = {
     val res = grid.snap(i) - i
     val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
     i + minDiff

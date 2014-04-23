@@ -265,6 +265,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
         case b: Box[_] => 
           //if(b == obj_to_highlight) paint.setAlpha(0x88)
           paint.setTextSize(b.height.next)
+          canvas.save()
+          canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           if(b.className == "Box[Boolean]") {
             val c = b.value.next.asInstanceOf[Boolean]
             val h = b.height.next
@@ -283,6 +285,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
             canvas.drawText(value, b.x.next, b.y.next, paint)
             if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
           }
+        canvas.restore()
           
         case r: RandomGenerator =>
           paint.setTextSize(r.height.get)

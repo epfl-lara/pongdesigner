@@ -82,6 +82,15 @@ object ShapeMenu extends MenuCenter {
       case _ =>
         RotateButton.visible = false
     }
+    selectedShape match {
+      case c: Array2D =>
+        SpeedButton.visible = false
+        PinButton.visible = false
+      case c: Cell =>
+        SpeedButton.visible = false
+        PinButton.visible = false
+      case _ =>
+    }
     
     MoveButton.setPos(0, 0)
     SpeedButton.setPos(1, top_shift)
@@ -196,15 +205,11 @@ object MoveButton extends MenuButton {
         case selectedShape: Movable =>
           
           if(modify_prev) {
-            val alignPointsX = List(selectedShape.left.get, selectedShape.right.get)
-            val alignPointsY = List(selectedShape.top.get, selectedShape.bottom.get)
-            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX, alignPointsX)
-            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY, alignPointsY)
+            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.get, selectedShape.right.get)
+            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.get, selectedShape.bottom.get)
           } else {
-            val alignPointsX = List(selectedShape.left.next, selectedShape.right.next)
-            val alignPointsY = List(selectedShape.top.next, selectedShape.bottom.next)
-            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX, alignPointsX)
-            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY, alignPointsY)
+            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.next, selectedShape.right.next)
+            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.next, selectedShape.bottom.next)
           }
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
@@ -300,14 +305,20 @@ object SizeButton extends MenuButton {
           } else {
             c.radius setNext Math.max(smallest_size, c.radius.next + shiftX)
           }
+          val newRadius = c.radius.getPrevOrNext(modify_prev) + relativeX
+          val rx = c.x.getPrevOrNext(modify_prev)
+          val ry = c.y.getPrevOrNext(modify_prev)
+          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx-newRadius, rx+newRadius*1.414f/2, rx-newRadius*1.414f/2)-rx))
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
         case r:ResizableRectangular =>
           val newWidth = r.width.getPrevOrNext(modify_prev) + relativeX
           val newHeight = r.height.getPrevOrNext(modify_prev) + relativeY
-          r.width.setPrevOrNext(modify_prev, Math.max(smallest_size, gameEngine.snap(x+newWidth/2))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, gameEngine.snap(y+newHeight/2))
+          val rx = r.x.getPrevOrNext(modify_prev)
+          val ry = r.y.getPrevOrNext(modify_prev)
+          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx-newWidth/2)-rx)))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry-newHeight/2)-ry)))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next
