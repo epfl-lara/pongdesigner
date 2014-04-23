@@ -77,7 +77,7 @@ object FixButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape.historicalProperties foreach { p =>
-      p.setInit(Literal(p.get))
+      p.setInit(p.getExpr)
       p.copycurrentToTime(0)
     }
     hovered = false
@@ -105,7 +105,6 @@ object CopyButton extends MenuButton {
     val freshName = gameEngine.getGame.getNewName(selectedShape.name.get)
     val fresh = selectedShape.getCopy(freshName)
     fresh.creationTime.setInit(gameEngine.getGame.time)
-    fresh.flush()
     gameEngine.getGame.add(fresh)
       
     hovered = false
