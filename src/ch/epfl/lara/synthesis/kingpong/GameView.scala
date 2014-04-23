@@ -229,15 +229,21 @@ class GameView(val context: Context, attrs: AttributeSet)
   def snapX(i: Float): Float = grid.snap(i)
   def snapY(i: Float): Float = grid.snap(i)
 
-  def snapX(i: Float, other: Float*): Float = {
+  /**
+   * Snap i to the grid, or others to the grid, or i to points.
+   * @return the new point.
+   */
+  def snapX(i: Float, other: Float*)(implicit points: Float*): Float = {
     val res = grid.snap(i) - i
     val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(n) < Math.abs(sn)) n else sn }
-    i + minDiff
+    val minDiff2 = (minDiff /: points) { case (minDiff, o) => val n = o - i; if(Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+    i + minDiff2
   }
-  def snapY(i: Float, other: Float*): Float = {
+  def snapY(i: Float, other: Float*)(implicit points: Float*): Float = {
     val res = grid.snap(i) - i
     val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(n) < Math.abs(sn)) n else sn }
-    i + minDiff
+    val minDiff2 = (minDiff /: points) { case (minDiff, o) => val n = o - i; if(Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+    i + minDiff2
   }
   
   var gameEngineEditors: List[GameEngineEditor] = _
@@ -376,15 +382,16 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   // Testing section
   var obj_to_highlight: Set[GameObject] = Set.empty
-  var codeMapping = Map[Int, Category]()
+  var codeMapping = Map[Int, List[Category]]()
   var propMapping = Map[Int, Property[_]]()
+  var constMapping = Map[Int, Literal[_]]()
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
       if(codeMapping != null) {
         codeMapping.get(start) match {
           case Some(category) if category != null =>
-            obj_to_highlight = category.objects.toSet
+            obj_to_highlight = category.flatMap(_.objects).toSet
           case Some(_) =>
             obj_to_highlight = Set.empty
           case None =>
@@ -392,18 +399,6 @@ class GameView(val context: Context, attrs: AttributeSet)
             
         }
       }
-//      if(propMapping != null) {
-//        propMapping.get(start) match {
-//          case Some(p) => // Activate the menu corresponding to this kind of property;
-//            p.name match {
-//              case "x" | "y" => evaluate(Block(moveMenu.obj := ObjectLiteral(p.parent),
-//                  List(moveMenu.x, moveMenu.y) := fromGame(List(p.parent.x.expr, p.parent.y.expr)),
-//                  moveMenu("visible") := true))
-//              case _ =>
-//            }
-//          case _ =>
-//        }
-//      }
     })
   }
   
@@ -675,7 +670,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     val objectsTouched = game.abstractObjectFingerAt(res)
     obj_to_highlight = objectsTouched.toSet
     val rulesConcerned = game.getRulesbyObject(objectsTouched)
-    updateCodeView(rulesConcerned, objectsTouched)
     shapeEditor.unselect()
     // The selected shape should be the first after the previousSelectedShape,
     // or the closest else.
@@ -714,6 +708,9 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(shapeToSelect != null) {
       shapeEditor.select(shapeToSelect)
       previousSelectedShape = shapeToSelect
+      updateCodeView(rulesConcerned, Set(shapeToSelect))
+    } else {
+      updateCodeView(rulesConcerned, Set())
     }
   }
 
@@ -992,11 +989,13 @@ class GameView(val context: Context, attrs: AttributeSet)
     val mObjects = mapping.mObjects
     codeMapping = mapping.mPosCategories
     propMapping = mapping.mPropertyPos
+    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.head.isInstanceOf[Literal[_]]) yield a->b.head.asInstanceOf[Literal[_]]).toMap
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
       mObjects.get(obj.category) match {
-        case Some(l) => l foreach { case (start, end) => rulesString = SyntaxColoring.setSpanOnBounds(rulesString, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
+        case Some(l) => l foreach { case (start, end) =>
+          rulesString = SyntaxColoring.setSpanOnBounds(rulesString, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
         case None => // No objects to color
       }
     }
@@ -1010,7 +1009,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def push(m: Matrix) = {
     m.invert(matrixI)
     
-    gameViewRender.grid = Grid(matrixI, width=mWidth, numSteps=15, stroke_width=1, color=0x88000000)
+    gameViewRender.grid = Grid(matrixI, width=mWidth, numSteps=30, stroke_width=1, color=0x88000000)
     if(game != null) game.FINGER_SIZE = matrixI.mapRadius(35)
   }
 
@@ -1052,10 +1051,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.testHovering(to.x, to.y, button_size)
         SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
-      /*if(EventMenu.isActivated) {
-        EventMenu.testHovering(to.x, to.y, button_size)
-        EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
-      }*/
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {

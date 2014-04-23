@@ -40,7 +40,7 @@ trait PrettyPrinterExtendedTypical {
   lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
   
   object Mappings {
-    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, Category](), Map[Int, Tree](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
+    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
   }
   
   /**
@@ -50,7 +50,11 @@ trait PrettyPrinterExtendedTypical {
    * mProperties : Mapping from each property to a set of positions in the code
    * mComment    : Mapping from each position of the code to the corresponding comment
    */
-  case class Mappings(mObjects: Map[Category, List[(Int, Int)]], mPosCategories: Map[Int, Category], mPos: Map[Int, Tree], mProperties: Map[Property[_], List[(Int, Int)]], mComment: Map[Int, String]) {
+  case class Mappings(mObjects: Map[Category, List[(Int, Int)]],
+      mPosCategories: Map[Int, List[Category]],
+      mPos: Map[Int, List[Tree]],
+      mProperties: Map[Property[_], List[(Int, Int)]],
+      mComment: Map[Int, String]) {
     def add(obj: GameObject, start: Int, end: Int): Mappings = {
       add(obj.category, start, end)
     }
@@ -86,11 +90,11 @@ trait PrettyPrinterExtendedTypical {
         case _ => mm
       }
     }
-    def addPositions[T](s: T, start: Int, end: Int, mm: Map[Int, T]): Map[Int, T] = {
+    def addPositions[T](s: T, start: Int, end: Int, mm: Map[Int, List[T]]): Map[Int, List[T]] = {
       (mm /: (start to end)) { case (map, i) =>
         map.get(i) match {
-          case Some(t) => map
-          case None => map + (i -> s)
+          case Some(t) => map + (i -> (s::t))
+          case None => map + (i -> (s::Nil))
         }
       }
     }

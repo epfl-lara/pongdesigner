@@ -204,8 +204,10 @@ object MoveButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
-          selectedShape.x.setPrevOrNext(modify_prev, gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.getPrevOrNext(modify_prev) + relativeX, selectedShape.right.getPrevOrNext(modify_prev) + relativeX))
-          selectedShape.y.setPrevOrNext(modify_prev, gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.getPrevOrNext(modify_prev) + relativeY, selectedShape.bottom.getPrevOrNext(modify_prev) + relativeY))
+          selectedShape.x.setPrevOrNext(modify_prev,
+              gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.getPrevOrNext(modify_prev) + relativeX, selectedShape.right.getPrevOrNext(modify_prev) + relativeX)(points=selected_shape_first_x))
+          selectedShape.y.setPrevOrNext(modify_prev,
+              gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.getPrevOrNext(modify_prev) + relativeY, selectedShape.bottom.getPrevOrNext(modify_prev) + relativeY)(points=selected_shape_first_y))
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
             selectedShape.y set selectedShape.y.next
@@ -295,10 +297,15 @@ object SizeButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case c:Circle =>
-          val newRadius =selected_shape_first_radius + relativeX
+          val dx1 = toX - relativeX - selected_shape_first_x
+          val dy1 = toY - relativeY - selected_shape_first_y
+          val dx2 = toX - selected_shape_first_x
+          val dy2 = toY - selected_shape_first_y
+          val dr = Math.sqrt((dx2*dx2+dy2*dy2))-Math.sqrt((dx1*dx1+dy1*dy1)).toFloat
+          val newRadius =selected_shape_first_radius + dr
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
-          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx-newRadius, rx+newRadius*1.414f/2, rx-newRadius*1.414f/2)-rx))
+          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx-newRadius, rx+newRadius*1.414f/2, rx-newRadius*1.414f/2)(points=rx+c.radius.getPrevOrNext(modify_prev))-rx))
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
@@ -307,8 +314,8 @@ object SizeButton extends MenuButton {
           val newHeight = selected_shape_first_height + relativeY
           val rx = r.x.getPrevOrNext(modify_prev)
           val ry = r.y.getPrevOrNext(modify_prev)
-          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx-newWidth/2)-rx)))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry-newHeight/2)-ry)))
+          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx-newWidth/2)(points=rx+selected_shape_first_width/2)-rx)))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry-newHeight/2)(points=ry+selected_shape_first_height/2)-ry)))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next

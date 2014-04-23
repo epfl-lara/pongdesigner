@@ -10,7 +10,7 @@ object Grid {
     val a = Array(0f, 0f, width, 0f)
     m.mapPoints(a)
     
-    var n = Math.floor(Math.log((a(2)-a(1))/numSteps)/Math.log(2))
+    var n = Math.floor(Math.log((a(2)-a(0))/numSteps)/Math.log(2))
     var step = Math.pow(2, n).toFloat
     new Grid(step, offset=0, stroke_width=stroke_width, color=color)
   }
