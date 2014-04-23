@@ -251,7 +251,7 @@ class RandomGenerator(
   }
 
   def makecopy(name: String): GameObject = {
-    new RandomGenerator(game, name, init_x, init_y, init_angle, init_width, 
+    new RandomGenerator(game, name, init_x, init_y, init_angle, init_width, // TODO : Big bug. x.init
       init_height, init_minValue, init_maxValue, init_visible, init_color)
   }
   

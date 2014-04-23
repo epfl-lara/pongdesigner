@@ -410,6 +410,8 @@ trait Game extends RuleManager { self =>
         crtEvents.clear()
         // TODO : Add or remove objects
         
+        // TODO : Bouge tête de lecture.
+        
         //crtEvents = Nil
       }
     }
