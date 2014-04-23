@@ -301,7 +301,7 @@ object SizeButton extends MenuButton {
           val dy1 = toY - relativeY - selected_shape_first_y
           val dx2 = toX - selected_shape_first_x
           val dy2 = toY - selected_shape_first_y
-          val dr = Math.sqrt((dx2*dx2+dy2*dy2))-Math.sqrt((dx1*dx1+dy1*dy1)).toFloat
+          val dr = Math.sqrt((dx2*dx2+dy2*dy2)).toFloat-Math.sqrt((dx1*dx1+dy1*dy1)).toFloat
           val newRadius =selected_shape_first_radius + dr
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
