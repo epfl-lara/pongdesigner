@@ -173,16 +173,18 @@ class GameView(val context: Context, attrs: AttributeSet)
   //implicit val self: Game = this
   
   def menuCallBacks: String => Boolean = { s =>
-    s match {
+    var shape: GameObject = null
+    val res = s match {
       case Str(R.string.add_rectangle_hint) =>
-        game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
+        shape = game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
         true
       case Str(R.string.add_circle_hint) =>
-        game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
+        shape = game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
         true
       case Str(R.string.add_drawing_object_hint) =>
         val d = game.drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)
         game.addRule(d.defaultRule(game))
+        shape = d
         true
       
       case Str(R.string.menu_add_constraint_hint) =>
@@ -218,6 +220,10 @@ class GameView(val context: Context, attrs: AttributeSet)
       case _ =>
         false
     }
+    if(shape != null) {
+      shapeEditor.selectedShape = shape
+    }
+    res
   }
 
   def snapX(i: Float): Float = grid.snap(i)
@@ -225,12 +231,12 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   def snapX(i: Float, other: Float*): Float = {
     val res = grid.snap(i) - i
-    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
+    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(n) < Math.abs(sn)) n else sn }
     i + minDiff
   }
   def snapY(i: Float, other: Float*): Float = {
     val res = grid.snap(i) - i
-    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
+    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(n) < Math.abs(sn)) n else sn }
     i + minDiff
   }
   
@@ -402,14 +408,22 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
   
   /** When the progress changes from the user. */
-  def onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) = {
-    if(fromUser && state == Editing) {
-      if(seekBar.getProgress() > seekBar.getSecondaryProgress()) {
+  def onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean): Unit = {
+    if(fromUser/* && state == Editing*/) {
+      if(seekBar.getProgress() > seekBar.getSecondaryProgress() && state != Editing) {
+        return
+      }
+      if(seekBar.getProgress() > seekBar.getSecondaryProgress() && state == Editing) {
         seekBar.setProgress(seekBar.getSecondaryProgress())
       }
       val t = game.maxTime + progress - seekBar.getSecondaryProgress()
       Log.d("GameView",s"OnProgress up to $t")
-      game.restore(t)
+      if(state == Editing) {
+        game.restore(t)
+      } else {
+        game.setRestoreTo(t)
+      }
+      
       //game.returnToTime(game.maxTime + seekBar.getProgress() - seekBar.getSecondaryProgress())
     }
   }
@@ -439,7 +453,9 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /** Called by the activity when to progress bar is modified by the user. */
   def onProgressBarChanged(progress: Int): Unit = {
-    
+    if(state == Editing) {
+      layoutResize()
+    }
   }
 
   /** Change the current state to Editing. */
@@ -477,6 +493,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     toEditing()
     setProgressTime(0)
     game.reset()
+    
   }
 
   def reset(newGame: Game): Unit = {
@@ -815,18 +832,32 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     //mQuickAction.addStickyActionItem(changeStateItem)
     var index = 0
-    var mapIndex = Map[Int, (Event, Int)]()
+    var mapIndex = Map[Int, Either[(Event, Int), GameObject]]()
     var moveTaken = Set[FingerMove]()
+    var contactTaken = Set[(String, String)]()
+    // TODO : Sort by relevance.
+    for(o <- objectList) {
+      if(currentObjectSelection contains o) {
+        mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_object, o.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.menu_add_object)))
+      } else {
+        mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_object, o.name.get), drw(R.drawable.menu_add_object)))
+      }
+      mapIndex += index -> (Right(o))
+      index += 1
+    }
     for(e@(event, time) <- eventList) {
       event match {
         case BeginContact(contact) =>
-          if(currentEventSelection contains e) {
-            mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect)))
-          } else {
-            mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect)))
+          if(!contactTaken((contact.objectA.name.get, contact.objectB.name.get))) {
+            if(currentEventSelection contains e) {
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect)))
+            } else {
+              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect)))
+            }
+            contactTaken += ((contact.objectA.name.get, contact.objectB.name.get))
+            mapIndex += index -> Left(e)
+            index += 1
           }
-          mapIndex += index -> (e)
-          index += 1
         
         case FingerUp(pos, objs) =>
           for(obj <- objs) {
@@ -836,7 +867,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             } else {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
             }
-            mapIndex += index -> e
+            mapIndex += index -> Left(e)
             index += 1
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
@@ -852,7 +883,7 @@ class GameView(val context: Context, attrs: AttributeSet)
                   } else {
                     mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
                   }
-                  mapIndex += index -> e
+                  mapIndex += index -> Left(e)
                   index += 1
                 }
               }
@@ -866,7 +897,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             } else {
               mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button)))
             }
-            mapIndex += index -> e
+            mapIndex += index -> Left(e)
             index += 1
           }
         case _ => // TODO : Add more actions to disambiguate (position?)
@@ -875,12 +906,19 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     mQuickAction.setOnActionItemClickListener{ (quickAction: QuickAction, pos: Int, actionId: Int) =>
       mapIndex.get(actionId) match {
-        case Some(event) =>
+        case Some(Left(event)) =>
           mQuickAction.dismiss()
           if(currentEventSelection contains event){
             remaining(currentEventSelection.filterNot(_ == event), currentObjectSelection)
           } else {
             remaining(event::currentEventSelection, currentObjectSelection)
+          }
+        case Some(Right(obj)) =>
+          mQuickAction.dismiss()
+          if(currentObjectSelection contains obj){
+            remaining(currentEventSelection, currentObjectSelection.filterNot(_ == obj))
+          } else {
+            remaining(currentEventSelection, obj::ccurrentObjectSelection)
           }
         case None =>
           mQuickAction.dismiss()

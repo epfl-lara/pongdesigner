@@ -311,27 +311,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
         case e: Positionable with Directionable =>
           val c = e.color.next
           if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
-            canvas.restore()
-            canvas.save()
-            val center = render_out_vec
-            render_in_array(0) = e.x.next
-            render_in_array(1) = e.y.next
-            mapVectorFromGame(matrix, render_in_array, center)
-            canvas.rotate(radToDegree(e.angle.next), center.x, center.y)
-            val d = bitmaps(c)
-            val leftTop = render_out_vec2
-            render_in_array(0) = e.left.next
-            render_in_array(1) = e.top.next
-            mapVectorFromGame(matrix, render_in_array, leftTop)
-            val rightBottom = render_out_vec3
-            render_in_array(0) = e.right.next
-            render_in_array(1) = e.bottom.next
-            mapVectorFromGame(matrix, render_in_array, rightBottom)
-            d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
-            d.draw(canvas)
-            canvas.restore()
-            canvas.save()
-            canvas.setMatrix(matrix)
+            drawBitmapInGame(canvas, matrix, e, bitmaps(c))
           }
         case _ =>
       }
@@ -386,6 +366,30 @@ class GameViewRender(val context: Context) extends ContextUtils {
       canvas.drawColor(0xFF404040, PorterDuff.Mode.ADD)
     }
     drawMenuOn(canvas, gameView, matrix, matrixI, state, eventEditor, shapeEditor)
+  }
+  
+  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable) = {
+    canvas.restore()
+    canvas.save()
+    val center = render_out_vec
+    render_in_array(0) = e.x.next
+    render_in_array(1) = e.y.next
+    mapVectorFromGame(matrix, render_in_array, center)
+    canvas.rotate(radToDegree(e.angle.next), center.x, center.y)
+    val d = bitmap
+    val leftTop = render_out_vec2
+    render_in_array(0) = e.left.next
+    render_in_array(1) = e.top.next
+    mapVectorFromGame(matrix, render_in_array, leftTop)
+    val rightBottom = render_out_vec3
+    render_in_array(0) = e.right.next
+    render_in_array(1) = e.bottom.next
+    mapVectorFromGame(matrix, render_in_array, rightBottom)
+    d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
+    d.draw(canvas)
+    canvas.restore()
+    canvas.save()
+    canvas.setMatrix(matrix)
   }
   
   /** Draws the menu on the canvas */

@@ -204,14 +204,8 @@ object MoveButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
-          
-          if(modify_prev) {
-            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.get, selectedShape.right.get)
-            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.get, selectedShape.bottom.get)
-          } else {
-            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.next, selectedShape.right.next)
-            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.next, selectedShape.bottom.next)
-          }
+          selectedShape.x.setPrevOrNext(modify_prev, gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.getPrevOrNext(modify_prev) + relativeX, selectedShape.right.getPrevOrNext(modify_prev) + relativeX))
+          selectedShape.y.setPrevOrNext(modify_prev, gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.getPrevOrNext(modify_prev) + relativeY, selectedShape.bottom.getPrevOrNext(modify_prev) + relativeY))
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
             selectedShape.y set selectedShape.y.next
@@ -270,7 +264,7 @@ object SpeedButton extends MenuButton {
 object SizeButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    selectedShape match {
+    /*selectedShape match {
       case c:Circle =>
         if(modify_prev) {
           c.radius set Math.floor((c.radius.get + smallest_size)/smallest_size2).toFloat * smallest_size2
@@ -293,7 +287,7 @@ object SizeButton extends MenuButton {
           r.height set r.height.next
         }
       case _ =>
-    }
+    }*/
     hovered = false
   }
   
@@ -301,11 +295,6 @@ object SizeButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case c:Circle =>
-          if(modify_prev) {
-            c.radius set Math.max(smallest_size, c.radius.get + shiftX)
-          } else {
-            c.radius setNext Math.max(smallest_size, c.radius.next + shiftX)
-          }
           val newRadius =selected_shape_first_radius + relativeX
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)

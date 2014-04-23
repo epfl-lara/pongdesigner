@@ -53,6 +53,7 @@ trait RuleManager {
 trait Game extends RuleManager { self => 
   implicit val seflImplicit = self
   val world: PhysicalWorld
+  var scheduledRestoreTime: Option[Int] = None
 
   private val _objects = ArrayBuffer.empty[GameObject]
   
@@ -85,6 +86,12 @@ trait Game extends RuleManager { self =>
       world.clear()
     }
   }
+  
+  private[kingpong] def setRestoreTo(t: Int): Unit = {
+    if (t >= 0 && t <= maxTime) {
+      scheduledRestoreTime = Some(t)
+    }
+  }
 
   private[kingpong] def reset(): Unit = {
     objects.foreach(_.reset(interpreter))
@@ -96,7 +103,11 @@ trait Game extends RuleManager { self =>
 
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
-
+    scheduledRestoreTime match {
+      case Some(t) => restore(t)
+        scheduledRestoreTime = None
+      case None =>
+    }
     // save contacts
     world.beginContacts foreach { 
       EventHistory addEvent BeginContact(_)
