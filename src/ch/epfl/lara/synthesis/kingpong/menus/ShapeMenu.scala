@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.content.Context
 import org.jbox2d.dynamics.BodyType
 import org.jbox2d.common.Vec2
+import scala.collection.mutable.ArrayBuffer
 
 
 object MenuOptions {
@@ -205,9 +206,9 @@ object MoveButton extends MenuButton {
       selectedShape match {
         case selectedShape: Movable =>
           selectedShape.x.setPrevOrNext(modify_prev,
-              gameEngine.snapX(selected_shape_first_x + relativeX, selectedShape.left.getPrevOrNext(modify_prev) + relativeX, selectedShape.right.getPrevOrNext(modify_prev) + relativeX)(points=selected_shape_first_x))
+              gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevOrNext(modify_prev) + shiftX, selectedShape.right.getPrevOrNext(modify_prev) + shiftX*/)(points=selected_shape_first_x))
           selectedShape.y.setPrevOrNext(modify_prev,
-              gameEngine.snapY(selected_shape_first_y + relativeY, selectedShape.top.getPrevOrNext(modify_prev) + relativeY, selectedShape.bottom.getPrevOrNext(modify_prev) + relativeY)(points=selected_shape_first_y))
+              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevOrNext(modify_prev) + shiftY, selectedShape.bottom.getPrevOrNext(modify_prev) + shiftY*/)(points=selected_shape_first_y))
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
             selectedShape.y set selectedShape.y.next
@@ -320,6 +321,41 @@ object SizeButton extends MenuButton {
             r.width set r.width.next
             r.height set r.height.next
           }
+        case r:Array2D =>
+          val newWidth = selected_shape_first_width + relativeX
+          val newHeight = selected_shape_first_height + relativeY
+          val numCols = r.numColumns.getPrevOrNext(modify_prev)
+          val numRows = r.numRows.getPrevOrNext(modify_prev)
+          
+          if(newWidth/ (numCols +1) > Array2D.CELL_WIDTH) {
+            r.numColumns.setPrevOrNext(modify_prev, numCols + 1)
+            // Add a column
+            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(r, numCols + 1, row) }
+            r.cells += newCells
+            for(cell <- newCells) gameEngine.getGame.add(cell)
+            
+          } else if(newWidth/ (numCols - 1) < Array2D.CELL_WIDTH) {
+            // remove a column
+            r.numColumns.setPrevOrNext(modify_prev, numCols - 1)
+            val deletedColumn = r.cells.remove(r.cells.length - 1)
+            for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
+          }
+          if(newHeight/ (numRows + 1) > Array2D.CELL_HEIGHT) {
+            r.numRows.setPrevOrNext(modify_prev, numRows + 1)
+            // add a line
+            for((column, i) <- r.cells.zipWithIndex) {
+              val newCell = Cell(r, i, numRows+1)
+              column += newCell
+              gameEngine.getGame.add(newCell)
+            }
+          } else if(newHeight/ (numRows - 1) < Array2D.CELL_HEIGHT) {
+            r.numRows.setPrevOrNext(modify_prev, numRows - 1)
+            // remove a row
+            val deletedRow = for(column <- r.cells) yield column.remove(column.length - 1)
+            // Do something with the deleted row
+            for(cell <- deletedRow) gameEngine.getGame.remove(cell)
+          }
+          
         case _ =>
       }
     }
@@ -609,9 +645,9 @@ object RotateButton extends MenuButton {
           val norms = Math.sqrt((dx*dx+dy*dy)*(dxPrev*dxPrev+dyPrev*dyPrev)).toFloat
           val sinAngle = crossProduct/norms
           val cosAngle = dotProduct/norms
-          def snap(angle: Float) = Math.toRadians(Math.floor((Math.toDegrees(c.angle.get) + 7.5f)/15) * 15).toFloat
+          def snap(angle: Float) = Math.toRadians(Math.floor((Math.toDegrees(angle) + 7.5f)/15) * 15).toFloat
           
-          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + (Math.atan2(cosAngle, -sinAngle).toFloat)))
+          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + (Math.atan2(sinAngle, cosAngle).toFloat)))
           if(copy_to_prev) {
             c.angle set c.angle.next
           }

@@ -226,8 +226,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     res
   }
 
-  def snapX(i: Float): Float = grid.snap(i)
-  def snapY(i: Float): Float = grid.snap(i)
+  //def snapX(i: Float): Float = grid.snap(i)
+  //def snapY(i: Float): Float = grid.snap(i)
 
   /**
    * Snap i to the grid, or others to the grid, or i to points.
@@ -384,6 +384,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var obj_to_highlight: Set[GameObject] = Set.empty
   var codeMapping = Map[Int, List[Category]]()
   var propMapping = Map[Int, Property[_]]()
+  var treeMapping = Map[Int, List[Tree]]()
   var constMapping = Map[Int, Literal[_]]()
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
@@ -396,6 +397,17 @@ class GameView(val context: Context, attrs: AttributeSet)
             obj_to_highlight = Set.empty
           case None =>
             obj_to_highlight = Set.empty
+        }
+      }
+      if(constMapping != null) {
+        constMapping.get(start) match {
+          case Some(constLiteral) =>
+            // Find the tree in which this literal is
+            println(s"Found const literal: $constLiteral")
+            val tree = treeMapping(start).lastOption
+            println(s"The rule is: $tree")
+            
+          case None =>
             
         }
       }
@@ -600,13 +612,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   var mDisplacementY: Float = 0
 
   def onFingerDown(pos: Vec2): Unit = {
-    state match {
-      case Running => 
+    if(state == Running) {
         val res = mapVectorToGame(pos)
         game.onFingerDown(res)
         currentFingerPos = res
         fingerIsDown = true
-      case Editing =>
+    }
+    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS) {
         fingerUpCanceled = false
         val x = pos.x
         val y = pos.y
@@ -717,13 +729,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Called when a finger is up
    */
-  def onFingerUp(pos: Vec2): Unit = state match {
-    case Running => 
+  def onFingerUp(pos: Vec2): Unit = {
+    if(state == Running) {
       val res = mapVectorToGame(pos)
       game.onFingerUp(res)
       fingerIsDown = false
       currentFingerPos = res
-    case Editing =>
+    }
+    if(state == Editing || mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS) {
       // Select an object below if any and display the corresponding code
       val res = mapVectorToGame(pos)
 
@@ -750,9 +763,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         val touchCoords = res
         
         if(mRuleState == STATE_SELECTING_EVENTS) {
-          
           // Detects objects and events.
-          
           // If we are making a rule, we select the events first
           // Sorts selectable events.
           val eventList = ListBuffer[(Event, Int)]()
@@ -793,6 +804,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
       }
       //super.onFingerUp(pos)
+    }
   }
   
   /**
@@ -989,6 +1001,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     val mObjects = mapping.mObjects
     codeMapping = mapping.mPosCategories
     propMapping = mapping.mPropertyPos
+    treeMapping = mapping.mPos
     constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.head.isInstanceOf[Literal[_]]) yield a->b.head.asInstanceOf[Literal[_]]).toMap
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
@@ -1018,12 +1031,13 @@ class GameView(val context: Context, attrs: AttributeSet)
    * @param from The first coordinate
    * @param to   The second coordinate
    */
-  def onOneFingerMove(from: Vec2, to: Vec2): Unit = state match {
-    case Running => 
+  def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
+    if(state == Running) {
       val res = mapVectorToGame(to)
       game.onOneFingerMove(mapVectorToGame(from), res)
       currentFingerPos = res
-    case Editing =>
+    }
+    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS) {
       //matrix.postTranslate(to.x - from.x, to.y - from.y)
       //push(matrix)
       //super.onOneFingerMove(from, to)
@@ -1051,6 +1065,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.testHovering(to.x, to.y, button_size)
         SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
+    }
   }
 
   def onTwoFingersMove(from1: Vec2, to1: Vec2, from2: Vec2, to2: Vec2): Unit = {

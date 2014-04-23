@@ -1,11 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
 import android.util.Log
-
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.Shape
-
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Random
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -16,6 +14,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
+import scala.collection.mutable.ArrayBuffer
 
 abstract class AbstractObject(init_name: Expr, 
                               init_x: Expr,
@@ -289,9 +288,9 @@ class Array2D(
   }
     
   //TODO for the moment the array size is constant
-  lazy val cells = Array.tabulate(numColumns.get, numRows.get) {
-    //TODO set a category tho these cells
-    Cell(this, _, _)
+  lazy val cells = ArrayBuffer.tabulate(numColumns.get, numRows.get) { (col, row) =>
+    //TODO set a category to these cells
+    Cell(this, col, row)
   }
   
   // Properties
