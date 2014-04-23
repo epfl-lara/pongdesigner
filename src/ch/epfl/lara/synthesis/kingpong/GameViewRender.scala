@@ -139,6 +139,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
     
     paint.setStyle(Paint.Style.FILL)
     paint.setStrokeWidth(mapRadiusI(matrixI, 3))
+    // alias to `paint.setLinearText(true)`, since it is deprecated.
+    paint.setFlags(paint.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
     paintSelected.setStrokeWidth(mapRadiusI(matrixI, 3))
     paintPrev.setStyle(Paint.Style.FILL)
     paintPrev.setStrokeWidth(mapRadiusI(matrixI, 3))
@@ -278,10 +280,15 @@ class GameViewRender(val context: Context) extends ContextUtils {
             canvas.drawCircle(x + h/2, y, h/2, paint)
           } else {
             val value = b.name.next + ":" + b.value.next.toString
-            paint.setLinearText(true)
             canvas.drawText(value, b.x.next, b.y.next, paint)
             if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
           }
+          
+        case r: RandomGenerator =>
+          paint.setTextSize(r.height.get)
+          val value = r.value.get.toString
+          canvas.drawText(value, r.x.get, r.y.get, paint)
+          
         case j: Joystick =>
           paint.setAlpha(0x20)
           canvas.drawCircle(j.x.next, j.y.next, j.radius.next, paint)
