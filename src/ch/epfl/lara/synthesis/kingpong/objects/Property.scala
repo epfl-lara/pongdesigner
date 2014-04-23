@@ -22,6 +22,11 @@ abstract class Property[@specialized T : PongType]() { self =>
 
   /** Next value after the end of this time slot. */
   def next: T  
+  
+  /** Depending on the argument, get the prev or the next */
+  def getPrevOrNext(b: Boolean) = {
+    if(b) get else next
+  }
 
   /** Get the Pong type of this property. */
   def getPongType: Type = tpe.getPongType
@@ -78,6 +83,14 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
   
   def setNext(v: T): self.type
   def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
+  
+  /** Depending on the argument, get the prev or the next */
+  def setPrevOrNext(b: Boolean, v: T): self.type = {
+    if(b) set(v) else setNext(v)
+  }
+  def setPrevOrNext(b: Boolean, e: Expr): self.type = {
+    if(b) set(e) else setNext(e)
+  }
 }
 
 trait AssignableProperty[T] { self: RWProperty[T] =>

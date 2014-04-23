@@ -21,6 +21,9 @@ object MenuOptions {
   /** Coordinates of the selected shape before moving. */
   var selected_shape_first_x = 0f
   var selected_shape_first_y = 0f
+  var selected_shape_first_radius = 0f
+  var selected_shape_first_width = 0f
+  var selected_shape_first_height = 0f
   
   /** Initialized at run time*/
   var context: Context = null
@@ -170,9 +173,9 @@ object MoveButton extends MenuButton {
     if(selectedShape.noVelocity) {
       selectedShape match {
         case selectedShape: Movable =>
-          if(modify_prev) {
-            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set Math.floor((selectedShape.x.get+smallest_size)/smallest_size2).toFloat * smallest_size2
-            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set Math.floor((selectedShape.y.get+smallest_size)/smallest_size2).toFloat * smallest_size2
+          /*if(modify_prev) {
+            if(Math.abs(selectedShape.x.get - selected_shape_first_x) >= 10) selectedShape.x set gameEngine.snapX(selectedShape.x.get)
+            if(Math.abs(selectedShape.y.get - selected_shape_first_y) >= 10) selectedShape.y set gameEngine.snapY(selectedShape.x.get)
           } else {
             if(Math.abs(selectedShape.x.next - selected_shape_first_x) >= 10) selectedShape.x setNext Math.floor((selectedShape.x.next+smallest_size)/smallest_size2).toFloat * smallest_size2
             if(Math.abs(selectedShape.y.next - selected_shape_first_y) >= 10) selectedShape.y setNext Math.floor((selectedShape.y.next+smallest_size)/smallest_size2).toFloat * smallest_size2  
@@ -180,7 +183,7 @@ object MoveButton extends MenuButton {
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
             selectedShape.y set selectedShape.y.next
-          }
+          }*/
         case _ =>
       }
     }
@@ -191,12 +194,17 @@ object MoveButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
+          
           if(modify_prev) {
-            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX)
-            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY)
+            val alignPointsX = List(selectedShape.left.get, selectedShape.right.get)
+            val alignPointsY = List(selectedShape.top.get, selectedShape.bottom.get)
+            selectedShape.x set gameEngine.snapX(selected_shape_first_x + relativeX, alignPointsX)
+            selectedShape.y set gameEngine.snapY(selected_shape_first_y + relativeY, alignPointsY)
           } else {
-            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX)
-            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY)
+            val alignPointsX = List(selectedShape.left.next, selectedShape.right.next)
+            val alignPointsY = List(selectedShape.top.next, selectedShape.bottom.next)
+            selectedShape.x setNext gameEngine.snapX(selected_shape_first_x + relativeX, alignPointsX)
+            selectedShape.y setNext gameEngine.snapY(selected_shape_first_y + relativeY, alignPointsY)
           }
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
@@ -296,13 +304,10 @@ object SizeButton extends MenuButton {
             c.radius set c.radius.next
           }
         case r:ResizableRectangular =>
-          if(modify_prev) {
-            r.width set Math.max(smallest_size, r.width.get + shiftX)
-            r.height set Math.max(smallest_size, r.height.get + shiftY)
-          } else {
-            r.width setNext Math.max(smallest_size, r.width.next + shiftX)
-            r.height setNext Math.max(smallest_size, r.height.next + shiftY)
-          }
+          val newWidth = r.width.getPrevOrNext(modify_prev) + relativeX
+          val newHeight = r.height.getPrevOrNext(modify_prev) + relativeY
+          r.width.setPrevOrNext(modify_prev, Math.max(smallest_size, gameEngine.snap(x+newWidth/2))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, gameEngine.snap(y+newHeight/2))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next

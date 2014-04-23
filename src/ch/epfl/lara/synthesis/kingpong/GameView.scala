@@ -222,6 +222,17 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   def snapX(i: Float): Float = grid.snap(i)
   def snapY(i: Float): Float = grid.snap(i)
+
+  def snapX(i: Float, other: Seq[Float]): Float = {
+    val res = grid.snap(i) - i
+    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
+    i + minDiff
+  }
+  def snapY(i: Float, other: Seq[Float]): Float = {
+    val res = grid.snap(i) - i
+    val minDiff = (res /: other) { case (sn, o) => val n = grid.snap(o) - o; if(Math.abs(o) < Math.abs(sn)) o else sn }
+    i + minDiff
+  }
   
   var gameEngineEditors: List[GameEngineEditor] = _
   def addGameEngineEditor(g: GameEngineEditor) = {
@@ -600,11 +611,19 @@ class GameView(val context: Context, attrs: AttributeSet)
               }
               MenuOptions.selected_shape_first_x = selectedShapeCoords.x
               MenuOptions.selected_shape_first_y = selectedShapeCoords.y
-          case _ =>
-        }
-        if(MoveButton.hovered) {
-          mDisplacementX = 0
-          mDisplacementY = 0
+              
+              selectedShape match {
+                case selectedShape:Circle =>
+                  MenuOptions.selected_shape_first_radius = selectedShape.radius.getPrevOrNext(MenuOptions.modify_prev)
+                case selectedShape:ResizableRectangular =>
+                  MenuOptions.selected_shape_first_width = selectedShape.width.getPrevOrNext(MenuOptions.modify_prev)
+                  MenuOptions.selected_shape_first_height = selectedShape.height.getPrevOrNext(MenuOptions.modify_prev)
+                case _ =>
+              }
+              if(MoveButton.hovered) {
+                mDisplacementX = 0
+                mDisplacementY = 0
+              }
         }
     }
   }

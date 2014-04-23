@@ -10,15 +10,8 @@ object Grid {
     val a = Array(0f, 0f, width, 0f)
     m.mapPoints(a)
     
-    var step = 1f
-    def computedNumSteps = (Math.floor(a(2)/step) - Math.ceil(a(0)/step)) + 1
-    while(computedNumSteps >= numSteps*2 || computedNumSteps <= numSteps*3/4) {
-      if(computedNumSteps >= numSteps*3/2) {
-        step *= 2
-      } else {
-        step /= 2
-      }
-    }
+    var n = Math.floor(Math.log((a(2)-a(1))/numSteps)/Math.log(2))
+    var step = Math.pow(2, n).toFloat
     new Grid(step, offset=0, stroke_width=stroke_width, color=color)
   }
 }

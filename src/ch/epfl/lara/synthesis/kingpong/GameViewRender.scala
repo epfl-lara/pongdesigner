@@ -204,11 +204,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
                 }
                 tmpPath.moveTo(fromx, fromy)
                 tmpPath.lineTo(tox, toy)
-                lastx = tox
-                lasty = toy
-                lastwidth = width
-                lastcolor = color
               }
+              lastx = tox
+              lasty = toy
+              lastwidth = width
+              lastcolor = color
             }
           }
           if(!tmpPath.isEmpty()) {
