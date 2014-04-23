@@ -620,10 +620,16 @@ class GameView(val context: Context, attrs: AttributeSet)
                   MenuOptions.selected_shape_first_height = selectedShape.height.getPrevOrNext(MenuOptions.modify_prev)
                 case _ =>
               }
+              selectedShape match {
+                case selectedShape:Rotationable =>
+                  MenuOptions.selected_shape_first_angle = selectedShape.angle.getPrevOrNext(MenuOptions.modify_prev)
+                case _ =>
+              }
               if(MoveButton.hovered) {
                 mDisplacementX = 0
                 mDisplacementY = 0
               }
+          case _ =>
         }
     }
   }
@@ -988,6 +994,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       mDisplacementY = to.y - touchDownOriginal.y
       val touchCoords = mapVectorToGame(to)
       val touchCoords2 = mapVectorToGame(from)
+      val toX = touchCoords.x
+      val toY = touchCoords.y
       val shiftX = touchCoords.x - touchCoords2.x
       val shiftY = touchCoords.y - touchCoords2.y
       val simpleRelativeX = touchCoords.x - touchDownOriginalGame.x
@@ -997,18 +1005,18 @@ class GameView(val context: Context, attrs: AttributeSet)
       // Snap to grid.
       if(Math.abs(relativeX) < 0.05f) { relativeX = 0 }
       if(Math.abs(relativeY) < 0.05f) { relativeY = 0 }
-      ShapeMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      ShapeMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       if(ColorMenu.activated) {
         ColorMenu.testHovering(to.x, to.y, button_size)
-        ColorMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+        ColorMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
       if(SystemMenu.activated) {
         SystemMenu.testHovering(to.x, to.y, button_size)
-        SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+        SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
       /*if(EventMenu.isActivated) {
         EventMenu.testHovering(to.x, to.y, button_size)
-        EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+        EventMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }*/
   }
 

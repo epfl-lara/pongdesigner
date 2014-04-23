@@ -24,6 +24,7 @@ object MenuOptions {
   var selected_shape_first_radius = 0f
   var selected_shape_first_width = 0f
   var selected_shape_first_height = 0f
+  var selected_shape_first_angle = 0f
   
   /** Initialized at run time*/
   var context: Context = null
@@ -159,7 +160,7 @@ object ModifyTextButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
@@ -199,7 +200,7 @@ object MoveButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
@@ -235,7 +236,7 @@ object SpeedButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null && !selectedShape.noVelocity) {
       selectedShape match {
         case selectedShape: PhysicalObject =>
@@ -296,7 +297,7 @@ object SizeButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       selectedShape match {
         case c:Circle =>
@@ -305,7 +306,7 @@ object SizeButton extends MenuButton {
           } else {
             c.radius setNext Math.max(smallest_size, c.radius.next + shiftX)
           }
-          val newRadius = c.radius.getPrevOrNext(modify_prev) + relativeX
+          val newRadius =selected_shape_first_radius + relativeX
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
           c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx-newRadius, rx+newRadius*1.414f/2, rx-newRadius*1.414f/2)-rx))
@@ -313,8 +314,8 @@ object SizeButton extends MenuButton {
             c.radius set c.radius.next
           }
         case r:ResizableRectangular =>
-          val newWidth = r.width.getPrevOrNext(modify_prev) + relativeX
-          val newHeight = r.height.getPrevOrNext(modify_prev) + relativeY
+          val newWidth = selected_shape_first_width + relativeX
+          val newHeight = selected_shape_first_height + relativeY
           val rx = r.x.getPrevOrNext(modify_prev)
           val ry = r.y.getPrevOrNext(modify_prev)
           r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx-newWidth/2)-rx)))
@@ -359,7 +360,7 @@ object PinButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Do nothing
   }
   
@@ -387,10 +388,10 @@ object PaintButton extends MenuButton {
     ColorMenu.activated = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       ColorMenu.activated = true
-      ColorMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      ColorMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
     }
   }
   
@@ -421,10 +422,10 @@ object SystemButton extends MenuButton {
     SystemMenu.activated = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       SystemMenu.activated = true
-      SystemMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, mDisplacementX, mDisplacementY)
+      SystemMenu.onFingerMove(gameEngine, selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
     }
   }
   
@@ -465,7 +466,7 @@ object VisibilityButton extends MenuButton {
 
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
 
@@ -506,7 +507,7 @@ object IncrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
@@ -540,7 +541,7 @@ object DecrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
@@ -586,11 +587,11 @@ object RotateButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
       case c:Rotationable =>
-        if(modify_prev) {
+        /*if(modify_prev) {
           c.angle set Math.toRadians(Math.floor((Math.toDegrees(c.angle.get) + 7.5f)/15) * 15).toFloat
         } else {
           c.angle setNext Math.toRadians(Math.floor((Math.toDegrees(c.angle.next) + 7.5f)/15) * 15).toFloat
-        }
+        }*/
         if(copy_to_prev) {
           c.angle set c.angle.next
         }
@@ -599,15 +600,22 @@ object RotateButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       selectedShape match {
-        case c:Rotationable =>
-          if(modify_prev) {
-            c.angle set (Math.atan2(relativeX, -relativeY).toFloat)
-          } else {
-            c.angle setNext (Math.atan2(relativeX, -relativeY).toFloat)
-          }
+        case c:Rotationable with Positionable =>
+          val dx = toX - c.x.getPrevOrNext(modify_prev)
+          val dy = toY - c.y.getPrevOrNext(modify_prev)
+          val dxPrev = dx - relativeX
+          val dyPrev = dy - relativeY
+          val crossProduct = dxPrev * dy - dyPrev * dx
+          val dotProduct = dxPrev * dx + dyPrev * dy
+          val norms = Math.sqrt((dx*dx+dy*dy)*(dxPrev*dxPrev+dyPrev*dyPrev)).toFloat
+          val sinAngle = crossProduct/norms
+          val cosAngle = dotProduct/norms
+          def snap(angle: Float) = Math.toRadians(Math.floor((Math.toDegrees(c.angle.get) + 7.5f)/15) * 15).toFloat
+          
+          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + (Math.atan2(cosAngle, -sinAngle).toFloat)))
           if(copy_to_prev) {
             c.angle set c.angle.next
           }

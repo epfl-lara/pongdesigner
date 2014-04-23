@@ -45,7 +45,7 @@ object MoveRuleButton extends MenuButton {
     }
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     val selectedRule = gameEngine.ruleEditor.selectedRule
     if(selectedRule != null) {
       selectedRule.x = selectedRule.x + shiftX.toInt
@@ -72,7 +72,7 @@ object TrashRuleButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
@@ -110,7 +110,7 @@ object EditRuleButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
@@ -137,7 +137,7 @@ object ApplyRuleButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, mDisplacementX: Float, mDisplacementY: Float) = {
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     // Nothing
   }
   
