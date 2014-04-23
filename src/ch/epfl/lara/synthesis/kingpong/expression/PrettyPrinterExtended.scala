@@ -35,6 +35,7 @@ trait PrettyPrinterExtendedTypical {
   val FINGER_DOWN_SYMBOL = "\u21E9"
   val FINGER_UP_SYMBOL = "\u21E7"
   val ARROW_FUNC_SYMBOL = "\u21D2"
+  val LET_ASSIGN_SYMBOL = "\u2190" 
   val IF_SYMBOL = "if"
   lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
   
@@ -61,7 +62,7 @@ trait PrettyPrinterExtendedTypical {
     }
     def add(s: Tree, start: Int, end: Int): Mappings = {
       val p1 = s match {
-        case ObjectLiteral(obj) => Some(obj.category)
+        case ObjectLiteral(obj) if obj != null => Some(obj.category)
         
         //TODO Lomig to compile
         //case PropertyLiteral(prop) => Some(prop.parent.category)
@@ -79,7 +80,7 @@ trait PrettyPrinterExtendedTypical {
     }
     def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[Category, List[(Int, Int)]]): Map[Category, List[(Int, Int)]] = {
       s match {
-        case ObjectLiteral(o) => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
+        case ObjectLiteral(o) if o != null => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
         //TODO Lomig to compile
         //case PropertyLiteral(prop) => mm + (prop.parent.category -> ((start, end)::mm.getOrElse(prop.parent.category, List())))
         case _ => mm
@@ -263,17 +264,23 @@ trait PrettyPrinterExtendedTypical {
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
     s match {
-      case i: Identifier => c +< i.name +>
-      case Find(category: Category, id: Identifier, body: Expr) =>
-        c +! (id.name, category) + ".find{" + id + " => " + body +>
+      case i: Identifier => c +< i.toString +>
+      case Let(id, expr, body) =>
+        c + indent +< "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + (body, indent + INDENT)
+      
       case MethodCall(method, Nil) => c +< method + "()" +>
       case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>
       case ParExpr(Nil) => c
       case ParExpr(a::_) => print(c, indent, a) +< "//<-->" +>
       case TupleSelect(expr, index) =>
         c + indent + expr + "." + (if(index == 0) "x" else "y")
+      
       case Foreach(cat, id, body) =>
-        c + indent + (FOR_SYMBOL+" ") +! (id.name, cat) + (" " + IN_SYMBOL + " ") + cat + (":" + LF) + body
+        c + indent + s"$FOR_SYMBOL " +! (id.toString, cat) + s" $IN_SYMBOL " + cat + s":$LF" + body
+      case Forall(category, id, body) =>
+        c +! (category.name, category) + ".forall{" + id + " => " + body + "}" +>
+      case Find(category, id, body) =>
+        c +! (category.name, category) + ".find{" + id + " => " + body + "}" +>
         
     case Delete(obj) => c + indent +! "Delete(" + obj + ")"
     case Tuple(exprs) => 
@@ -313,6 +320,7 @@ trait PrettyPrinterExtendedTypical {
     case StringLiteral(value: String) => c + indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => c + indent + value.toString
     case UnitLiteral => c + indent + "()"
+    case ObjectLiteral(null) => c + indent +! "null"
     case ObjectLiteral(obj) => c + indent +! obj.name.get
     
     case Select(expr, property) => c + indent +< expr + "." + property +>
@@ -321,6 +329,7 @@ trait PrettyPrinterExtendedTypical {
     
     case Row(expr) => c + indent +< expr + ".row" +>
     case Column(expr) => c + indent +< expr + ".column" +>
+    case Apply(arr, col, row) => c + indent +< arr + "(" + col + "," + row + ")" +>
     
     case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + obj + (block, indent + INDENT) +>
     case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>

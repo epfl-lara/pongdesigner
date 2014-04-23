@@ -262,23 +262,23 @@ object TreeDSL {
   }
   
   def foreach(category: Category)(body: Proxy => Expr): Expr = {
-    val id = FreshIdentifier(category.name).setType(TObject)
+    val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Foreach(category, id, body(ref))
   }
 
   def foreach(category1: Category, category2: Category)(body: (Proxy, Proxy) => Expr): Expr = {
-    val id1 = FreshIdentifier(category1.name).setType(TObject)
-    val id2 = FreshIdentifier(category2.name).setType(TObject)
+    val id1 = identifierFromCategory(category1).setType(TObject)
+    val id2 = identifierFromCategory(category2).setType(TObject)
     val ref1 = new IdentifierProxy(id1)
     val ref2 = new IdentifierProxy(id2)
     Foreach(category1, id1, Foreach(category2, id2, body(ref1, ref2)))
   }
   
   def foreach(category1: Category, category2: Category, category3: Category)(body: (Proxy, Proxy, Proxy) => Expr): Expr = {
-    val id1 = FreshIdentifier(category1.name).setType(TObject)
-    val id2 = FreshIdentifier(category2.name).setType(TObject)
-    val id3 = FreshIdentifier(category3.name).setType(TObject)
+    val id1 = identifierFromCategory(category1).setType(TObject)
+    val id2 = identifierFromCategory(category2).setType(TObject)
+    val id3 = identifierFromCategory(category3).setType(TObject)
     val ref1 = new IdentifierProxy(id1)
     val ref2 = new IdentifierProxy(id2)
     val ref3 = new IdentifierProxy(id3)
@@ -287,7 +287,7 @@ object TreeDSL {
   
   // Generic foreach
   def foreach(categories: Seq[Category])(body: Seq[Proxy] => Expr): Expr = {
-    val ids = categories.map(category => FreshIdentifier(category.name).setType(TObject))
+    val ids = categories.map(identifierFromCategory(_).setType(TObject))
     val refs = ids map { id => new IdentifierProxy(id) }
     ((categories zip ids) :\ body(refs)) { case ((category, id), body) => Foreach(category, id, body) }
   }
@@ -299,13 +299,13 @@ object TreeDSL {
   }
   
   def forall(category: Category)(body: Proxy => Expr): Expr = {
-    val id = FreshIdentifier(category.name).setType(TObject)
+    val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Forall(category, id, body(ref))
   }
   
   def find(category: Category)(body: Proxy => Expr): Expr = {
-    val id = FreshIdentifier(category.name).setType(TObject)
+    val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Find(category, id, body(ref))
   }
@@ -325,5 +325,10 @@ object TreeDSL {
     case 0 => BooleanLiteral(true)
     case 1 => exprs.head
     case n if n>=2 => and(And(exprs.head, exprs.tail.head)::exprs.tail.tail.toList)
+  }
+  
+  private def identifierFromCategory(cat: Category): Identifier = cat.name match {
+    case ""   => FreshIdentifier("id", true)
+    case name => FreshIdentifier(name.toLowerCase.substring(0, 1), true)
   }
 }
