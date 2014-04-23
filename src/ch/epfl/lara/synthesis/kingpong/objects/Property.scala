@@ -116,6 +116,9 @@ trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
    */
   def setInit(e: Expr): self.type
   
+  /** Get the initial expression of this property. */
+  def init: Expr
+  
   /**
    * Modify the history of this property at a given time if it exists
    */
@@ -183,7 +186,7 @@ class EphemeralProperty[T: PongType](val name: String, val parent: GameObject)
 /**
  * Property with some history
  */
-abstract class HistoricalRWProperty[T : PongType](val name: String, init: Expr, val parent: GameObject) 
+abstract class HistoricalRWProperty[T : PongType](val name: String, private var _init: Expr, val parent: GameObject) 
   extends RWProperty[T] 
   with HistoricalProperty[T] with SnappableProperty[T] { self =>
   
@@ -191,13 +194,13 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, init: Expr, 
   
   protected var _crt: T = _
   protected var _next: T = _  
-  protected var _init: Expr = init
 
   /** Contains the history. The head corresponds to the most recent value. */
   protected val _history: RingBuffer[(Long, T)] = new RingBuffer(History.MAX_HISTORY_SIZE)
 
   def get = _crt
   def next = _next
+  def init = _init
   
   def validate() = {
     _crt = _next
@@ -250,8 +253,8 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, init: Expr, 
   
 }
 
-abstract class PhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
-  extends HistoricalRWProperty[T](name, init, parent) {
+abstract class PhysicalProperty[T : PongType](name: String, initial: Expr, parent: GameObject) 
+  extends HistoricalRWProperty[T](name, initial, parent) {
   
   override def toString = s"PhysicalProperty($name)"
   
@@ -271,8 +274,8 @@ abstract class PhysicalProperty[T : PongType](name: String, init: Expr, parent: 
   val loader: () => T
 }
 
-abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
-  extends HistoricalRWProperty[T](name, init, parent) {
+abstract class SimplePhysicalProperty[T : PongType](name: String, initial: Expr, parent: GameObject) 
+  extends HistoricalRWProperty[T](name, initial, parent) {
   
   override def toString = s"SimplePhysicalProperty($name)"
   
@@ -296,8 +299,8 @@ abstract class SimplePhysicalProperty[T : PongType](name: String, init: Expr, pa
   val flusher: T => Unit
 }
 
-class SimpleProperty[T : PongType](name: String, init: Expr, parent: GameObject) 
-  extends HistoricalRWProperty[T](name, init, parent) {
+class SimpleProperty[T : PongType](name: String, initial: Expr, parent: GameObject) 
+  extends HistoricalRWProperty[T](name, initial, parent) {
   
   override def toString = s"SimpleProperty($name)"
   @inline def flush() = this

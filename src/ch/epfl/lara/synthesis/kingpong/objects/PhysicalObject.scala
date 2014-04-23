@@ -234,14 +234,14 @@ class Rectangle (val game: Game,
 
   protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
   
-  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width, 
+  val width: HistoricalRWProperty[Float] = simplePhysicalProperty[Float]("width", init_width, 
     w => {
       shape.setAsBox(w/2, height.get/2)
       body.resetMassData() // update the body mass
     }
   )
     
-  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
+  val height: HistoricalRWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
     h => {
       shape.setAsBox(width.get/2, h/2)
       body.resetMassData() // update the body mass
@@ -253,9 +253,9 @@ class Rectangle (val game: Game,
   )
   
   def makecopy(name: String): GameObject = {
-    new Rectangle(game, name, init_x, init_y, init_angle, init_width, init_height, init_visible,
-                 init_velocity, init_angularVelocity, init_density, init_friction, init_restitution,
-                 init_fixedRotation, init_color, init_sensor, init_tpe)
+    new Rectangle(game, name, x.init, y.init, angle.init, width.init, height.init, visible.init,
+                 velocity.init, angularVelocity.init, density.init, friction.init, restitution.init,
+                 fixedRotation.init, color.init, sensor.init, tpe)
   }
   
   override def contains(pos: Vec2) = super[AngularRectangularContains].contains(pos)
@@ -345,14 +345,14 @@ class Character (val game: Game,
   // Properties
   // --------------------------------------------------------------------------
   
-  val width: RWProperty[Float] = simplePhysicalProperty[Float]("width", init_width,
+  val width: HistoricalRWProperty[Float] = simplePhysicalProperty[Float]("width", init_width,
     w => {
       shape.setAsBox(w/2, height.get/2)
       body.resetMassData() // update the body mass
     }
   )
   
-  val height: RWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
+  val height: HistoricalRWProperty[Float] = simplePhysicalProperty[Float]("height", init_height,
     h => {
       shape.setAsBox(width.get/2, h/2)
       body.resetMassData() // update the body mass
@@ -362,9 +362,9 @@ class Character (val game: Game,
   val grounded = simpleProperty[Boolean]("grounded", false)
   
   def makecopy(name: String): GameObject = {
-    new Character(game, name, init_x,  init_y, init_angle, init_width, init_height, init_visible,
-                  init_velocity, init_angularVelocity, init_density, init_friction,  init_restitution,
-                  init_fixedRotation, init_color, init_tpe)
+    new Character(game, name, x.init,  y.init, angle.init, width.init, height.init, visible.init,
+                  velocity.init, angularVelocity.init, density.init, friction.init,  restitution.init,
+                  fixedRotation.init, color.init, tpe)
   }
 }
 
@@ -431,8 +431,8 @@ class Circle(val game: Game,
   )
   
   def makecopy(name: String): GameObject = {
-    new Circle(game, name, init_x, init_y, init_radius, init_visible, init_velocity, init_angularVelocity,
-               init_density, init_friction, init_restitution, init_fixedRotation,
-               init_color, init_sensor, init_tpe)
+    new Circle(game, name, x.init, y.init, radius.init, visible.init, velocity.init, angularVelocity.init,
+               density.init, friction.init, restitution.init, fixedRotation.init,
+               color.init, sensor.init, tpe)
   }
 }

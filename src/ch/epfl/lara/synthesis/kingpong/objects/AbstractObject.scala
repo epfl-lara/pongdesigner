@@ -82,8 +82,8 @@ class Box[T : PongType](val game: Game,
   }
 
   def makecopy(name: String): GameObject = {
-    new Box[T](game, name, init_x, init_y, init_angle, init_width,  init_height, 
-               init_value, init_visible, init_color)
+    new Box[T](game, name, x.init, y.init, angle.init, width.init,  height.init, 
+               value.init, visible.init, color.init)
   }
 }
 
@@ -176,7 +176,7 @@ class Joystick(val game: Game,
   //def contains(pos: Vec2) = getAABB.contains(pos)
   
   def makecopy(name: String): GameObject = {
-    new Joystick(game, name, init_x, init_y, init_angle, init_radius, init_visible, init_color)
+    new Joystick(game, name, x.init, y.init, angle.init, radius.init, visible.init, color.init)
   }
 }
 
@@ -251,8 +251,8 @@ class RandomGenerator(
   }
 
   def makecopy(name: String): GameObject = {
-    new RandomGenerator(game, name, init_x, init_y, init_angle, init_width, // TODO : Big bug. x.init
-      init_height, init_minValue, init_maxValue, init_visible, init_color)
+    new RandomGenerator(game, name, x.init, y.init, angle.init, width.init, height.init, 
+        minValue.init, maxValue.init, visible.init, color.init)
   }
   
 }
@@ -325,7 +325,7 @@ class Array2D(
   }
 
   protected def makecopy(name: String) = {
-    new Array2D(game, name, init_x, init_y, init_visible, init_color, init_numColumns, init_numRows)
+    new Array2D(game, name, x.init, y.init, visible.init, color.init, numColumns.init, numRows.init)
   }
 }
 
