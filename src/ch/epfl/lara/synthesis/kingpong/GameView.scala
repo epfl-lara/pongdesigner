@@ -918,7 +918,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(currentObjectSelection contains obj){
             remaining(currentEventSelection, currentObjectSelection.filterNot(_ == obj))
           } else {
-            remaining(currentEventSelection, obj::ccurrentObjectSelection)
+            remaining(currentEventSelection, obj::currentObjectSelection)
           }
         case None =>
           mQuickAction.dismiss()
