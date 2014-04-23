@@ -160,8 +160,6 @@ trait Interpreter {
       val freshName = gctx.getNewName(id.name)
       val fresh = o.getCopy(freshName)
       fresh.creationTime.setInit(gctx.time)
-      fresh.reset(this)
-      fresh.flush()
       gctx.add(fresh)
       
       eval(block)(gctx, rctx.withNewVar(id, fresh.expr))

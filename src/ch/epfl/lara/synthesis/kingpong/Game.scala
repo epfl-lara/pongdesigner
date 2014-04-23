@@ -131,6 +131,8 @@ trait Game extends RuleManager { self =>
   }
 
   def add(o: GameObject) = {
+    o.reset(interpreter)
+    o.flush()
     _objects += o
   }
   
@@ -167,9 +169,7 @@ trait Game extends RuleManager { self =>
              tpe: BodyType = category.tpe): Circle = {
     val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
                        density, friction, restitution, fixedRotation, color, sensor, tpe)
-    if(category != null) c.setCategory(category)
-    c.reset(interpreter)
-    c.flush()
+    c.setCategory(category)
     this add c
     c
   }
@@ -192,9 +192,7 @@ trait Game extends RuleManager { self =>
                 tpe: BodyType = category.tpe): Rectangle = {
     val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                          density, friction, restitution, fixedRotation, color, sensor, tpe)
-    if(category != null) r.setCategory(category)
-    r.reset(interpreter)
-    r.flush()
+    r.setCategory(category)
     this add r
     r
   }
@@ -205,14 +203,12 @@ trait Game extends RuleManager { self =>
                       angle: Expr = category.angle,
                       width: Expr = category.width,
                       height: Expr = category.height,
-                      minValue: Expr = category.height,
-                      maxValue: Expr = category.height,
+                      minValue: Expr = category.randomMinValue,
+                      maxValue: Expr = category.randomMaxValue,
                       visible: Expr = category.visible,
                       color: Expr = category.color): RandomGenerator = {
     val r = new RandomGenerator(this, name, x, y, angle, width, height, minValue, maxValue, visible, color)
-    if(category != null) r.setCategory(category)
-    r.reset(interpreter)
-    r.flush()
+    r.setCategory(category)
     this add r
     r
   }
@@ -226,9 +222,7 @@ trait Game extends RuleManager { self =>
                 visible: Expr = category.visible,
                 color: Expr = category.color): DrawingObject = {
     val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color)
-    if(category != null) r.setCategory(category)
-    r.reset(interpreter)
-    r.flush()
+    r.setCategory(category)
     this add r
     r
   }
@@ -243,11 +237,9 @@ trait Game extends RuleManager { self =>
              visible: Expr = category.visible,
              color: Expr = category.color): Array2D = {
     val array = new Array2D(this, name, x, y, visible, color, columns, rows)
-    if(category != null) array.setCategory(category)
-    array.reset(interpreter)
+    array.setCategory(category)
     this add array
     array.cells.foreach(_ foreach { cell =>
-      cell.reset(interpreter)
       this add cell
     })
     array
@@ -263,8 +255,7 @@ trait Game extends RuleManager { self =>
              visible: Expr = category.visible,
              color: Expr = category.color): Box[Int] = {
     val box = new Box[Int](this, name, x, y, angle, width, height, value, visible, color)
-    if(category != null) box.setCategory(category)
-    box.reset(interpreter)
+    box.setCategory(category)
     this add box
     box
   }
@@ -279,8 +270,7 @@ trait Game extends RuleManager { self =>
              visible: Expr = category.visible,
              color: Expr = category.color): Box[Boolean] = {
     val box = new Box[Boolean](this, name, x, y, angle, width, height, value, visible, color)
-    if(category != null) box.setCategory(category)
-    box.reset(interpreter)
+    box.setCategory(category)
     this add box
     box
   }
@@ -293,8 +283,7 @@ trait Game extends RuleManager { self =>
              visible: Expr = category.visible,
              color: Expr = category.color): Joystick = {
     val joystick = new Joystick(this, name, x, y, angle, radius, visible, color)
-    if(category != null) joystick.setCategory(category)
-    joystick.reset(interpreter)
+    joystick.setCategory(category)
     this add joystick
     joystick
   }
@@ -316,14 +305,12 @@ trait Game extends RuleManager { self =>
                 tpe: BodyType = category.tpe): Character = {
     val r = new Character(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
                           density, friction, restitution, fixedRotation, color, tpe)
-    if(category != null) r.setCategory(category)
-    r.reset(interpreter)
-    r.flush()
+    r.setCategory(category)
     this add r
     r
   }
 
-  def gc() = {
+  private def gc() = {
     //TODO performance...
     val toDelete = _objects.filter { obj =>
       obj.creationTime.get > time
