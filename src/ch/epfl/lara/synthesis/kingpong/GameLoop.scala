@@ -27,7 +27,7 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
 
   override def run(): Unit = {
     var canvas: Canvas = null
-    Log.d("kingpong", "Sarting game loop")
+    Log.d("kingpong", "Starting game loop")
 
     while(running) {
       canvas = null

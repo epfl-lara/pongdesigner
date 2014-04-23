@@ -324,6 +324,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
     layoutResize()
+    backToBeginning()
     //updateCodeView(game.rules, game.objects)
     codeview.setText("")
   }
@@ -639,13 +640,13 @@ class GameView(val context: Context, attrs: AttributeSet)
               selectedShape match {
                 case selectedShape:Circle =>
                   MenuOptions.selected_shape_first_radius = selectedShape.radius.getPrevOrNext(MenuOptions.modify_prev)
-                case selectedShape:ResizableRectangular =>
+                case selectedShape:Rectangular =>
                   MenuOptions.selected_shape_first_width = selectedShape.width.getPrevOrNext(MenuOptions.modify_prev)
                   MenuOptions.selected_shape_first_height = selectedShape.height.getPrevOrNext(MenuOptions.modify_prev)
                 case _ =>
               }
               selectedShape match {
-                case selectedShape:Rotationable =>
+                case selectedShape:Directionable =>
                   MenuOptions.selected_shape_first_angle = selectedShape.angle.getPrevOrNext(MenuOptions.modify_prev)
                 case _ =>
               }
@@ -1002,7 +1003,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     codeMapping = mapping.mPosCategories
     propMapping = mapping.mPropertyPos
     treeMapping = mapping.mPos
-    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.head.isInstanceOf[Literal[_]]) yield a->b.head.asInstanceOf[Literal[_]]).toMap
+    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]]) yield a->b.last.asInstanceOf[Literal[_]]).toMap
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))

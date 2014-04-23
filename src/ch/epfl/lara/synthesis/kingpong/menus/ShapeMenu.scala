@@ -322,15 +322,15 @@ object SizeButton extends MenuButton {
             r.height set r.height.next
           }
         case r:Array2D =>
-          val newWidth = selected_shape_first_width + relativeX
-          val newHeight = selected_shape_first_height + relativeY
+          val newWidth = selected_shape_first_width + relativeX*2
+          val newHeight = selected_shape_first_height + relativeY*2
           val numCols = r.numColumns.getPrevOrNext(modify_prev)
           val numRows = r.numRows.getPrevOrNext(modify_prev)
           
           if(newWidth/ (numCols +1) > Array2D.CELL_WIDTH) {
             r.numColumns.setPrevOrNext(modify_prev, numCols + 1)
             // Add a column
-            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(r, numCols + 1, row) }
+            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(r, numCols, row) }
             r.cells += newCells
             for(cell <- newCells) gameEngine.getGame.add(cell)
             
@@ -344,7 +344,7 @@ object SizeButton extends MenuButton {
             r.numRows.setPrevOrNext(modify_prev, numRows + 1)
             // add a line
             for((column, i) <- r.cells.zipWithIndex) {
-              val newCell = Cell(r, i, numRows+1)
+              val newCell = Cell(r, i, numRows)
               column += newCell
               gameEngine.getGame.add(newCell)
             }
@@ -354,6 +354,10 @@ object SizeButton extends MenuButton {
             val deletedRow = for(column <- r.cells) yield column.remove(column.length - 1)
             // Do something with the deleted row
             for(cell <- deletedRow) gameEngine.getGame.remove(cell)
+          }
+          if(copy_to_prev) {
+            r.numRows set r.numRows.next
+            r.numColumns set r.numColumns.next
           }
           
         case _ =>

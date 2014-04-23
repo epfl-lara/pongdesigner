@@ -335,6 +335,7 @@ class KingPong extends Activity
             CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
                 { _ =>
                   mGameView.setGame(new TestGame())
+                  mGameView.backToBeginning()
                 },
                 { _ => }
             )
