@@ -166,8 +166,13 @@ class GameViewRender(val context: Context) extends ContextUtils {
           } else {
             paint.setShader(null)
             paint.setColor(colorPrev)
-            if (!visible_prev)
-              paint.setAlpha(0x00)
+            if (!visible_prev) {
+              if(state == Editing) {
+                paint.setAlpha(paint.getAlpha()/2)
+              } else {
+                paint.setAlpha(0x00)
+              }
+            }
           }
         
         case _ => //MIKAEL what to do here ?

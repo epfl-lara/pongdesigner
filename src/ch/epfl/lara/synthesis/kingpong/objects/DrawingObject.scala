@@ -61,7 +61,10 @@ case class DrawingObject(val game: Game,
     val unrotatedfromY = scaleY(fromy * sina + fromy * cosa)
     val unrotatedToX = scaleX(tox * cosa - toy * sina)
     val unrotatedToY = scaleY(toy * sina + toy * cosa)
-    mDrawings += DrawingElement(time, unrotatedfromX, unrotatedfromY, unrotatedToX, unrotatedToY, stroke_width, color)
+    if(!mDrawings.exists( d => d.time == time && d.fromx == unrotatedfromX && d.fromy == unrotatedfromY && d.tox == unrotatedToX && d.toy == unrotatedToY && d.width == stroke_width && d.color == color)) {
+      val e = DrawingElement(time, unrotatedfromX, unrotatedfromY, unrotatedToX, unrotatedToY, stroke_width, color)
+      mDrawings += e
+    }
   }
   val defaultRule = { (g: Game) =>
     import g._

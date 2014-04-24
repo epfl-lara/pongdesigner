@@ -306,17 +306,17 @@ object SizeButton extends MenuButton {
           val newRadius =selected_shape_first_radius + dr
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
-          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx-newRadius, rx+newRadius*1.414f/2, rx-newRadius*1.414f/2)(points=rx+c.radius.getPrevOrNext(modify_prev))-rx))
+          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(points=rx+c.radius.getPrevOrNext(modify_prev))-rx))
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
         case r:ResizableRectangular =>
-          val newWidth = selected_shape_first_width + relativeX
-          val newHeight = selected_shape_first_height + relativeY
+          val newWidth = selected_shape_first_width + relativeX*2
+          val newHeight = selected_shape_first_height + relativeY*2
           val rx = r.x.getPrevOrNext(modify_prev)
           val ry = r.y.getPrevOrNext(modify_prev)
-          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx-newWidth/2)(points=rx+selected_shape_first_width/2)-rx)))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry-newHeight/2)(points=ry+selected_shape_first_height/2)-ry)))
+          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(points=rx+selected_shape_first_width/2)-rx)))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, rx+newWidth/2 - selected_shape_first_height)(points=ry+selected_shape_first_height/2)-ry)))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next

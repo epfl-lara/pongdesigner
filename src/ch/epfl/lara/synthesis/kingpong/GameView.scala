@@ -120,7 +120,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     with ProgressBarHandler
     with ActionBarHandler
     with common.ContextUtils {
-  
+    with Implicits
+  {
   import GameView._
   import expression.Types._
   import common.Implicits._
@@ -347,7 +348,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var codeMapping = Map[Int, List[Category]]()
   var propMapping = Map[Int, Property[_]]()
   var treeMapping = Map[Int, List[Tree]]()
-  var constMapping = Map[Int, Literal[_]]()
+  var constMapping = Map[Int, (Literal[_], Tree)]()
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
@@ -363,7 +364,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
       if(constMapping != null) {
         constMapping.get(start) match {
-          case Some(constLiteral) =>
+          case Some((constLiteral, mainTree)) =>
             // Find the tree in which this literal is
             println(s"Found const literal: $constLiteral")
             val tree = treeMapping(start).lastOption
@@ -374,6 +375,49 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
       }
     })
+    codeview.setOnTouchListener{ (v: View, event: MotionEvent) =>
+        val action = event.getAction()
+          (action & MotionEvent.ACTION_MASK) match {
+            case MotionEvent.ACTION_DOWN =>
+              /*xprev = event.getRawX()
+              yprev = event.getRawY()*/
+              true
+            // A finger moves
+            case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
+              /*if(mLayoutcodehorizontal != null) {
+                val x = event.getRawX()
+                val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+                val dx = - (x - xprev).toInt
+                params.width = params.width +dx
+                mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
+                if(mActions != null) {
+                  //mActions.setX(mCodeViewResizer.getX)
+                  mActions.requestLayout()
+                }
+                Log.d("Test", s"The layout moves dx=$dx")
+                mLayoutcodehorizontal.getParent().requestLayout()
+                //xprev = x
+              }
+              if(mLayoutcodevertical != null) {
+                val y = event.getRawY()
+                val params = mLayoutcodevertical.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+                val dy = - (y - yprev).toInt
+                params.height = params.height + dy
+                Log.d("Test", s"The layout moves dy=$dy")
+                mCodeViewResizer.setY(mCodeViewResizer.getY - dy)
+                if(mActions != null) {
+                  mActions.requestLayout()
+                }
+                mLayoutcodevertical.getParent().requestLayout()
+                //yprev = y
+              }
+              xprev = event.getRawX()
+              yprev = event.getRawY()*/
+              true
+            case _ =>
+              false
+        }
+      }
   }
 
   /** Called by the activity when the game has to sleep deeply. 
@@ -948,15 +992,18 @@ class GameView(val context: Context, attrs: AttributeSet)
     codeMapping = mapping.mPosCategories
     propMapping = mapping.mPropertyPos
     treeMapping = mapping.mPos
-    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]]) yield a->b.last.asInstanceOf[Literal[_]]).toMap
+    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]]) yield a->(b.last.asInstanceOf[Literal[_]], b.head)).toMap
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
       mObjects.get(obj.category) match {
         case Some(l) => l foreach { case (start, end) =>
-          rulesString = SyntaxColoring.setSpanOnBounds(rulesString, start, end, () => new BackgroundColorSpan(color(R.color.selection))) }
+          rulesString = SyntaxColoring.setSpanOnBounds(rulesString, start, end, () => new BackgroundColorSpan(color(R.color.code_category_background))) }
         case None => // No objects to color
       }
+    }
+    for((i, j) <- constMapping) {
+      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
     }
     codeview.setText(rulesString)
   }
