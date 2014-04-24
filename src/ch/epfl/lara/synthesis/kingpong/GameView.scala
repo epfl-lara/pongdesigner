@@ -47,6 +47,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import expression.Types._
+import expression.TreeOps
 
 object GameView {
   sealed trait GameState
@@ -334,7 +336,16 @@ class GameView(val context: Context, attrs: AttributeSet)
   var codeMapping = Map[Int, List[Category]]()
   var propMapping = Map[Int, Property[_]]()
   var treeMapping = Map[Int, List[Tree]]()
-  var constMapping = Map[Int, (Literal[_], Tree)]()
+  var constMapping = Map[Int, (Literal[_], Expr)]()
+  var xstart = 0f
+  var ystart = 0f
+  var xprev = 0f
+  var yprev = 0f
+  var cv_constToModify: Option[Literal[_]] = None
+  var cv_constToModifyInitial: Option[Literal[_]] = None
+  var cv_treeContainingConst: Option[Expr] = None
+  var cv_indexOfTree: Option[Int] = None
+  var cv_oldValue = 0
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
@@ -355,55 +366,77 @@ class GameView(val context: Context, attrs: AttributeSet)
             println(s"Found const literal: $constLiteral")
             val tree = treeMapping(start).lastOption
             println(s"The rule is: $tree")
-            
+            cv_constToModify = Some(constLiteral)
+            cv_constToModifyInitial = Some(constLiteral)
+            cv_treeContainingConst = Some(mainTree)
+            cv_indexOfTree = { val res = game.findRuleIndex(_ == mainTree); if(res == -1) None else Some(res) }
+
           case None =>
             
         }
       }
     })
     codeview.setOnTouchListener{ (v: View, event: MotionEvent) =>
+      (cv_constToModify, cv_constToModifyInitial, cv_treeContainingConst, cv_indexOfTree) match {
+        case (Some(const), Some(init), Some(tree), Some(index)) =>
         val action = event.getAction()
           (action & MotionEvent.ACTION_MASK) match {
             case MotionEvent.ACTION_DOWN =>
-              /*xprev = event.getRawX()
-              yprev = event.getRawY()*/
+              xstart = event.getRawX()
+              ystart = event.getRawY()
+              xprev = xstart
+              yprev = ystart
+              cv_oldValue = init match {
+                case IntegerLiteral(number_value) => number_value
+                case _ => 0
+              }
               true
+              
             // A finger moves
             case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
-              /*if(mLayoutcodehorizontal != null) {
-                val x = event.getRawX()
-                val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-                val dx = - (x - xprev).toInt
-                params.width = params.width +dx
-                mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
-                if(mActions != null) {
-                  //mActions.setX(mCodeViewResizer.getX)
-                  mActions.requestLayout()
-                }
-                Log.d("Test", s"The layout moves dx=$dx")
-                mLayoutcodehorizontal.getParent().requestLayout()
-                //xprev = x
+              val x = event.getRawX()
+              val y = event.getRawY()
+              val dx = (x - xstart)
+              
+              (const, init) match {
+                case (IntegerLiteral(number_value), IntegerLiteral(initial_value)) => 
+                  val newValue = Math.round(initial_value + Math.abs(dx)*dx / (48*48f)).toInt
+                  if(newValue != cv_oldValue) {
+                    val newConst = IntegerLiteral(newValue)
+                    val newTree = TreeOps.preMap(expr => if(expr eq const) Some(newConst: Expr) else None)(tree: Expr)
+                    game.setRuleByIndex(newTree, index)
+                    cv_constToModify = Some(newConst)
+                    cv_treeContainingConst = Some(newTree)
+                    cv_oldValue = newValue
+                  }
+                  
+                /*case COLOR_SUBTYPE => 
+                  // Taken into account by a menu
+                case SCORE_SUBTYPE => 
+                  c.setValue((numberEditor.selectedDragNumberInitialValue + simpleRelativeX / 48f).toInt)
+                case COORD_SUBTYPE => 
+                  c.setValue(Math.round(numberEditor.selectedDragNumberInitialValue + Math.abs(simpleRelativeX)*simpleRelativeX / (48*48f)).toInt)
+                  //c.setValue((selectedDragNumberInitialValue + simpleRelativeX).toInt)
+                case SPEED_SUBTYPE => 
+                  c.setValue(numberEditor.selectedDragNumberInitialValue * (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))
+                case ANGLE_SUBTYPE =>
+                  c.setValue(((Math.round(Game.angle(0, 0, simpleRelativeX, simpleRelativeY)/15)*15)))
+                case FACTOR_SUBTYPE => 
+                  c.setValue(numberEditor.selectedDragNumberInitialValue* (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))*/
+                case _ =>
               }
-              if(mLayoutcodevertical != null) {
-                val y = event.getRawY()
-                val params = mLayoutcodevertical.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-                val dy = - (y - yprev).toInt
-                params.height = params.height + dy
-                Log.d("Test", s"The layout moves dy=$dy")
-                mCodeViewResizer.setY(mCodeViewResizer.getY - dy)
-                if(mActions != null) {
-                  mActions.requestLayout()
-                }
-                mLayoutcodevertical.getParent().requestLayout()
-                //yprev = y
-              }
-              xprev = event.getRawX()
-              yprev = event.getRawY()*/
+              
+              
+              xprev = x
+              yprev = y
               true
             case _ =>
               false
         }
+        case _ =>
+          false
       }
+    }
   }
 
   /** Called by the activity when the game has to sleep deeply. 
@@ -975,7 +1008,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     codeMapping = mapping.mPosCategories
     propMapping = mapping.mPropertyPos
     treeMapping = mapping.mPos
-    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]]) yield a->(b.last.asInstanceOf[Literal[_]], b.head)).toMap
+    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a->(b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
     var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))

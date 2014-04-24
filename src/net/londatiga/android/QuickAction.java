@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -262,9 +263,10 @@ public class QuickAction extends PopupWindows implements OnDismissListener {
 		if (rootWidth == 0) {
 			rootWidth		= mRootView.getMeasuredWidth();
 		}
-		
-		int screenWidth 	= mWindowManager.getDefaultDisplay().getWidth();
-		int screenHeight	= mWindowManager.getDefaultDisplay().getHeight();
+		Point dims = new Point();
+    mWindowManager.getDefaultDisplay().getSize(dims);
+    int screenWidth   = dims.x;
+    int screenHeight  = dims.y;
 		
 		//automatically get X coord of popup (top left)
 		if ((anchorRect.left + rootWidth) > screenWidth || forceNextLeft) {

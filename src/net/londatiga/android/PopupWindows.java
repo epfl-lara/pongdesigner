@@ -1,5 +1,6 @@
 package net.londatiga.android;
 
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
@@ -74,7 +75,7 @@ public class PopupWindows {
 		onShow();
 
 		if (mBackground == null) 
-			mWindow.setBackgroundDrawable(new BitmapDrawable());
+			mWindow.setBackgroundDrawable(new BitmapDrawable(mContext.getResources(), (Bitmap)null));
 		else 
 			mWindow.setBackgroundDrawable(mBackground);
 

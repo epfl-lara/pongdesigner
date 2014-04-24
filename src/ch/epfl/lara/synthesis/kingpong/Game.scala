@@ -33,6 +33,10 @@ trait RuleManager {
   
   /** All the rules in this game. */
   def rules: Traversable[Expr] = _rules
+  def setRuleByIndex(rule: Expr, index: Int): Unit = _rules(index) = rule
+  def getRuleByIndex(index: Int): Expr = _rules(index)
+  def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
+  
   def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
   def addRule(r: Expr): Unit = {
     def addToCategory(category: Category) {

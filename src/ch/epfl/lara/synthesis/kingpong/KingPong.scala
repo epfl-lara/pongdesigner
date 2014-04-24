@@ -470,6 +470,7 @@ class KingPong extends Activity
     mProgressDialog.show()
   }
   def after(delay: Long): RichHandler = new RichHandler(delay, mHandler)
+  import scala.language.reflectiveCalls //???
   def !(m: Message) = mHandler ! m
   
   class RichHandler(delay: Long, handler: Handler) {
