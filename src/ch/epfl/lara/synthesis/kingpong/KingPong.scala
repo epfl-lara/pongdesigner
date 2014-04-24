@@ -1,51 +1,41 @@
 package ch.epfl.lara.synthesis.kingpong
 
-import java.util.ArrayList
+import java.io.FileNotFoundException
 import scala.collection.mutable.ArrayBuffer
-import net.londatiga.android._
+
 import android.app.Activity
-import android.graphics.Bitmap
+import android.app.ProgressDialog
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
-import android.widget.ImageButton
-import android.widget.SeekBar
-import android.view.View
+import android.os.Message
+import android.support.v4.view.GestureDetectorCompat
+import android.util.Log
+import android.view.GestureDetector
 import android.view.Menu
 import android.view.MenuItem
-import android.hardware.SensorEventListener
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.content.Context
-import android.content.pm.ActivityInfo
-import android.view.Surface
-import android.content.res.Configuration
-import android.os.Message
-import android.app.ProgressDialog
-import android.widget.Toast
-import android.util.Log
-import android.os.AsyncTask
-import android.content.Intent
-import android.net.Uri
-import android.media.MediaRecorder
-import android.graphics.drawable.Drawable
-import android.widget.TextView
-import android.support.v4.view.GestureDetectorCompat
-import android.view.GestureDetector
 import android.view.MotionEvent
-import android.widget.LinearLayout
-import android.text.method.ScrollingMovementMethod
-import android.widget.ImageView
+import android.view.View
 import android.view.ViewGroup
-import android.widget.ListView
 import android.widget.ExpandableListView
-import org.jbox2d.dynamics.contacts.{Contact => JBoxContact}
-import ch.epfl.lara.synthesis.kingpong.common.History
-import ch.epfl.lara.synthesis.kingpong.common.Messages
+import android.widget.ListView
+import android.widget.TextView
+import android.widget.Toast
+import android.widget.SeekBar
+import android.widget.LinearLayout
+import android.widget.ImageView
+
+import net.londatiga.android._
+
 import ch.epfl.lara.synthesis.kingpong.examples.TestGame
-import java.io.FileNotFoundException
+import ch.epfl.lara.synthesis.kingpong.common.Messages
 
 object KingPong {
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -170,7 +160,7 @@ class KingPong extends Activity
 
   private lazy val mGameView: GameView = R.id.gameview
   private lazy val mCodeView: EditTextCursorWatcher = (code: TextView).asInstanceOf[EditTextCursorWatcher]
-  private lazy val mSeekBar: SeekBar   = time_bar
+  private lazy val mSeekBar: SeekBar = time_bar
   private lazy val mLayout1: LinearLayout = R.id.layout1
   private lazy val mLayoutcodehorizontal: LinearLayout = R.id.layoutcodehorizontal
   private lazy val mLayoutcodevertical: LinearLayout = R.id.layoutcodevertical
@@ -254,7 +244,6 @@ class KingPong extends Activity
       def onSingleTapConfirmed(x$1: android.view.MotionEvent): Boolean  = return true
     });
     
-    //mSeekBar.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
     mCodeView.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
     if(mCodeViewResizer != null) {
       var xprev = 0f
@@ -417,16 +406,6 @@ class KingPong extends Activity
       time_button.setImageDrawable(timeButtonPlay)
   }
 
-  /** When the progress bar changes from the user. */
-  /*def onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) = {
-    if (fromUser) {
-      mGameView.onProgressBarChanged(progress)
-    }
-  }
-
-  def onStartTrackingTouch(seekBar: SeekBar) {}
-  def onStopTrackingTouch(seekBar: SeekBar) {}*/
-  
   configurationObject {
     if(task != null) {
       if(mGameView != null) task.game = mGameView.getGame
