@@ -316,7 +316,7 @@ object SizeButton extends MenuButton {
           val rx = r.x.getPrevOrNext(modify_prev)
           val ry = r.y.getPrevOrNext(modify_prev)
           r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(points=rx+selected_shape_first_width/2)-rx)))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, rx+newWidth/2 - selected_shape_first_height)(points=ry+selected_shape_first_height/2)-ry)))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(points=ry+selected_shape_first_height/2)-ry)))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next

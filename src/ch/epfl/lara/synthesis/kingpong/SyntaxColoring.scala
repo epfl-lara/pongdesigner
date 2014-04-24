@@ -22,7 +22,7 @@ object SyntaxColoring {
   }
   def setSpanOnBounds(text: CharSequence, start: Int, end: Int, cs: (() => CharacterStyle)*): CharSequence = {
     val thetext = new SpannableString(text)
-    for (c <- cs) thetext.setSpan(c(), start, end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+    for (c <- cs) thetext.setSpan(c(), start, Math.min(end, thetext.length), Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
     thetext
   }
   /**

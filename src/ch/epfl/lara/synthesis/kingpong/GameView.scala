@@ -1202,6 +1202,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
 
     private val last = Array.fill(FINGERS)(Vec2(0, 0))
+    private var lastMainPointerId = -1
     
     def onTouchEvent(me: MotionEvent): Unit = {
       val action = me.getAction()
@@ -1211,7 +1212,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         case MotionEvent.ACTION_DOWN | MotionEvent.ACTION_POINTER_DOWN =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
-          onFingerDown(point)
+          if(lastMainPointerId == -1 || state == Running) {
+            onFingerDown(point)
+          }
           last(pointerIndex) = point
 
         // A finger moves
@@ -1220,6 +1223,8 @@ class GameView(val context: Context, attrs: AttributeSet)
             var i = me.getPointerCount()-1
             while(i>=0) {
               val pointerIndex = Math.min(me.getPointerId(i), FINGERS - 1)
+              lastMainPointerId = pointerIndex
+              
               val from = last(pointerIndex)
               val to = Vec2(me.getX(0), me.getY(0))
               //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
@@ -1227,7 +1232,8 @@ class GameView(val context: Context, attrs: AttributeSet)
               last(pointerIndex) = to
               i -= 1
             }
-          } else if (me.getPointerCount() == 2) {
+          }
+          if (me.getPointerCount() == 2 && state == Editing) {
             val pointerIndex1 = Math.min(me.getPointerId(0), FINGERS - 1)
             val pointerIndex2 = Math.min(me.getPointerId(1), FINGERS - 1)
             val from1 = last(pointerIndex1)
@@ -1238,14 +1244,46 @@ class GameView(val context: Context, attrs: AttributeSet)
             last(pointerIndex1) = to1
             last(pointerIndex2) = to2
           }
+          if(me.getPointerCount() == 3 && state == Editing) { // Experimental: 3 finger editing
+            val pointerIndexes = (0 to 2) map me.getPointerId map (Math.min(_, FINGERS - 1))
+            (0 to 2) find (i => pointerIndexes(i) == lastMainPointerId) match {
+              case None => // Nothing can be done.
+              case Some(i) =>
+                val j = (i+1)%3
+                val k = (i+2)%3
+                
+                // The main one triggers a onOneFingerMove
+                val from = last(pointerIndexes(i))
+                val to = Vec2(me.getX(i), me.getY(i))
+                onOneFingerMove(from, to)
+                last(pointerIndexes(i)) = to
+                
+                // The second one triggers a onTwoFingerMove
+                val from1 = last(pointerIndexes(j))
+                val from2 = last(pointerIndexes(k))
+                val to1 = Vec2(me.getX(j), me.getY(j))
+                val to2 = Vec2(me.getX(k), me.getY(k))
+                onTwoFingersMove(from1, to1, from2, to2)
+                last(pointerIndexes(j)) = to1
+                last(pointerIndexes(k)) = to2
+            }
+            
+          }
 
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
-          if(last(pointerIndex).x != point.x || last(pointerIndex).y != point.y)
-            onOneFingerMove(last(pointerIndex), point)
-          onFingerUp(point)
+          if(state == Running || lastMainPointerId == pointerIndex) {
+            if(last(pointerIndex).x != point.x || last(pointerIndex).y != point.y) {
+              onOneFingerMove(last(pointerIndex), point)
+            }
+            onFingerUp(point)
+            lastMainPointerId = -1
+          }
           last(pointerIndex) = point
+          if(me.getPointerCount() == 0) { // Might be useless
+            lastMainPointerId = -1
+          }
 
         case _ => //Do nothing
       }
