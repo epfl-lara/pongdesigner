@@ -119,7 +119,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     with SurfaceHolder.Callback
     with ProgressBarHandler
     with ActionBarHandler
-    with common.ContextUtils {
+    with common.ContextUtils
     with Implicits
   {
   import GameView._
