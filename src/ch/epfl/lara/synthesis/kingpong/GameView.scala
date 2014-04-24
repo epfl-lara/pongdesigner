@@ -346,6 +346,68 @@ class GameView(val context: Context, attrs: AttributeSet)
   var cv_treeContainingConst: Option[Expr] = None
   var cv_indexOfTree: Option[Int] = None
   var cv_oldValue = 0
+  def codeViewListener(event: MotionEvent): Boolean = {
+    (cv_constToModify, cv_constToModifyInitial, cv_treeContainingConst, cv_indexOfTree) match {
+      case (Some(const), Some(init), Some(tree), Some(index)) =>
+      val action = event.getAction()
+        (action & MotionEvent.ACTION_MASK) match {
+          case MotionEvent.ACTION_DOWN =>
+            xstart = event.getRawX()
+            ystart = event.getRawY()
+            xprev = xstart
+            yprev = ystart
+            cv_oldValue = init match {
+              case IntegerLiteral(number_value) => number_value
+              case _ => 0
+            }
+            true
+            
+          // A finger moves
+          case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
+            val x = event.getRawX()
+            val y = event.getRawY()
+            val dx = (x - xstart)
+            
+            (const, init) match {
+              case (IntegerLiteral(number_value), IntegerLiteral(initial_value)) => 
+                val newValue = Math.round(initial_value + Math.abs(dx)*dx / (48*48f)).toInt
+                if(newValue != cv_oldValue) {
+                  val newConst = IntegerLiteral(newValue)
+                  val newTree = TreeOps.preMap(expr => if(expr eq const) Some(newConst: Expr) else None)(tree: Expr)
+                  game.setRuleByIndex(newTree, index)
+                  cv_constToModify = Some(newConst)
+                  cv_treeContainingConst = Some(newTree)
+                  cv_oldValue = newValue
+                }
+                
+              /*case COLOR_SUBTYPE => 
+                // Taken into account by a menu
+              case SCORE_SUBTYPE => 
+                c.setValue((numberEditor.selectedDragNumberInitialValue + simpleRelativeX / 48f).toInt)
+              case COORD_SUBTYPE => 
+                c.setValue(Math.round(numberEditor.selectedDragNumberInitialValue + Math.abs(simpleRelativeX)*simpleRelativeX / (48*48f)).toInt)
+                //c.setValue((selectedDragNumberInitialValue + simpleRelativeX).toInt)
+              case SPEED_SUBTYPE => 
+                c.setValue(numberEditor.selectedDragNumberInitialValue * (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))
+              case ANGLE_SUBTYPE =>
+                c.setValue(((Math.round(Game.angle(0, 0, simpleRelativeX, simpleRelativeY)/15)*15)))
+              case FACTOR_SUBTYPE => 
+                c.setValue(numberEditor.selectedDragNumberInitialValue* (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))*/
+              case _ =>
+            }
+            
+            
+            xprev = x
+            yprev = y
+            true
+          case _ =>
+            false
+      }
+      case _ =>
+        false
+    }
+  }
+  
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
@@ -376,67 +438,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
       }
     })
-    codeview.setOnTouchListener{ (v: View, event: MotionEvent) =>
-      (cv_constToModify, cv_constToModifyInitial, cv_treeContainingConst, cv_indexOfTree) match {
-        case (Some(const), Some(init), Some(tree), Some(index)) =>
-        val action = event.getAction()
-          (action & MotionEvent.ACTION_MASK) match {
-            case MotionEvent.ACTION_DOWN =>
-              xstart = event.getRawX()
-              ystart = event.getRawY()
-              xprev = xstart
-              yprev = ystart
-              cv_oldValue = init match {
-                case IntegerLiteral(number_value) => number_value
-                case _ => 0
-              }
-              true
-              
-            // A finger moves
-            case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
-              val x = event.getRawX()
-              val y = event.getRawY()
-              val dx = (x - xstart)
-              
-              (const, init) match {
-                case (IntegerLiteral(number_value), IntegerLiteral(initial_value)) => 
-                  val newValue = Math.round(initial_value + Math.abs(dx)*dx / (48*48f)).toInt
-                  if(newValue != cv_oldValue) {
-                    val newConst = IntegerLiteral(newValue)
-                    val newTree = TreeOps.preMap(expr => if(expr eq const) Some(newConst: Expr) else None)(tree: Expr)
-                    game.setRuleByIndex(newTree, index)
-                    cv_constToModify = Some(newConst)
-                    cv_treeContainingConst = Some(newTree)
-                    cv_oldValue = newValue
-                  }
-                  
-                /*case COLOR_SUBTYPE => 
-                  // Taken into account by a menu
-                case SCORE_SUBTYPE => 
-                  c.setValue((numberEditor.selectedDragNumberInitialValue + simpleRelativeX / 48f).toInt)
-                case COORD_SUBTYPE => 
-                  c.setValue(Math.round(numberEditor.selectedDragNumberInitialValue + Math.abs(simpleRelativeX)*simpleRelativeX / (48*48f)).toInt)
-                  //c.setValue((selectedDragNumberInitialValue + simpleRelativeX).toInt)
-                case SPEED_SUBTYPE => 
-                  c.setValue(numberEditor.selectedDragNumberInitialValue * (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))
-                case ANGLE_SUBTYPE =>
-                  c.setValue(((Math.round(Game.angle(0, 0, simpleRelativeX, simpleRelativeY)/15)*15)))
-                case FACTOR_SUBTYPE => 
-                  c.setValue(numberEditor.selectedDragNumberInitialValue* (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))*/
-                case _ =>
-              }
-              
-              
-              xprev = x
-              yprev = y
-              true
-            case _ =>
-              false
-        }
-        case _ =>
-          false
-      }
-    }
   }
 
   /** Called by the activity when the game has to sleep deeply. 

@@ -33,7 +33,16 @@ trait RuleManager {
   
   /** All the rules in this game. */
   def rules: Traversable[Expr] = _rules
-  def setRuleByIndex(rule: Expr, index: Int): Unit = _rules(index) = rule
+  def setRuleByIndex(newRule: Expr, index: Int): Unit = {
+    val oldRule = _rules(index)
+    _rules(index) = newRule
+    for((obj, rules) <- _rulesByObject) {
+      if(rules contains oldRule) {
+        rules -= oldRule
+        rules += newRule
+      }
+    }
+  }
   def getRuleByIndex(index: Int): Expr = _rules(index)
   def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
   

@@ -137,12 +137,9 @@ trait PrettyPrinterExtendedTypical {
         StringMaker(c append other, size + other.size, map, mOpen, mCommentOpen)
       }
     }
-    def +!(other: String)(implicit s: Tree): StringMaker = {
+    def +<>(other: String)(implicit s: Tree): StringMaker = {
       StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
     }
-    /*def +!(other: String, s: GameObject): StringMaker = {
-      StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
-    }*/
     def +!(other: String, s: Category): StringMaker = {
       StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
     }
@@ -280,13 +277,13 @@ trait PrettyPrinterExtendedTypical {
         c + indent + expr + "." + (if(index == 0) "x" else "y")
       
       case Foreach(cat, id, body) =>
-        c + indent + s"$FOR_SYMBOL " +! (id.toString, cat) + s" $IN_SYMBOL " + cat + s":$LF" + body
+        c + indent +< s"$FOR_SYMBOL " +! (id.toString, cat) + s" $IN_SYMBOL " + cat + s":$LF" + body +>
       case Forall(category, id, body) =>
-        c +! (category.name, category) + ".forall{" + id + " => " + body + "}" +>
+        c +! (category.name, category) +< ".forall{" + id + " => " + body + "}" +>
       case Find(category, id, body) =>
-        c +! (category.name, category) + ".find{" + id + " => " + body + "}" +>
+        c +! (category.name, category) +< ".find{" + id + " => " + body + "}" +>
         
-    case Delete(obj) => c + indent +! "Delete(" + obj + ")"
+    case Delete(obj) => c + indent +<> "Delete(" + obj + ")"
     case Tuple(exprs) => 
       exprs match {
         case Seq() => c + indent +< "()" +>
@@ -301,7 +298,7 @@ trait PrettyPrinterExtendedTypical {
       (((c + indent +< l.head._1 + "." +l.head._2) /: l.tail) { case (i, el) => i + "," + el._1+"."+el._2}) + " = " + rhs +>
     case Block(exprs) =>
       exprs.toList match {
-        case Nil => c + indent +! "{}"
+        case Nil => c + indent +<> "{}"
         case a::Nil => c + indent +< a +>
         case a::l => 
           ((c + indent + INDENT +< a) /: l) { case (c, stat) => c + LF + indent + INDENT + stat} +>
@@ -313,7 +310,7 @@ trait PrettyPrinterExtendedTypical {
       end +>
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
-    case NOP => c +! "NOP"
+    case NOP => c +<> "NOP"
     
     case Choose(vars, pred) => 
       val varsString = vars.mkString("(", ",", ")")
@@ -324,11 +321,11 @@ trait PrettyPrinterExtendedTypical {
     case StringLiteral(value: String) => c + indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => c + indent + value.toString
     case UnitLiteral => c + indent + "()"
-    case ObjectLiteral(null) => c + indent +! "null"
-    case ObjectLiteral(obj) => c + indent +! obj.name.get
+    case ObjectLiteral(null) => c + indent +<> "null"
+    case ObjectLiteral(obj) => c + indent +<> obj.name.get
     
     case Select(expr, property) => c + indent +< expr + "." + property +>
-    case Variable(id) => c + indent +! id.toString
+    case Variable(id) => c + indent +<> id.toString
     case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
     
     case Row(expr) => c + indent +< expr + ".row" +>

@@ -209,7 +209,7 @@ class KingPong extends Activity
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
       override def onDown(event: MotionEvent): Boolean = { 
-         Log.d("KingPong","onDown: " + event.toString());
+        Log.d("KingPong","onDown: " + event.toString());
         val x = event.getX()
         val y = event.getY()
         var closest_pos = 0
@@ -230,10 +230,11 @@ class KingPong extends Activity
           }
         }
         mCodeView.setSelection(closest_pos)
+        mGameView.codeViewListener(event)
         return true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
-        false
+        mGameView.codeViewListener(e2);
       }
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
