@@ -73,7 +73,7 @@ class RingBufferSuite extends FunSuite with BeforeAndAfter {
   }
 
 
-  test("test exceptions") {
+  test("exceptions") {
     intercept[IndexOutOfBoundsException] {
       buffer(0)
     }
@@ -92,19 +92,50 @@ class RingBufferSuite extends FunSuite with BeforeAndAfter {
     }
 
   }
-
-  test("test findLast()") {
-    
+  
+  test("removeTo()") {
     buffer += 1
     buffer += 2
     buffer += 3
     buffer += 4
 
-    assert(buffer.findLast(_ > 5) === None)
-    assert(buffer.findLast(e => e > 1 && e < 4) === Some(3))
-    assert(buffer.findLast(_ > 1) === Some(4))
-    assert(buffer.findLast(_ <= 3) === Some(3))
-    assert(buffer.findLast(_ % 2 == 0) === Some(2))
+    buffer.removeTo(2)
+    assert(buffer.size === 2)
+    assert(buffer.head === 3)
+    assert(buffer.last === 4)
+    
+    buffer += 42
+    assert(buffer.size === 3)
+    assert(buffer.last === 42)
+  }
+  
+  test("removeFrom()") {
+    buffer += 1
+    buffer += 2
+    buffer += 3
+    buffer += 4
+
+    buffer.removeFrom(2)
+    assert(buffer.size === 2)
+    assert(buffer.head === 1)
+    assert(buffer.last === 2)
+    
+    buffer += 42
+    assert(buffer.size === 3)
+    assert(buffer.last === 42)
   }
 
+  test("lastIndexWhere()") {
+    buffer += 1
+    buffer += 2
+    buffer += 3
+    buffer += 4
+
+    assert(buffer.lastIndexWhere(_ > 5) === -1)
+    assert(buffer.lastIndexWhere(e => e > 1 && e < 4) === 2)
+    assert(buffer.lastIndexWhere(_ > 1) === 3)
+    assert(buffer.lastIndexWhere(_ <= 3) === 2)
+    assert(buffer.lastIndexWhere(_ % 2 == 0) === 3)
+  }
+  
 }

@@ -154,9 +154,11 @@ class EventEditor(gameEngineView: GameView) /*extends GameEngineEditor(gameEngin
       
       // TODO : Select code portion to modify
       //val ruleToStopBefore = CodeGenerator.getRuleFromEvent(game, i.value) match { case Some(r) => r; case _ => null }
-      game.restore(time/*, ruleToStopBefore*/)
+      
+      //TODO clear or not clear in this restore ?
+      game.restore(time, clear = false)
       // Apply the rule that corresponds to the event.
-      gameEngineView.setTimeProgressAbsolute(time)
+      gameEngineView.setProgressBarTime(time)
       /*if(ruleToStopBefore != null) {
         triggerRule(ruleToStopBefore, i.value)
       }*/

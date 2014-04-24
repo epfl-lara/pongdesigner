@@ -67,41 +67,7 @@ object GameView {
 
   // 1 meter is equivalent to 100 pixels (with default zoom)
   val BOX2D_RATIO = 100
-
   val FINGERS = 10
-  
-  object V {
-    def unapply(v: Vec2): Option[(Float, Float)] = Some((v.x, v.y))
-  }
-}
-
-/**
- * Handler for the time bar to change the time displayed on it.
- */
-trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener  {
-  protected var progressBar: SeekBar = null
-  def setProgressBar(progressBar: SeekBar): Unit = {
-    this.progressBar = progressBar
-    if(progressBar != null) {
-      progressBar.setMax(common.History.MAX_HISTORY_SIZE)
-      progressBar.setProgress(0)
-      progressBar.setSecondaryProgress(0)
-      progressBar.setOnSeekBarChangeListener(this)
-    }
-  }
-  def setProgressTime(t: Int) = {
-    progressBar.setProgress(t)
-    progressBar.setSecondaryProgress(t)
-  }
-  
-  def onStartTrackingTouch(seekBar: SeekBar):Unit = {
-  }
-  def onStopTrackingTouch(seekBar: SeekBar):Unit = {
-  }
-  def setTimeProgressAbsolute(i: Int) = {
-    progressBar.setProgress(Math.max(0, (i - History.MAX_HISTORY_SIZE)))
-  }
-  def getGame: Game
 }
 
 /**
@@ -149,12 +115,12 @@ trait ActionBarHandler extends common.ContextUtils {
  * The game view containing menus for editing shapes and the game itself.
  */
 class GameView(val context: Context, attrs: AttributeSet)
-  extends SurfaceView(context, attrs) 
-  with SurfaceHolder.Callback
-  with ProgressBarHandler
-  with ActionBarHandler
-  with common.ContextUtils
-  {
+    extends SurfaceView(context, attrs) 
+    with SurfaceHolder.Callback
+    with ProgressBarHandler
+    with ActionBarHandler
+    with common.ContextUtils {
+  
   import GameView._
   import expression.Types._
   import common.Implicits._
@@ -170,7 +136,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
   
   lazy val button_size = gameViewRender.button_size
-  //implicit val self: Game = this
   
   def menuCallBacks: String => Boolean = { s =>
     var shape: GameObject = null
@@ -225,9 +190,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
     res
   }
-
-  //def snapX(i: Float): Float = grid.snap(i)
-  //def snapY(i: Float): Float = grid.snap(i)
 
   /**
    * Snap i to the grid, or others to the grid, or i to points.
@@ -299,7 +261,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.modify_prev = false
     MenuOptions.copy_to_prev = true
     game.setInstantProperties(true)
-    game.restore(game.time)
+    game.restore(game.time, clear = false)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
     eventEditor.unselect()
   }
@@ -310,7 +272,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   whitePaint.setStrokeWidth(1)
   whitePaint.setAntiAlias(true)
  
-
   /** The game model currently rendered. */
   private var game: Game = null
   def setGame(g: Game) = {
@@ -333,8 +294,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     if(game != null) {
       val a = (Array(0f, 0f, 0f, 0f) /: game.aliveObjects) { case (a, obj) =>
         val aabb = obj.getAABB()
-        val V(xmin, ymin) = aabb.lowerBound
-        val V(xmax, ymax) = aabb.upperBound
+        val Vec2(xmin, ymin) = aabb.lowerBound
+        val Vec2(xmax, ymax) = aabb.upperBound
         if(a(0) > xmin) a(0) = xmin
         if(a(1) > ymin) a(1) = ymin
         if(a(2) < xmax) a(2) = xmax
@@ -414,28 +375,6 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
     })
   }
-  
-  /** When the progress changes from the user. */
-  def onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean): Unit = {
-    if(fromUser/* && state == Editing*/) {
-      if(seekBar.getProgress() > seekBar.getSecondaryProgress() && state != Editing) {
-        return
-      }
-      if(seekBar.getProgress() > seekBar.getSecondaryProgress() && state == Editing) {
-        seekBar.setProgress(seekBar.getSecondaryProgress())
-      }
-      val t = game.maxTime + progress - seekBar.getSecondaryProgress()
-      Log.d("GameView",s"OnProgress up to $t")
-      if(state == Editing) {
-        game.restore(t)
-      } else {
-        game.setRestoreTo(t)
-      }
-      
-      //game.returnToTime(game.maxTime + seekBar.getProgress() - seekBar.getSecondaryProgress())
-    }
-  }
-  
 
   /** Called by the activity when the game has to sleep deeply. 
    *  The state is changed to `Editing` and the game loop is stoped.
@@ -460,9 +399,12 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   /** Called by the activity when to progress bar is modified by the user. */
-  def onProgressBarChanged(progress: Int): Unit = {
+  def onProgressBarChanged(progress: Int, secondaryProgress: Int): Unit = {
+    val t = game.maxTime + progress - secondaryProgress
     if(state == Editing) {
-      layoutResize()
+      game.restore(t, clear = false)
+    } else {
+      game.setRestoreTo(t)
     }
   }
 
@@ -484,7 +426,13 @@ class GameView(val context: Context, attrs: AttributeSet)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
 
     eventEditor.unselect()
-    game.objects.foreach(obj => { obj.validate(); obj.flush() } )
+    
+    // clear the future history if we went in the past during the pause
+    game.restore(game.time, clear = true)
+    game.objects.foreach { obj => 
+      obj.validate()
+      obj.flush() 
+    } 
     game.setInstantProperties(false)
     
     gameEngineEditors foreach (_.onExitEditMode())
@@ -499,9 +447,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Reset the game to its initial state. */
   def backToBeginning(): Unit = {
     toEditing()
-    setProgressTime(0)
+    setProgressBarTime(0)
     game.reset()
-    
   }
 
   def reset(newGame: Game): Unit = {
@@ -509,17 +456,12 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   def update(): Unit = {
-    //super.update()
-    state match {
-      case Running =>
-        game.update()
-        setProgressTime(game.time)
-      case Editing =>
+    if (state == Running) {
+      game.update()
+      setProgressBarTime(game.time)
     }
   }
 
-
-  
   /** Menu drawing */
   private val res: Resources = context.getResources()
   val bitmaps = new MMap[Int, Drawable]()
@@ -939,7 +881,10 @@ class GameView(val context: Context, attrs: AttributeSet)
     val rect = new RectF(pos.x, pos.y, pos.x, pos.y)
     val rectd = new Rect()
     rect.round(rectd)
-    mQuickAction.show(rectd, progressBar)
+    
+    //TODO why using progressBar?
+//    mQuickAction.show(rectd, progressBar)
+    mQuickAction.show(rectd, this)
   }
   
   /**

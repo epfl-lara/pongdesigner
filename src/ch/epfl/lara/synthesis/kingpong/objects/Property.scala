@@ -235,14 +235,16 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, private var 
 
   def save(t: Long): Unit = {
     if (_history.isEmpty || _history.last._2 != _crt) {
-      _history += (t, tpe.clone(_crt))
+      _history += ((t, tpe.clone(_crt)))
     }
   }
 
-  def restore(t: Long): Unit = {
-    _history.findLast(_._1 <= t) match {
-      case Some((time, value)) => set(value)
-      case None => //set(_history.head._2)
+  def restore(t: Long, clear: Boolean): Unit = {
+    _history.lastIndexWhere(_._1 <= t) match {
+      case idx if idx >= 0 => 
+        set(_history(idx)._2)
+        if (clear) _history.removeFrom(idx + 1)
+      case _ => 
         println("Property.scala", s"The timestamp $t doesn't exist in the history.")
     }
   }

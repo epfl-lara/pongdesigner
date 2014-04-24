@@ -1,6 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.common
 
-import util.control.Breaks._
+import scala.collection.mutable.IndexedSeq
 
 /**
  *  Datastructure with constant memory size and maximum number of elements.
@@ -8,7 +8,8 @@ import util.control.Breaks._
  *  newest ones.
  *  Operations Size, Head, Last, Insert, Update, Apply, Drop and Clear are in O(1).
  */
-class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collection.mutable.IndexedSeq[A] {
+class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends IndexedSeq[A] {
+  
   private val array = new Array[A](maxSize)
   private var _size = 0
   private var read = 0
@@ -53,15 +54,16 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
    *  If the buffer is already full, the oldest value
    *  will be removed.
    */
-  def +=(elem: A) {
+  def +=(elem: A): this.type = {
     array(write) = elem
     write = (write + 1) % maxSize
     if (_size == maxSize) 
       read = toIndex(1)
     else 
       _size += 1
+    this
   }
-
+  
   /** Add multiples elements at the end of this buffer.
    *  If the buffer is already full, the n oldest values
    *  will be removed.
@@ -70,27 +72,13 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     for (elem <- elems) this += elem
   }
 
-  /** Find the last element in the first series of elements 
-   *  that satisfy the predicate.
-   */
-  def findLast(p: A => Boolean): Option[A] = {
-    var found: Option[A] = None
-    breakable {
-      var i: Int = 0
-      while (i < size) {
-        val e = array(toIndex(i))
-        if (p(e)) {
-          found = Some(e)
-        } else if (found != None) {
-          break
-        }
-        i += 1
-      }
-    }
-    found
+  override def lastIndexWhere(p: A => Boolean, end: Int): Int = {
+    var idx = size - 1
+    val it = reverseIterator
+    while (idx >= 0 && (idx > end || !p(apply(idx))) ) idx -= 1
+    idx
   }
   
-  /** Iterator that iterates over all elements in this buffer. */
   override def iterator = new Iterator[A] {
     var idx = 0
     def hasNext = idx != _size
@@ -101,13 +89,24 @@ class RingBuffer[A : scala.reflect.ClassTag](maxSize: Int) extends scala.collect
     }
   }
 
-  /** Drop the `n` first elements. */
-  override def drop(n: Int): RingBuffer[A] = {
-    if (n >= maxSize)
+  /** Remove elements from the start to index `n` exclusive. */
+  def removeTo(n: Int): Unit = { 
+    if (n >= size) {
       clear()
-    else
+    } else if (n > 0) {
       read = toIndex(n)
-    this
+      _size -= n
+    }
+  }
+  
+  /** Remove elements from index `n` inclusive to the end. */
+  def removeFrom(n: Int): Unit = {
+    if (n <= 0) {
+      clear()
+    } else if (n < size) {
+      write = toIndex(n)
+      _size = n
+    }
   }
   
   /** Remove all elements from this buffer. */

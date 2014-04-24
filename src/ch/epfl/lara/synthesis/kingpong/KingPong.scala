@@ -209,11 +209,6 @@ class KingPong extends Activity
     }
     //mGameView.enterEditMode()
     mGameView.setKeepScreenOn(true)
-    
-    mSeekBar.setMax(History.MAX_HISTORY_SIZE)
-    mSeekBar.setProgress(0)
-    mSeekBar.setSecondaryProgress(0)
-    //mSeekBar.setOnSeekBarChangeListener(this)
     mGameView.requestFocus()
 
     time_button.onClicked(onTimeButtonClick)

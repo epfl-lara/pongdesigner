@@ -79,9 +79,9 @@ trait Game extends RuleManager { self =>
   /*** Maximum time achieved in this game. */
   def maxTime = EventHistory.maxTime
 
-  private[kingpong] def restore(t: Int): Unit = {
+  private[kingpong] def restore(t: Int, clear: Boolean): Unit = {
     if (t >= 0 && t <= maxTime) {
-      objects.foreach(_.restore(t))
+      objects.foreach(_.restore(t, clear))
       EventHistory.restore(t)
       world.clear()
     }
@@ -104,7 +104,8 @@ trait Game extends RuleManager { self =>
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
     scheduledRestoreTime match {
-      case Some(t) => restore(t)
+      case Some(t) => 
+        restore(t, clear = true)
         scheduledRestoreTime = None
       case None =>
     }

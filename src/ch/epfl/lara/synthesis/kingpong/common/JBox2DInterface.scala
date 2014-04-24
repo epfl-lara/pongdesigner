@@ -19,6 +19,7 @@ object JBox2DInterface {
   object Vec2 {
     def apply(other: Vec2) = new Vec2(other)
     def apply(x: Float, y: Float) = new Vec2(x, y)
+    def unapply(v: Vec2): Option[(Float, Float)] = Some((v.x, v.y))
   }
 
   implicit class Vec2Extended(val v: Vec2) extends AnyVal {
