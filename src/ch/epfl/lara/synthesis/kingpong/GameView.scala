@@ -1,64 +1,52 @@
 package ch.epfl.lara.synthesis.kingpong
 
+import scala.annotation.tailrec
+import scala.collection.mutable.{HashMap => MMap}
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
-import scala.collection.mutable.ConcurrentMap
+
 import android.app.Activity
-import android.view.SurfaceView
-import android.view.MotionEvent
-import android.view.SurfaceHolder
-import android.view.Surface
-import android.view.View
-import android.widget.SeekBar
-import android.graphics.Canvas
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
-import android.graphics.Paint
-import android.graphics.Matrix
+import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.PorterDuffColorFilter
-import android.graphics.PorterDuff
-import android.graphics.PorterDuff.Mode
 import android.graphics.drawable.Drawable
-import android.graphics.Path
-import android.util.Log
-import android.util.AttributeSet
-import android.os.Handler
-import android.os.Vibrator
-import android.hardware.SensorManager
 import android.hardware.Sensor
-import android.hardware.SensorEventListener
 import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
+import android.util.AttributeSet
+import android.util.Log
+import android.view.MotionEvent
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import android.view.View
+import android.widget.ExpandableListView
+import android.widget.Toast
+
+import net.londatiga.android.ActionItem
+import net.londatiga.android.QuickAction
+
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.common.Messages._
+import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+import ch.epfl.lara.synthesis.kingpong.expression.CodeGenerator
+import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtended
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import org.jbox2d.common.MathUtils
-import android.widget.TextView
-import android.text.style.BackgroundColorSpan
-import ch.epfl.lara.synthesis.kingpong.expression._
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import android.text.style.StyleSpan
-import android.graphics.Typeface
-import android.text.style.ForegroundColorSpan
-import android.widget.ExpandableListView
-import android.widget.ExpandableListAdapter
-import ch.epfl.lara.synthesis.kingpong.menus._
-import ch.epfl.lara.synthesis.kingpong.common.History
-import android.widget.Toast
-import collection.mutable.{Set => MSet, HashMap => MMap}
-import android.graphics.DashPathEffect
-import android.content.res.Resources
-import android.util.DisplayMetrics
-import android.view.WindowManager
-import android.graphics.LinearGradient
-import android.graphics.Shader
-import ch.epfl.lara.synthesis.kingpong.common.Messages._
-import net.londatiga.android.QuickAction
-import net.londatiga.android.ActionItem
-import scala.collection.mutable.ListBuffer
-import scala.package$._
 
 object GameView {
   sealed trait GameState
@@ -123,8 +111,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     with Implicits
   {
   import GameView._
-  import expression.Types._
-  import common.Implicits._
 
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
@@ -421,7 +407,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   /** Called by the activity when the game has to sleep deeply. 
-   *  The state is changed to `Editing` and the game loop is stoped.
+   *  The state is changed to `Editing` and the game loop is stopped.
    */
   def onPause(): Unit = {
     Log.d("kingpong", "onPause()")
@@ -442,7 +428,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
   }
 
-  /** Called by the activity when to progress bar is modified by the user. */
+  /** Called when the progress bar is modified by the user. */
   def onProgressBarChanged(progress: Int, secondaryProgress: Int): Unit = {
     val t = game.maxTime + progress - secondaryProgress
     if(state == Editing) {
@@ -495,10 +481,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     game.reset()
   }
 
-  def reset(newGame: Game): Unit = {
-    game = newGame
-  }
-
+  /** Called by the `GameLoop`. */
   def update(): Unit = {
     if (state == Running) {
       game.update()
@@ -814,7 +797,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     d1.draw(canvas)
     d2.setBounds(0, 0, d1.getIntrinsicWidth()-1, d1.getIntrinsicHeight()-1)
     d2.draw(canvas)
-    new BitmapDrawable(big)
+    new BitmapDrawable(getResources(), big)
   }
   //lazy val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
   
@@ -946,7 +929,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               i
           }
           val id = Stream.from(0).find(i => !(bitmaps contains i)).get
-          bitmaps(id) = new BitmapDrawable(finalbitmap)
+          bitmaps(id) = new BitmapDrawable(getResources(), finalbitmap)
           selectedShape.color setNext id
         case _ =>
       }
@@ -1127,8 +1110,6 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /** pixels to meters */
   def mapRadiusI(r: Float): Float = matrixI.mapRadius(r)
-
-  def radToDegree(r: Float): Float = r * MathUtils.RAD2DEG
 
   private def computeTransformationMatrices() = {
     if(game != null) layoutResize()
