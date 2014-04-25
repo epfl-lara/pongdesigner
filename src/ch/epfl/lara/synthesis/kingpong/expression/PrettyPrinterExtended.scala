@@ -20,7 +20,7 @@ object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
 
 object PrettyPrinterExtendedTypical {
   object Mappings {
-    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
+    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, (Int, Int)](), Map[Int, String]())
   }
   /**
    * Recording of different mappings to retrieve the objects and the code.
@@ -33,6 +33,7 @@ object PrettyPrinterExtendedTypical {
       mPosCategories: Map[Int, List[Category]],
       mPos: Map[Int, List[Tree]],
       mProperties: Map[Property[_], List[(Int, Int)]],
+      mConstantsPos: Map[Int, (Int, Int)],
       mComment: Map[Int, String]) {
     def add(obj: GameObject, start: Int, end: Int): Mappings = {
       add(obj.category, start, end)
@@ -55,8 +56,14 @@ object PrettyPrinterExtendedTypical {
         case Some(category) => addPositions(category, start, end, mPosCategories)
         case None => mPosCategories
       }
+      val constantPos = s match {
+        case a: Literal[_] => 
+          addBounds(start, end, mConstantsPos)
+        case _ =>
+          mConstantsPos
+      }
       
-      Mappings(addIfCategory(s, start, end, mObjects), posCategories, addPositions(s, start, end, mPos), addIfProperty(s, start, end, mProperties), mComment)
+      Mappings(addIfCategory(s, start, end, mObjects), posCategories, addPositions(s, start, end, mPos), addIfProperty(s, start, end, mProperties), constantPos, mComment)
     }
     def add(comment: String, start: Int, end: Int): Mappings = {
       this.copy(mComment=addComment(comment, start, end, mComment))
@@ -74,6 +81,14 @@ object PrettyPrinterExtendedTypical {
         map.get(i) match {
           case Some(t) => map + (i -> (s::t))
           case None => map + (i -> (s::Nil))
+        }
+      }
+    }
+    def addBounds(start: Int, end: Int, mm: Map[Int, (Int, Int)]): Map[Int, (Int, Int)] = {
+      (mm /: (start to end)) { case (map, i) =>
+        map.get(i) match {
+          case Some(t) => map
+          case None => map + (i -> (start, end))
         }
       }
     }
@@ -106,8 +121,18 @@ object PrettyPrinterExtendedTypical {
           mPosCategories.map{ case (k, v) => (map(k), v)},
           mPos.map{ case (k, v) => (map(k), v)},
           mProperties.mapValues(_.map{case (i,j) => (map(i), map(j))}),
+          mConstantsPos.map{ case (k, (v1, v2)) => (map(k), (map(v1), map(v2)))},
           mComment.map{ case (k, v) => (map(k), v)}
        )
+    }
+    // TODO : This function replaces only top-level trees, not low-level ones.
+    def replace(oldTree: Tree, newTree: Tree): Mappings = {
+      this.copy(mObjects: Map[Category, List[(Int, Int)]],
+      mPosCategories: Map[Int, List[Category]],
+      mPos.map{ case (k, v) => (k, v.map{ case e if e eq oldTree => newTree case f => f})},
+      mProperties: Map[Property[_], List[(Int, Int)]],
+      mConstantsPos: Map[Int, (Int, Int)],
+      mComment: Map[Int, String])
     }
   }
 }

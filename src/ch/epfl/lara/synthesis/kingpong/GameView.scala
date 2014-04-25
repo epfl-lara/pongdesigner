@@ -334,7 +334,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var mCvMapping: Mappings = null
   def cv_mapping_=(m: Mappings): Unit = {
     mCvMapping = m
-    (for( (a, b) <- cv_mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a->(b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
+    cv_mapping_consts = (for( (a, b) <- cv_mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a->(b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
   }
   def cv_mapping = mCvMapping
   def cv_mapping_code = if(cv_mapping == null) Map[Int, List[Category]]() else cv_mapping.mPosCategories
@@ -347,6 +347,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   var xprev = 0f
   var yprev = 0f
   var cv_constToModify: Option[Literal[_]] = None
+  var cv_constToModifyStart = 0
+  var cv_constToModifyEnd = 0
   var cv_constToModifyInitial: Option[Literal[_]] = None
   var cv_treeContainingConst: Option[Expr] = None
   var cv_indexOfTree: Option[Int] = None
@@ -383,6 +385,7 @@ class GameView(val context: Context, attrs: AttributeSet)
                   cv_constToModify = Some(newConst)
                   cv_treeContainingConst = Some(newTree)
                   cv_oldValue = newValue
+                  cv_constToModifyEnd = replaceCodeView(cv_constToModifyStart, cv_constToModifyEnd, tree, newTree, newConst)
                 }
                 
               /*case COLOR_SUBTYPE => 
@@ -437,7 +440,12 @@ class GameView(val context: Context, attrs: AttributeSet)
             cv_constToModifyInitial = Some(constLiteral)
             cv_treeContainingConst = Some(mainTree)
             cv_indexOfTree = { val res = game.findRuleIndex(_ == mainTree); if(res == -1) None else Some(res) }
-
+            mCvMapping.mConstantsPos.get(start) match {
+              case Some((a, b)) =>
+                cv_constToModifyStart = a
+                cv_constToModifyEnd = b
+              case None =>
+            }
           case None =>
             
         }
@@ -1016,6 +1024,9 @@ class GameView(val context: Context, attrs: AttributeSet)
     var rulesString: CharSequence = all.c
     cv_mapping = all.map
     rulesString = colorCodeView(rulesString, cv_mapping, objects)
+    for((i, j) <- cv_mapping_consts) {
+      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
+    }
     codeview.setText(rulesString)
   }
   
@@ -1037,20 +1048,21 @@ class GameView(val context: Context, attrs: AttributeSet)
         case None => // No objects to color
       }
     }
-    for((i, j) <- cv_mapping_consts) {
-      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
-    }
     rulesString
   }
   
-  def replaceCodeView(start: Int, end: Int, newText: Expr) = {
+  /**
+   * @return the new end of the expression
+   */
+  def replaceCodeView(start: Int, end: Int, oldTree: Tree, newTree: Tree, newText: Expr): Int = {
     val all = PrettyPrinterExtended.print(List(newText))
     var text: CharSequence = all.c
     val newLength = text.length
     val oldLength = end-start
     text = colorCodeView(text, all.map, Nil)
-    cv_mapping = cv_mapping.insertPositions(end, newLength - oldLength)
+    cv_mapping = cv_mapping.replace(oldTree, newTree).insertPositions(end, newLength - oldLength)
     codeview.getText().replace(start, end, text)
+    end + newLength - oldLength
   }
   
   /**
