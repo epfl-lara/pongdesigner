@@ -25,8 +25,8 @@ object CodeTemplates extends CodeHandler {
     val isMovementVertical = Math.abs(dy) > 10 * Math.abs(dx)
     val isTouchMoveEvent = eventMove.nonEmpty
     
-    lazy val integers: Traversable[Box[Int]] = objects.collect{ case b: IntBox => b}
-    lazy val texts: Traversable[Box[String]] = objects.collect{ case b: StringBox => b}
+    lazy val integers: Traversable[IntBox] = objects.collect{ case b: IntBox => b}
+    lazy val texts: Traversable[StringBox] = objects.collect{ case b: StringBox => b}
     lazy val booleans: Traversable[Box[Boolean]] = objects.collect{ case b: BooleanBox => b }
     lazy val rectangulars: Traversable[Rectangular] = objects.collect{ case b: Rectangular => b }
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
@@ -114,15 +114,13 @@ object CodeTemplates extends CodeHandler {
   trait TemplateOtherPair[T <: GameObject, U] extends Template[T] {
     def comment(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): String
     
-    /** The condition under which this template applies. */
-    def condition(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Boolean
-    
-    /** The statement this template can return. */
-    def result(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Expr
+    /** 
+     * The statement this template can return.
+     * Return `None` if this template doesn't appy to the given objects. 
+     * Also set the priority on the expression, if any.
+     */
+    def result(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Option[Expr]
 
-    /** The priority of this template compare to others, given a game object. */
-    def priority(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): Int
-    
     def others(implicit ctx: TemplateContext): Traversable[U]
     
     def otherOrder = true 
@@ -136,14 +134,11 @@ object CodeTemplates extends CodeHandler {
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       val stats = othersFiltered flatMap { case (other1, other2) =>
-        if (condition(obj, other1, other2) && obj != other1 && obj != other2) {
-          result(obj, other1, other2) match {
-            case Block(Nil) => None
-            case ParExpr(Nil) => None
-            case NOP => None
-            case stat => Some(stat.setPriority(priority(obj, other1, other2)))
-          }
-        } else None
+        if (obj != other1 && obj != other2) {
+          result(obj, other1, other2)
+        } else {
+          None
+        }
       }
       
       if (stats.size == 0)
@@ -225,11 +220,11 @@ object CodeTemplates extends CodeHandler {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[PhysicalObject]
   }
   
-  trait TemplateValue extends Template[Box[Int]] {
+  trait TemplateValue extends Template[IntBox] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[IntBox]
   }
   
-  trait TemplateText extends Template[Box[String]] {
+  trait TemplateText extends Template[StringBox] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[StringBox]
   }
   
@@ -257,11 +252,11 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.rotationables
   }
   
-  trait TemplateOtherValue[T <: GameObject] extends TemplateOther[T, Box[Int]] {
+  trait TemplateOtherValue[T <: GameObject] extends TemplateOther[T, IntBox] {
     def others(implicit ctx: TemplateContext) = ctx.integers
   }
   
-  trait TemplateOtherText[T <: GameObject] extends TemplateOther[T, Box[String]] {
+  trait TemplateOtherText[T <: GameObject] extends TemplateOther[T, StringBox] {
     def others(implicit ctx: TemplateContext) = ctx.texts
   }
 
@@ -281,11 +276,11 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.objects
   }
   
-  trait TemplateOtherPairValue[T <: GameObject] extends TemplateOtherPair[T, Box[Int]] {
+  trait TemplateOtherPairValue[T <: GameObject] extends TemplateOtherPair[T, IntBox] {
     def others(implicit ctx: TemplateContext) = ctx.integers
   }
   
-  trait TemplateOtherPairText[T <: GameObject] extends TemplateOtherPair[T, Box[String]] {
+  trait TemplateOtherPairText[T <: GameObject] extends TemplateOtherPair[T, StringBox] {
     def others(implicit ctx: TemplateContext) = ctx.texts
   }
   
@@ -887,103 +882,205 @@ object CodeTemplates extends CodeHandler {
     |- ((shape, shape_ident) => (shape_ident("value") := shape_ident("value") + number(shape.value.next - shape.value.get)))
   )*/
   
-  //TODO lomig translate these templates
-//  object TValueAbsolute extends Template[Box[Int]] {
-//    def condition = true
-//    def result    = (shape_ident("value") := number(shape.value.next))
-//    def priority  = 5
-//    def comment   = s"Always change the value  of ${shape.name.next} to " + shape.value.next
-//  }
-//  object TValueRelative extends Template[Box[Int]] {
-//    def condition = Math.abs(shape.value.next - shape.value.get) > 1
-//    def result    = (shape_ident("value") := shape_ident("value") + number(shape.value.next - shape.value.get))
-//    def priority  = 6
-//    def comment   = s"Change the value of ${shape.name.next} by " + shape.value.next
-//  }
-//  object TValueDiv2 extends Template[Box[Int]] {
-//    def condition = shape.value.next == shape.value.get / 2
-//    def result    = (shape_ident("value") := shape_ident("value") / number(2))
-//    def priority  = 7
-//    def comment   = s"Divides the value of ${shape.name.next} by 2"
-//  }
-//  object TValueTimes extends Template[Box[Int]] {
-//    def condition = shape.value.get != 0 && shape.value.next % shape.value.get == 0 && shape.value.next / shape.value.get != 0
-//    def result    = (shape_ident("value") := (shape_ident("value") * number(shape.value.next / shape.value.get)))
-//    def priority  = 8
-//    def comment   = s"Multiplies the value of ${shape.name.next} by " + (shape.value.next / shape.value.get)
-//  }
-//  object TValueCombine1_absolute extends TemplateOtherValue {
-//    def condition = shape.value.next == other_shape.value.get
-//    def result    = (shape_ident("value") := other_shape_ident("value"))
-//    def priority  = if(other_shape.value.get == 0) 5 else 10
-//    def comment   = s"Copies the value of ${other_shape.name.next} to ${shape.name.next}"
-//  }
-//  object TValueCombine1_relativeMultCopy extends TemplateOtherValue {
-//    def condition = other_shape.value.get != 0 && shape.value.next % other_shape.value.get == 0 && shape.value.next !=  other_shape.value.get && shape.value.next != 0
-//    def result    = (shape_ident("value") := (other_shape_ident("value") * number(shape.value.next / other_shape.value.get)))
-//    def priority  = if(shape.value.next / other_shape.value.get == 2) 8 else 10
-//    def comment   = s"Stores in ${shape.name.next} the value of ${other_shape.name.next} multiplied by" + (shape.value.next / other_shape.value.get)
-//  }
-//  object TValueCombine1_relativeModulo extends TemplateOtherValue {
-//    def condition = other_shape.value.get > 1 && shape.value.next == shape.value.get % other_shape.value.get
-//    def result    = (shape_ident("value") := (shape_ident("value") % other_shape_ident("value")))
-//    def priority  = 10
-//    def comment   = s"Stores in ${shape.name.next} its previous value modulo ${other_shape.name.next}"
-//  }
-//  object TValueCombine2_plus extends TemplateOtherValue2 {
-//    def condition = shape.value.next == other_shape.value.get + other_shape2.value.get && other_shape != other_shape2
-//    def result = (shape_ident("value") := other_shape_ident("value") + other_shape2_ident("value"))
-//    def priority = if(other_shape.value.get == 0 || other_shape2.value.get == 0) 0 else 10
-//    def comment   = s"Stores in ${shape.name.next} the sum of ${other_shape.name.next} and ${other_shape2.name}"
-//  }
-//  object TValueCombine2_minus extends TemplateOtherValue2 {
-//    override def order = false
-//    def condition = shape.value.next == other_shape.value.get - other_shape2.value.get
-//    def result = (shape_ident("value") := other_shape_ident("value") - other_shape2_ident("value"))
-//    def priority = if(other_shape.value.get == 0 || other_shape2.value.get == 0) 0 else if(shape.value.next == 0) 1 else 10
-//    def comment   = s"Stores in ${shape.name.next} the difference between ${other_shape.name.next} and ${other_shape2.name}"
-//  }
-//  object TValueCombine2_times extends TemplateOtherValue2 {
-//    def condition = shape.value.next == other_shape.value.get * other_shape2.value.get
-//    def result = (shape_ident("value") := other_shape_ident("value") * other_shape2_ident("value"))
-//    def priority = if(other_shape.value.get == 0 || other_shape2.value.get == 0) 0 else if(other_shape.value.get == 1 || other_shape2.value.get == 1) 2 else 10
-//    def comment   = s"Stores in ${shape.name.next} the multiplication between ${other_shape.name.next} and ${other_shape2.name}"
-//  }
-//  object TValueCombine2_div extends TemplateOtherValue2 {
-//    override def order = false
-//    def condition = other_shape2.value.get != 0 && shape.value.next == other_shape.value.get / other_shape2.value.get
-//    def result = (shape_ident("value") := other_shape_ident("value") / other_shape2_ident("value"))
-//    def priority = if(other_shape2.value.get == 0) 0 else if(other_shape.value.get % other_shape2.value.get != 0) 2 else 10
-//    def comment   = s"Stores in ${shape.name.next} the division between ${other_shape.name.next} and ${other_shape2.name}"
-//  }
-//  object TValueRelative2 extends Template[Box[Int]] {
-//    def condition = Math.abs(shape.value.next - shape.value.get) == 1
-//    def result    = (shape_ident("value") := shape_ident("value") + number(shape.value.next - shape.value.get))
-//    def priority = 12
-//    def comment   = s"Adds to ${shape.name.next} the number ${shape.value.next - shape.value.get}"
-//  }
-//
-//  object TValue extends TemplateParallel[Box[Int]] {
-//    def condition = shape.value.get != shape.value.next
-//    val templates = List(TValueAbsolute,
-//      TValueRelative,
-//      TValueDiv2,
-//      TValueTimes,
-//      TValueCombine1_absolute,
-//      TValueCombine1_relativeMultCopy,
-//      TValueCombine1_relativeModulo,
-//      TValueCombine2_plus,
-//      TValueCombine2_minus,
-//      TValueCombine2_times,
-//      TValueCombine2_div,
-//      TValueRelative2
-//    )
-//    def priority = 10
-//    def comment   = s"Possible value changes for ${shape.name.next}"
-//  }
   
-  object TTextCopy extends TemplateOtherText[Box[String]] with TemplateText {
-    def result(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) = {
+  object TValueAbsolute extends TemplateSimple[IntBox] with TemplateValue {
+    def result(obj: IntBox)(implicit ctx: TemplateContext) = {
+      val expr = obj.value := obj.value.next
+      Some(expr.setPriority(5))
+    }
+    
+    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
+      s"Always change the value of ${obj.name.next} to " + obj.value.next
+  }
+  
+  object TValueRelative extends TemplateSimple[IntBox] with TemplateValue {
+    def result(obj: IntBox)(implicit ctx: TemplateContext) = {
+      val diff = obj.value.next - obj.value.get
+      if (Math.abs(diff) > 1) {
+        val expr = obj.value += diff
+        Some(expr.setPriority(6))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
+      s"Change the value of ${obj.name.next} by " + obj.value.next
+  }
+  
+  object TValueRelative2 extends TemplateSimple[IntBox] with TemplateValue {
+    def result(obj: IntBox)(implicit ctx: TemplateContext) = {
+      val diff = obj.value.next - obj.value.get
+      if (Math.abs(diff) == 1) {
+        val expr = obj.value += diff
+        Some(expr.setPriority(12))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
+      s"Adds to ${obj.name.next} the number ${obj.value.next - obj.value.get}"
+  }
+  
+  object TValueDiv2 extends TemplateSimple[IntBox] with TemplateValue {
+    def result(obj: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == obj.value.get / 2) {
+        val expr = obj.value /= 2
+        Some(expr.setPriority(7))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
+      s"Divides the value of ${obj.name.next} by 2"
+  }
+  
+  object TValueTimes extends TemplateSimple[IntBox] with TemplateValue {
+    def result(obj: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.get != 0 && obj.value.next % obj.value.get == 0 && obj.value.next / obj.value.get != 0) {
+        val expr = obj.value *= obj.value.next / obj.value.get
+        Some(expr.setPriority(8))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
+      s"Multiplies the value of ${obj.name.next} by " + (obj.value.next / obj.value.get)
+  }
+  
+  
+  object TValueCombine1_absolute extends TemplateOtherValue[IntBox] with TemplateValue {
+    def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other.value.get) {
+        val expr = obj.value := other.value
+        val priority = if(other.value.get == 0) 5 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
+      s"Copies the value of ${obj.name.next} to ${obj.name.next}"
+  }
+  
+  object TValueCombine1_relativeMultCopy extends TemplateOtherValue[IntBox] with TemplateValue {
+    def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
+      if (other.value.get != 0 && obj.value.next % other.value.get == 0 && obj.value.next != other.value.get && obj.value.next != 0) {
+        val expr = obj.value := other.value * (obj.value.next / other.value.get)
+        val priority = if(obj.value.next / other.value.get == 2) 8 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the value of ${other.name.next} multiplied by" + (obj.value.next / other.value.get)
+  }
+  
+  object TValueCombine1_relativeModulo extends TemplateOtherValue[IntBox] with TemplateValue {
+    def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
+      if (other.value.get > 1 && obj.value.next == obj.value.get % other.value.get) {
+        val expr = obj.value := obj.value % other.value
+        Some(expr.setPriority(10))
+      } else {
+        None
+      }
+    }
+    
+    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} its previous value modulo ${other.name.next}"
+  }
+  
+  object TValueCombine2_plus extends TemplateOtherPairValue[IntBox] with TemplateValue {
+    def result(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other1.value.get + other2.value.get) {
+        val expr = obj.value := other1.value + other2.value
+        val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the sum of ${other1.name.next} and ${other2.name}"
+  }
+  
+  object TValueCombine2_minus extends TemplateOtherPairValue[IntBox] with TemplateValue {
+    override def otherOrder = false
+    def result(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other1.value.get - other2.value.get) {
+        val expr = obj.value := other1.value - other2.value
+        val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else if(obj.value.next == 0) 1 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the difference between ${other1.name.next} and ${other2.name}"
+  }
+  
+  object TValueCombine2_times extends TemplateOtherPairValue[IntBox] with TemplateValue {
+    override def otherOrder = false
+    def result(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other1.value.get * other2.value.get) {
+        val expr = obj.value := other1.value * other2.value
+        val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else if(other1.value.get == 1 || other2.value.get == 1) 2 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the multiplication between ${other1.name.next} and ${other2.name}"
+  }
+  
+  object TValueCombine2_div extends TemplateOtherPairValue[IntBox] with TemplateValue {
+    override def otherOrder = false
+    def result(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = {
+      if (other2.value.get != 0 && obj.value.next == other1.value.get / other2.value.get) {
+        val expr = obj.value := other1.value / other2.value
+        val priority = if(other2.value.get == 0) 0 else if(other1.value.get % other2.value.get != 0) 2 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the division between ${other1.name.next} and ${other2.name}"
+  }
+
+  object TValue extends TemplateParallel[IntBox] with TemplateValue {
+    def condition(obj: IntBox)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
+    def priority(obj: IntBox)(implicit ctx: TemplateContext) = 10
+    val templates = List(
+      TValueAbsolute,
+      TValueRelative,
+      TValueDiv2,
+      TValueTimes,
+      TValueCombine1_absolute,
+      TValueCombine1_relativeMultCopy,
+      TValueCombine1_relativeModulo,
+      TValueCombine2_plus,
+      TValueCombine2_minus,
+      TValueCombine2_times,
+      TValueCombine2_div,
+      TValueRelative2
+    )
+//    def comment   = s"Possible value changes for ${shape.name.next}"
+  }
+  
+  object TTextCopy extends TemplateOtherText[StringBox] with TemplateText {
+    def result(obj: StringBox, other: StringBox)(implicit ctx: TemplateContext) = {
       if (obj.value.next == other.value.get) {
         val expr = obj.value := other.value
         val priority = if (other.value.get != "") 10 else 0
@@ -993,31 +1090,32 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: Box[String], other: Box[String])(implicit ctx: TemplateContext) = 
+    def comment(obj: StringBox, other: StringBox)(implicit ctx: TemplateContext) = 
       s"Copy the text of " + other.name.next + s" to ${obj.name.next}"
   }
   
-  object TTextConcatenate extends TemplateOtherPairText[Box[String]] with TemplateText {
+  object TTextConcatenate extends TemplateOtherPairText[StringBox] with TemplateText {
     override def otherOrder = false
     
-    def condition(obj: Box[String], other1: Box[String], other2: Box[String])(implicit ctx: TemplateContext) =
-      obj.value.next == other1.value.get + other2.value.get
-    
-    def result(obj: Box[String], other1: Box[String], other2: Box[String])(implicit ctx: TemplateContext) =
-      obj.value := other1.value + other2.value
-
-    def priority(obj: Box[String], other1: Box[String], other2: Box[String])(implicit ctx: TemplateContext) =
-      if(other1.value.get == "" || other2.value.get == "") 0 else 10
-    
-    def comment(obj: Box[String], other1: Box[String], other2: Box[String])(implicit ctx: TemplateContext) = 
+    def result(obj: StringBox, other1: StringBox, other2: StringBox)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other1.value.get + other2.value.get) {
+        val expr = obj.value := other1.value + other2.value
+        val priority = if(other1.value.get == "" || other2.value.get == "") 0 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: StringBox, other1: StringBox, other2: StringBox)(implicit ctx: TemplateContext) = 
       s"Concatenate the texts of ${other1.name.next} and ${other2.name} to ${obj.name.next}"
   }
   
   // TODO: convert integers to text boxes if detected.
   
-  object TText extends TemplateParallel[Box[String]] with TemplateText {
-    def condition(obj: Box[String])(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
-    def priority(obj: Box[String])(implicit ctx: TemplateContext) = 10
+  object TText extends TemplateParallel[StringBox] with TemplateText {
+    def condition(obj: StringBox)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
+    def priority(obj: StringBox)(implicit ctx: TemplateContext) = 10
     val templates = List(
         TTextCopy,
         TTextConcatenate
@@ -1174,7 +1272,7 @@ object CodeTemplates extends CodeHandler {
         TVisible,
         //IfWidth(TWidth),
         //IfHeight(THeight),
-        //TValue,
+        TValue,
         TText,
         TRadius
     )

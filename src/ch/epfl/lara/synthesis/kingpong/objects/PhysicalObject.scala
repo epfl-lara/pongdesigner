@@ -361,8 +361,6 @@ class Character (
   }
 }
 
-
-
 class Circle(
     val game: Game,
     init_name: Expr,
