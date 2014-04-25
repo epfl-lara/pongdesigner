@@ -27,6 +27,8 @@ import android.graphics.Path
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
   
+  private val screenDensity = context.getResources.getDisplayMetrics.density
+  
   private val rectF = new RectF()
   private val paint = new Paint()
   paint.setAntiAlias(true)
@@ -371,6 +373,13 @@ class GameViewRender(val context: Context) extends ContextUtils {
       canvas.drawColor(0xFF404040, PorterDuff.Mode.ADD)
     }
     drawMenuOn(canvas, gameView, matrix, matrixI, state, eventEditor, shapeEditor)
+    drawDebugOn(canvas, gameView)
+  }
+  
+  def drawDebugOn(canvas: Canvas, gameView: GameView): Unit = {
+    paint.setTextSize(10 * screenDensity)
+    val value = "t = " + gameView.getGame.time
+    canvas.drawText(value, 5 * screenDensity, 10 * screenDensity, paint)
   }
   
   def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable) = {
