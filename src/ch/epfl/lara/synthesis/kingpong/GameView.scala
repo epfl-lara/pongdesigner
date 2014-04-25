@@ -168,6 +168,13 @@ class GameView(val context: Context, attrs: AttributeSet)
       menuSelected
       case Str(R.string.menu_fix_hint) => 
         // Allows to select objects to which a rule was applied recently.
+        val game = getGame()
+        mRuleState match {
+          case STATE_MODIFYING_GAME =>
+            mRuleState = STATE_SELECTING_TO_FIX
+          case STATE_SELECTING_TO_FIX =>
+            mRuleState= mRuleState
+        }
         false
       case _ =>
         false
@@ -216,6 +223,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   final val STATE_SELECTING_EVENTS = 1 // Only events can be selected 
   final val STATE_SELECTING_EFFECTS = 2 // Effects are applied only on the future state, the previous state remains the same.
   final val STATE_MODIFYING_CATEGORY = 3 // Objects are selected to be included to a given category
+  final val STATE_SELECTING_TO_FIX = 4 //We select both objects and events to see if something can be fixed
   var mRuleState = STATE_MODIFYING_GAME
   def setModeSelectCategory() = {
     mRuleState = STATE_MODIFYING_CATEGORY
@@ -758,7 +766,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       fingerIsDown = false
       currentFingerPos = res
     }
-    if(state == Editing || mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS) {
+    if(state == Editing || mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS || mRuleState == STATE_SELECTING_TO_FIX) {
       // Select an object below if any and display the corresponding code
       val res = mapVectorToGame(pos)
 
@@ -862,44 +870,38 @@ class GameView(val context: Context, attrs: AttributeSet)
     val mQuickAction  = new QuickAction(activity, false)
     
     //mQuickAction.addStickyActionItem(changeStateItem)
-    var index = 0
-    var mapIndex = Map[Int, Either[(Event, Int), GameObject]]()
+    
     var moveTaken = Set[FingerMove]()
     var contactTaken = Set[(String, String)]()
-    // TODO : Sort by relevance.
+    val actionItems = ListBuffer[(String, Drawable, Either[(Event, Int), GameObject])]()
+    // TODO : Add object graphics
     for(o <- objectList) {
       if(currentObjectSelection contains o) {
-        mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_object, o.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.menu_add_object)))
+        actionItems += ((str(R.string.when_object, o.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.menu_add_object), Right(o)))
       } else {
-        mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_object, o.name.get), drw(R.drawable.menu_add_object)))
+        actionItems += ((str(R.string.when_object, o.name.get), drw(R.drawable.menu_add_object), Right(o)))
       }
-      mapIndex += index -> (Right(o))
-      index += 1
     }
     for(e@(event, time) <- eventList) {
       event match {
         case BeginContact(contact) =>
           if(!contactTaken((contact.objectA.name.get, contact.objectB.name.get))) {
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect)))
+              actionItems += ((str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect), Left(e)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect)))
+              actionItems += ((str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect), Left(e)))
             }
             contactTaken += ((contact.objectA.name.get, contact.objectB.name.get))
-            mapIndex += index -> Left(e)
-            index += 1
           }
         
         case FingerUp(pos, objs) =>
           for(obj <- objs) {
             val e = (FingerUp(pos, Set(obj)), time)
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button)))
+              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button), Left(e)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button)))
+              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button), Left(e)))
             }
-            mapIndex += index -> Left(e)
-            index += 1
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
           val relevantMove = getGame.getFingerMoveEvent(event, time)()
@@ -910,12 +912,10 @@ class GameView(val context: Context, attrs: AttributeSet)
                 for(obj <- objs) {
                   val e =  (FingerMove(from, to, Set(obj)), time)
                   if(currentEventSelection contains e) {
-                    mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button)))
+                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button), Left(e)))
                   } else {
-                    mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button)))
+                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button), Left(e)))
                   }
-                  mapIndex += index -> Left(e)
-                  index += 1
                 }
               }
             case _ =>
@@ -924,16 +924,25 @@ class GameView(val context: Context, attrs: AttributeSet)
           for(obj <- objs) {
             val e = (FingerDown(pos, Set(obj)), time)
             if(currentEventSelection contains e) {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button)))
+              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button), Left(e)))
             } else {
-              mQuickAction.addActionItem(new ActionItem(index, str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button)))
+              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button), Left(e)))
             }
-            mapIndex += index -> Left(e)
-            index += 1
           }
-        case _ => // TODO : Add more actions to disambiguate (position?)
+        case _ => // TODO : Add more actions to disambiguate (position, objects)
       }
     }
+    
+    // TODO Sorting by relevance, not just by length of message
+    val actionItemsSorted = actionItems.sortBy{
+      case ((str, drawable, action)) => str.length
+    }
+    
+    // Creating the dialog box
+    val mapIndex = (for(((str, drawable, action), index) <- actionItems.zipWithIndex) yield {
+      mQuickAction.addActionItem(new ActionItem(index, str, drawable))
+      index -> action
+    }).toMap
     
     mQuickAction.setOnActionItemClickListener{ (quickAction: QuickAction, pos: Int, actionId: Int) =>
       mapIndex.get(actionId) match {
