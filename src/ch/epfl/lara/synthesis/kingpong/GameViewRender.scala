@@ -23,6 +23,7 @@ import android.content.res.Resources
 import android.util._
 import android.view.WindowManager
 import android.graphics.Path
+import org.jbox2d.collision.WorldManifold
 
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
@@ -475,7 +476,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }*/
   }
   
-  
+  implicit val tmpManifold = new WorldManifold()
   
   // Draw events in the GameView referential
   def drawEventOn(event: Event, gameView: GameView, eventEditor: EventEditor, timestamp: Int, canvas: Canvas, matrix: Matrix, matrixI: Matrix): Unit = {

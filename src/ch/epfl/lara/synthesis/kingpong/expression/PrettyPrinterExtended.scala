@@ -18,31 +18,10 @@ object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val IF_SYMBOL = "if"
 }
 
-trait PrettyPrinterExtendedTypical {
-  final val NO_INDENT = ""
-  final val INDENT = "  "
-  final val LF = "\n"
-  val FOR_SYMBOL = "\u2200"
-  val IN_SYMBOL = "\u2208"
-  val TIMES_SYMBOL = "*" // "\u2219"
-  val AND_SYMBOL = "\u2227"
-  val OR_SYMBOL = "\u2228"
-  val LESSEQ_SYMBOL = "\u2264"
-  val GREATEREQ_SYMBOL = "\u2265"
-  val COLLIDES_SYMBOL = "\u2605"
-  val NOT_SYMBOL = "\u00AC"
-  val FINGER_MOVE_SYMBOL = "\u21BA"
-  val FINGER_DOWN_SYMBOL = "\u21E9"
-  val FINGER_UP_SYMBOL = "\u21E7"
-  val ARROW_FUNC_SYMBOL = "\u21D2"
-  val LET_ASSIGN_SYMBOL = "\u2190" 
-  val IF_SYMBOL = "if"
-  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
-  
+object PrettyPrinterExtendedTypical {
   object Mappings {
     def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, String]())
   }
-  
   /**
    * Recording of different mappings to retrieve the objects and the code.
    * mObjects    : Mapping from objects to the positions of their appearing in the code
@@ -118,7 +97,46 @@ trait PrettyPrinterExtendedTypical {
         case (p, l) => l flatMap { case (start, end) => (start to end) map { case i => i -> p }}
       }
     }
+    def insertPositions(start: Int, amount: Int): Mappings = {
+      @inline def map(i: Int): Int = {
+        if(i >= start) i + amount else i
+      }
+      this.copy(
+          mObjects.mapValues(_.map{case (i,j) => (map(i), map(j))}),
+          mPosCategories.map{ case (k, v) => (map(k), v)},
+          mPos.map{ case (k, v) => (map(k), v)},
+          mProperties.mapValues(_.map{case (i,j) => (map(i), map(j))}),
+          mComment.map{ case (k, v) => (map(k), v)}
+       )
+    }
   }
+}
+
+trait PrettyPrinterExtendedTypical {
+  import PrettyPrinterExtendedTypical._
+  final val NO_INDENT = ""
+  final val INDENT = "  "
+  final val LF = "\n"
+  val FOR_SYMBOL = "\u2200"
+  val IN_SYMBOL = "\u2208"
+  val TIMES_SYMBOL = "*" // "\u2219"
+  val AND_SYMBOL = "\u2227"
+  val OR_SYMBOL = "\u2228"
+  val LESSEQ_SYMBOL = "\u2264"
+  val GREATEREQ_SYMBOL = "\u2265"
+  val COLLIDES_SYMBOL = "\u2605"
+  val NOT_SYMBOL = "\u00AC"
+  val FINGER_MOVE_SYMBOL = "\u21BA"
+  val FINGER_DOWN_SYMBOL = "\u21E9"
+  val FINGER_UP_SYMBOL = "\u21E7"
+  val ARROW_FUNC_SYMBOL = "\u21D2"
+  val LET_ASSIGN_SYMBOL = "\u2190" 
+  val IF_SYMBOL = "if"
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
+  
+  
+  
+  
   
   /**
    * Class holding the tree being rendered, with the mapping.

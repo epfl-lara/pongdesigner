@@ -4,7 +4,6 @@ import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MMap}
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
-
 import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
@@ -33,15 +32,13 @@ import android.view.SurfaceView
 import android.view.View
 import android.widget.ExpandableListView
 import android.widget.Toast
-
 import net.londatiga.android.ActionItem
 import net.londatiga.android.QuickAction
-
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Messages._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
-import ch.epfl.lara.synthesis.kingpong.expression.CodeGenerator
-import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtended
+import ch.epfl.lara.synthesis.kingpong.expression._
+import PrettyPrinterExtendedTypical.Mappings
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.menus._
@@ -49,6 +46,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import expression.Types._
 import expression.TreeOps
+import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
 
 object GameView {
   sealed trait GameState
@@ -121,7 +119,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def grid = gameViewRender.grid
   
   def render(canvas: Canvas) = {
-    gameViewRender.render(canvas, this, matrix, matrixI, game, obj_to_highlight, bitmaps, state, mRuleState == STATE_SELECTING_EVENTS, eventEditor, shapeEditor)
+    gameViewRender.render(canvas, this, matrix, matrixI, game, cv_obj_to_highlight, bitmaps, state, mRuleState == STATE_SELECTING_EVENTS, eventEditor, shapeEditor)
   }
   
   lazy val button_size = gameViewRender.button_size
@@ -331,12 +329,19 @@ class GameView(val context: Context, attrs: AttributeSet)
     this.activity.asInstanceOf[KingPong] ! PickImage()
   }
   
-  // Testing section
-  var obj_to_highlight: Set[GameObject] = Set.empty
-  var codeMapping = Map[Int, List[Category]]()
-  var propMapping = Map[Int, Property[_]]()
-  var treeMapping = Map[Int, List[Tree]]()
-  var constMapping = Map[Int, (Literal[_], Expr)]()
+  // Mapping from codeview (cv) to objects and vice-versa
+  var cv_obj_to_highlight: Set[GameObject] = Set.empty
+  var mCvMapping: Mappings = null
+  def cv_mapping_=(m: Mappings): Unit = {
+    mCvMapping = m
+    (for( (a, b) <- cv_mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a->(b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
+  }
+  def cv_mapping = mCvMapping
+  def cv_mapping_code = if(cv_mapping == null) Map[Int, List[Category]]() else cv_mapping.mPosCategories
+  def cv_mapping_properties = if(cv_mapping == null) Map[Int, Property[_]]() else cv_mapping.mPropertyPos
+  def cv_mapping_trees = if(cv_mapping == null) Map[Int, List[Tree]]() else cv_mapping.mPos
+  var cv_mapping_consts = Map[Int, (Literal[_], Expr)]()
+  
   var xstart = 0f
   var ystart = 0f
   var xprev = 0f
@@ -411,22 +416,22 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
     codeview.setOnSelectionChangedListener({ case (start, end) =>
-      if(codeMapping != null) {
-        codeMapping.get(start) match {
+      if(cv_mapping_code != null) {
+        cv_mapping_code.get(start) match {
           case Some(category) if category != null =>
-            obj_to_highlight = category.flatMap(_.objects).toSet
+            cv_obj_to_highlight = category.flatMap(_.objects).toSet
           case Some(_) =>
-            obj_to_highlight = Set.empty
+            cv_obj_to_highlight = Set.empty
           case None =>
-            obj_to_highlight = Set.empty
+            cv_obj_to_highlight = Set.empty
         }
       }
-      if(constMapping != null) {
-        constMapping.get(start) match {
+      if(cv_mapping_consts!= null) {
+        cv_mapping_consts.get(start) match {
           case Some((constLiteral, mainTree)) =>
             // Find the tree in which this literal is
             println(s"Found const literal: $constLiteral")
-            val tree = treeMapping(start).lastOption
+            val tree = cv_mapping_trees(start).lastOption
             println(s"The rule is: $tree")
             cv_constToModify = Some(constLiteral)
             cv_constToModifyInitial = Some(constLiteral)
@@ -689,7 +694,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var previousSelectedShape: GameObject = null
   def performSelection(res: Vec2) = {
     val objectsTouched = game.abstractObjectFingerAt(res)
-    obj_to_highlight = objectsTouched.toSet
+    cv_obj_to_highlight = objectsTouched.toSet
     val rulesConcerned = game.getRulesbyObject(objectsTouched)
     shapeEditor.unselect()
     // The selected shape should be the first after the previousSelectedShape,
@@ -1008,14 +1013,22 @@ class GameView(val context: Context, attrs: AttributeSet)
   def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
     val header = PrettyPrinterExtended.printGameObjectDef(objects)
     val all = PrettyPrinterExtended.print(rules, header + "\n")
-    val r: CharSequence = all.c
-    val mapping = all.map
+    var rulesString: CharSequence = all.c
+    cv_mapping = all.map
+    rulesString = colorCodeView(rulesString, cv_mapping, objects)
+    codeview.setText(rulesString)
+  }
+  
+  /**
+   * Colors a charsequence with the given mapping
+   * @param s The sequence of chars
+   * @param mapping The mapping of this char sequence
+   * @param objects The objects to highlight
+   */
+  def colorCodeView(s: CharSequence, mapping: PrettyPrinterExtendedTypical.Mappings, objects: Iterable[GameObject]) = {
+    var rulesString = s
     val mObjects = mapping.mObjects
-    codeMapping = mapping.mPosCategories
-    propMapping = mapping.mPropertyPos
-    treeMapping = mapping.mPos
-    constMapping = (for( (a, b) <- mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a->(b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
-    var rulesString = SyntaxColoring.setSpanOnKeywords(r, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
+    rulesString = SyntaxColoring.setSpanOnKeywords(rulesString, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
       //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
       mObjects.get(obj.category) match {
@@ -1024,10 +1037,20 @@ class GameView(val context: Context, attrs: AttributeSet)
         case None => // No objects to color
       }
     }
-    for((i, j) <- constMapping) {
+    for((i, j) <- cv_mapping_consts) {
       rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
     }
-    codeview.setText(rulesString)
+    rulesString
+  }
+  
+  def replaceCodeView(start: Int, end: Int, newText: Expr) = {
+    val all = PrettyPrinterExtended.print(List(newText))
+    var text: CharSequence = all.c
+    val newLength = text.length
+    val oldLength = end-start
+    text = colorCodeView(text, all.map, Nil)
+    cv_mapping = cv_mapping.insertPositions(end, newLength - oldLength)
+    codeview.getText().replace(start, end, text)
   }
   
   /**

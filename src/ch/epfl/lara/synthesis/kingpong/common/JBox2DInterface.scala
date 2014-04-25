@@ -47,18 +47,18 @@ object JBox2DInterface {
       c.getFixtureB().getBody().getUserData().asInstanceOf[PhysicalObject]
     }
 
-    def point: Vec2 = {
+    def point(implicit m: WorldManifold): Vec2 = {
       //TODO performance issue here, the WorldManifold could be 
       // allocated only once
-      val m = new WorldManifold()
+      //val m = new WorldManifold()
       c.getWorldManifold(m)
       m.points(0)
     }
 
-    def normal: Vec2 = {
+    def normal(implicit m: WorldManifold): Vec2 = {
       //TODO performance issue here, the WorldManifold could be 
       // allocated only once
-      val m = new WorldManifold()
+      //val m = new WorldManifold()
       c.getWorldManifold(m)
       m.normal
     }

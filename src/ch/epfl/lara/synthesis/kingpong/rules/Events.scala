@@ -6,6 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.Options
+import org.jbox2d.collision.WorldManifold
 
 object Events {
 
@@ -34,6 +35,8 @@ object Events {
       case _ => None
     }
   }
+  
+  implicit val tmpManifold = new WorldManifold() // For the .point
   
   sealed trait PhysicalContactEvent extends SelectableEvent {
     def contact: Contact

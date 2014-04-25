@@ -7,7 +7,7 @@
     <color name="CyanBackground">#8862e1da</color>
     <color name="CyanLight">#FF62e1da</color>
     <color name="selection">#FF00FFFF</color>
-    <color name="code_category_background">#FF88FFFF</color>
-    <color name="code_constant_background">#FFFF88FF</color>
+    <color name="code_category_background">#FFAAFFFF</color>
+    <color name="code_constant_background">#FFFFAAFF</color>
     <color name="rule_background">#FF62e1da</color>
 </resources>
