@@ -35,36 +35,30 @@ abstract class AbstractObject(init_name: Expr,
 }
 
 
-class Box[T : PongType](val game: Game,
-                        init_name: Expr, 
-                        init_x: Expr,
-                        init_y: Expr,
-                        init_angle: Expr,
-                        init_width: Expr, 
-                        init_height: Expr, 
-                        init_value: Expr,
-                        init_visible: Expr,
-                        init_color: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
-                         with Rectangular
-                         with Movable
-                         with Rotationable
-                         with Visiblable
-                         with Colorable
-                         with AngularRectangularContains {
+sealed abstract class Box[T : PongType](
+    val game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr, 
+    init_value: Expr,
+    init_visible: Expr,
+    init_color: Expr
+   ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+     with Rectangular
+     with Movable
+     with Rotationable
+     with Visiblable
+     with Colorable
+     with AngularRectangularContains {
   
-  def className = "Box[" + implicitly[PongType[T]].getPongType.toString() + "]"
-  // --------------------------------------------------------------------------
-  // Properties
-  // --------------------------------------------------------------------------
+  private val shape = new PolygonShape()
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
   val value = simpleProperty[T]("value", init_value)
-  
-  // --------------------------------------------------------------------------
-  // Utility functions
-  // --------------------------------------------------------------------------  
   
   def getAABB = {
     //TODO fix this
@@ -73,16 +67,69 @@ class Box[T : PongType](val game: Game,
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
   
-  private val shape = new PolygonShape()
-  
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
   }
+}
 
+class IntBox(
+    game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr, 
+    init_value: Expr,
+    init_visible: Expr,
+    init_color: Expr
+   ) extends Box[Int](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
+                      init_value, init_visible, init_color) {
+  
   def makecopy(name: String): GameObject = {
-    new Box[T](game, name, x.init, y.init, angle.init, width.init,  height.init, 
+    new IntBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
                value.init, visible.init, color.init)
+  }
+}
+
+class StringBox(
+    game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr, 
+    init_value: Expr,
+    init_visible: Expr,
+    init_color: Expr
+   ) extends Box[String](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
+                      init_value, init_visible, init_color) {
+  
+  def makecopy(name: String): GameObject = {
+    new StringBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
+                  value.init, visible.init, color.init)
+  }
+}
+
+class BooleanBox(
+    game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr, 
+    init_value: Expr,
+    init_visible: Expr,
+    init_color: Expr
+   ) extends Box[Boolean](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
+                         init_value, init_visible, init_color) {
+  
+  def makecopy(name: String): GameObject = {
+    new BooleanBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
+                  value.init, visible.init, color.init)
   }
 }
 
@@ -101,25 +148,22 @@ trait InputManager extends GameObject {
 /**
  * Input class already defining some methods
  */
-class Joystick(val game: Game,
-               init_name: Expr, 
-               init_x: Expr,
-               init_y: Expr,
-               init_angle: Expr,
-               init_radius: Expr, 
-               init_visible: Expr,
-               init_color: Expr
-              ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
-                with Circular
-                with Movable
-                with InputManager
-                with Visiblable {
+class Joystick(
+    val game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_radius: Expr, 
+    init_visible: Expr,
+    init_color: Expr
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+      with Circular
+      with Movable
+      with InputManager
+      with Visiblable {
   
-  def className = "Joystick"
-  
-  // --------------------------------------------------------------------------
-  // Properties
-  // --------------------------------------------------------------------------
+  private val shape = new CircleShape()
   
   val radius = simpleProperty[Float]("radius", init_radius)
   val relative_x = simpleProperty[Float]("relative_x", 0)
@@ -152,10 +196,6 @@ class Joystick(val game: Game,
     }
   } 
 
-  // --------------------------------------------------------------------------
-  // Utility functions
-  // --------------------------------------------------------------------------  
-  
   def getAABB = {
     val center = Vec2(x.get, y.get)
     val bottomLeft = center add Vec2(-radius.get, -radius.get)
@@ -163,17 +203,12 @@ class Joystick(val game: Game,
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
   
-  private val shape = new CircleShape()
-
   def getShape = {
     shape.setRadius(radius.get)
     shape.m_p.set(x.get, y.get)
     shape
   }
 
-  // MIKEAL shouldn't we use the shape instead of the AABB ?
-  //def contains(pos: Vec2) = getAABB.contains(pos)
-  
   def makecopy(name: String): GameObject = {
     new Joystick(game, name, x.init, y.init, angle.init, radius.init, visible.init, color.init)
   }
@@ -199,10 +234,19 @@ class RandomGenerator(
       with Colorable
       with FixedRectangularContains { self =>
   
-  def className = "RandomGenerator"
-  
+  private val shape = new PolygonShape()
   private val rnd = Random()
   private var currentValue: Int = -1
+  
+  val width = simpleProperty[Float]("width", init_width)
+  val height = simpleProperty[Float]("height", init_height)
+  val minValue = simpleProperty[Int]("min value", init_minValue)
+  val maxValue = simpleProperty[Int]("max value", init_maxValue) // inclusive
+  val value = namedProperty[Int] (
+    name  = "value", 
+    getF  = () => currentValue,
+    nextF = () => currentValue
+  )
   
   private def nextValue(): Unit = {
     currentValue = rnd.nextInt(maxValue.get + 1 - minValue.get) + minValue.get
@@ -218,31 +262,11 @@ class RandomGenerator(
     nextValue()
   }
     
-  // --------------------------------------------------------------------------
-  // Properties
-  // --------------------------------------------------------------------------
-  
-  val width = simpleProperty[Float]("width", init_width)
-  val height = simpleProperty[Float]("height", init_height)
-  val minValue = simpleProperty[Int]("min value", init_minValue)
-  val maxValue = simpleProperty[Int]("max value", init_maxValue) // inclusive
-  val value = namedProperty[Int] (
-    name  = "value", 
-    getF  = () => currentValue,
-    nextF = () => currentValue
-  )
-  
-  // --------------------------------------------------------------------------
-  // Utility functions
-  // --------------------------------------------------------------------------  
-  
   def getAABB = {
     val bottomLeft = Vec2(left.get, top.get)
     val upperRight = Vec2(left.get + width.get, top.get + height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
-  
-  private val shape = new PolygonShape()
   
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
@@ -253,14 +277,11 @@ class RandomGenerator(
     new RandomGenerator(game, name, x.init, y.init, angle.init, width.init, height.init, 
         minValue.init, maxValue.init, visible.init, color.init)
   }
-  
 }
 
 object Array2D {
-  
   val CELL_WIDTH = 1
   val CELL_HEIGHT = 1
-  
 }
 
 class Array2D(
@@ -279,7 +300,7 @@ class Array2D(
  
   import Array2D._
   
-  val className = "Array2D"
+  private val shape = new PolygonShape()
   
   val cellsCategory = new Category {
     def game = self.game
@@ -311,7 +332,6 @@ class Array2D(
     exprF = () => numRows.expr * CELL_HEIGHT
   )
   
-  private val shape = new PolygonShape()
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
@@ -319,7 +339,7 @@ class Array2D(
 
   def getAABB() = {
     val bottomLeft = Vec2(left.get, top.get)
-    val upperRight = bottomLeft add Vec2(width.get, height.get)
+    val upperRight = Vec2(left.get + width.get, top.get + height.get)
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
 
@@ -338,9 +358,8 @@ case class Cell(
   
   import Array2D._
   
+  private val shape = new PolygonShape()
   def noVelocity_=(b: Boolean) = {}
-  
-  val className = "Cell"
   def game = array.game
   
   val x = aliasProperty[Float] (
@@ -393,7 +412,6 @@ case class Cell(
   val color = proxyProperty(array.color)
   val visible = proxyProperty(array.visible)
   
-  private val shape = new PolygonShape()
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
@@ -407,5 +425,4 @@ case class Cell(
     
   //TODO we cannot copy a cell!!!
   protected def makecopy(name: String) = ???
-  
 }

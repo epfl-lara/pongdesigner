@@ -25,9 +25,9 @@ object CodeTemplates extends CodeHandler {
     val isMovementVertical = Math.abs(dy) > 10 * Math.abs(dx)
     val isTouchMoveEvent = eventMove.nonEmpty
     
-    lazy val integers: Traversable[Box[Int]] = objects.collect{ case b: Box[_] if b.className == "Box[Int]" => b.asInstanceOf[Box[Int]] }
-    lazy val texts: Traversable[Box[String]] = objects.collect{ case b: Box[_] if b.className == "Box[String]" => b.asInstanceOf[Box[String]] }
-    lazy val booleans: Traversable[Box[Boolean]] = objects.collect{ case b: Box[_] if b.className == "Box[Boolean]" => b.asInstanceOf[Box[Boolean]] }
+    lazy val integers: Traversable[Box[Int]] = objects.collect{ case b: IntBox => b}
+    lazy val texts: Traversable[Box[String]] = objects.collect{ case b: StringBox => b}
+    lazy val booleans: Traversable[Box[Boolean]] = objects.collect{ case b: BooleanBox => b }
     lazy val rectangulars: Traversable[Rectangular] = objects.collect{ case b: Rectangular => b }
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
     lazy val positionables: Traversable[Positionable] = objects.collect{ case b: Positionable => b }
@@ -226,11 +226,11 @@ object CodeTemplates extends CodeHandler {
   }
   
   trait TemplateValue extends Template[Box[Int]] {
-    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Box[_]] && obj.className == "Box[Int]"
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[IntBox]
   }
   
   trait TemplateText extends Template[Box[String]] {
-    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Box[_]] && obj.className == "Box[String]"
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[StringBox]
   }
   
   trait TemplateCircular extends Template[Circular] {

@@ -26,7 +26,6 @@ trait MenuObjects extends AbstractObject {
                        ) extends GameObject(init_name) 
                          with Point {
 
-  def className = s"InputMenu"
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------
@@ -81,7 +80,6 @@ trait MenuObjects extends AbstractObject {
                          with Circular
                          with InputManager {
 
-  def className = s"ActiveBox"
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------

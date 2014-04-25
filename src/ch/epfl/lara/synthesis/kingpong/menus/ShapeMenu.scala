@@ -45,14 +45,14 @@ object ShapeMenu extends MenuCenter {
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     for(m <- menus) { m.visible = true }
     val top_shift = selectedShape match {
-      case d: Box[_] if d.className == "Box[Int]" =>
+      case d: IntBox =>
         IncrementButton.setPos(0, -1)
         DecrementButton.setPos(0, 1)
         ModifyTextButton.visible = false
         IncrementButton.visible = true
         DecrementButton.visible = true
         -1
-      case d: Box[_] if d.className == "Box[String]" =>
+      case d: StringBox =>
         ModifyTextButton.setPos(0, -1)
         IncrementButton.visible = false
         DecrementButton.visible = false
@@ -140,7 +140,7 @@ object ModifyTextButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val res = context.getResources()
     selectedShape match {
-      case d: Box[String] if d.className == "Box[String]" =>
+      case d: StringBox =>
         def updateText(s: String): Unit = {
           if(modify_prev) {
             d.value.set(s)
@@ -523,7 +523,7 @@ object IncrementButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
-        case d:Box[Int] if d.className == "Box[Int]" =>
+        case d: IntBox =>
           val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
           if(MenuOptions.modify_prev && !bothShouldChange) {
             d.value set d.value.get + 1
@@ -561,7 +561,7 @@ object DecrementButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
-      case d:Box[Int] if d.className == "Box[Int]" =>
+      case d: IntBox =>
         val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
         if(MenuOptions.modify_prev && !bothShouldChange) {
           d.value.set(d.value.get - 1)
@@ -595,11 +595,11 @@ object RenameButton extends MenuTextButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val res = context.getResources()
-    var array = selectedShape match {
-        case r:Rectangle => R.array.rename_rectangles
-        case r:Box[String] if r.className == "Box[String]" => R.array.rename_textbox
-        case r:Box[Int] if r.className ==  "Box[Int]" => R.array.rename_integerbox
-        case r:Circle => R.array.rename_circles
+    val array = selectedShape match {
+        case _: Rectangle => R.array.rename_rectangles
+        case _: StringBox => R.array.rename_textbox
+        case _: IntBox => R.array.rename_integerbox
+        case _: Circle => R.array.rename_circles
         case _ => R.array.rename_circles
       }
       CustomDialogs.launchChoiceDialogWithCustomchoice(context, String.format(res.getString(R.string.rename_title), selectedShape.name.get), array, gameEngine.shapeEditor.renameSelectedShape(_), {() => })

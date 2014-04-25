@@ -25,7 +25,6 @@ object GameObject {
 
 abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   def game: Game
-  def className: String
   
   /** All properties mapped from their name. */
   private val _propertiesMap = MMap.empty[String, Property[_]]

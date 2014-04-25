@@ -213,7 +213,7 @@ trait PrettyPrinterExtendedTypical {
   val accepted_properties = List("name", "x", "y", "radius", "width", "height", "velocity", "color", "visible")
   def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker()) = {
     val ending = printIterable[GameObject](c, objects, { case (c, obj) =>
-      val e = c + obj.className + "(" + obj.category + ")(" + LF
+      val e = c + obj.getClass.getName + "(" + obj.category + ")(" + LF
       val delimiter = "  " andThen (LF + "  ")
       val e1 = (e /: accepted_properties) { case (e, name) => obj.getProperty(name) match {
         case Some(prop) => 

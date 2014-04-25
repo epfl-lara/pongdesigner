@@ -18,21 +18,21 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
 
-abstract class PhysicalObject(init_name: Expr, 
-                              init_x: Expr,
-                              init_y: Expr,
-                              init_angle: Expr,
-                              init_visible: Expr,
-                              init_velocity: Expr,
-                              init_angularVelocity: Expr,
-                              init_density: Expr,
-                              init_friction: Expr,
-                              init_restitution: Expr,
-                              init_fixedRotation: Expr,
-                              init_color: Expr
-                             ) extends GameObject(init_name) 
-                               with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
-  
+abstract class PhysicalObject(
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_visible: Expr,
+    init_velocity: Expr,
+    init_angularVelocity: Expr,
+    init_density: Expr,
+    init_friction: Expr,
+    init_restitution: Expr,
+    init_fixedRotation: Expr,
+    init_color: Expr
+    ) extends GameObject(init_name) 
+      with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
   
   private var _body: Body = null
   def body: Body = _body
@@ -145,13 +145,6 @@ abstract class PhysicalObject(init_name: Expr,
     b => body.setFixedRotation(b)
   )
   
-  //TODO !!!!
-  /*
-  val tpe = Property(body.getType()) { v =>
-    body.setType(v)
-  }
-  */
-  
   // --------------------------------------------------------------------------
   // Actions on the body
   // --------------------------------------------------------------------------
@@ -174,34 +167,32 @@ abstract class PhysicalObject(init_name: Expr,
   
   def getAABB() = fixture.getAABB(0)
   def contains(pos: Vec2) = fixture.testPoint(pos)
-  
 }
 
-class Rectangle (val game: Game,
-                 init_name: Expr,
-                 init_x: Expr,
-                 init_y: Expr,
-                 init_angle: Expr,
-                 init_width: Expr,
-                 init_height: Expr,
-                 init_visible: Expr,
-                 init_velocity: Expr,
-                 init_angularVelocity: Expr,
-                 init_density: Expr,
-                 init_friction: Expr,
-                 init_restitution: Expr,
-                 init_fixedRotation: Expr,
-                 init_color: Expr,
-                 init_sensor: Expr,
-                 init_tpe: BodyType = BodyType.DYNAMIC
-                ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                                         init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-                  with ResizableRectangular
-                  with AngularRectangularContains {
+class Rectangle (
+    val game: Game,
+    init_name: Expr,
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr,
+    init_height: Expr,
+    init_visible: Expr,
+    init_velocity: Expr,
+    init_angularVelocity: Expr,
+    init_density: Expr,
+    init_friction: Expr,
+    init_restitution: Expr,
+    init_fixedRotation: Expr,
+    init_color: Expr,
+    init_sensor: Expr,
+    init_tpe: BodyType = BodyType.DYNAMIC
+    ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
+                             init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+      with ResizableRectangular
+      with AngularRectangularContains {
 
   tpe = init_tpe
-  
-  def className = "Rect"
   
   private var mBodyDef = new BodyDef()
   mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
@@ -261,27 +252,29 @@ class Rectangle (val game: Game,
   override def contains(pos: Vec2) = super[AngularRectangularContains].contains(pos)
 }
 
-class Character (val game: Game,
-                 init_name: Expr,
-                 init_x: Expr,
-                 init_y: Expr,
-                 init_angle: Expr,
-                 init_width: Expr,
-                 init_height: Expr,
-                 init_visible: Expr,
-                 init_velocity: Expr,
-                 init_angularVelocity: Expr,
-                 init_density: Expr,
-                 init_friction: Expr,
-                 init_restitution: Expr,
-                 init_fixedRotation: Expr,
-                 init_color: Expr,
-                 init_tpe: BodyType = BodyType.DYNAMIC
-                ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                                         init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-                  with ResizableRectangular with InputManager {
+class Character (
+    val game: Game,
+    init_name: Expr,
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr,
+    init_height: Expr,
+    init_visible: Expr,
+    init_velocity: Expr,
+    init_angularVelocity: Expr,
+    init_density: Expr,
+    init_friction: Expr,
+    init_restitution: Expr,
+    init_fixedRotation: Expr,
+    init_color: Expr,
+    init_tpe: BodyType = BodyType.DYNAMIC
+    ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
+                             init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+      with ResizableRectangular 
+      with InputManager {
+  
   tpe = init_tpe
-  def className = "Rect"
   
   protected val bodyDef = {
     val body_def = new BodyDef()
@@ -370,27 +363,27 @@ class Character (val game: Game,
 
 
 
-class Circle(val game: Game,
-             init_name: Expr,
-             init_x: Expr,
-             init_y: Expr,
-             init_radius: Expr,
-             init_visible: Expr,
-             init_velocity: Expr,
-             init_angularVelocity: Expr,
-             init_density: Expr,
-             init_friction: Expr,
-             init_restitution: Expr,
-             init_fixedRotation: Expr,
-             init_color: Expr,
-             init_sensor: Expr,
-             init_tpe: BodyType = BodyType.DYNAMIC
-            ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
-                                     init_density, init_friction, init_restitution, init_fixedRotation, init_color)
-              with ResizableCircular {
+class Circle(
+    val game: Game,
+    init_name: Expr,
+    init_x: Expr,
+    init_y: Expr,
+    init_radius: Expr,
+    init_visible: Expr,
+    init_velocity: Expr,
+    init_angularVelocity: Expr,
+    init_density: Expr,
+    init_friction: Expr,
+    init_restitution: Expr,
+    init_fixedRotation: Expr,
+    init_color: Expr,
+    init_sensor: Expr,
+    init_tpe: BodyType = BodyType.DYNAMIC
+    ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
+                           init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+      with ResizableCircular {
   
   tpe = init_tpe
-  def className = "Circ"
   
   private var mBodyDef = new BodyDef()
   mBodyDef.position = Vec2(game.evaluate[Float](init_x), 

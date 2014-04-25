@@ -268,31 +268,42 @@ class GameViewRender(val context: Context) extends ContextUtils {
           
           // reset the paint style
           paint.setStyle(Paint.Style.FILL)
-            
-        case b: Box[_] => 
-          //if(b == obj_to_highlight) paint.setAlpha(0x88)
+        
+        case b: IntBox => 
           paint.setTextSize(b.height.next)
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
-          if(b.className == "Box[Boolean]") {
-            val c = b.value.next.asInstanceOf[Boolean]
-            val h = b.height.next
-            val x = b.x.next
-            val y = b.y.next
-            canvas.drawText(b.name.next, x + h*3/2, y, paint)
-            canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
-            if(c) {
-              paint.setColor(0xFFBBBBBB)
-            } else {
-              paint.setColor(0xFF333333)
-            }
-            canvas.drawCircle(x + h/2, y, h/2, paint)
+          val value = b.name.next + ":" + b.value.next.toString
+          canvas.drawText(value, b.x.next, b.y.next, paint)
+          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
+          canvas.restore()
+          
+        case b: StringBox => 
+          paint.setTextSize(b.height.next)
+          canvas.save()
+          canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
+          val value = b.name.next + ":" + b.value.next.toString
+          canvas.drawText(value, b.x.next, b.y.next, paint)
+          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
+          canvas.restore()
+          
+        case b: BooleanBox =>
+          paint.setTextSize(b.height.next)
+          canvas.save()
+          canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
+          val c = b.value.next
+          val h = b.height.next
+          val x = b.x.next
+          val y = b.y.next
+          canvas.drawText(b.name.next, x + h*3/2, y, paint)
+          canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
+          if(c) {
+            paint.setColor(0xFFBBBBBB)
           } else {
-            val value = b.name.next + ":" + b.value.next.toString
-            canvas.drawText(value, b.x.next, b.y.next, paint)
-            if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
+            paint.setColor(0xFF333333)
           }
-        canvas.restore()
+          canvas.drawCircle(x + h/2, y, h/2, paint)
+          canvas.restore()
           
         case r: RandomGenerator =>
           paint.setTextSize(r.height.get)

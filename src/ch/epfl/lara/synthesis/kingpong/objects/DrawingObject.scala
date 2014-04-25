@@ -27,23 +27,23 @@ case class DrawingElement(time: Long, fromx: Float, fromy: Float, tox: Float, to
 /**
  * Provides time-dependent drawing facilities for presentations.
  */
-case class DrawingObject(val game: Game,
-                        init_name: Expr, 
-                        init_x: Expr,
-                        init_y: Expr,
-                        init_angle: Expr,
-                        init_width: Expr, 
-                        init_height: Expr,
-                        init_visible: Expr,
-                        init_color: Expr
-                       ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
-                         with ResizableRectangular
-                         with Movable
-                         with Visiblable
-                         with Colorable
-                         with Directionable
-                         with AngularRectangularContains {
-  def className = "DrawingObject"
+case class DrawingObject(
+    val game: Game,
+    init_name: Expr, 
+    init_x: Expr,
+    init_y: Expr,
+    init_angle: Expr,
+    init_width: Expr, 
+    init_height: Expr,
+    init_visible: Expr,
+    init_color: Expr
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+      with ResizableRectangular
+      with Movable
+      with Visiblable
+      with Colorable
+      with Directionable
+      with AngularRectangularContains {
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)

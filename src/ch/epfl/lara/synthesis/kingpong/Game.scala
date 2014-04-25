@@ -290,7 +290,7 @@ trait Game extends RuleManager { self =>
              height: Expr = category.height,
              visible: Expr = category.visible,
              color: Expr = category.color): Box[Int] = {
-    val box = new Box[Int](this, name, x, y, angle, width, height, value, visible, color)
+    val box = new IntBox(this, name, x, y, angle, width, height, value, visible, color)
     box.setCategory(category)
     this add box
     box
@@ -305,7 +305,7 @@ trait Game extends RuleManager { self =>
              height: Expr = category.height,
              visible: Expr = category.visible,
              color: Expr = category.color): Box[Boolean] = {
-    val box = new Box[Boolean](this, name, x, y, angle, width, height, value, visible, color)
+    val box = new BooleanBox(this, name, x, y, angle, width, height, value, visible, color)
     box.setCategory(category)
     this add box
     box
