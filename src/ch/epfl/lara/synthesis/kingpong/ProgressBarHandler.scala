@@ -22,8 +22,8 @@ trait ProgressBarHandler extends SeekBar.OnSeekBarChangeListener { self: GameVie
     bar.setOnSeekBarChangeListener(this)
   }
   
-  def setProgressBarTime(t: Int) = {
-    val progress = Math.max(0, t)
+  def setProgressBarTime(time: Int) = {
+    val progress = Math.max(0, time - getGame.minTime)
     bar.setProgress(progress)
     bar.setSecondaryProgress(progress)
   }

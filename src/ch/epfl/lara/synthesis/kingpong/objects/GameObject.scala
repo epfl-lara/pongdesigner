@@ -124,13 +124,13 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   // --------------------------------------------------------------------------
 
   /** Save the current state to the history. */
-  def save(t: Long) = _historicalProperties.foreach { _.save(t) }
+  def save(t: Int) = _historicalProperties.foreach { _.save(t) }
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Long, clear: Boolean) = _historicalProperties.foreach { _.restore(t, clear) }
+  def restore(t: Int) = _historicalProperties.foreach { _.restore(t) }
 
   /** Clear the history of this object. */
-  def clear() = _historicalProperties.foreach { _.clear() }
+  def clear(from: Int) = _historicalProperties.foreach { _.clear(from) }
 
   // --------------------------------------------------------------------------
   // Utility functions

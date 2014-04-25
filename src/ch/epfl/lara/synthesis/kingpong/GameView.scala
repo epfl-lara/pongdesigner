@@ -250,7 +250,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.modify_prev = false
     MenuOptions.copy_to_prev = true
     game.setInstantProperties(true)
-    game.restore(game.time, clear = false)
+    game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
     eventEditor.unselect()
   }
@@ -465,8 +465,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Called when the progress bar is modified by the user. */
   def onProgressBarChanged(progress: Int, secondaryProgress: Int): Unit = {
     val t = game.maxTime + progress - secondaryProgress
+    //Log.d("kingpong", s"Restoring from bar to time $t.")
     if(state == Editing) {
-      game.restore(t, clear = false)
+      game.restore(t)
     } else {
       game.setRestoreTo(t)
     }
@@ -491,13 +492,17 @@ class GameView(val context: Context, attrs: AttributeSet)
 
     eventEditor.unselect()
     
-    // clear the future history if we went in the past during the pause
-    game.restore(game.time, clear = true)
     game.objects.foreach { obj => 
       obj.validate()
       obj.flush() 
-    } 
+    }
     game.setInstantProperties(false)
+    
+    // clear the future history if we went in the past during the pause
+    if (game.time < game.maxTime) {
+      Log.d("kingpong", s"Clearing future from time+1 = ${game.time + 1}, maxTime = ${game.maxTime}")
+      game.clear(from = game.time + 1)
+    }
     
     gameEngineEditors foreach (_.onExitEditMode())
 
@@ -512,7 +517,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def backToBeginning(): Unit = {
     toEditing()
     setProgressBarTime(0)
-    game.reset()
+    game.clear(from = 0)
   }
 
   /** Called by the `GameLoop`. */

@@ -1,5 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import android.util.Log
+
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Snap
 import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
@@ -233,24 +235,28 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, private var 
     set(tpe.toScalaValue(e))
   }
 
-  def save(t: Long): Unit = {
+  def save(t: Int): Unit = {
     if (_history.isEmpty || _history.last._2 != _crt) {
       _history += ((t, tpe.clone(_crt)))
     }
   }
 
-  def restore(t: Long, clear: Boolean): Unit = {
+  def restore(t: Int): Unit = {
     _history.lastIndexWhere(_._1 <= t) match {
       case idx if idx >= 0 => 
         set(_history(idx)._2)
-        if (clear) _history.removeFrom(idx + 1)
       case _ => 
-        println("Property.scala", s"The timestamp $t doesn't exist in the history.")
+        Log.w("kingpong", s"The timestamp $t (or older) doesn't exist in the history.")
     }
   }
 
-  def clear(): Unit = {
-    _history.clear()
+  def clear(from: Int): Unit = {
+    if (from <= 0) {
+      _history.clear()
+    } else {
+      val idx = _history.lastIndexWhere(_._1 < from)
+      _history.removeFrom(idx + 1)
+    }
   }
   
 }

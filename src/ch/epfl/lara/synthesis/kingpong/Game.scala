@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import scala.Dynamic
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MMap}
 import scala.collection.mutable.{Set => MSet, Seq => MSeq}
@@ -8,6 +9,8 @@ import scala.language.dynamics
 
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.dynamics.BodyType
+
+import android.util.Log
 
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import ch.epfl.lara.synthesis.kingpong.common.History
@@ -23,7 +26,6 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
-import scala.annotation.tailrec
 
 trait RuleManager {
   // Use an ArrayBuffer for performance reasons when using `foreach`.
@@ -91,10 +93,13 @@ trait Game extends RuleManager { self =>
   
   /*** Maximum time achieved in this game. */
   def maxTime = EventHistory.maxTime
+  
+  /*** Minimum time stored in the history for this game. */
+  def minTime = EventHistory.minTime
 
-  private[kingpong] def restore(t: Int, clear: Boolean): Unit = {
+  private[kingpong] def restore(t: Int): Unit = {
     if (t >= 0 && t <= maxTime) {
-      objects.foreach(_.restore(t, clear))
+      objects.foreach(_.restore(t))
       EventHistory.restore(t)
       world.clear()
     }
@@ -106,19 +111,25 @@ trait Game extends RuleManager { self =>
     }
   }
 
-  private[kingpong] def reset(): Unit = {
-    objects.foreach(_.reset(interpreter))
-    gc()
-    objects.foreach(_.clear())
+  /** Clear the history from the given time (inclusive). 
+   *  If `from` is less or equal to 0, the game is reset.
+   */
+  private[kingpong] def clear(from: Int): Unit = {
+    if (from <= 0) {
+      objects.foreach(_.reset(interpreter))
+      gc()
+    }
+    objects.foreach(_.clear(from))
     world.clear()
-    EventHistory.clear()
+    EventHistory.clear(from)
   }
 
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
     scheduledRestoreTime match {
       case Some(t) => 
-        restore(t, clear = true)
+        restore(t)
+        clear(from = t + 1)
         scheduledRestoreTime = None
       case None =>
     }
@@ -418,26 +429,28 @@ trait Game extends RuleManager { self =>
   protected object EventHistory extends Context {
 
     private var recording_time: Int = 0
-    private var max_time: Int = 0
+    private var min_time: Int = time
+    private var max_time: Int = time
 
     // Oldest first (head), more recent at the end (last). Both in O(1).
     private val history: RingBuffer[(Int, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
-
     private val crtEvents = ArrayBuffer.empty[Event]
 
     /** Time for the last fully completed step. */
     def time = recording_time - 1
+    
+    /** Minimum time stored in the history. */
+    def minTime = min_time
+    
+    /** Maxixum time stored in the history. */
     def maxTime = max_time
 
     def restore(t: Int): Unit = {
       if (time >= 0 && time <= max_time) {
         recording_time = t + 1
         crtEvents.clear()
+        
         // TODO : Add or remove objects
-        
-        // TODO : Bouge tête de lecture.
-        
-        //crtEvents = Nil
       }
     }
     
@@ -451,19 +464,22 @@ trait Game extends RuleManager { self =>
 
     /* Advance the time and store the current events in the history. */
     def step(): Unit = {
-      val c = crtEvents.synchronized {
+      //Log.d("kingpong", s"Before context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
+      val evts = crtEvents.synchronized {
         val res = crtEvents.toList
         crtEvents.clear()
         res
       }
-      recording_time += 1
       
-      if (max_time < time)
-        max_time = time
+      recording_time += 1
+      if (max_time < time) {
+         max_time = time
+      }
+      min_time = Math.max(0, Math.max(min_time, max_time - History.MAX_HISTORY_SIZE + 1))
 
-      if (c.nonEmpty) {
+      if (evts.nonEmpty) {
         // Here we find the objects under the finger events.
-        val history_events = c.map {
+        val processedEvents = evts.map {
           case FingerMove(from, to, null) =>
             FingerMove(from, to, physicalObjectFingerAt(from))
           case FingerDown(pos, null) =>
@@ -473,8 +489,9 @@ trait Game extends RuleManager { self =>
           case e => e
         }
         
-        history += (time, history_events)
+        history += (time, processedEvents)
       }
+      //Log.d("kingpong", s"After context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
     }
     
     /** Return the events from the last fully completed time step. 
@@ -515,16 +532,22 @@ trait Game extends RuleManager { self =>
     }
 
     /** Completely clear the history and the ongoing time step. */
-    def clear(): Unit = crtEvents.synchronized {
-      recording_time = 0
-      max_time = 0
-      history.clear()
+    def clear(from: Int): Unit = crtEvents.synchronized {
+      //Log.d("kingpong", s"Before context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
+      if (from <= 0) {
+        recording_time = 0
+        history.clear()
+      } else  {
+        recording_time = from
+        val idx = history.lastIndexWhere(_._1 < from)
+        history.removeFrom(idx + 1)
+      }
+      
       crtEvents.clear()
+      max_time = time
+      min_time = Math.min(min_time, time)
+      //Log.d("kingpong", s"After context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
     }
-    
-//    val methods: MMap[String, MethodDecl] = MMap[String, MethodDecl]()
-//    def addMethod(name: String, methodDecl: MethodDecl) = methods(name) = methodDecl
-//    def getMethod(name: String): MethodDecl = methods(name)
     
     final val DEFAULT_NAME: String = "SHAPE"
     

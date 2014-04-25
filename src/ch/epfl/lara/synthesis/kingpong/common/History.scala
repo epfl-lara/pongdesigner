@@ -8,15 +8,11 @@ trait History extends Any {
   /** Save the current value to the history with the specified 
    *  discrete time.
    */
-  def save(t: Long): Unit
+  def save(t: Int): Unit
 
-  /** 
-   *  Restore the value from the specified discrete time. 
-   *  @param t the restoration time.
-   *  @param clear if `true`, all the history after `t` is removed.
-   */
-  def restore(t: Long, clear: Boolean): Unit
-
-  /** Destroy the history. */
-  def clear(): Unit
+  /** Restore the value from the specified discrete time. */
+  def restore(t: Int): Unit
+  
+  /** Destroy the history from the given time. */
+  def clear(from: Int): Unit
 }
