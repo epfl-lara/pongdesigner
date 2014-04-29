@@ -1,29 +1,31 @@
 package ch.epfl.lara.synthesis.kingpong
 
-import ch.epfl.lara.synthesis.kingpong.objects._
-import android.graphics.RectF
-import android.graphics.Paint
-import android.graphics.Canvas
-import ch.epfl.lara.synthesis.kingpong.common._
-import android.graphics.Matrix
-import android.graphics.LinearGradient
-import android.graphics.PorterDuff
-import JBox2DInterface._
-import android.graphics.Shader
-import android.content.Context
-import android.graphics.Rect
-import android.graphics.DashPathEffect
+import scala.collection.mutable.{HashMap => MMap}
+
+import org.jbox2d.collision.WorldManifold
 import org.jbox2d.common.MathUtils
-import collection.mutable.{Set => MSet, HashMap => MMap}
+
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.DashPathEffect
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.drawable.Drawable
-import ch.epfl.lara.synthesis.kingpong.menus._
-import ch.epfl.lara.synthesis.kingpong.rules._
-import Events._
-import android.content.res.Resources
 import android.util._
 import android.view.WindowManager
-import android.graphics.Path
-import org.jbox2d.collision.WorldManifold
+
+import ch.epfl.lara.synthesis.kingpong.common._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.menus._
+import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.rules._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
@@ -389,6 +391,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   }
   
   def drawDebugOn(canvas: Canvas, gameView: GameView): Unit = {
+    paint.setColor(ColorConstants.black)
     paint.setTextSize(10 * screenDensity)
     val value = "t = " + gameView.getGame.time
     canvas.drawText(value, 5 * screenDensity, 10 * screenDensity, paint)
