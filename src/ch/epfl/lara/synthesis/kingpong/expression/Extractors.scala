@@ -25,24 +25,26 @@ object Extractors {
   
   object BinaryOperator {
     def unapply(expr: Expr): Option[(Expr, Expr, (Expr, Expr) => Expr)] = expr match {
-      case Equals(t1,t2) => Some((t1, t2, Equals))
-      case Plus(t1,t2)   => Some((t1, t2, Plus))
-      case Minus(t1,t2)  => Some((t1, t2, Minus))
-      case Times(t1,t2)  => Some((t1, t2, Times))
-      case Div(t1,t2)    => Some((t1, t2, Div))
-      case Mod(t1,t2)    => Some((t1, t2, Mod))
+      case Equals(t1, t2) => Some((t1, t2, Equals))
+      case Plus(t1, t2)   => Some((t1, t2, Plus))
+      case Minus(t1, t2)  => Some((t1, t2, Minus))
+      case Times(t1, t2)  => Some((t1, t2, Times))
+      case Div(t1, t2)    => Some((t1, t2, Div))
+      case Mod(t1, t2)    => Some((t1, t2, Mod))
       
-      case LessThan(t1,t2)    => Some((t1, t2, LessThan))
-      case GreaterThan(t1,t2) => Some((t1, t2, GreaterThan))
-      case LessEq(t1,t2)      => Some((t1, t2, LessEq))
-      case GreaterEq(t1,t2)   => Some((t1, t2, GreaterEq))
-      case And(t1,t2)         => Some((t1, t2, And))
-      case Or(t1,t2)          => Some((t1, t2, Or))
+      case LessThan(t1, t2)    => Some((t1, t2, LessThan))
+      case GreaterThan(t1, t2) => Some((t1, t2, GreaterThan))
+      case LessEq(t1, t2)      => Some((t1, t2, LessEq))
+      case GreaterEq(t1, t2)   => Some((t1, t2, GreaterEq))
+      case And(t1, t2)         => Some((t1, t2, And))
+      case Or(t1, t2)          => Some((t1, t2, Or))
       
-      case Collision(t1,t2) => Some((t1, t2, Collision))
-      case Contains(t1,t2)  => Some((t1, t2, Contains))
-      case Let(id, t1, t2)  => Some((t1, t2, Let(id, _, _)))
-      case Copy(t1, id, t2) => Some((t1, t2, Copy(_, id, _)))
+      case Collision(t1, t2) => Some((t1, t2, Collision))
+      case Contains(t1, t2)  => Some((t1, t2, Contains))
+      case Let(id, t1, t2)   => Some((t1, t2, Let(id, _, _)))
+      case Copy(t1, id, t2)  => Some((t1, t2, Copy(_, id, _)))
+      case ContainingCell(t1, t2) => Some((t1, t2, ContainingCell))
+      
       case FingerMoveOver(t1, id, t2) => Some((t1, t2, FingerMoveOver(_, id, _)))
       
       case _ => None

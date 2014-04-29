@@ -383,6 +383,13 @@ trait Interpreter {
         case _ => error(expr)
       }
       
+    case ContainingCell(e1, e2) =>
+      (eval(e1), eval(e2)) match {
+        case (ObjectLiteral(array: Array2D), ObjectLiteral(obj: Positionable)) => 
+          array.containingCell(obj)
+        case _ => error(expr)
+      } 
+      
     case Row(e) =>
       eval(e) match {
         case ObjectLiteral(o: Cell) => IntegerLiteral(o.row)

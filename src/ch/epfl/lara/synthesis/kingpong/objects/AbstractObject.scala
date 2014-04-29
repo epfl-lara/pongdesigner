@@ -343,6 +343,19 @@ class Array2D(
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
 
+  /**
+   * Find the cell that contains the given object.
+   * The implementation should be as fast as possible.
+   */
+  def containingCell(obj: Positionable): ObjectLiteral = {
+    val pos = obj.center.get
+    if (!this.contains(pos)) {
+      ObjectLiteral.empty
+    } else {
+      cells(((pos.x - left.get) / CELL_WIDTH).toInt)(((pos.y - top.get) / CELL_HEIGHT).toInt).expr
+    }
+  }
+  
   protected def makecopy(name: String) = {
     new Array2D(game, name, x.init, y.init, visible.init, color.init, numColumns.init, numRows.init)
   }

@@ -371,6 +371,7 @@ trait PrettyPrinterExtendedTypical {
     case Variable(id) => c + indent +<> id.toString
     case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
     
+    case ContainingCell(_, obj) => c + indent +< "cell(" + obj + ")" +>
     case Row(expr) => c + indent +< expr + ".row" +>
     case Column(expr) => c + indent +< expr + ".column" +>
     case Apply(arr, col, row) => c + indent +< arr + "(" + col + "," + row + ")" +>

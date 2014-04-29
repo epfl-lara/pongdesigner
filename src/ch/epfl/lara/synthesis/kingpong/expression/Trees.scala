@@ -237,6 +237,10 @@ object Trees {
     def value: T
   }
   
+  object ObjectLiteral {
+    def empty = ObjectLiteral(null)
+  }
+  
   case class ObjectLiteral(value: GameObject) extends Literal[GameObject] with FixedType {
     val fixedType = TObject
   }
@@ -299,6 +303,10 @@ object Trees {
   
   /** Test if the left object contains the right one. */
   case class Contains(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
+  
+  case class ContainingCell(array: Expr, obj: Expr) extends Expr with FixedType {
+    val fixedType = TObject
+  }
   
   /** Get the row of a cell. */
   case class Row(obj: Expr) extends Expr with FixedType {
