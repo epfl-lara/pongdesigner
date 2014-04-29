@@ -513,10 +513,12 @@ class GameView(val context: Context, attrs: AttributeSet)
 
     eventEditor.unselect()
     
-    game.objects.foreach { obj => 
-      obj.validate()
-      obj.flush() 
-    }
+    //TODO Mikael, do we really need this loop ? 
+    // It result in a crash when reseting after a physical object deletion.
+//    game.objects.foreach { obj => 
+//      obj.validate()
+//      obj.flush() 
+//    }
     game.setInstantProperties(false)
     
     // clear the future history if we went in the past during the pause

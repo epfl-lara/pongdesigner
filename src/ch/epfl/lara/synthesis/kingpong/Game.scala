@@ -78,7 +78,7 @@ trait Game extends RuleManager { self =>
   /** All objects currently alive in this game. */
   def aliveObjects: Traversable[GameObject] = {
     val res = for(o <- _objects.toTraversable if o.existsAt(time)) yield o
-    res // todo: convert this to a val with view when it will work on mikael's machine.
+    res //TODO: convert this to a val with view when it will work on mikael's machine.
   }
   
   //TODO what should be the right way to get back events, 
