@@ -48,19 +48,13 @@ object JBox2DInterface {
     }
 
     def point(implicit m: WorldManifold): Vec2 = {
-      //TODO performance issue here, the WorldManifold could be 
-      // allocated only once
-      //val m = new WorldManifold()
       c.getWorldManifold(m)
-      m.points(0)
+      m.points(0).clone // Clone to be sure we have a fresh Vec2
     }
 
     def normal(implicit m: WorldManifold): Vec2 = {
-      //TODO performance issue here, the WorldManifold could be 
-      // allocated only once
-      //val m = new WorldManifold()
       c.getWorldManifold(m)
-      m.normal
+      m.normal.clone // Clone to be sure we have a fresh Vec2
     }
     
   }

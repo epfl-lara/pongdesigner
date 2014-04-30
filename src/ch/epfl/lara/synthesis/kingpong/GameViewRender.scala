@@ -479,8 +479,6 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }*/
   }
   
-  implicit val tmpManifold = new WorldManifold()
-  
   // Draw events in the GameView referential
   def drawEventOn(event: Event, gameView: GameView, eventEditor: EventEditor, timestamp: Int, canvas: Canvas, matrix: Matrix, matrixI: Matrix): Unit = {
     var paint: Paint = this.paint
@@ -504,10 +502,10 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     val bitmaps = gameView.bitmaps
     event match {
-      case BeginContact(c) => 
+      case c: BeginContact => 
         paint.setColor(0xFFFF0000)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(matrix, c.point, render_in_array, render_out_vec)
+        val p = mapVectorFromGame(matrix, c.p, render_in_array, render_out_vec)
         rectFData.set(p.x - 24, p.y - 21, p.x + 25, p.y + 21)
         rectFData.round(rectData)
         val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
@@ -515,15 +513,15 @@ class GameViewRender(val context: Context) extends ContextUtils {
         bitmap.setAlpha(alpha)
         canvas.drawCircle(p.x, p.y, mapRadiusI(matrixI, 10), paint) // TODO : Delete
         bitmap.draw(canvas)
-      case CurrentContact(c) => 
+      case c: CurrentContact => 
         paint.setColor(0xFF00FF00)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(matrix, c.point, render_in_array, render_out_vec)
+        val p = mapVectorFromGame(matrix, c.p, render_in_array, render_out_vec)
         canvas.drawCircle(p.x, p.y, mapRadiusI(matrixI, 10), paint)
-      case EndContact(c) => 
+      case c: EndContact => 
         paint.setColor(0xFF0000FF)
         paint.setAlpha(alpha)
-        val p = mapVectorFromGame(matrix, c.point, render_in_array, render_out_vec)
+        val p = mapVectorFromGame(matrix, c.p, render_in_array, render_out_vec)
         canvas.drawCircle(p.x, p.y, mapRadiusI(matrixI, 10), paint)
       case AccelerometerChanged(v) =>
         paint.setStrokeWidth(mapRadiusI(matrixI, 2))

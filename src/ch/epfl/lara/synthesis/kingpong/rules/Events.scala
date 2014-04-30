@@ -10,6 +10,8 @@ import org.jbox2d.collision.WorldManifold
 
 object Events {
 
+  private implicit val tmpManifold = new WorldManifold()
+  
   sealed trait Event {
     def obj = Set[GameObject]()
     def selectableBy(x: Float, y: Float) = false
@@ -36,11 +38,10 @@ object Events {
     }
   }
   
-  implicit val tmpManifold = new WorldManifold() // For the .point
-  
   sealed trait PhysicalContactEvent extends SelectableEvent {
     def contact: Contact
-    def p: Vec2 = contact.point
+    // Very important to compute the point at creation time.
+    val p: Vec2 = contact.point 
   }
   
   object FingerRelated {

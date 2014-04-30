@@ -408,9 +408,6 @@ trait Game extends RuleManager { self =>
     EventHistory.addEvent(FingerMove(from, to, null))
   }
   
-  // Advanced way to add an event unsynchronized from input.
-  def addEvent(e: Event, time: Int): Event = { EventHistory.addEvent(e, time); e}
-
   private val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
     def initGC() = EventHistory
@@ -523,14 +520,6 @@ trait Game extends RuleManager { self =>
       }      
     }
     
-    /** Add an event in the ongoing time step. 
-     *  Can be called by another thread, from user inputs.
-     *  Caution: This function should not be used very often
-     */
-    def addEvent(e: Event, time: Int): Unit = history.synchronized {
-      history.replace({ case (t, events) => time == t }, { case (t, events) => (t, events ++ List(e)) })
-    }
-
     /** Completely clear the history and the ongoing time step. */
     def clear(from: Int): Unit = crtEvents.synchronized {
       //Log.d("kingpong", s"Before context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
