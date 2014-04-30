@@ -367,7 +367,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     
     if(game == null) return;
-    game.pixelsByUnit = matrixI.mapRadius(1)
+    game.pixelsByUnit = mapRadius(matrix, 1)
 
     game.aliveObjects foreach drawObject
     

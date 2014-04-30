@@ -30,6 +30,7 @@ trait Implicits {
   
   class RichView(b: View) { // Scala 2.10 !
     def onClicked(f: =>Unit) = b.setOnClickListener{ () => f }
+	def onTouch(f: (View, MotionEvent) => Boolean) = b.setOnTouchListener(toOnTouchListener(f))
   }
   implicit def toRichView[B <: View](b: B) = new RichView(b)
 }

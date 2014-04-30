@@ -203,7 +203,7 @@ class KingPong extends Activity
     mGameView.setKeepScreenOn(true)
     mGameView.requestFocus()
 
-    time_button.onClicked(onTimeButtonClick)
+    time_button.onTouch(onTimeButtonListerer)
     back_button.onClicked(onBackButtonClick)
     
     menus.ColorMenu.createMenuFromColorArray(this, R.array.colors)
@@ -392,14 +392,28 @@ class KingPong extends Activity
     mGameView.backToBeginning()
   }
   
-  private def onTimeButtonClick() = mGameView.state match {
-    case GameView.Editing =>
-      mGameView.toRunning()
-      time_button.setImageDrawable(timeButtonPause)
+  private val onTimeButtonListerer = (v: View, event: MotionEvent) => {
+	(event.getAction() & MotionEvent.ACTION_MASK) match {
+		case MotionEvent.ACTION_DOWN | MotionEvent.ACTION_POINTER_DOWN =>
+			mGameView.editWhileRunning = true
+			true
+		case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
+			mGameView.editWhileRunning = false
+			mGameView.state match {
+				case GameView.Editing =>
+				  mGameView.toRunning()
+				  time_button.setImageDrawable(timeButtonPause)
 
-    case GameView.Running =>
-      mGameView.toEditing()
-      time_button.setImageDrawable(timeButtonPlay)
+				case GameView.Running =>
+				  mGameView.toEditing()
+				  time_button.setImageDrawable(timeButtonPlay)
+			  }
+			true
+		case MotionEvent.ACTION_MOVE =>
+          false
+		case _ => false
+    }
+	
   }
 
   configurationObject {
