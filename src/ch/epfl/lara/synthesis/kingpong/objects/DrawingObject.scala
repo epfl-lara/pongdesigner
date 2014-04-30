@@ -47,7 +47,17 @@ case class DrawingObject(
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  val width_drawing= simpleProperty[Float]("width_drawing", 0.02f)
+  //val width_drawing= simpleProperty[Float]("width_drawing", 0.02f)
+  
+  val stroke_width = simpleProperty[Float]("stroke_width", 2f)
+  
+  val width_drawing = aliasProperty (
+    name  = "bottom", 
+    getF  = () => stroke_width.get/(width.get * game.pixelsByUnit),
+    nextF = () => stroke_width.next/(width.next * game.pixelsByUnit),
+    exprF = () => stroke_width.expr/(width.expr * game.pixelsByUnit)
+  )
+  
   val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
   private val mDrawings = ArrayBuffer[DrawingElement]() // Records all drawings.
   def getDrawingElements = mDrawings

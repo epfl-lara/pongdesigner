@@ -201,6 +201,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
           tmpMatrix.setRectToRect(tmpDrawingObjectRect1, tmpDrawingObjectRect2, Matrix.ScaleToFit.FILL)
           canvas.concat(tmpMatrix)
           
+          val oldStrokeJoin = paint.getStrokeJoin()
+          paint.setStrokeJoin(Paint.Join.ROUND)
           d.getDrawingElements foreach { case d@DrawingElement(time, fromx, fromy, tox, toy, width, color) =>
             if(time <= game.time) {
               if(fromx == lastx && fromy == lasty && width == lastwidth && color == lastcolor) {
@@ -209,6 +211,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
                 if(!tmpPath.isEmpty()) {
                   paint.setColor(lastcolor)
                   paint.setStrokeWidth(lastwidth)
+                  
                   canvas.drawPath(tmpPath, paint)
                   tmpPath.reset()
                 }
@@ -227,6 +230,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
             canvas.drawPath(tmpPath, paint)
             tmpPath.reset()
           }
+          paint.setStrokeJoin(oldStrokeJoin)
           
           canvas.restore()
           
@@ -363,7 +367,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     
     if(game == null) return;
+    game.pixelsByUnit = matrixI.mapRadius(1)
+
     game.aliveObjects foreach drawObject
+    
+    
     if(state == Editing) game.aliveObjects foreach {
       case o: Speed with Movable =>
         drawVelocity(o, o.x.next, o. y.next, o.velocity.next, velocityPaint)
@@ -380,7 +388,12 @@ class GameViewRender(val context: Context) extends ContextUtils {
       canvas.drawCircle(currentFingerPos.x, currentFingerPos.y, game.FINGER_SIZE, paint)
     }*/
     if(isSelectingEvents) {
-      game.foreachEvent{ (event, time) => drawEventOn(event, gameView, eventEditor, time, canvas, matrix, matrixI) }
+      EventDrawing.matrix = matrix
+      EventDrawing.matrixI = matrixI
+      EventDrawing.canvas = canvas
+      EventDrawing.gameView = gameView
+      EventDrawing.eventEditor = eventEditor
+      game.foreachEvent(EventDrawing)
       // Divide the luminosity by two
       canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
       // Add a quarter of the luminosity
@@ -479,10 +492,17 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }*/
   }
   
+  implicit val tmpManifold = new WorldManifold()
+  object ExistenceTester extends (((ch.epfl.lara.synthesis.kingpong.rules.Events.Event, Int)) => Boolean) {
+    private var mEvent: Event = _
+    def setEvent(event: Event) = mEvent = event
+    def apply(e: (Event, Int)) = e._1 == mEvent
+  }
   // Draw events in the GameView referential
   def drawEventOn(event: Event, gameView: GameView, eventEditor: EventEditor, timestamp: Int, canvas: Canvas, matrix: Matrix, matrixI: Matrix): Unit = {
     var paint: Paint = this.paint
-    val eventIsSelected = eventEditor.selectedEventTime.exists(_._1 == event)
+    ExistenceTester.setEvent(event)
+    val eventIsSelected = eventEditor.selectedEventTime.exists(ExistenceTester)
     event match {
       case e if eventIsSelected =>
         if(event.isFinger) paint = touchSelectedPaint
@@ -576,4 +596,17 @@ class GameViewRender(val context: Context) extends ContextUtils {
     fingerDrawable.setAlpha(alpha)
     fingerDrawable.draw(canvas)
   }
+  
+  object EventDrawing extends((Event, Int) => Unit) {
+    var matrix: Matrix = _
+    var matrixI: Matrix = _
+    var canvas: Canvas = _
+    var gameView: GameView = _
+    var eventEditor: EventEditor = _
+    def apply(event: Event, time: Int): Unit = {
+      drawEventOn(event, gameView, eventEditor, time, canvas, matrix, matrixI)
+    }
+  }
 }
+
+

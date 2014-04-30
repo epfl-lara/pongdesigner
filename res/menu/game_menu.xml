@@ -12,7 +12,10 @@
         <item android:id="@+id/load_external"
           android:title="@string/loadExternal"
           android:showAsAction="ifRoom"/>
-	    <item android:id="@+id/brickbreaker"
+        <item android:id="@+id/drawing_game"
+          android:title="@string/drawing_game"
+          android:showAsAction="ifRoom"/>
+        <item android:id="@+id/brickbreaker"
           android:title="@string/brickbreaker"
           android:showAsAction="ifRoom"/>
         <item android:id="@+id/supermario"

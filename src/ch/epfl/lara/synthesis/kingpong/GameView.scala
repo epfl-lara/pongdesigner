@@ -135,7 +135,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         true
       case Str(R.string.add_drawing_object_hint) =>
         val d = game.drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)
-        game.addRule(d.defaultRule(game))
         shape = d
         true
       
@@ -279,7 +278,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   private var mHeight = 0
   def initialize() = {
     // Find lower and upper bounds of the game, and set the viewing matrix to it.
-    layoutResize()
+    //layoutResize()
     backToBeginning()
     //updateCodeView(game.rules, game.objects)
     codeview.setText("")
@@ -319,6 +318,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   private var _state: GameState = Editing
   private def state_=(s: GameState) = _state = s
   def state = _state
+  
+  /** Flag indicating if the edition is possible while the game is running */
+  var editWhileRunning = false
 
   /** Flag to know if the canvas is ready to draw on it. */
   private var isSurfaceCreated = false
@@ -541,6 +543,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     toEditing()
     setProgressBarTime(0)
     game.clear(from = 0)
+    layoutResize()
   }
 
   /** Called by the `GameLoop`. */
@@ -650,7 +653,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         currentFingerPos = res
         fingerIsDown = true
     }
-    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS) {
+    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS || editWhileRunning) {
         fingerUpCanceled = false
         val x = pos.x
         val y = pos.y
@@ -768,7 +771,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       fingerIsDown = false
       currentFingerPos = res
     }
-    if(state == Editing || mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS || mRuleState == STATE_SELECTING_TO_FIX) {
+    if(state == Editing || mRuleState == STATE_SELECTING_EVENTS || mRuleState == STATE_SELECTING_EFFECTS || mRuleState == STATE_SELECTING_TO_FIX || editWhileRunning) {
       // Select an object below if any and display the corresponding code
       val res = mapVectorToGame(pos)
 
@@ -1098,7 +1101,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       game.onOneFingerMove(mapVectorToGame(from), res)
       currentFingerPos = res
     }
-    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS) {
+    if(state == Editing || mRuleState == STATE_SELECTING_EFFECTS || editWhileRunning) {
       //matrix.postTranslate(to.x - from.x, to.y - from.y)
       //push(matrix)
       //super.onOneFingerMove(from, to)

@@ -68,7 +68,11 @@ trait RuleManager {
 trait Game extends RuleManager { self => 
   implicit val seflImplicit = self
   val world: PhysicalWorld
+  
+  // If the time is to be restored at the next step
   var scheduledRestoreTime: Option[Int] = None
+  
+  var pixelsByUnit = 0f
 
   private val _objects = ArrayBuffer.empty[GameObject]
   
@@ -259,6 +263,7 @@ trait Game extends RuleManager { self =>
                 color: Expr = category.color): DrawingObject = {
     val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color)
     r.setCategory(category)
+    addRule(r.defaultRule(this))
     this add r
     r
   }
@@ -454,9 +459,20 @@ trait Game extends RuleManager { self =>
     def getEvents(i: Int): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
     
     def foreachEvent(f: (Event, Int) => Unit) = {
-      for((k, s) <- history.iterator; e <- s) {
-        f(e, k)
+      val i = history.iterator
+      while(i.hasNext) {
+        val ks = i.next
+        var s = ks._2
+        val k = ks._1
+        while(s.nonEmpty) {
+          val e = s.head
+          f(e, k)
+          s = s.tail
+        }
       }
+      /*for((k, s) <- history.iterator; e <- s) {
+        f(e, k)
+      }*/
     }
 
     /* Advance the time and store the current events in the history. */

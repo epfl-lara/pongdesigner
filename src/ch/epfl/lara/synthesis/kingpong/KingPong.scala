@@ -50,11 +50,13 @@ object KingPong {
   final val PONGNAME_SUPERMARIO = "Mario"  
   final val PONGNAME_SLIDING = "SlidingPuzzle"  
   final val PONGNAME_THREEINAROW = "ThreeInARow"  
+  final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   private var mapgames: Map[String,()=>Game] = Map.empty
   mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
   mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
   mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
   mapgames += (PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()))
+  mapgames += (PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -332,18 +334,11 @@ class KingPong extends Activity
             //new LoadFileTask().execute()
             //mGameView.loadGame(mHandler)
             true
-          case R.id.brickbreaker =>
-            self ! Messages.FileLoad(PONGNAME_SIMPLEBRICKBREAKER)
-            true
-          case R.id.supermario =>
-            self ! Messages.FileLoad(PONGNAME_SUPERMARIO)
-            true
-          case R.id.sliding =>
-            self ! Messages.FileLoad(PONGNAME_SLIDING)
-            true
-          case R.id.three_in_a_row =>
-            self ! Messages.FileLoad(PONGNAME_THREEINAROW)
-            true
+          case R.id.brickbreaker =>   self ! Messages.FileLoad(PONGNAME_SIMPLEBRICKBREAKER)
+          case R.id.supermario   =>   self ! Messages.FileLoad(PONGNAME_SUPERMARIO)
+          case R.id.sliding =>        self ! Messages.FileLoad(PONGNAME_SLIDING)
+          case R.id.three_in_a_row => self ! Messages.FileLoad(PONGNAME_THREEINAROW)
+          case R.id.drawing_game =>   self ! Messages.FileLoad(PONGNAME_DRAWINGRECORDER)
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
             true
@@ -482,7 +477,7 @@ class KingPong extends Activity
    */
   private var mHandler = new Handler(){
     import Messages._
-    def !(m: Message) = sendMessage(m)
+    def !(m: Message): Boolean = sendMessage(m)
     override def handleMessage(input_msg: Message) {
         input_msg match {
           

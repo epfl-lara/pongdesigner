@@ -60,6 +60,7 @@
     <string name="savedGame8">Pong Balloon</string>
     <string name="savedGame9">Brick breaker 3 players</string>
     <string name="brickbreaker">Brick breaker</string>
+    <string name="drawing_game">Drawing Recorder</string>
     <string name="supermario">Super Maria</string>
     <string name="sliding">Sliding Puzzle</string>
     <string name="three_in_a_row">3 in a row</string>
