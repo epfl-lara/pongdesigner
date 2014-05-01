@@ -1059,9 +1059,9 @@ class GameView(val context: Context, attrs: AttributeSet)
 	    for((i, j) <- cv_mapping_consts) {
 	      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
 	    }
-	    ruleString
+	    rulesString
     }
-    result.onSuccess{ case ruleString =>
+    result.onSuccess{ case rulesString =>
       codeview.setText(rulesString)
     }
   }
