@@ -47,7 +47,7 @@ class DrawingRecorder extends Game {
   val ruleWidth = foreach(width_objects) { obj =>
     whenever(FingerDownOver(obj))(
       drawing.stroke_width := obj.height * 20,
-      preview_drawing.radius := obj.height * 10
+      preview_drawing.radius := obj.height / 2
     )
   }
   

@@ -41,7 +41,7 @@ abstract class PhysicalObject(
   protected def fixtureDef: Seq[FixtureDef]
   protected def fixture = body.getFixtureList()
   private var bodyRemovedFromWorld = false
-  protected var last_fixture: Fixture = null
+  protected var last_fixture: GameObject = null
   
   private def removeFromWorld() = {
     game.world.world.destroyBody(body)
@@ -65,7 +65,7 @@ abstract class PhysicalObject(
   protected def addToWorld() = {
     val body = game.world.world.createBody(bodyDef)
     fixtureDef foreach { fixture_definition =>
-      last_fixture = body.createFixture(fixture_definition) 
+      last_fixture = this //body.createFixture(fixture_definition) 
     }
     body.setUserData(this)
     _body = body
@@ -325,10 +325,10 @@ class Character (
     import Events._
     var g  = false
     from.events foreach {
-      case BeginContact(c)  =>
-        g = g || (c.getFixtureA() == last_fixture || c.getFixtureB() == last_fixture)
-      case CurrentContact(c) => 
-        g = g || (c.getFixtureA() == last_fixture || c.getFixtureB() == last_fixture)
+      case BeginContact(c, objectA, objectB)  =>
+        g = g || (objectA == last_fixture ||  objectB == last_fixture)
+      case CurrentContact(c, objectA, objectB) => 
+        g = g || (objectA == last_fixture || objectB == last_fixture)
       case _ => 
     }
     grounded.set(g)

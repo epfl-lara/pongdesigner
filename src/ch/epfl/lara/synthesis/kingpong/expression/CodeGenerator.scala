@@ -230,8 +230,8 @@ object CodeGenerator extends CodeHandler {
         (objs.toList, 1, (obj: List[Expr]) => FingerUpOver(obj.head))
       case (FingerMove(u, v, objs), i) if objs.size > 0 =>
         (objs.toList, 1, (obj: List[Expr]) => isFingerMoveOver(obj.head))
-      case (BeginContact(contact), i) =>
-        (List[GameObject](contact.objectA, contact.objectB), 2, (obj: List[Expr]) => Collision(obj.head, obj.tail.head))
+      case (BeginContact(contact, objectA, objectB), i) =>
+        (List[GameObject](objectA, objectB), 2, (obj: List[Expr]) => Collision(obj.head, obj.tail.head))
       case _ => (List[GameObject](), 0, (obj: List[Expr]) => NOP)
     }
     import language.postfixOps 
@@ -248,10 +248,12 @@ object CodeGenerator extends CodeHandler {
       }
     }
     
-    val rule = foreach(categories) { objs =>
+    val rule = /*foreach(categories) { objs =>
       whenever(and(instances(objs))){
         stmts
       }
+    }*/ whenever(and(objs_for_conditions.map{case (a, _, c)=> c(a.map(ObjectLiteral.apply))})) {
+      stmts
     }
     
     game.addRule(rule)

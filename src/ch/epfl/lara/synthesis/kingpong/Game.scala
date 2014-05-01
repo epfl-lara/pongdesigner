@@ -6,12 +6,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MMap}
 import scala.collection.mutable.{Set => MSet, Seq => MSeq}
 import scala.language.dynamics
-
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.dynamics.BodyType
-
 import android.util.Log
-
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -26,6 +23,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
+import org.jbox2d.collision.WorldManifold
 
 trait RuleManager {
   // Use an ArrayBuffer for performance reasons when using `foreach`.
@@ -128,6 +126,8 @@ trait Game extends RuleManager { self =>
     EventHistory.clear(from)
   }
 
+  private implicit val tmp = new WorldManifold()
+  
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
     scheduledRestoreTime match {
@@ -138,14 +138,14 @@ trait Game extends RuleManager { self =>
       case None =>
     }
     // save contacts
-    world.beginContacts foreach { 
-      EventHistory addEvent BeginContact(_)
+    world.beginContacts foreach { contact => 
+      EventHistory addEvent (BeginContact(contact.point, contact.objectA, contact.objectB))
     }
-    world.currentContacts foreach {
-      EventHistory addEvent CurrentContact(_)
+    world.currentContacts foreach { contact => 
+      EventHistory addEvent (CurrentContact(contact.point, contact.objectA, contact.objectB))
     }
-    world.endContacts foreach {
-      EventHistory addEvent EndContact(_)
+    world.endContacts foreach { contact => 
+      EventHistory addEvent (EndContact(contact.point, contact.objectA, contact.objectB))
     }
     
     EventHistory.step()                                /// Opens saving for new coordinates

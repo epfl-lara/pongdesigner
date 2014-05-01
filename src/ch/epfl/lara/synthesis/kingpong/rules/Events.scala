@@ -38,11 +38,11 @@ object Events {
     }
   }
   
-  sealed trait PhysicalContactEvent extends SelectableEvent {
+  /*sealed trait PhysicalContactEvent extends SelectableEvent {
     def contact: Contact
     // Very important to compute the point at creation time.
     val p: Vec2 = contact.point 
-  }
+  }*/
   
   object FingerRelated {
     def unapply(e: Event): Option[(Vec2, Set[GameObject])] = e match {
@@ -64,13 +64,13 @@ object Events {
     def p = from
   }
 
-  case class BeginContact(contact: Contact) extends Event with PhysicalContactEvent {
+  case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
     override def isContact = true
   }
-  case class CurrentContact(contact: Contact) extends Event with PhysicalContactEvent {
+  case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
     override def isContact = true
   }
-  case class EndContact(contact: Contact) extends Event with PhysicalContactEvent {
+  case class EndContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
     override def isContact = true
   }
 

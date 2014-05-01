@@ -62,6 +62,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 object GameView {
   sealed trait GameState
@@ -535,10 +537,12 @@ class GameView(val context: Context, attrs: AttributeSet)
     
     //TODO Mikael, do we really need this loop ? 
     // It result in a crash when reseting after a physical object deletion.
-//    game.objects.foreach { obj => 
-//      obj.validate()
-//      obj.flush() 
-//    }
+    game.objects.foreach { obj => 
+      obj.validate()
+      if(obj.setExistenceAt(game.time)) {
+        obj.flush() 
+      }
+    }
     game.setInstantProperties(false)
     
     // clear the future history if we went in the past during the pause
@@ -907,14 +911,14 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
     for(e@(event, time) <- eventList) {
       event match {
-        case BeginContact(contact) =>
-          if(!contactTaken((contact.objectA.name.get, contact.objectB.name.get))) {
+        case BeginContact(contact, objectA, objectB) =>
+          if(!contactTaken((objectA.name.get, objectB.name.get))) {
             if(currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect), Left(e)))
+              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_collision, contact.objectA.name.get, contact.objectB.name.get), drw(R.drawable.collision_effect), Left(e)))
+              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw(R.drawable.collision_effect), Left(e)))
             }
-            contactTaken += ((contact.objectA.name.get, contact.objectB.name.get))
+            contactTaken += ((objectA.name.get, objectB.name.get))
           }
         
         case FingerUp(pos, objs) =>
@@ -1061,8 +1065,11 @@ class GameView(val context: Context, attrs: AttributeSet)
 	    }
 	    rulesString
     }
-    result.onSuccess{ case rulesString =>
-      codeview.setText(rulesString)
+    result.onComplete{
+      case Success(rulesString) =>
+        context.asInstanceOf[Activity].runOnUiThread{codeview.setText(rulesString)}
+      case Failure(f) =>
+        f.printStackTrace()
     }
   }
   
@@ -1324,6 +1331,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
           if(lastMainPointerId == -1 || state == Running) {
             onFingerDown(point)
+            lastMainPointerId = me.getPointerId(pointerIndex)
           }
           last(pointerIndex) = point
 
@@ -1332,14 +1340,14 @@ class GameView(val context: Context, attrs: AttributeSet)
           if(me.getPointerCount() == 1 || state == Running) {
             var i = me.getPointerCount()-1
             while(i>=0) {
-              val pointerIndex = Math.min(me.getPointerId(i), FINGERS - 1)
-              lastMainPointerId = pointerIndex
+              val pointerId = Math.min(me.getPointerId(i), FINGERS - 1)
+              lastMainPointerId = pointerId
               
-              val from = last(pointerIndex)
+              val from = last(pointerId)
               val to = Vec2(me.getX(0), me.getY(0))
               //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
               onOneFingerMove(from, to)
-              last(pointerIndex) = to
+              last(pointerId) = to
               i -= 1
             }
           }

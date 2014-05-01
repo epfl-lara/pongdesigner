@@ -368,8 +368,8 @@ trait Interpreter {
        (eval(lhs), eval(rhs)) match {
         case (ObjectLiteral(o1), ObjectLiteral(o2)) => 
           val isCollision = gctx.existsBeginContact { c =>
-            (c.contact.objectA == o1 && c.contact.objectB == o2) ||
-            (c.contact.objectA == o2 && c.contact.objectB == o1)
+            (c.objectA == o1 && c.objectB == o2) ||
+            (c.objectA == o2 && c.objectB == o1)
           }
           Literal(isCollision)
         case _ => error(expr)
