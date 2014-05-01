@@ -36,7 +36,9 @@ case class DrawingObject(
     init_width: Expr, 
     init_height: Expr,
     init_visible: Expr,
-    init_color: Expr
+    init_color: Expr,
+    init_stroke_width: Expr,
+    init_color_drawing: Expr
     ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
       with ResizableRectangular
       with Movable
@@ -49,16 +51,16 @@ case class DrawingObject(
   val height = simpleProperty[Float]("height", init_height)
   //val width_drawing= simpleProperty[Float]("width_drawing", 0.02f)
   
-  val stroke_width = simpleProperty[Float]("stroke_width", 2f)
+  val stroke_width = simpleProperty[Float]("stroke_width", init_stroke_width)
   
   val width_drawing = aliasProperty (
     name  = "bottom", 
     getF  = () => stroke_width.get/(width.get * game.pixelsByUnit),
     nextF = () => stroke_width.next/(width.next * game.pixelsByUnit),
-    exprF = () => stroke_width.expr/(width.expr * game.pixelsByUnit)
+    exprF = () => stroke_width.expr/(width.expr * MethodCall("gamePixelsPerUnit", ObjectLiteral(this)::Nil))
   )
   
-  val color_drawing= simpleProperty[Int]("color_drawing", 0xFF000000)
+  val color_drawing= simpleProperty[Int]("color_drawing", init_color_drawing)
   private val mDrawings = ArrayBuffer[DrawingElement]() // Records all drawings.
   def getDrawingElements = mDrawings
   def addDrawingElement(time: Long, fromx: Float, fromy: Float, tox: Float, toy: Float, stroke_width: Float, color: Int) = {

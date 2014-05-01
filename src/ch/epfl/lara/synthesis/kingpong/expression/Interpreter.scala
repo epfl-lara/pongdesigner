@@ -179,6 +179,8 @@ trait Interpreter {
             case _ =>
           }
           UnitLiteral
+        case ("gamePixelsPerUnit", ObjectLiteral(o:DrawingObject)::Nil) =>
+          FloatLiteral(o.game.pixelsByUnit)
         case _ =>
           error(expr)
       }

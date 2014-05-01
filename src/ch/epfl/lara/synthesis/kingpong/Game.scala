@@ -260,8 +260,10 @@ trait Game extends RuleManager { self =>
                 width: Expr = category.width,
                 height: Expr = category.height,
                 visible: Expr = category.visible,
-                color: Expr = category.color): DrawingObject = {
-    val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color)
+                color: Expr = category.color,
+                stroke_width: Expr = category.stroke_width,
+                color_drawing: Expr = category.color_drawing): DrawingObject = {
+    val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color, stroke_width, color_drawing)
     r.setCategory(category)
     addRule(r.defaultRule(this))
     this add r

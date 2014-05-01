@@ -1,4 +1,16 @@
 package ch.epfl.lara.synthesis.kingpong
+/***
+ *     _____                ____          _                 
+ *    |  _  |___ ___ ___   |    \ ___ ___|_|___ ___ ___ ___ 
+ *    |   __| . |   | . |  |  |  | -_|_ -| | . |   | -_|  _|
+ *    |__|  |___|_|_|_  |  |____/|___|___|_|_  |_|_|___|_|  
+ *                  |___|                  |___|
+ *                  
+ *  File name: GameView.scala
+ *  Author:    Lomig Megard
+ *  Date:      June 2013
+ *  Purpose:   View for rendering Pong Designer
+ */
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MMap}
@@ -47,6 +59,9 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import expression.Types._
 import expression.TreeOps
 import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object GameView {
   sealed trait GameState
@@ -286,15 +301,18 @@ class GameView(val context: Context, attrs: AttributeSet)
   
   def layoutResize() = {
     if(game != null) {
-      val a = (Array(0f, 0f, 0f, 0f) /: game.aliveObjects) { case (a, obj) =>
+      val a = (Array(0f, 0f, 0f, 0f) /: game.aliveObjects) { case (a, obj: Positionable) =>
         val aabb = obj.getAABB()
-        val Vec2(xmin, ymin) = aabb.lowerBound
-        val Vec2(xmax, ymax) = aabb.upperBound
+        val xmin = obj.left.next
+        val xmax = obj.right.next
+        val ymin = obj.top.next
+        val ymax = obj.bottom.next
         if(a(0) > xmin) a(0) = xmin
         if(a(1) > ymin) a(1) = ymin
         if(a(2) < xmax) a(2) = xmax
         if(a(3) < ymax) a(3) = ymax
         a
+      case (a, obj) => a
       }
       val before = new RectF(a(0), a(1), a(2), a(3))
       val after = new RectF(0, 0, mWidth, mHeight)
@@ -1033,15 +1051,19 @@ class GameView(val context: Context, attrs: AttributeSet)
    * @param objects The objects to highlight.
    */
   def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
-    val header = PrettyPrinterExtended.printGameObjectDef(objects)
-    val all = PrettyPrinterExtended.print(rules, header + "\n")
-    var rulesString: CharSequence = all.c
-    cv_mapping = all.map
-    rulesString = colorCodeView(rulesString, cv_mapping, objects)
-    for((i, j) <- cv_mapping_consts) {
-      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
+    val result = future { val header = PrettyPrinterExtended.printGameObjectDef(objects)
+	    val all = PrettyPrinterExtended.print(rules, header + "\n")
+	    var rulesString: CharSequence = all.c
+	    cv_mapping = all.map
+	    rulesString = colorCodeView(rulesString, cv_mapping, objects)
+	    for((i, j) <- cv_mapping_consts) {
+	      rulesString = SyntaxColoring.setSpanOnBounds(rulesString, i, i+1, () => new BackgroundColorSpan(color(R.color.code_constant_background)))
+	    }
+	    ruleString
     }
-    codeview.setText(rulesString)
+    result.onSuccess{ case ruleString =>
+      codeview.setText(rulesString)
+    }
   }
   
   /**

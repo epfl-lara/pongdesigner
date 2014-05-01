@@ -26,15 +26,14 @@ public abstract class MyAsyncTask<U, V, W> extends AsyncTask<U, V, W> {
 
     protected abstract W doInBackground1(ArrayBuffer<U> args);
     
-    ArrayBuffer<V> res = new ArrayBuffer<V>();
-    
     @Override
     protected void onProgressUpdate(V ... args) {
       int count = args.length;
-      res.ensureSize(count);
-      res.clear();
-      
       ArrayBuffer<V> res = new ArrayBuffer<V>(count);
+      
+      res.ensureSize(count);
+      res.reduceToSize(0);
+      
       for (int i = 0; i < count; i++) {
         res.$plus$eq(args[i]);
       }

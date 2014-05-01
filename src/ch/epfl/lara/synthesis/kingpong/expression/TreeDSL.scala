@@ -175,6 +175,8 @@ object TreeDSL {
     def color = new PropertyProxySingleRef(expr, "color").setType(TBoolean)
     def velocity = new PropertyProxySingleRef(expr, "velocity").setType(TVec2)
     def radius = new PropertyProxySingleRef(expr, "radius").setType(TFloat)
+    def width = new PropertyProxySingleRef(expr, "width").setType(TFloat)
+    def height = new PropertyProxySingleRef(expr, "height").setType(TFloat)
     
     //TODO handle Box[T] type...
     def value = new PropertyProxySingleRef(expr, "value").setType(TUntyped)
