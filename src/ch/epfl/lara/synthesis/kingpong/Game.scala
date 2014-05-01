@@ -538,7 +538,7 @@ trait Game extends RuleManager { self =>
       }      
     }
     
-    /** Completely clear the history and the ongoing time step. */
+    /** Clear the history and the ongoing time step from the given time (inclusive). */
     def clear(from: Int): Unit = crtEvents.synchronized {
       //Log.d("kingpong", s"Before context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
       if (from <= 0) {

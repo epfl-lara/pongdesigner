@@ -98,12 +98,12 @@ object CodeTemplates extends CodeHandler {
         } else {
           None
         }
-      }
+      } toList
       
-      if (stats.size == 0)
-        None
-      else 
-        Some(ParExpr(stats.toList))
+      stats.sortWith(_.priority > _.priority) match {
+        case Nil => None
+        case sortedResults => Some(ParExpr(sortedResults).setPriority(sortedResults.head.priority))
+      }
     }
   }
   
@@ -139,12 +139,12 @@ object CodeTemplates extends CodeHandler {
         } else {
           None
         }
-      }
+      } toList
       
-      if (stats.size == 0)
-        None
-      else 
-        Some(ParExpr(stats.toList))
+      stats.sortWith(_.priority > _.priority) match {
+        case Nil => None
+        case sortedResults => Some(ParExpr(sortedResults).setPriority(sortedResults.head.priority))
+      }
     }
   }
 
@@ -648,6 +648,7 @@ object CodeTemplates extends CodeHandler {
     def priority(obj: Movable)(implicit ctx: TemplateContext) = 10
     val templates = List(
         //TXY_CenterMirror,
+        TArraySnapWithVelocity,
         TXY_Independent
     )
     //def comment = s"All x and y changes for ${shape.name.next}"
@@ -1240,24 +1241,22 @@ object CodeTemplates extends CodeHandler {
   
   /* Array templates */
   
-  object TArrayMoveUp extends TemplateOtherCell[Movable] with TemplateMovable {
+  object TArraySnapWithVelocity extends TemplateOtherCell[Movable] with TemplateMovable {
     def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
-      if (other.row >= 1 &&
-          other.contains(obj.center.get) &&
-          other.array.cells(other.column)(other.row - 1).contains(obj.center.next)) {
-        val upCellExpr = other.array.cell(Column(other), Row(other) - 1)
-        val expr = If(Row(other) >= 1 && Contains(other, obj), Block(
-          obj.x := upCellExpr.x,
-          obj.y := upCellExpr.y
-        )) 
-        Some(expr.setPriority(5)) //TODO priority ? 
+      if (other.contains(obj.center.get) &&
+          almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
+          almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
+        val expr = whenever(Contains(other, obj)) (
+          obj.velocity := (other.center - obj.center) * 10
+        )
+        Some(expr.setPriority(20)) //TODO priority ? 
       } else {
         None
       }
     }
     
     def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
-      s"Move ${obj.name.get} to the upper adjacent cell."
+      s"Spap ${obj.name.get} to the center of the cell using its velocity."
   }
   
   /** Top template */

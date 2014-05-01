@@ -377,6 +377,7 @@ trait Interpreter {
       
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {
+        case (ObjectLiteral(null), _) => booleanLiteralFalse
         case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) => Literal(o1.contains(o2.center.get))
         case (ObjectLiteral(o1), Tuple(Seq(NumericLiteral(x), NumericLiteral(y)))) =>
           eval_vec2.x = x
@@ -409,7 +410,11 @@ trait Interpreter {
         case ObjectLiteral(o: Array2D) =>
           val col = eval(e2).as[Int]
           val row = eval(e3).as[Int]
-          ObjectLiteral(o.cells(col)(row))
+          if (col >= 0 && col < o.numColumns.get && row >= 0 && row < o.numRows.get) {
+            o.cells(col)(row).expr
+          } else {
+            ObjectLiteral.empty
+          }
         case _ => error(expr)
       }
 
