@@ -121,11 +121,6 @@ trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
   /** Get the initial expression of this property. */
   def init: Expr
   
-  /**
-   * Modify the history of this property at a given time if it exists
-   */
-  def copycurrentToTime(time: Int): self.type
-  
   /** Set the next value to `v`.
    *  Call `validate()` to push this value to the current state.
    */
@@ -214,11 +209,6 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, private var 
     this
   }
   
-  def copycurrentToTime(t: Int) = {
-    _history.replace(_._1 == t, _ => (t, _crt))
-    this
-  }
-
   def set(v: T) = {
     _crt = v
     _next = v
