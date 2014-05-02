@@ -1,12 +1,13 @@
 package ch.epfl.lara.synthesis.kingpong.rules
 
+import org.jbox2d.collision.WorldManifold
+
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.Options
-import org.jbox2d.collision.WorldManifold
 
 object Events {
 
@@ -37,12 +38,6 @@ object Events {
       case _ => None
     }
   }
-  
-  /*sealed trait PhysicalContactEvent extends SelectableEvent {
-    def contact: Contact
-    // Very important to compute the point at creation time.
-    val p: Vec2 = contact.point 
-  }*/
   
   object FingerRelated {
     def unapply(e: Event): Option[(Vec2, Set[GameObject])] = e match {

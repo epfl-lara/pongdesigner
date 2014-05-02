@@ -1,69 +1,24 @@
 package ch.epfl.lara.synthesis.kingpong
 
-import scala.Dynamic
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.{HashMap => MMap}
-import scala.collection.mutable.{Set => MSet, Seq => MSeq}
-import scala.language.dynamics
+
+import org.jbox2d.collision.WorldManifold
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.dynamics.BodyType
-import android.util.Log
-import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
-import ch.epfl.lara.synthesis.kingpong.common.History
+
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.expression._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
-import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import ch.epfl.lara.synthesis.kingpong.rules.Events.FingerDown
-import org.jbox2d.collision.WorldManifold
 
-trait RuleManager {
-  // Use an ArrayBuffer for performance reasons when using `foreach`.
-  // An ArrayBuffer will use a simple while loop.
-  private val _rules = ArrayBuffer.empty[Expr]
-  private val _rulesByObject = MMap.empty[GameObject, MSet[Expr]]
-  
-  /** All the rules in this game. */
-  def rules: Traversable[Expr] = _rules
-  def setRuleByIndex(newRule: Expr, index: Int): Unit = {
-    val oldRule = _rules(index)
-    _rules(index) = newRule
-    for((obj, rules) <- _rulesByObject) {
-      if(rules contains oldRule) {
-        rules -= oldRule
-        rules += newRule
-      }
-    }
-  }
-  def getRuleByIndex(index: Int): Expr = _rules(index)
-  def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
-  
-  def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
-  def addRule(r: Expr): Unit = {
-    def addToCategory(category: Category) {
-      for(o<-category.objects) _rulesByObject.getOrElseUpdate(o, MSet()) += r
-    }
-    TreeOps.preTraversal(_ match {
-      case ObjectLiteral(o) => _rulesByObject.getOrElseUpdate(o, MSet()) += r
-      case Foreach(category, id, body) => addToCategory(category)
-      case Forall(category, id, body) => addToCategory(category)
-      case Find(category, id, body) => addToCategory(category)
-      case c =>
-    })(r)
-    _rules += r
-  }
-  def getRulesbyObject(o: Iterable[GameObject]): Iterable[Expr] = (o flatMap getRulesbyObject)
-}
-
-trait Game extends RuleManager { self => 
+trait Game extends RulesManager with Context { self => 
   implicit val seflImplicit = self
   val world: PhysicalWorld
   
@@ -72,6 +27,8 @@ trait Game extends RuleManager { self =>
   
   var pixelsByUnit = 0f
 
+  private val eventsHistory = new EventsHistory(this)
+  
   private val _objects = ArrayBuffer.empty[GameObject]
   
   /** All objects in this game. */
@@ -83,26 +40,24 @@ trait Game extends RuleManager { self =>
     res //TODO: convert this to a val with view when it will work on mikael's machine.
   }
   
-  //TODO what should be the right way to get back events, 
-  // particularly for a time interval
   /** Events from the current last full step. */
-  def events = EventHistory.events
+  def events = eventsHistory.events
 
   /** Time of the current step. It corresponds to the last fully 
    *  completed step.
    */
-  def time = EventHistory.time
+  def time = eventsHistory.time
   
   /*** Maximum time achieved in this game. */
-  def maxTime = EventHistory.maxTime
+  def maxTime = eventsHistory.maxTime
   
   /*** Minimum time stored in the history for this game. */
-  def minTime = EventHistory.minTime
+  def minTime = eventsHistory.minTime
 
   private[kingpong] def restore(t: Int): Unit = {
     if (t >= 0 && t <= maxTime) {
       objects.foreach(_.restore(t))
-      EventHistory.restore(t)
+      eventsHistory.restore(t)
       world.clear()
     }
   }
@@ -123,7 +78,7 @@ trait Game extends RuleManager { self =>
     }
     objects.foreach(_.clear(from))
     world.clear()
-    EventHistory.clear(from)
+    eventsHistory.clear(from)
   }
 
   private implicit val tmp = new WorldManifold()
@@ -139,21 +94,21 @@ trait Game extends RuleManager { self =>
     }
     // save contacts
     world.beginContacts foreach { contact => 
-      EventHistory addEvent (BeginContact(contact.point, contact.objectA, contact.objectB))
+      eventsHistory addEvent (BeginContact(contact.point, contact.objectA, contact.objectB))
     }
     world.currentContacts foreach { contact => 
-      EventHistory addEvent (CurrentContact(contact.point, contact.objectA, contact.objectB))
+      eventsHistory addEvent (CurrentContact(contact.point, contact.objectA, contact.objectB))
     }
     world.endContacts foreach { contact => 
-      EventHistory addEvent (EndContact(contact.point, contact.objectA, contact.objectB))
+      eventsHistory addEvent (EndContact(contact.point, contact.objectA, contact.objectB))
     }
     
-    EventHistory.step()                                /// Opens saving for new coordinates
+    eventsHistory.step()                                /// Opens saving for new coordinates
     
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
-    aliveObjects foreach {_.preStep(EventHistory)}
+    aliveObjects foreach {_.preStep(this)}
     world.step()                                       /// One step forward in the world
-    aliveObjects foreach {_.postStep(EventHistory)}
+    aliveObjects foreach {_.postStep(this)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
@@ -400,190 +355,53 @@ trait Game extends RuleManager { self =>
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {
-    EventHistory.addEvent(AccelerometerChanged(vector))
+    eventsHistory.addEvent(AccelerometerChanged(vector))
   }
 
   private[kingpong] def onFingerDown(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerDown(pos, null))
+    eventsHistory.addEvent(FingerDown(pos, null))
   }
 
   private[kingpong] def onFingerUp(pos: Vec2): Unit = {
-    EventHistory.addEvent(FingerUp(pos, null))
+    eventsHistory.addEvent(FingerUp(pos, null))
   }
 
   private[kingpong] def onOneFingerMove(from: Vec2, to: Vec2): Unit = {
-    EventHistory.addEvent(FingerMove(from, to, null))
+    eventsHistory.addEvent(FingerMove(from, to, null))
   }
   
   private val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
-    def initGC() = EventHistory
+    def initGC() = Game.this
     
     /** Initialize the recursive context used during evaluation. */
     //def initRC() = ImmutableRecContext.empty
     def initRC() = MutableRecContext.empty
   }
   
-  /** Handle the history for events like fingers input and
-   *  contacts between physical objects.
-   *  This object also act as a context for the Interpreter. Indeed, 
-   *  the evaluation of rules needs to be aware of events from the 
-   *  last fully completed time step.
-   */
-  protected object EventHistory extends Context {
-
-    private var recording_time: Int = 0
-    private var min_time: Int = time
-    private var max_time: Int = time
-
-    // Oldest first (head), more recent at the end (last). Both in O(1).
-    private val history: RingBuffer[(Int, Seq[Event])] = new RingBuffer(History.MAX_HISTORY_SIZE)
-    private val crtEvents = ArrayBuffer.empty[Event]
-
-    /** Time for the last fully completed step. */
-    def time = recording_time - 1
-    
-    /** Minimum time stored in the history. */
-    def minTime = min_time
-    
-    /** Maxixum time stored in the history. */
-    def maxTime = max_time
-
-    def restore(t: Int): Unit = {
-      if (time >= 0 && time <= max_time) {
-        recording_time = t + 1
-        crtEvents.clear()
-        
-        // TODO : Add or remove objects
-      }
-    }
-    
-    def getEvents(i: Int): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
-    
-    def foreachEvent(f: (Event, Int) => Unit) = {
-      val i = history.iterator
-      while(i.hasNext) {
-        val ks = i.next
-        var s = ks._2
-        val k = ks._1
-        while(s.nonEmpty) {
-          val e = s.head
-          f(e, k)
-          s = s.tail
-        }
-      }
-      /*for((k, s) <- history.iterator; e <- s) {
-        f(e, k)
-      }*/
-    }
-
-    /* Advance the time and store the current events in the history. */
-    def step(): Unit = {
-      //Log.d("kingpong", s"Before context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
-      val evts = crtEvents.synchronized {
-        val res = crtEvents.toList
-        crtEvents.clear()
-        res
-      }
-      
-      recording_time += 1
-      if (max_time < time) {
-         max_time = time
-      }
-      min_time = Math.max(0, Math.max(min_time, max_time - History.MAX_HISTORY_SIZE + 1))
-
-      if (evts.nonEmpty) {
-        // Here we find the objects under the finger events.
-        val processedEvents = evts.map {
-          case FingerMove(from, to, null) =>
-            FingerMove(from, to, physicalObjectFingerAt(from))
-          case FingerDown(pos, null) =>
-            FingerDown(pos, physicalObjectFingerAt(pos))
-          case FingerUp(pos, null) =>
-            FingerUp(pos, physicalObjectFingerAt(pos))
-          case e => e
-        }
-        
-        history += (time, processedEvents)
-      }
-      //Log.d("kingpong", s"After context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
-    }
-    
-    /** Return the events from the last fully completed time step. 
-     *  Should not be called by another thread than the one who 
-     *  calls `step()`.
-     */
-    def events: Seq[Event] = {
-      if(history.isEmpty || history.last._1 != time ) {
-        Seq.empty
-      } else {
-        history.last._2
-      }
-    }
-
-    /** Add an event in the ongoing time step. 
-     *  Can be called by another thread, from user inputs.
-     */
-    def addEvent(e: Event): Unit = crtEvents.synchronized {
-      e match {
-        case AccelerometerChanged(_) =>
-          // Remove the old AccelerometerChanged, if any
-          val i = crtEvents.indexWhere(_.isInstanceOf[AccelerometerChanged])
-          if (i >= 0) 
-            crtEvents(i) = e
-          else
-            crtEvents += e
-        case _ => 
-          crtEvents += e
-      }      
-    }
-    
-    /** Clear the history and the ongoing time step from the given time (inclusive). */
-    def clear(from: Int): Unit = crtEvents.synchronized {
-      //Log.d("kingpong", s"Before context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
-      if (from <= 0) {
-        recording_time = 0
-        history.clear()
-      } else  {
-        recording_time = from
-        val idx = history.lastIndexWhere(_._1 < from)
-        history.removeFrom(idx + 1)
-      }
-      
-      crtEvents.clear()
-      max_time = time
-      min_time = Math.min(min_time, time)
-      //Log.d("kingpong", s"After context clearing, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
-    }
-    
-    final val DEFAULT_NAME: String = "SHAPE"
-    
-    /**
-     * Computes a new name based on the context and the given baseName
-     */
-    def getNewName(baseName: String): String = {
-      var prefix = DEFAULT_NAME
-      if(baseName != null && baseName != "") { 
-        prefix = baseName.reverse.dropWhile(_.isDigit).reverse
-      }
-      if(prefix == "") {
-        prefix = DEFAULT_NAME
-      }
-      var postFix = 1
-      
-      //TODO find postfix
-      prefix //+ 42
-      //Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
-    }
-    
-    def add(c: GameObject) = self add c
-  }
-  
   def foreachEvent(f: (Event, Int) => Unit) = {
-    EventHistory.foreachEvent(f)
+    eventsHistory.foreachEvent(f)
   }
   
-  def getNewName(baseName: String): String = EventHistory.getNewName(baseName)
+  final val DEFAULT_NAME: String = "SHAPE"
+  
+  /**
+   * Computes a new name based on the context and the given baseName
+   */
+  def getNewName(baseName: String): String = {
+    var prefix = DEFAULT_NAME
+    if(baseName != null && baseName != "") { 
+      prefix = baseName.reverse.dropWhile(_.isDigit).reverse
+    }
+    if(prefix == "") {
+      prefix = DEFAULT_NAME
+    }
+    var postFix = 1
+    
+    //TODO find postfix
+    prefix //+ 42
+    //Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
+  }
   
   object ::> {def unapply[A] (l: Seq[A]): Option[(Seq[A],A)] = if(l.nonEmpty) Some( (l.init, l.last) ) else None }
   object <:: {def unapply[A] (l: Seq[A]): Option[(A, Seq[A])] = if(l.nonEmpty) Some( (l.head, l.tail) ) else None }
@@ -592,7 +410,7 @@ trait Game extends RuleManager { self =>
    * Retrieves a corresponding finger down event from a given finger event.
    * Events are "linked"
    */
-  @tailrec final def getFingerDownEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time).reverse): Option[FingerDown] = e match {
+  @tailrec final def getFingerDownEvent(e: Event, time: Int)(events: Seq[Event] = eventsHistory.getEvents(time).reverse): Option[FingerDown] = e match {
     case e@FingerDown(_,_) => Some(e)
     case e@FingerUp(v,_) =>
       events match {
@@ -617,7 +435,7 @@ trait Game extends RuleManager { self =>
    * Retrieves a corresponding finger Up event from a given finger event.
    * Events are "linked"
    */
-  @tailrec final def getFingerUpEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time)): Option[FingerUp] = e match {
+  @tailrec final def getFingerUpEvent(e: Event, time: Int)(events: Seq[Event] = eventsHistory.getEvents(time)): Option[FingerUp] = e match {
     case e@FingerUp(_,_) => Some(e)
     case e@FingerDown(v,_) =>
       events match {
@@ -638,14 +456,12 @@ trait Game extends RuleManager { self =>
     case _ => None
   }
   
-  
-  
   /**
    * Retrieves a corresponding finger Move event from a given finger event.
    * Collect all objects below the line.
    * Events are "linked"
    */
-  @tailrec final def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = EventHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: Set[GameObject]=Set()): Option[FingerMove] = e match {
+  @tailrec final def getFingerMoveEvent(e: Event, time: Int)(events: Seq[Event] = eventsHistory.getEvents(time), start: Option[Vec2]=None, end: Option[Vec2]=None, objects: Set[GameObject]=Set()): Option[FingerMove] = e match {
     case e@FingerUp(v,o) =>
       start match {
         case Some(a) => Some(FingerMove(a, v, objects++o))
