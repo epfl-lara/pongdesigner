@@ -65,7 +65,9 @@ abstract class PhysicalObject(
   protected def addToWorld() = {
     val body = game.world.world.createBody(bodyDef)
     fixtureDef foreach { fixture_definition =>
-      last_fixture = this //body.createFixture(fixture_definition) 
+      body.createFixture(fixture_definition) 
+      //TODO rename `last_fixture`, or change the code, there no logic here 
+      last_fixture = this
     }
     body.setUserData(this)
     _body = body
