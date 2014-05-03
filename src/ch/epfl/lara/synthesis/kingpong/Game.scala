@@ -5,7 +5,6 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.jbox2d.collision.WorldManifold
 import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.dynamics.BodyType
 
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -19,7 +18,9 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 trait Game extends RulesManager with Context { self => 
-  implicit val seflImplicit = self
+  protected implicit val seflImplicit = self
+  private implicit val worldManifold = new WorldManifold()
+  
   val world: PhysicalWorld
   
   // If the time is to be restored at the next step
@@ -81,8 +82,6 @@ trait Game extends RulesManager with Context { self =>
     eventsHistory.clear(from)
   }
 
-  private implicit val tmp = new WorldManifold()
-  
   /** Perform a step. */
   private[kingpong] def update(): Unit = {
     scheduledRestoreTime match {
@@ -146,166 +145,6 @@ trait Game extends RulesManager with Context { self =>
 
   def evaluate[T : PongType](e: Expr): T = {
     interpreter.evaluate(e).as[T]
-  }
-
-  def circle(category: CategoryObject)(name: Expr,
-             x: Expr,
-             y: Expr,
-             radius: Expr = category.radius,
-             visible: Expr = category.visible,
-             velocity: Expr = category.velocity,
-             angularVelocity: Expr = category.angularVelocity,
-             density: Expr = category.density,
-             friction: Expr = category.friction,
-             restitution: Expr = category.restitution,
-             fixedRotation: Expr = category.fixedRotation,
-             color: Expr = category.color,
-             sensor: Expr = category.sensor,
-             tpe: BodyType = category.tpe): Circle = {
-    val c = new Circle(this, name, x, y, radius, visible, velocity, angularVelocity, 
-                       density, friction, restitution, fixedRotation, color, sensor, tpe)
-    c.setCategory(category)
-    this add c
-    c
-  }
-
-  def rectangle(category: CategoryObject)(name: Expr,
-                x: Expr,
-                y: Expr,
-                angle: Expr = category.angle,
-                width: Expr = category.width,
-                height: Expr = category.height,
-                visible: Expr = category.visible,
-                velocity: Expr = category.velocity,
-                angularVelocity: Expr = category.angularVelocity,
-                density: Expr = category.density,
-                friction: Expr = category.friction,
-                restitution: Expr = category.restitution,
-                fixedRotation: Expr = category.fixedRotation,
-                color: Expr = category.color,
-                sensor: Expr = category.sensor,
-                tpe: BodyType = category.tpe): Rectangle = {
-    val r = new Rectangle(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                         density, friction, restitution, fixedRotation, color, sensor, tpe)
-    r.setCategory(category)
-    this add r
-    r
-  }
-  
-  def randomGenerator(category: CategoryObject)(name: Expr,
-                      x: Expr,
-                      y: Expr,
-                      angle: Expr = category.angle,
-                      width: Expr = category.width,
-                      height: Expr = category.height,
-                      minValue: Expr = category.randomMinValue,
-                      maxValue: Expr = category.randomMaxValue,
-                      visible: Expr = category.visible,
-                      color: Expr = category.color): RandomGenerator = {
-    val r = new RandomGenerator(this, name, x, y, angle, width, height, minValue, maxValue, visible, color)
-    r.setCategory(category)
-    this add r
-    r
-  }
-  
-  def drawingObject(category: CategoryObject)(name: Expr,
-                x: Expr,
-                y: Expr,
-                angle: Expr = category.angle,
-                width: Expr = category.width,
-                height: Expr = category.height,
-                visible: Expr = category.visible,
-                color: Expr = category.color,
-                stroke_width: Expr = category.stroke_width,
-                color_drawing: Expr = category.color_drawing): DrawingObject = {
-    val r = new DrawingObject(this, name, x, y, angle, width, height, visible, color, stroke_width, color_drawing)
-    r.setCategory(category)
-    addRule(r.defaultRule(this))
-    this add r
-    r
-  }
-  
-  def array(category: CategoryObject)(
-             name: Expr,
-             x: Expr,
-             y: Expr,
-             columns: Expr,
-             rows: Expr,
-             angle: Expr = category.angle,
-             visible: Expr = category.visible,
-             color: Expr = category.color): Array2D = {
-    val array = new Array2D(this, name, x, y, visible, color, columns, rows)
-    array.setCategory(category)
-    this add array
-    array.cells.foreach(_ foreach { cell =>
-      this add cell
-    })
-    array
-  }
-
-  def intbox(category: CategoryObject)(name: Expr,
-             x: Expr,
-             y: Expr,
-             value: Expr = category.value,
-             angle: Expr = category.angle,
-             width: Expr = category.width,
-             height: Expr = category.height,
-             visible: Expr = category.visible,
-             color: Expr = category.color): Box[Int] = {
-    val box = new IntBox(this, name, x, y, angle, width, height, value, visible, color)
-    box.setCategory(category)
-    this add box
-    box
-  }
-  
-  def booleanbox(category: CategoryObject)(name: Expr,
-             x: Expr,
-             y: Expr,
-             value: Expr = category.value,
-             angle: Expr = category.angle,
-             width: Expr = category.width,
-             height: Expr = category.height,
-             visible: Expr = category.visible,
-             color: Expr = category.color): Box[Boolean] = {
-    val box = new BooleanBox(this, name, x, y, angle, width, height, value, visible, color)
-    box.setCategory(category)
-    this add box
-    box
-  }
-  
-  def joystick(category: CategoryObject)(name: Expr,
-             x: Expr,
-             y: Expr,
-             angle: Expr = category.angle,
-             radius: Expr = category.radius,
-             visible: Expr = category.visible,
-             color: Expr = category.color): Joystick = {
-    val joystick = new Joystick(this, name, x, y, angle, radius, visible, color)
-    joystick.setCategory(category)
-    this add joystick
-    joystick
-  }
-  
-  def character(category: CategoryObject)(name: Expr,
-                x: Expr,
-                y: Expr,
-                angle: Expr = category.angle,
-                width: Expr = category.width,
-                height: Expr = category.height,
-                visible: Expr = category.visible,
-                velocity: Expr = category.velocity,
-                angularVelocity: Expr = category.angularVelocity,
-                density: Expr = category.density,
-                friction: Expr = category.friction,
-                restitution: Expr = category.restitution,
-                fixedRotation: Expr = category.fixedRotation,
-                color: Expr = category.color,
-                tpe: BodyType = category.tpe): Character = {
-    val r = new Character(this, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                          density, friction, restitution, fixedRotation, color, tpe)
-    r.setCategory(category)
-    this add r
-    r
   }
 
   private def gc() = {

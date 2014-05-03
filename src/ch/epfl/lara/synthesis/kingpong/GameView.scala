@@ -145,13 +145,13 @@ class GameView(val context: Context, attrs: AttributeSet)
     var shape: GameObject = null
     val res = s match {
       case Str(R.string.add_rectangle_hint) =>
-        shape = game.rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)
+        shape = rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)(game)
         true
       case Str(R.string.add_circle_hint) =>
-        shape = game.circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)
+        shape = circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)(game)
         true
       case Str(R.string.add_drawing_object_hint) =>
-        val d = game.drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)
+        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
         shape = d
         true
       

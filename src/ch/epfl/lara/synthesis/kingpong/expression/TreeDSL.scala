@@ -3,10 +3,14 @@ package ch.epfl.lara.synthesis.kingpong.expression
 // Remove implicit warnings
 import language.implicitConversions
 
+import org.jbox2d.dynamics.BodyType
+
+import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+
 
 object TreeDSL {
   
@@ -333,4 +337,177 @@ object TreeDSL {
     case ""   => FreshIdentifier("id", true)
     case name => FreshIdentifier(name.toLowerCase.substring(0, 1), true)
   }
+  
+  /* Object builders */
+  
+  def circle(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      radius: Expr = category.radius,
+      visible: Expr = category.visible,
+      velocity: Expr = category.velocity,
+      angularVelocity: Expr = category.angularVelocity,
+      density: Expr = category.density,
+      friction: Expr = category.friction,
+      restitution: Expr = category.restitution,
+      fixedRotation: Expr = category.fixedRotation,
+      color: Expr = category.color,
+      sensor: Expr = category.sensor,
+      tpe: BodyType = category.tpe)(implicit game: Game): Circle = {
+    val obj = new Circle(game, name, x, y, radius, visible, velocity, angularVelocity, 
+                         density, friction, restitution, fixedRotation, color, sensor, tpe)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+
+  def rectangle(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      velocity: Expr = category.velocity,
+      angularVelocity: Expr = category.angularVelocity,
+      density: Expr = category.density,
+      friction: Expr = category.friction,
+      restitution: Expr = category.restitution,
+      fixedRotation: Expr = category.fixedRotation,
+      color: Expr = category.color,
+      sensor: Expr = category.sensor,
+      tpe: BodyType = category.tpe)(implicit game: Game): Rectangle = {
+    val obj = new Rectangle(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
+                            density, friction, restitution, fixedRotation, color, sensor, tpe)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def randomGenerator(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      minValue: Expr = category.randomMinValue,
+      maxValue: Expr = category.randomMaxValue,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): RandomGenerator = {
+    val obj = new RandomGenerator(game, name, x, y, angle, width, height, minValue, maxValue, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def drawingObject(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color,
+      stroke_width: Expr = category.stroke_width,
+      color_drawing: Expr = category.color_drawing)(implicit game: Game): DrawingObject = {
+    val obj = new DrawingObject(game, name, x, y, angle, width, height, visible, color, stroke_width, color_drawing)
+    obj.setCategory(category)
+    game.addRule(obj.defaultRule(game))
+    game.add(obj)
+    obj
+  }
+  
+  def array(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      columns: Expr,
+      rows: Expr,
+      angle: Expr = category.angle,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Array2D = {
+    val obj = new Array2D(game, name, x, y, visible, color, columns, rows)
+    obj.setCategory(category)
+    game.add(obj)
+    obj.cells.foreach(_ foreach { cell =>
+      game.add(cell)
+    })
+    obj
+  }
+
+  def intbox(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      value: Expr = category.value,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Box[Int] = {
+    val obj = new IntBox(game, name, x, y, angle, width, height, value, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def booleanbox(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      value: Expr = category.value,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Box[Boolean] = {
+    val obj = new BooleanBox(game, name, x, y, angle, width, height, value, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def joystick(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      radius: Expr = category.radius,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Joystick = {
+    val obj = new Joystick(game, name, x, y, angle, radius, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def character(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      velocity: Expr = category.velocity,
+      angularVelocity: Expr = category.angularVelocity,
+      density: Expr = category.density,
+      friction: Expr = category.friction,
+      restitution: Expr = category.restitution,
+      fixedRotation: Expr = category.fixedRotation,
+      color: Expr = category.color,
+      tpe: BodyType = category.tpe)(implicit game: Game): Character = {
+    val obj = new Character(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
+                            density, friction, restitution, fixedRotation, color, tpe)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  
+  
 }
