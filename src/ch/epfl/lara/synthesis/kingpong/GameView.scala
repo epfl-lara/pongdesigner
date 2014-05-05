@@ -906,32 +906,35 @@ class GameView(val context: Context, attrs: AttributeSet)
   def selectFix(p: Vec2, eventList: List[(AssignmentEvent, Int)]) = {
     val mQuickAction = new QuickAction(activity, false)
     val actionItems = ListBuffer[(String, Drawable, ParExpr, Expr, Int)]()
+    var alreadyDone = Set[Expr]()
     for (e @ (AssignmentEvent(pos, a, assignStatement), time) <- eventList) {
-      val indexRule = game.findRuleIndex { rule =>
-        var found = false
-        TreeOps.preTraversal { e => found ||= (e eq assignStatement) }(rule)
-        if(found) {
-          println(rule)
-        }
-        found
-      }
-      if (indexRule >= 0) {
-        val rule = game.getRuleByIndex(indexRule)
-        val trace = TreeOps.getAncestors(rule, assignStatement)
-        if (trace.size >= 2) {
-          trace.init.last match {
-            case parExpr: ParExpr =>
-              for (alternative <- parExpr.exprs) {
-                if (alternative eq assignStatement) {
-                  actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), parExpr, alternative, indexRule))
-                } else {
-                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), parExpr, alternative, indexRule))
-                }
-              }
-            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
-          }
-        }
-
+      if(!alreadyDone(assignStatement)) {
+	      alreadyDone += assignStatement
+	      val indexRule = game.findRuleIndex { rule =>
+	        var found = false
+	        TreeOps.preTraversal { e => found ||= (e eq assignStatement) }(rule)
+	        if(found) {
+	          println(rule)
+	        }
+	        found
+	      }
+	      if (indexRule >= 0) {
+	        val rule = game.getRuleByIndex(indexRule)
+	        val trace = TreeOps.getAncestors(rule, assignStatement)
+	        if (trace.size >= 2) {
+	          trace.init.last match {
+	            case parExpr: ParExpr =>
+	              for (alternative <- parExpr.exprs) {
+	                if (alternative eq assignStatement) {
+	                  actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), parExpr, alternative, indexRule))
+	                } else {
+	                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), parExpr, alternative, indexRule))
+	                }
+	              }
+	            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
+	          }
+	        }
+	      }
       }
     }
     val actionItemsSorted = actionItems.sortBy {
