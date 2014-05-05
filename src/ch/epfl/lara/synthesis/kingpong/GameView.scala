@@ -910,6 +910,9 @@ class GameView(val context: Context, attrs: AttributeSet)
       val indexRule = game.findRuleIndex { rule =>
         var found = false
         TreeOps.preTraversal { e => found ||= (e eq assignStatement) }(rule)
+        if(found) {
+          println(rule)
+        }
         found
       }
       if (indexRule >= 0) {
@@ -921,8 +924,11 @@ class GameView(val context: Context, attrs: AttributeSet)
               for (alternative <- parExpr.exprs) {
                 if (alternative eq assignStatement) {
                   actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), parExpr, alternative, indexRule))
+                } else {
+                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), parExpr, alternative, indexRule))
                 }
               }
+            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
           }
         }
 

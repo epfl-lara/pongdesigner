@@ -208,14 +208,18 @@ object TreeOps {
    *
    *   Add(a, Minus(Inverse(b), c)) :: Minus(Inverse(b), c) :: Inverse(b) :: b
    */
-  def collectFirst[T](f: Expr with Terminal => Option[T])(g: (Expr, T) => T)(e: Expr): Option[T] = {
+  def collectFirst[T](f: Expr => Option[T])(g: (Expr, T) => T)(e: Expr): Option[T] = {
+	  f(e) match {
+	  case s@Some(l) => s
+	  case None =>
 	    val rec = collectFirst(f)(g) _
 	    e match {
 	      case t: Terminal =>
-	        f(t)
+	        None //f(t)
 	      case u @ UnaryOperator(e, builder) =>
 	        List(e).view.map(rec).find{
 	          case Some(l) => true
+	          case _ => false
 	        } match {
 	          case Some(Some(l)) => Some(g(u, l))
 	          case _ => None
@@ -223,6 +227,7 @@ object TreeOps {
 	      case b @ BinaryOperator(e1, e2, builder) =>
 	        List(e1, e2).view.map(rec).find{
 	          case Some(l) => true
+	          case _ => false
 	        } match {
 	          case Some(Some(l)) => Some(g(b, l))
 	          case _ => None
@@ -230,11 +235,13 @@ object TreeOps {
 	      case n @ NAryOperator(es, builder) =>
 	        es.view.map(rec).find{
 	          case Some(l) => true
+	          case _ => false
 	        } match {
 	          case Some(Some(l)) => Some(g(n, l))
 	          case _ => None
 	        }
 	    }
+	  }
 	}
   
   /**
@@ -242,7 +249,7 @@ object TreeOps {
    * Requires that to is a subtree of from
    */
   def getAncestors(from: Expr, to: Expr): List[Expr] = {
-    (collectFirst[List[Expr]]((t: Expr with Terminal) =>
+    (collectFirst[List[Expr]]((t: Expr) =>
       if(t eq to) Some(List(t)) else None
     )((e, l) =>
       e::l

@@ -145,11 +145,18 @@ trait Interpreter {
           case assignable: AssignableProperty[_] => assignable.assign(v)
           obj match {
             case pos: Positionable =>
-              gctx.addAssignmentHistory(Vec2(pos.x.get, pos.y.get), assignable, assignStatement)
+              gctx.addAssignmentHistory(pos, assignable, assignStatement)
             case _ =>
           }
           case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
         }
+      }
+      eval(rhs) match {
+        case Tuple(values) if values.size == props.size => 
+          (props zip values) foreach { case ((objExpr, propertyName), value) => setValue(objExpr, propertyName, value) }
+        case rhsValue if props.size == 1 => 
+          setValue(props.head._1, props.head._2, rhsValue)
+        case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
       }
       UnitLiteral
 

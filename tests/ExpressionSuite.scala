@@ -234,5 +234,28 @@ class ExpressionSuite extends FlatSpec with Matchers {
     isSubtypeOf(TFloat, TAny) should be (true)
   }
   
-  
+  "collectFirst in TreeOps" should "compute correct ancestors" in {
+    import ch.epfl.lara.synthesis.kingpong.objects._
+	import scala.collection.mutable.ListBuffer
+	import ch.epfl.lara.synthesis.kingpong.expression._
+	import Trees._
+	import Types._
+	import Extractors._
+	val c = IntegerLiteral(1)
+	val d = IntegerLiteral(2)
+	var tree = Plus(Minus(Times(d, c), d), Times(d, d))
+	TreeOps.getAncestors(tree, c) should equal(
+	List(Plus(Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)),Times(IntegerLiteral(2),IntegerLiteral(2))), Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)), Times(IntegerLiteral(2),IntegerLiteral(1)), IntegerLiteral(1)))
+	
+	tree = Block(List(c))
+	
+	TreeOps.getAncestors(tree, c) should equal(
+	List(Block(List(IntegerLiteral(1))), IntegerLiteral(1)))
+	
+	tree = If(d, Block(List(c)), NOP)
+	
+	TreeOps.getAncestors(tree, c) should equal(
+	List(If(IntegerLiteral(2),Block(List(IntegerLiteral(1))),NOP), Block(List(IntegerLiteral(1))), IntegerLiteral(1))
+	)
+  }
 }

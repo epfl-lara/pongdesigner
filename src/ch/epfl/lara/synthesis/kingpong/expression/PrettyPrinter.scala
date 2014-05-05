@@ -98,7 +98,10 @@ trait PrettyPrinterTypical {
         case _ => "["+b.getClass().getName()+"]"
       }
       print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
-    case Assign((e, prop), rhs) => indent + print(NO_INDENT, e) + "." + prop + "' = " + print(NO_INDENT, rhs)
+    case Assign(List((e, prop)), rhs) =>
+      indent + print(NO_INDENT, e) + "." + prop + "' = " + print(NO_INDENT, rhs)
+    case Assign(eprops, rhs) =>
+      ((indent + "(") /: eprops) { case (c, (e, prop)) => print(NO_INDENT, e) + "." + prop + "'"} + ") = " + print(NO_INDENT, rhs)
     case Block(exprs) =>
       exprs.toList match {
         case Nil => indent + "{}"

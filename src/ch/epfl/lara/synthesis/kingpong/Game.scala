@@ -70,8 +70,16 @@ trait Game extends RulesManager with Context { self =>
   }
   
   /** Add event over property modifications*/
-  def addAssignmentHistory(p: Vec2, a: AssignableProperty[_], path: Expr): Unit = {
-    eventsHistory.addEvent(AssignmentEvent(p, a, path))
+  private val crtAssignmentEvents = ArrayBuffer.empty[(Positionable, AssignableProperty[_], Expr)]
+  def addAssignmentHistory(p: Positionable, a: AssignableProperty[_], path: Expr): Unit = {
+    crtAssignmentEvents += ((p, a, path))
+  }
+  
+  /** Add event over property modifications */
+  def addAssignmentEvents(): Unit = {
+    crtAssignmentEvents foreach { case (pos, ap, e) =>
+      eventsHistory.addEvent(AssignmentEvent(Vec2(pos.x.next, pos.y.next), ap, e))
+    }
   }
 
   /** Clear the history from the given time (inclusive). 
@@ -113,6 +121,7 @@ trait Game extends RulesManager with Context { self =>
     eventsHistory.step()                                /// Opens saving for new coordinates
     
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
+    addAssignmentEvents()
     aliveObjects foreach {_.preStep(this)}
     world.step()                                       /// One step forward in the world
     aliveObjects foreach {_.postStep(this)}

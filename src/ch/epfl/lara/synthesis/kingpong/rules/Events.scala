@@ -59,17 +59,17 @@ object Events {
     def p = from
   }
 
-  case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
+  case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
     override def isContact = true
   }
-  case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
+  case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
     override def isContact = true
   }
-  case class EndContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event {
+  case class EndContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
     override def isContact = true
   }
 
   case class AccelerometerChanged(vector: Vec2) extends Event
   
-  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event
+  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event with SelectableEvent
 }
