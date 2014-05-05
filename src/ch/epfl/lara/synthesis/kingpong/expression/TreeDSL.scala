@@ -166,6 +166,12 @@ object TreeDSL {
       case (a, b) => Block(List(a, b))
     }
     def in(e: Expr): Expr = Contains(e, expr)
+    def orElse(e: Expr): ParExpr = e match {
+      case ParExpr(l) =>
+        ParExpr(expr::l.filterNot(_ eq expr))
+      case e =>
+        ParExpr(expr::e::Nil)
+    }
   }
   
   trait Proxy extends Any {

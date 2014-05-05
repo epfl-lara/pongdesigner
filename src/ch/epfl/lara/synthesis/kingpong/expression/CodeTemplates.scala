@@ -69,7 +69,7 @@ object CodeTemplates extends CodeHandler {
     
     /** 
      * The statement this template can return.
-     * Return `None` if this template doesn't appy to the given object. 
+     * Return `None` if this template doesn't apply to the given object. 
      * Also set the priority on the expression, if any.
      */
     def result(obj: T)(implicit ctx: TemplateContext): Option[Expr]
@@ -300,7 +300,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.x := obj.x - ctx.dy
-        Some(expr.setPriority(0))
+        Some(expr.setPriority(0).setComment(comment(obj)))
       } else {
         None
       }
@@ -314,7 +314,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.x := obj.x + ctx.dy
-        Some(expr.setPriority(0))
+        Some(expr.setPriority(0).setComment(comment(obj)))
       } else {
         None
       }
@@ -327,7 +327,7 @@ object CodeTemplates extends CodeHandler {
   object TX_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       val expr = obj.x := obj.x + coord(obj.x.next.toInt - obj.x.get.toInt)
-      Some(expr.setPriority(5))
+      Some(expr.setPriority(5).setComment(comment(obj)))
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
@@ -337,7 +337,7 @@ object CodeTemplates extends CodeHandler {
   object TX_absolute extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       val expr = obj.x := coord(obj.x.next.toInt)
-      Some(expr.setPriority(6))
+      Some(expr.setPriority(6).setComment(comment(obj)))
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
@@ -348,7 +348,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.x := obj.x + (-ctx.dx)
-        Some(expr.setPriority(3))
+        Some(expr.setPriority(3).setComment(comment(obj)))
       } else {
         None
       }
@@ -362,7 +362,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.x := obj.x + ctx.dx
-        Some(expr.setPriority(15))
+        Some(expr.setPriority(15).setComment(comment(obj)))
       } else {
         None
       }
@@ -376,7 +376,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
       if (almostTheSame(obj.x.next, other.x.get, 20)) {
         val expr = obj.x := other.x
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
         None
       }
@@ -463,7 +463,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.y := obj.y + (-ctx.dx)
-        Some(expr.setPriority(0))
+        Some(expr.setPriority(0).setComment(comment(obj)))
       } else {
         None
       }
@@ -477,7 +477,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.y := obj.y + ctx.dx
-        Some(expr.setPriority(0))
+        Some(expr.setPriority(0).setComment(comment(obj)))
       } else {
         None
       }
@@ -490,7 +490,7 @@ object CodeTemplates extends CodeHandler {
   object TY_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       val expr = obj.y += coord(obj.y.next.toInt - obj.y.get.toInt)
-      Some(expr.setPriority(5))
+      Some(expr.setPriority(5).setComment(comment(obj)))
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
@@ -500,7 +500,7 @@ object CodeTemplates extends CodeHandler {
   object TY_absolute extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       val expr = obj.y := coord(obj.y.next.toInt)
-      Some(expr.setPriority(6))
+      Some(expr.setPriority(6).setComment(comment(obj)))
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
@@ -511,7 +511,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.y += -ctx.dy
-        Some(expr.setPriority(3))
+        Some(expr.setPriority(3).setComment(comment(obj)))
       } else {
         None
       }
@@ -525,7 +525,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.y += ctx.dy
-        Some(expr.setPriority(15))
+        Some(expr.setPriority(15).setComment(comment(obj)))
       } else {
         None
       }
@@ -539,7 +539,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
       if (almostTheSame(obj.y.next, other.y.get, 20)) {
         val expr = obj.y := other.y
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
         None
       }
@@ -657,7 +657,7 @@ object CodeTemplates extends CodeHandler {
   object TAngleRelative extends TemplateSimple[Rotationable] with TemplateRotationable {
     def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
       val expr = obj.angle -= angle(shiftAngle(obj)) 
-      Some(expr.setPriority(8))
+      Some(expr.setPriority(8).setComment(comment(obj)))
     }
     
     def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
@@ -669,7 +669,7 @@ object CodeTemplates extends CodeHandler {
   object TAngleAbsolute extends TemplateSimple[Rotationable] with TemplateRotationable {
     def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
       val expr = obj.angle := angle(roundedAngle(obj))
-      Some(expr.setPriority(9))
+      Some(expr.setPriority(9).setComment(comment(obj)))
     }
     
     def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
@@ -690,7 +690,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = {
       if (almostTheSame(obj.angle.next, other.angle.get, 15)) {
         val expr = obj.angle := other.angle
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
         None
       }
@@ -718,7 +718,7 @@ object CodeTemplates extends CodeHandler {
   object TVelocityAbsolute extends TemplateSimple[PhysicalObject] with TemplatePhysicalObject {
     def result(obj: PhysicalObject)(implicit ctx: TemplateContext) = {
       val expr = obj.velocity := speed(obj.velocity.next)
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
     def comment(obj: PhysicalObject)(implicit ctx: TemplateContext) =
@@ -748,7 +748,7 @@ object CodeTemplates extends CodeHandler {
   object TColorAbsolute extends TemplateSimple[Colorable] with TemplateColorable {
     def result(obj: Colorable)(implicit ctx: TemplateContext) = {
       val expr = obj.color := color(obj.color.next)
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
     def comment(obj: Colorable)(implicit ctx: TemplateContext) = 
@@ -766,7 +766,7 @@ object CodeTemplates extends CodeHandler {
   object TVisibleAbsolute extends TemplateSimple[Visiblable] with TemplateVisiblable {
     def result(obj: Visiblable)(implicit ctx: TemplateContext) = {
       val expr = obj.visible := BooleanLiteral(obj.visible.next)
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
     def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
@@ -776,7 +776,7 @@ object CodeTemplates extends CodeHandler {
   object TVisibleToggle extends TemplateSimple[Visiblable] with TemplateVisiblable {
     def result(obj: Visiblable)(implicit ctx: TemplateContext) = {
       val expr = obj.visible := !obj.visible
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
     def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
@@ -887,7 +887,7 @@ object CodeTemplates extends CodeHandler {
   object TValueAbsolute extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       val expr = obj.value := obj.value.next
-      Some(expr.setPriority(5))
+      Some(expr.setPriority(5).setComment(comment(obj)))
     }
     
     def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
@@ -899,7 +899,7 @@ object CodeTemplates extends CodeHandler {
       val diff = obj.value.next - obj.value.get
       if (Math.abs(diff) > 1) {
         val expr = obj.value += diff
-        Some(expr.setPriority(6))
+        Some(expr.setPriority(6).setComment(comment(obj)))
       } else {
         None
       }
@@ -914,7 +914,7 @@ object CodeTemplates extends CodeHandler {
       val diff = obj.value.next - obj.value.get
       if (Math.abs(diff) == 1) {
         val expr = obj.value += diff
-        Some(expr.setPriority(12))
+        Some(expr.setPriority(12).setComment(comment(obj)))
       } else {
         None
       }
@@ -928,7 +928,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       if (obj.value.next == obj.value.get / 2) {
         val expr = obj.value /= 2
-        Some(expr.setPriority(7))
+        Some(expr.setPriority(7).setComment(comment(obj)))
       } else {
         None
       }
@@ -942,7 +942,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       if (obj.value.get != 0 && obj.value.next % obj.value.get == 0 && obj.value.next / obj.value.get != 0) {
         val expr = obj.value *= obj.value.next / obj.value.get
-        Some(expr.setPriority(8))
+        Some(expr.setPriority(8).setComment(comment(obj)))
       } else {
         None
       }
@@ -987,7 +987,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
       if (other.value.get > 1 && obj.value.next == obj.value.get % other.value.get) {
         val expr = obj.value := obj.value % other.value
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
         None
       }
@@ -1127,7 +1127,7 @@ object CodeTemplates extends CodeHandler {
   object TRadiusRelativePlus extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       val expr = obj.radius += coord(obj.radius.next - obj.radius.get)
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
 
     def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
@@ -1152,7 +1152,7 @@ object CodeTemplates extends CodeHandler {
   object TRadiusAbsolute extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       val expr = obj.radius := coord(obj.radius.next)
-      Some(expr.setPriority(10))
+      Some(expr.setPriority(10).setComment(comment(obj)))
     }
 
     def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
@@ -1171,7 +1171,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.radius += ctx.dx
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj)))
       } else {
         None
       }
@@ -1185,7 +1185,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
        if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.radius += -ctx.dx
-        Some(expr.setPriority(8))
+        Some(expr.setPriority(8).setComment(comment(obj)))
       } else {
         None
       }
@@ -1199,7 +1199,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.radius += ctx.dy
-        Some(expr.setPriority(10))
+        Some(expr.setPriority(10).setComment(comment(obj)))
       } else {
         None
       }
@@ -1213,7 +1213,7 @@ object CodeTemplates extends CodeHandler {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.radius.next - obj.radius.get, -ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.radius += -ctx.dy
-        Some(expr.setPriority(8))
+        Some(expr.setPriority(8).setComment(comment(obj)))
       } else {
         None
       }
@@ -1256,7 +1256,7 @@ object CodeTemplates extends CodeHandler {
     }
     
     def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
-      s"Spap ${obj.name.get} to the center of the cell using its velocity."
+      s"Snap ${obj.name.get} to the center of the cell using its velocity."
   }
   
   /** Top template */

@@ -70,4 +70,6 @@ object Events {
   }
 
   case class AccelerometerChanged(vector: Vec2) extends Event
+  
+  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event
 }

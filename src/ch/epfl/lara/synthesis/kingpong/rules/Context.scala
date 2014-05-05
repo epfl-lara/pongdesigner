@@ -16,6 +16,8 @@ trait Context extends Any {
   def getNewName(s: String): String
   def add(c: GameObject)
   
+  def addAssignmentHistory(p: Vec2, a: AssignableProperty[_], path: Expr): Unit
+  
   def fingerDowns(f: FingerDown => Boolean): Iterable[FingerDown] = events collect {
     case e: FingerDown if f(e) => e
   }

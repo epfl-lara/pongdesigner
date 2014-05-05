@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
 import ch.epfl.lara.synthesis.kingpong.objects._
+import scala.collection.mutable.ListBuffer
 
 object TreeOps {  
   import Trees._
@@ -194,6 +195,58 @@ object TreeOps {
     }
 
     f(newV).getOrElse(newV)
+  }
+  
+  /**
+   * pre-collection of the tree, takes a function which looks for a particular terminal
+   *
+   * e.g.
+   *
+   *   Add(a, Minus(Inverse(b), c)) with function _ == b and collection as a concatenation of list
+   *
+   * will yield:
+   *
+   *   Add(a, Minus(Inverse(b), c)) :: Minus(Inverse(b), c) :: Inverse(b) :: b
+   */
+  def collectFirst[T](f: Expr with Terminal => Option[T])(g: (Expr, T) => T)(e: Expr): Option[T] = {
+	    val rec = collectFirst(f)(g) _
+	    e match {
+	      case t: Terminal =>
+	        f(t)
+	      case u @ UnaryOperator(e, builder) =>
+	        List(e).view.map(rec).find{
+	          case Some(l) => true
+	        } match {
+	          case Some(Some(l)) => Some(g(u, l))
+	          case _ => None
+	        }
+	      case b @ BinaryOperator(e1, e2, builder) =>
+	        List(e1, e2).view.map(rec).find{
+	          case Some(l) => true
+	        } match {
+	          case Some(Some(l)) => Some(g(b, l))
+	          case _ => None
+	        }
+	      case n @ NAryOperator(es, builder) =>
+	        es.view.map(rec).find{
+	          case Some(l) => true
+	        } match {
+	          case Some(Some(l)) => Some(g(n, l))
+	          case _ => None
+	        }
+	    }
+	}
+  
+  /**
+   * Returns the list of ancestors between from and to
+   * Requires that to is a subtree of from
+   */
+  def getAncestors(from: Expr, to: Expr): List[Expr] = {
+    (collectFirst[List[Expr]]((t: Expr with Terminal) =>
+      if(t eq to) Some(List(t)) else None
+    )((e, l) =>
+      e::l
+    )(from)).getOrElse(Nil)
   }
 
   /**

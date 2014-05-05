@@ -21,6 +21,12 @@ object Trees {
     def setPriority(p: Float): self.type = { _priority = p ; self }
     def priority = _priority
   }
+  
+  sealed trait Commented { self: Tree =>
+    private var _comment: String = ""
+    def setComment(c: String): self.type = { _comment = c; self}
+    def comment = _comment
+  }
 
   sealed trait Tree {
     
@@ -102,7 +108,7 @@ object Trees {
   /** Expressions. 
    *  An expression has a type.
    */
-  sealed trait Expr extends Tree with Typed with Prioritized {
+  sealed trait Expr extends Tree with Typed with Prioritized with Commented{
     
   }
   

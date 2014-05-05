@@ -37,6 +37,13 @@ object General {
     // Android support
     libraryDependencies += "com.android.support" % "support-v4" % "18.0.0",
     
+    dependencyClasspath in Compile ~= { _ filterNot {cp => (cp.data.getName endsWith "android-support-v13.jar") || (cp.data.getName endsWith "scala_library.min.jar")}
+    },
+    
+    dependencyClasspath in Android ~= { _ filterNot {cp => (cp.data.getName endsWith "android-support-v13.jar") || (cp.data.getName endsWith "scala_library.min.jar")}
+    },
+    
+    
     scalacOptions ++= Seq(
       "-Yinline-warnings",
       //"-optimize",

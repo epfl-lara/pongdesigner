@@ -137,10 +137,19 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case Assign(prop, rhs) =>
-      eval(prop._1).as[GameObject].get(prop._2) match {
-        case assignable: AssignableProperty[_] => assignable.assign(eval(rhs))
-        case p => throw InterpreterException(s"The property $p is not assignable but is in $expr")
+    case assignStatement@Assign(props, rhs) =>
+      def setValue(objExpr: Expr, propertyName: PropertyId, v: Expr): Unit = {
+        //TODO check if this will work with ephemeral properties
+        val obj = eval(objExpr).as[GameObject]
+        obj.get(propertyName) match {
+          case assignable: AssignableProperty[_] => assignable.assign(v)
+          obj match {
+            case pos: Positionable =>
+              gctx.addAssignmentHistory(Vec2(pos.x.get, pos.y.get), assignable, assignStatement)
+            case _ =>
+          }
+          case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
+        }
       }
       UnitLiteral
 
