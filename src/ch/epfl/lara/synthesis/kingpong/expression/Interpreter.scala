@@ -137,21 +137,10 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case Assign(props, rhs) =>
-      def setValue(objExpr: Expr, propertyName: PropertyId, v: Expr): Unit = {
-        //TODO check if this will work with ephemeral properties
-        eval(objExpr).as[GameObject].get(propertyName) match {
-          case assignable: AssignableProperty[_] => assignable.assign(v)
-          case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
-        }
-      }
-      
-      eval(rhs) match {
-        case Tuple(values) if values.size == props.size => 
-          (props zip values) foreach { case ((objExpr, propertyName), value) => setValue(objExpr, propertyName, value) }
-        case rhsValue if props.size == 1 => 
-          setValue(props.head._1, props.head._2, rhsValue)
-        case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
+    case Assign(prop, rhs) =>
+      eval(prop._1).as[GameObject].get(prop._2) match {
+        case assignable: AssignableProperty[_] => assignable.assign(eval(rhs))
+        case p => throw InterpreterException(s"The property $p is not assignable but is in $expr")
       }
       UnitLiteral
 

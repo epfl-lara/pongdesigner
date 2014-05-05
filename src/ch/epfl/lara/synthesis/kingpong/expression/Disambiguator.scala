@@ -32,8 +32,8 @@ object Disambiguator {
       val (l1, l2) = subs.unzip
       val (assigned, duplicates) = (l1.foldLeft(Set.empty[PropertyId])(_ union _), l2.foldLeft(Set.empty[PropertyId])(_ union _))
       s match {
-        case Assign(props, _) =>
-          val newAssigned = props.toSet.map((t: (Expr, PropertyId)) => t._2)
+        case Assign(prop, _) =>
+          val newAssigned = Set(prop._2)
           (assigned union newAssigned, duplicates.union(assigned intersect newAssigned))
         case _ => 
           (assigned, duplicates)
@@ -276,7 +276,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite), ife._1) :: ifTrue2, ifFalse2), ifr, ife)
+              (If(cond, Assign(ite, ife._1) :: ifTrue2, ifFalse2), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -287,7 +287,7 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Assign(List(ife), ite._1)), itr, ite)
+              (If(cond, ifTrue2, Assign(ife, ite._1)), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -310,7 +310,7 @@ object Disambiguator {
                *   x2 = x3 + 6  (i == 2)
                *   x1 = x2 * 3
                */
-              (If(cond, Assign(List(ite), ife._1) :: ifTrue2, ifFalse2), ifr, ife)
+              (If(cond, Assign(ite, ife._1) :: ifTrue2, ifFalse2), ifr, ife)
             } else if(i > j) {
               /* Case 
                * if A:
@@ -321,7 +321,7 @@ object Disambiguator {
                *   ifr  ife      => need to pre-add the assignment  x2 = x3  (ife = ite)
                *   x1 = x2 * 3
                */
-              (If(cond, ifTrue2, Assign(List(ife), ite._1) :: ifFalse2), itr, ite)
+              (If(cond, ifTrue2, Assign(ife, ite._1) :: ifFalse2), itr, ite)
             } else {
               throw new Exception("Should not arrive here: property $ifTrueReplaced is not equal to $ifFalseReplaced but have the same number.")
             }
@@ -373,6 +373,6 @@ object Disambiguator {
       }
     }
     val (result, replaceAssigned, replaceEvaluated) = rec(t, p_original._2, p_original, p_original)
-    Assign(List(replaceEvaluated), p_original._1)::result
+    Assign(replaceEvaluated, p_original._1)::result
   }
 }

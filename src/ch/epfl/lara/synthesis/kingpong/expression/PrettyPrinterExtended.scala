@@ -317,7 +317,8 @@ trait PrettyPrinterExtendedTypical {
       case ParExpr(Nil) => c
       case ParExpr(a::_) => print(c, indent, a) +< "//<-->" +>
       case TupleSelect(expr, index) =>
-        c + indent + expr + "." + (if(index == 0) "x" else "y")
+        //TODO this only applies to pair of coordinates...
+        c + indent + expr + "." + (if(index == 1) "x" else "y")
       
       case Foreach(cat, id, body) =>
         c + indent +< s"$FOR_SYMBOL " +! (id.toString, cat) + s" $IN_SYMBOL " + cat + s":$LF" + body +>
@@ -334,11 +335,8 @@ trait PrettyPrinterExtendedTypical {
         case _ =>
           (((c + indent +< "(" + exprs.head) /: exprs.tail) { case (i, el) => i + "," + el }) + ")" +>
       }
-    case Assign(Nil, rhs: Expr) => c
-    case Assign(List((e, prop)), rhs: Expr) => 
+    case Assign((e, prop), rhs) =>
       c + indent +< e + "." + prop + "' = " + rhs +>
-    case Assign(l, rhs: Expr) =>
-      (((c + indent +< l.head._1 + "." +l.head._2) /: l.tail) { case (i, el) => i + "," + el._1+"."+el._2}) + " = " + rhs +>
     case Block(exprs) =>
       exprs.toList match {
         case Nil => c + indent +<> "{}"

@@ -43,6 +43,7 @@ object Extractors {
       case Contains(t1, t2)  => Some((t1, t2, Contains))
       case Let(id, t1, t2)   => Some((t1, t2, Let(id, _, _)))
       case Copy(t1, id, t2)  => Some((t1, t2, Copy(_, id, _)))
+      case Assign((t1, prop), t2) => Some((t1, t2, (e1: Expr, e2: Expr) => Assign((e1, prop), e2)))
       case ContainingCell(t1, t2) => Some((t1, t2, ContainingCell))
       
       case FingerMoveOver(t1, id, t2) => Some((t1, t2, FingerMoveOver(_, id, _)))
@@ -59,9 +60,6 @@ object Extractors {
       
       case Block(exprs) => Some((exprs, (as: Seq[Expr]) => Block(as)))
       case ParExpr(exprs) => Some((exprs, (as: Seq[Expr]) => ParExpr(as.toList)))
-      case Assign(props, rhs) => Some((rhs +: props.map(_._1), (as: Seq[Expr]) => 
-        Assign(as.tail.zip(props).map{ case (a, (_, p)) => (a, p)}, as.head)
-      ))
       case MethodCall(n, l) => Some((l, MethodCall(n, _)))
       
       case _ => None

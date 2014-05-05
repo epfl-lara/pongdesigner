@@ -113,7 +113,7 @@ object Trees {
   
   case class Foreach(category: Category, id: Identifier, body: Expr) extends UnitExpr
   
-  case class Assign(props: Seq[(Expr, PropertyId)], rhs: Expr) extends UnitExpr
+  case class Assign(prop: (Expr, PropertyId), rhs: Expr) extends UnitExpr
   
   object Block {
     def apply(e1: Expr, e: Expr*): Block = {
@@ -238,7 +238,7 @@ object Trees {
   }
   
   object ObjectLiteral {
-    def empty = ObjectLiteral(null)
+    val empty = ObjectLiteral(null)
   }
   
   case class ObjectLiteral(value: GameObject) extends Literal[GameObject] with FixedType {

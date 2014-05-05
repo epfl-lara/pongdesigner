@@ -203,21 +203,27 @@ object TreeDSL {
   class ProxyExpr(val expr: Expr) extends Proxy
 
   trait PropertyProxy extends Proxy with Typed {
-    protected def properties: Seq[(Expr, PropertyId)]
-    def :=(e: Expr): Expr = Assign(properties, e)
-    def :=(e1: Expr, e2: Expr): Expr = Assign(properties, Tuple(Seq(e1, e2)))
+    def :=(e: Expr): Expr
+    def :=(e1: Expr, e2: Expr): Expr = this := Tuple(e1, e2)
   }
   
   trait PropertyProxySingle extends PropertyProxy {
     protected def propertyPair: (Expr, PropertyId)
-    protected def properties = Seq(propertyPair)
     def expr: Expr = Select(propertyPair._1, propertyPair._2).setType(getType)
-    def +=(e: Expr): Expr = Assign(properties, Plus(expr, e))
-    def -=(e: Expr): Expr = Assign(properties, Minus(expr, e))
-    def *=(e: Expr): Expr = Assign(properties, Times(expr, e))
-    def /=(e: Expr): Expr = Assign(properties, Div(expr, e))
+    def :=(e: Expr): Expr = Assign(propertyPair, e)
+    def +=(e: Expr): Expr = Assign(propertyPair, Plus(expr, e))
+    def -=(e: Expr): Expr = Assign(propertyPair, Minus(expr, e))
+    def *=(e: Expr): Expr = Assign(propertyPair, Times(expr, e))
+    def /=(e: Expr): Expr = Assign(propertyPair, Div(expr, e))
   }
-  
+
+  trait PropertyProxyMultiple extends PropertyProxy {
+    protected def propertyPairs: Seq[(Expr, PropertyId)]
+    def :=(e: Expr): Expr = let("tuple", e) { tuple =>
+      propertyPairs.zipWithIndex.map{ case (pair, index) => Assign(pair, TupleSelect(tuple, index + 1)) }
+    }
+  }
+
   class PropertyProxySingleRef(baseExpr: Expr, property: String) extends PropertyProxySingle {
     protected def propertyPair = (baseExpr, property)
   }
@@ -229,16 +235,16 @@ object TreeDSL {
   }
   
   implicit def propertyTupleToProxy(props: (Property[_] with AssignableProperty[_], Property[_] with AssignableProperty[_])): PropertyProxy = {
-    new PropertyProxy {
+    new PropertyProxyMultiple {
       def expr = Tuple(Seq(props._1, props._2).map(_.expr))
-      protected def properties = Seq(props._1, props._2).map(p => (p.parent.expr, p.name))
+      protected def propertyPairs = Seq(props._1, props._2).map(p => (p.parent.expr, p.name))
     }
   }
   
   implicit def propertySeqToProxy(props: Seq[Property[_] with AssignableProperty[_]]): PropertyProxy = {
-    new PropertyProxy {
+    new PropertyProxyMultiple {
       def expr = Tuple(props.map(_.expr))
-      protected def properties = props.map(p => (p.parent.expr, p.name))
+      protected def propertyPairs = props.map(p => (p.parent.expr, p.name))
     }
   }
   

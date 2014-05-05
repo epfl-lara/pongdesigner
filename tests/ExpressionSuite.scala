@@ -2,9 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.test
 
 import org.scalatest._
 
-import org.jbox2d.dynamics.BodyType
-
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
@@ -80,11 +77,17 @@ class ExpressionSuite extends FlatSpec with Matchers {
   
   "Expression" should "be correctly built by the DSL" in {
     val e = game.ball1.x := 0
-    e should be (Assign(List((ObjectLiteral(game.ball1), "x")), IntegerLiteral(0)))
+    e should be (Assign((ObjectLiteral(game.ball1), "x"), IntegerLiteral(0)))
   }
   
-  ignore should "..." in {
-    //TODO
+  it should "have a syntactic sugar for multiple assignment" in {
+    val e = (game.ball1.x, game.ball1.y) := (2f, 3f)
+    val let = e.asInstanceOf[Let]
+    val id = let.id
+    let shouldBe Let(id, Tuple(Seq(2f, 3f)), Block(Seq(
+      Assign((ObjectLiteral(game.ball1), "x"), TupleSelect(Variable(id), 1)),
+      Assign((ObjectLiteral(game.ball1), "y"), TupleSelect(Variable(id), 2))
+    )))
   }
   
   "Interpreter" should "handle arithmetic expressions" in {
@@ -147,7 +150,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     radius.set(1)
     
     val e1 = radius += 2.5f
-    e1 should be (Assign(Seq((ObjectLiteral(game.ball1), "radius")), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2.5f))))
+    e1 should be (Assign((ObjectLiteral(game.ball1), "radius"), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2.5f))))
     radius.get should be (1f)
     interpreter.evaluate(e1) should be (UnitLiteral)
     radius.next should be (3.5f)
@@ -206,7 +209,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val id = foreach.id
     generalized should be (Foreach(obj.category, id, 
       If(And(Select(Variable(id), "visible"), Select(ObjectLiteral(game.block1), "visible")), 
-        Assign(Seq((Variable(id), "x")), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
+        Assign((Variable(id), "x"), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
         NOP)
       )
     )
