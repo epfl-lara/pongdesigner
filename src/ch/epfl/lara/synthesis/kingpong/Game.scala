@@ -73,11 +73,14 @@ trait Game extends RulesManager with Context { self =>
    *  If `from` is less or equal to 0, the game is reset.
    */
   private[kingpong] def clear(from: Int): Unit = {
-    if (from <= 0) {
-      objects.foreach(_.reset(interpreter))
-      gc()
+    objects foreach { obj =>
+      if (from <= 0) {
+        obj.reset(interpreter)
+        obj.setExistenceAt(0)
+      }
+      obj.clear(from)
     }
-    objects.foreach(_.clear(from))
+    gc()
     world.clear()
     eventsHistory.clear(from)
   }
