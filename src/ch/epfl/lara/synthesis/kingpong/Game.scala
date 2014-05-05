@@ -68,6 +68,11 @@ trait Game extends RulesManager with Context { self =>
       scheduledRestoreTime = Some(t)
     }
   }
+  
+  /** Add event over property modifications*/
+  def addAssignmentHistory(p: Vec2, a: AssignableProperty[_], path: Expr): Unit = {
+    eventsHistory.addEvent(AssignmentEvent(p, a, path))
+  }
 
   /** Clear the history from the given time (inclusive). 
    *  If `from` is less or equal to 0, the game is reset.

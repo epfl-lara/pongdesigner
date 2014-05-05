@@ -4,6 +4,9 @@ import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.objects.AssignableProperty
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import org.jbox2d.common.Vec2
 
 /** Handle the history for events like fingers input and
  *  contacts between physical objects.
