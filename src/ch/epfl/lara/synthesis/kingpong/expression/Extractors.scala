@@ -43,6 +43,7 @@ object Extractors {
       case Contains(t1, t2)  => Some((t1, t2, Contains))
       case Let(id, t1, t2)   => Some((t1, t2, Let(id, _, _)))
       case Copy(t1, id, t2)  => Some((t1, t2, Copy(_, id, _)))
+      case ApplyForce(t1, t2)     => Some((t1, t2, ApplyForce))
       case Assign((t1, prop), t2) => Some((t1, t2, (e1: Expr, e2: Expr) => Assign((e1, prop), e2)))
       case ContainingCell(t1, t2) => Some((t1, t2, ContainingCell))
       

@@ -3,7 +3,6 @@ package ch.epfl.lara.synthesis.kingpong.examples
 import org.jbox2d.dynamics.BodyType
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
@@ -42,7 +41,9 @@ class SlidingPuzzle extends Game {
   val r1 = foreach(pieces) { piece =>
     fingerMoveOver(piece) { move => Seq(
       //debug("Move by %s.", move.expr),
-      piece.velocity := (move._2 - move._1) * 15
+      ApplyForce(piece, (move._2 - move._1) * 50)
+
+      //piece.velocity := (move._2 - move._1) * 15
 //      piece.x += move._2._1 - move._1._1,
 //      piece.y += move._2._2 - move._1._2
     )}
@@ -51,7 +52,8 @@ class SlidingPuzzle extends Game {
   // Snapping pieces rule
   val r2 = foreach(gameboard.cellsCategory, pieces) { (cell, piece) => 
     whenever(Contains(cell, piece) && !isFingerMoveOver(piece)) (
-      piece.velocity := (cell.center - piece.center) * 4
+      ApplyForce(piece, (cell.center - piece.center) * 10)
+      //piece.velocity := (cell.center - piece.center) * 4
     )
   }
   

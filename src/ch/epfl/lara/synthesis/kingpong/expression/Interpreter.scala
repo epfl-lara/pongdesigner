@@ -353,6 +353,14 @@ trait Interpreter {
         case _ => error(expr)
       }
 
+    case ApplyForce(e, force) =>
+      eval(e) match {
+        case ObjectLiteral(obj: PhysicalObject) =>
+          obj.applyForce(eval(force).as[Vec2])
+        case _ => error(expr)
+      }
+      UnitLiteral
+
     case Collision(lhs, rhs) =>
        (eval(lhs), eval(rhs)) match {
         case (ObjectLiteral(o1), ObjectLiteral(o2)) => 

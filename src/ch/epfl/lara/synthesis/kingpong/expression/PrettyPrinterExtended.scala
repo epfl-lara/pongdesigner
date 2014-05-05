@@ -393,6 +393,7 @@ trait PrettyPrinterExtendedTypical {
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
         case _:Contains => "contains"
+        case _:ApplyForce => "apply force"
         case _ => "["+b.getClass().getName()+"]"
       }
       c + indent +< lhs + s" $op " + rhs +>

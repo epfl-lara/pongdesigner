@@ -295,10 +295,11 @@ object Trees {
   /* Finger interactions */
   
   case class FingerMoveOver(obj: Expr, id: Identifier, block: Expr) extends Expr with FixedBooleanType
-  
   case class FingerDownOver(o: Expr) extends Expr with FixedBooleanType
   case class FingerUpOver(o: Expr) extends Expr with FixedBooleanType
-  
+
+  case class ApplyForce(obj: Expr, force: Expr) extends UnitExpr
+
   /* Array operations */
   
   /** Test if the left object contains the right one. */
