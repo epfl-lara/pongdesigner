@@ -731,15 +731,19 @@ class GameViewRender(val context: Context) extends ContextUtils {
           minTimeRecording = Math.max(minTimeRecording, record.endTime)
           i += 1
         }
-        if(minTimeRecording == -1 || minTimeRecording >= game.time && soundRecorder.recording.next) {
+        if(minTimeRecording == -1 || minTimeRecording <= game.time && soundRecorder.recording.next) {
 	        val record = new MediaRecorder
 					record.setAudioSource(0 /*MediaRecorder.AudioSource.MIC*/)  // Default = microphone
-					record.setOutputFormat(1/*MediaRecorder.OutputFormat.THREE_GPP*/) // 3GP
+					record.setOutputFormat(2/*MediaRecorder.OutputFormat.MPEG_4*/) // mpg4
 					val sampleDir = Environment.getExternalStorageDirectory();
-			    val audiofile = File.createTempFile(soundRecorder.name.get + soundRecorder.numRecords, ".3gp", sampleDir);
+			    val audiofile = File.createTempFile(soundRecorder.name.get + soundRecorder.numRecords, ".mp4", sampleDir);
 			    val uri = Uri.fromFile(audiofile)
 					record.setOutputFile(audiofile.getAbsolutePath())
 					record.setAudioEncoder(1/*MediaRecorder.AudioEncoder.AMR_NB*/) // AMR_NB
+					//record.setAudioEncoder(MediaRecorder.getAudioSourceMax());
+					record.setAudioEncodingBitRate(16)
+					record.setAudioSamplingRate(44100)
+					record.setAudioChannels(1)
 					record.prepare()
 					record.start()
 	        recorders += soundRecorder -> ((game.time, record, uri.toString))

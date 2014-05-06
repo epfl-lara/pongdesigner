@@ -177,7 +177,7 @@ class KingPong extends Activity
   private var mTtsListener: TextToSpeech.OnInitListener = new TextToSpeech.OnInitListener {
     override def onInit(status: Int) {       
         if (status == TextToSpeech.SUCCESS) {
-            mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null);
+            //mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null);
             //mTts.speak("Ceci est un deuxième test !", TextToSpeech.QUEUE_ADD, null);
         }
     }
@@ -580,9 +580,12 @@ class KingPong extends Activity
         case ReadAloud(language, msg) =>
         	if(language != "") {
             val locale  = new Locale(language)
-            if (mTts.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-	          	mTts.setLanguage(locale);
-	        	}
+            val isAvailable = mTts.isLanguageAvailable(locale)
+            isAvailable match {
+              case LANG_AVAILABLE | LANG_COUNTRY_AVAILABLE | LANG_COUNTRY_VAR_AVAILABLE =>
+                mTts.setLanguage(locale);
+              case _ =>
+            }
         	}
           mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
 
