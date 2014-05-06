@@ -660,12 +660,12 @@ class GameViewRender(val context: Context) extends ContextUtils {
   }
   
   def maybePlay(game: Game, sound: SoundRecorded) = { // Called when the game is running again.
-    @inline def relativeTime(time: Int) = (1000*(time - sound.startTime))/30
+    @inline def relativeTime(time: Int) = sound.duration * (time - sound.startTime)/(sound.endTime - sound.startTime)
     val relativeStartTime = relativeTime(game.time)
-    if(relativeStartTime >= sound.duration && (sounds contains sound)) {
+    if(game.time >= sound.endTime && (sounds contains sound)) {
       sounds(sound).release()
 			sounds -= sound
-    } else if(relativeStartTime >= 0 && relativeStartTime < sound.duration) { // Must be playing
+    } else if(game.time >= sound.startTime && game.time <= sound.endTime) { // Must be playing
 			sounds.get(sound) match {
 			  case None =>
 			    val mp = new MediaPlayer();
@@ -675,17 +675,18 @@ class GameViewRender(val context: Context) extends ContextUtils {
 					mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener {
 					  def onPrepared(mp: MediaPlayer) = {
 					    sound.duration = mp.getDuration()
-					    mp.seekTo(relativeTime(game.time)) // Might be different when it is prepared.
-					    mp.start();
+					    mp.seekTo(sound.duration * (game.time - sound.startTime)/(sound.endTime - sound.startTime)) // Might be different when it is prepared.
+					    mp.start()
 					  }
 					})
+					sounds += sound -> mp
 					mp.prepareAsync()
 			  case Some(mediaPlayer) => // A Media player already existed.
 			    try {
 				    if(!mediaPlayer.isPlaying) { // Not yet playing or completed.
 						  try { // If not yet playing
 						    sound.duration = mediaPlayer.getDuration()
-						    mediaPlayer.seekTo(relativeStartTime);
+						    mediaPlayer.seekTo(sound.duration * (game.time - sound.startTime)/(sound.endTime - sound.startTime));
 						    mediaPlayer.start()
 						  } catch { // Not yet prepared. Need to wait for the preparation to be finished.
 						    case e: IllegalStateException =>
@@ -697,9 +698,9 @@ class GameViewRender(val context: Context) extends ContextUtils {
 								    }
 								  })
 						  }
-				    } else { // Playing: Just check that it is playing at the right moment.
-				      if(Math.abs(mediaPlayer.getCurrentPosition() - relativeTime(game.time)) > 100) {
-				        mediaPlayer.seekTo(relativeTime(game.time))
+				    } else { // Playing: Just check that it is playing at the right moment the first time.
+				      if(Math.abs(mediaPlayer.getCurrentPosition() - relativeTime(game.time)) > 500) {
+				        //mediaPlayer.seekTo(relativeTime(game.time))
 				      }
 				    }
 			    } catch {
