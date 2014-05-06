@@ -1,10 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong
 
+import java.io.File
 import scala.collection.mutable.{HashMap => MMap}
-
 import org.jbox2d.collision.WorldManifold
 import org.jbox2d.common.MathUtils
-
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
@@ -17,15 +16,21 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.drawable.Drawable
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.media.AudioManager
+import android.net.Uri
+import android.os.Environment
 import android.util._
 import android.view.WindowManager
-
 import ch.epfl.lara.synthesis.kingpong.common._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+
+
 
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
@@ -107,6 +112,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
     Vec2(toMap(0), toMap(1))
   }*/
   
+  var sounds = Map[SoundRecorded, MediaPlayer]()
+  var soundsTTSplayed = Set[SoundTTS]()
+  var soundsTTSplaying = Map[SoundTTS, MediaPlayer]()
+  var recorders = Map[SoundRecorder, (Int, MediaRecorder, String)]()
+  
   def mapVectorFromGame(matrix: Matrix, in: Array[Float], out: Vec2): Vec2 = {
     matrix.mapPoints(in)
     out.x = in(0)
@@ -185,6 +195,37 @@ class GameViewRender(val context: Context) extends ContextUtils {
       
 
       o match {
+        case soundTTS: SoundTTS => 
+          if(state == Running) {
+            maybePlay(gameView, soundTTS)
+          }
+        case soundRecorder : SoundRecorder =>
+          if(state == Editing) {
+            drawBitmapInGame(canvas, matrix, soundRecorder, bitmaps(R.drawable.microphone), 0xFF)
+          }
+          if(state == Running) {
+            maybeRecord(game, soundRecorder)
+          }
+        case sound : SoundRecorded =>
+          if(state == Editing || gameView.editWhileRunning) {
+            if(sound.startTime <= game.time && game.time <= sound.endTime) {
+              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.music), 0xFF)
+            } else {
+              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.music), 0x8F)
+            }
+          }
+          if(state == Editing) {
+            sounds.get(sound) match {
+              case None =>
+              case Some(mp) =>
+                mp.release()
+			          sounds -= sound
+            }
+            //drawBitmapInGame(canvas, matrix, d, bitmaps(R.drawable.microphone))
+          }
+          if(state == Running) {
+            maybePlay(game, sound)
+          }
         case d : DrawingObject =>
           canvas.save()
           canvas.rotate(radToDegree(d.angle.next), d.x.next, d.y.next)
@@ -302,7 +343,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
           val h = b.height.next
           val x = b.x.next
           val y = b.y.next
-          canvas.drawText(b.name.next, x + h*3/2, y, paint)
+          canvas.drawText(b.name.next, x + h*3/2, y-h/4, paint)
           canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
           if(c) {
             paint.setColor(0xFFBBBBBB)
@@ -336,7 +377,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
         case e: Positionable with Directionable =>
           val c = e.color.next
           if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
-            drawBitmapInGame(canvas, matrix, e, bitmaps(c))
+            drawBitmapInGame(canvas, matrix, e, bitmaps(c), 0xFF)
           }
         case _ =>
       }
@@ -410,7 +451,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     canvas.drawText(value, 5 * screenDensity, 10 * screenDensity, paint)
   }
   
-  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable) = {
+  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable, alpha: Int) = {
     canvas.restore()
     canvas.save()
     val center = render_out_vec
@@ -428,6 +469,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     render_in_array(1) = e.bottom.next
     mapVectorFromGame(matrix, render_in_array, rightBottom)
     d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
+    d.setAlpha(alpha)
     d.draw(canvas)
     canvas.restore()
     canvas.save()
@@ -606,6 +648,112 @@ class GameViewRender(val context: Context) extends ContextUtils {
     def apply(event: Event, time: Int): Unit = {
       drawEventOn(event, gameView, eventEditor, time, canvas, matrix, matrixI)
     }
+  }
+  
+  def maybePlay(gameView: GameView, sound: SoundTTS) = {
+    if(sound.time.next < gameView.getGame.time && !soundsTTSplayed(sound)) {
+      gameView.readAloud(sound.language.next, sound.text.next)
+      soundsTTSplayed += sound
+    } else if(sound.time.next >= gameView.getGame.time) {
+      soundsTTSplayed -= sound
+    }
+  }
+  
+  def maybePlay(game: Game, sound: SoundRecorded) = { // Called when the game is running again.
+    @inline def relativeTime(time: Int) = (1000*(time - sound.startTime))/30
+    val relativeStartTime = relativeTime(game.time)
+    if(relativeStartTime >= sound.duration && (sounds contains sound)) {
+      sounds(sound).release()
+			sounds -= sound
+    } else if(relativeStartTime >= 0 && relativeStartTime < sound.duration) { // Must be playing
+			sounds.get(sound) match {
+			  case None =>
+			    val mp = new MediaPlayer();
+					mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
+					val myUri = Uri.parse(sound.uri);
+					mp.setDataSource(context, myUri);
+					mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener {
+					  def onPrepared(mp: MediaPlayer) = {
+					    sound.duration = mp.getDuration()
+					    mp.seekTo(relativeTime(game.time)) // Might be different when it is prepared.
+					    mp.start();
+					  }
+					})
+					mp.prepareAsync()
+			  case Some(mediaPlayer) => // A Media player already existed.
+			    try {
+				    if(!mediaPlayer.isPlaying) { // Not yet playing or completed.
+						  try { // If not yet playing
+						    sound.duration = mediaPlayer.getDuration()
+						    mediaPlayer.seekTo(relativeStartTime);
+						    mediaPlayer.start()
+						  } catch { // Not yet prepared. Need to wait for the preparation to be finished.
+						    case e: IllegalStateException =>
+						      mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener {
+								    def onPrepared(mp: MediaPlayer) = {
+								      sound.duration = mediaPlayer.getDuration()
+								      mediaPlayer.seekTo(relativeTime(game.time));
+								      mediaPlayer.start();
+								    }
+								  })
+						  }
+				    } else { // Playing: Just check that it is playing at the right moment.
+				      if(Math.abs(mediaPlayer.getCurrentPosition() - relativeTime(game.time)) > 100) {
+				        mediaPlayer.seekTo(relativeTime(game.time))
+				      }
+				    }
+			    } catch {
+			      case e: IllegalStateException =>
+			    }
+				}
+    } else if(relativeStartTime < 0 && !(sounds contains sound)) {
+      // Prepare for streaming.
+      val mp = new MediaPlayer()
+			mp.setAudioStreamType(AudioManager.STREAM_MUSIC)
+			val myUri = Uri.parse(sound.uri)
+			mp.setDataSource(context, myUri)
+			mp.prepareAsync()
+			sounds += sound -> mp
+    }
+  }
+  
+  /**
+   * If all recorded sounds of this soundRecorder are before the current time, starts a new recording process.
+   */
+  def maybeRecord(game: Game, soundRecorder: SoundRecorder) {
+    recorders.get(soundRecorder) match {
+      case Some(mr) => // Do nothing. Already recording.
+      case None =>
+        var i = 0
+        var minTimeRecording = -1
+        while(i < soundRecorder.recordings.length) {
+          val record = soundRecorder.recordings(i)
+          minTimeRecording = Math.max(minTimeRecording, record.endTime)
+          i += 1
+        }
+        if(minTimeRecording == -1 || minTimeRecording >= game.time && soundRecorder.recording.next) {
+	        val record = new MediaRecorder
+					record.setAudioSource(0 /*MediaRecorder.AudioSource.MIC*/)  // Default = microphone
+					record.setOutputFormat(1/*MediaRecorder.OutputFormat.THREE_GPP*/) // 3GP
+					val sampleDir = Environment.getExternalStorageDirectory();
+			    val audiofile = File.createTempFile(soundRecorder.name.get + soundRecorder.numRecords, ".3gp", sampleDir);
+			    val uri = Uri.fromFile(audiofile)
+					record.setOutputFile(audiofile.getAbsolutePath())
+					record.setAudioEncoder(1/*MediaRecorder.AudioEncoder.AMR_NB*/) // AMR_NB
+					record.prepare()
+					record.start()
+	        recorders += soundRecorder -> ((game.time, record, uri.toString))
+        }
+    }
+  }
+  def stopRecording(game: Game) {
+    for((soundRecorder, (startTime, record, uri)) <- recorders) {
+      val obj = SoundRecorded(soundRecorder, soundRecorder.numRecords, startTime, game.time, uri)
+      soundRecorder.recordings += obj
+      game.add(obj)
+      record.release()
+    }
+    recorders = Map()
   }
 }
 

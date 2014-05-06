@@ -19,7 +19,10 @@ object Messages {
   final val CANCEL_TUTORIAL = 10
   final val SHOW_PROGRESS_DIALOG_SAVE = 11
   final val PICK_IMAGE = 12
+  final val READ_ALOUD = 13
   final val FILENAME_TAG = "filename"
+  final val STRING_TAG = "string"
+  final val LANGUAGE_TAG = "language"
   final val TEXT_TAG = "progress_text"
   final val LINE_TAG = "progress_line"
   final val TOTAL_TAG = "progressTotal"
@@ -110,7 +113,7 @@ object Messages {
         Some((data.getString(FILENAME_TAG)))
       } else None
     }
-    def apply(s: String): Message = TEXT_PROGRESS_DIALOG ! FILENAME_TAG->s
+    def apply(s: String): Message = FILE_EXPORT ! FILENAME_TAG->s
   }
   
   object ShowInitialTooltip {
@@ -126,5 +129,15 @@ object Messages {
   object PickImage {
     def unapply(m: Message): Option[Nil.type] = check(m, PICK_IMAGE)
     def apply(): Message = PICK_IMAGE
+  }
+  
+  object ReadAloud {
+    def unapply(m: Message): Option[(String, String)] = {
+      if(m.what == READ_ALOUD) {
+        val data = m.getData()
+        Some((data.getString(LANGUAGE_TAG), data.getString(STRING_TAG)))
+      } else None
+    }
+    def apply(language: String, s: String): Message = READ_ALOUD ! LANGUAGE_TAG->language ! STRING_TAG->s
   }
 }

@@ -17,7 +17,7 @@ class DrawingRecorder extends Game {
   val width_objects = Category("Width_objects")()
   
   val drawing = drawingObject(static_objects)(name="drawingZone", x=0, y=0, width=20, height=15, stroke_width=3)
-  
+  val soundrec = soundRecorder(static_objects)(name="soundrec", x= -10.5f, y=3f, width=1, height=1)
   val preview_drawing = circle(static_objects)(name="Preview", x= -10.5f, y= -7f, radius = 0.5f, color = 0xFF000000, tpe = BodyType.STATIC)
   val drawing_color1 = rectangle(color_objects)(name="Color2", x= -10.5f, y= -6f, width = 1, height = 1, color = 0xFF000000, tpe = BodyType.STATIC)
   val drawing_color2 = rectangle(color_objects)(name="Color3", x= -10.5f, y= -5f, width = 1, height = 1, color = 0xFFAA0000, tpe = BodyType.STATIC)
@@ -29,6 +29,8 @@ class DrawingRecorder extends Game {
   val drawing_radius4 = rectangle(width_objects)(name="Radius4", x= -10.5f, y= 1f, width= 1, height = 0.125, color = 0xFF000000, tpe = BodyType.STATIC)
   val drawing_radius5 = rectangle(width_objects)(name="Radius5", x= -10.5f, y= 2f, width= 1, height = 0.075, color = 0xFF000000, tpe = BodyType.STATIC)
   
+  val soundtts = soundTTS(static_objects)(name="soundtts",x= -10.5f, y=4f, time= 1, language="en", text="Welcome to Pong Designer made by Lara at E P F L !")
+  val soundtts2 = soundTTS(static_objects)(name="soundtts2",x= -10.5f, y=5f, time= 150, language="fr", text="Bienvenue à Pongue Dizaïneur réalisé par Lara à l'eupéhèfelle !")
   //val ruleColor = drawing.color := drawing_color.color
   
   /*val ruleWidthFinger = fingerMoveOver(drawing_circle) { move => Seq(

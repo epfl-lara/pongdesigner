@@ -1,6 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong
 /**
- * *
+ * 
  *     _____                ____          _
  *    |  _  |___ ___ ___   |    \ ___ ___|_|___ ___ ___ ___
  *    |   __| . |   | . |  |  |  | -_|_ -| | . |   | -_|  _|
@@ -13,6 +13,7 @@ package ch.epfl.lara.synthesis.kingpong
  *  Purpose:   View for rendering Pong Designer
  */
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.mutable.{ HashMap => MMap }
 import scala.collection.mutable.ListBuffer
@@ -154,7 +155,26 @@ class GameView(val context: Context, attrs: AttributeSet)
         val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
         shape = d
         true
-
+      case Str(R.string.add_sound_recorder_hint) =>
+        val d = soundRecorder(DefaultCategory("soundobjects", game))(name="soundrecorder", x=0, y=0, width=2*grid.step, height=2*grid.step)(game)
+        shape = d
+        true
+      case Str(R.string.add_arraybox_hint) =>
+        val d = array(DefaultCategory("arrays", game))("Array", x=0, y=0, columns=2, rows=3)(game)
+        shape = d
+        true
+      case Str(R.string.add_boolbox_hint) =>
+        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
+        shape = d
+        true
+      case Str(R.string.add_textbox_hint) =>
+        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
+        shape = d
+        true
+      case Str(R.string.add_integerbox_hint) =>
+        val d = intbox(DefaultCategory("score", game))("Score", x=0, y=0, value = 0)(game)
+        shape = d
+        true
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
@@ -361,6 +381,10 @@ class GameView(val context: Context, attrs: AttributeSet)
   def pickImage(): Unit = {
     this.activity.asInstanceOf[KingPong] ! PickImage()
   }
+  
+  def readAloud(language: String, str: String): Unit = {
+    this.activity.asInstanceOf[KingPong] ! ReadAloud(language, str)
+  }
 
   // Mapping from codeview (cv) to objects and vice-versa
   var cv_obj_to_highlight: Set[GameObject] = Set.empty
@@ -517,6 +541,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     if (state == Editing) {
       game.restore(t)
     } else {
+      gameViewRender.stopRecording(game)
       game.setRestoreTo(t)
     }
   }
@@ -527,6 +552,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     state = Editing
     game.setInstantProperties(true)
     layoutResize()
+    gameViewRender.stopRecording(game)
   }
 
   /** Change the current state to Running. */
@@ -637,6 +663,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.gear,
       R.drawable.back_arrow,
       R.drawable.jpeg,
+      R.drawable.microphone,
+      R.drawable.music,
       R.drawable.copy_menu //R.drawable.timebutton3
       )
   drawables_to_load.foreach { id =>
@@ -1128,14 +1156,43 @@ class GameView(val context: Context, attrs: AttributeSet)
       new Rect(0, 0, targetSize, targetSize), null);
     return targetBitmap;
   }
+  
+  /**
+   * Credits to:
+   * https://gist.github.com/viktorklang/5409467
+   */
+  def interruptableFuture[T](fun: () => T)(implicit ex: ExecutionContext): (Future[T], () => Boolean) = {
+    val p = Promise[T]()
+    val f = p.future
+    val aref = new AtomicReference[Thread](null)
+    p tryCompleteWith Future {
+      val thread = Thread.currentThread
+      aref.synchronized { aref.set(thread) }
+      try fun() finally {
+        val wasInterrupted = (aref.synchronized { aref getAndSet null }) ne thread
+        //Deal with interrupted flag of this thread in desired
+      }
+    }
+
+    (f, () => {
+      aref.synchronized { Option(aref getAndSet null) foreach { _.interrupt() } }
+      p.tryFailure(new CancellationException)
+    })
+  }
 
   /**
    * Updates the code view
    * @param rules The rules to display
    * @param objects The objects to highlight.
    */
+  var codeViewFutureCancel: () => Boolean = null
   def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
-    val result = future {
+    val cancelPrevious = codeViewFutureCancel
+    if(cancelPrevious != null) {
+      codeViewFutureCancel = null
+      cancelPrevious()
+    }
+    val (future, cancel) = interruptableFuture[CharSequence] { () =>
       val header = PrettyPrinterExtended.printGameObjectDef(objects)
       val all = PrettyPrinterExtended.print(rules, header + "\n")
       var rulesString: CharSequence = all.c
@@ -1146,10 +1203,13 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
       rulesString
     }
-    result.onComplete {
+    codeViewFutureCancel = cancel
+    future.onComplete {
       case Success(rulesString) =>
+        codeViewFutureCancel = null
         context.asInstanceOf[Activity].runOnUiThread { codeview.setText(rulesString) }
       case Failure(f) =>
+        codeViewFutureCancel = null
         f.printStackTrace()
     }
   }

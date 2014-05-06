@@ -31,9 +31,12 @@ object Category {
       sensor: Expr = false,
       tpe: BodyType = BodyType.DYNAMIC,
       stroke_width: Expr = 3f,
-      color_drawing: Expr = ColorConstants.black)(implicit game: Game): CategoryObject = {
+      color_drawing: Expr = ColorConstants.black,
+      recording: Expr = true,
+      language: Expr = "en",
+      time: Expr = 1)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, radius, value, randomMinValue, randomMaxValue, 
-        visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe, stroke_width, color_drawing)
+        visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe, stroke_width, color_drawing, recording, language, time)
   }
 }
 
@@ -64,7 +67,10 @@ class CategoryObject(
     val sensor: Expr,
     val tpe: BodyType,
     val stroke_width: Expr,
-    val color_drawing: Expr)
+    val color_drawing: Expr,
+    val recording: Expr,
+    val language: Expr,
+    val time: Expr)
     extends NotNull with Category { self =>
 
   private val _children = MSet.empty[GameObject]

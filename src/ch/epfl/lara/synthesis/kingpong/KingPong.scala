@@ -1,8 +1,8 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import java.io.FileNotFoundException
+import java.util.Locale
 import scala.collection.mutable.ArrayBuffer
-
 import android.app.Activity
 import android.app.ProgressDialog
 import android.content.Context
@@ -16,6 +16,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech._
 import android.support.v4.view.GestureDetectorCompat
 import android.util.Log
 import android.view.GestureDetector
@@ -31,13 +33,16 @@ import android.widget.Toast
 import android.widget.SeekBar
 import android.widget.LinearLayout
 import android.widget.ImageView
-
 import net.londatiga.android._
-
 import ch.epfl.lara.synthesis.kingpong.examples.TestGame
 import ch.epfl.lara.synthesis.kingpong.common.Messages
+import java.util.Locale
 
 object KingPong {
+  final val TTS_CHECK = 1
+  final val IMPORT_PICT = 2
+  
+  
   final val INTERVIEWNAME = "INTERVIEW_NAME"
     
   final val PONGGAMECOMPLETE_FILE = "2-playerPong"
@@ -168,6 +173,15 @@ class KingPong extends Activity
   private lazy val mLayoutcodevertical: LinearLayout = R.id.layoutcodevertical
   private lazy val mCodeViewResizer: ImageView = R.id.codeviewResizer
   private lazy val mActions: ExpandableListView = (R.id.actions : ListView).asInstanceOf[ExpandableListView]
+  private var mTts: TextToSpeech = null;
+  private var mTtsListener: TextToSpeech.OnInitListener = new TextToSpeech.OnInitListener {
+    override def onInit(status: Int) {       
+        if (status == TextToSpeech.SUCCESS) {
+            mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null);
+            //mTts.speak("Ceci est un deuxième test !", TextToSpeech.QUEUE_ADD, null);
+        }
+    }
+  }
   
   // Renaming
   private val timeButtonPause = timebutton
@@ -301,6 +315,10 @@ class KingPong extends Activity
     //mCodeView.setMovementMethod(new ScrollingMovementMethod())
     mSensorManager = getSystemService(Context.SENSOR_SERVICE).asInstanceOf[SensorManager]
     mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    
+    val checkIntent = new Intent()
+		checkIntent.setAction("android.speech.tts.engine.CHECK_TTS_DATA" /*Engine.ACTION_CHECK_TTS_DATA*/);
+		startActivityForResult(checkIntent, TTS_CHECK)
   }
   
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
@@ -358,6 +376,7 @@ class KingPong extends Activity
   
   onDestroy {
     if(mProgressDialog != null) mProgressDialog.dismiss()
+    if(mTts != null) mTts.shutdown()
   }
 
   onResume {
@@ -556,8 +575,17 @@ class KingPong extends Activity
         case PickImage() =>
           val photoPickerIntent = new Intent(Intent.ACTION_PICK);
           photoPickerIntent.setType("image/*");
-          startActivityForResult(photoPickerIntent, 1);
-          
+          startActivityForResult(photoPickerIntent, IMPORT_PICT);
+        
+        case ReadAloud(language, msg) =>
+        	if(language != "") {
+            val locale  = new Locale(language)
+            if (mTts.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+	          	mTts.setLanguage(locale);
+	        	}
+        	}
+          mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
+
         case _ =>
             Log.w("MyTag","Warning: message type \""+input_msg.what+"\" not supported");
         }
@@ -567,7 +595,7 @@ class KingPong extends Activity
   override  protected def onActivityResult(requestCode: Int, resultCode: Int, imageReturnedIntent: Intent) { 
         super.onActivityResult(requestCode, resultCode, imageReturnedIntent); 
         requestCode match { 
-        case 1 =>
+        case IMPORT_PICT =>
             if(resultCode == Activity.RESULT_OK){
                 try {
                     val imageUri = imageReturnedIntent.getData();
@@ -580,6 +608,19 @@ class KingPong extends Activity
                 }
  
             }
+        case TTS_CHECK =>
+          if(resultCode == 1 /*TextToSpeech.Engine.CHECK_VOICE_DATA_PASS*/) {
+            // Succès, au moins un moteur de TTS à été trouvé, on l'instancie
+            mTts = new TextToSpeech(this, mTtsListener)
+            if (mTts.isLanguageAvailable(Locale.getDefault()) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+            	mTts.setLanguage(Locale.getDefault());
+          	}
+	        } else {
+            // Echec, aucun moteur n'a été trouvé, on propose à l'utilisateur d'en installer un depuis le Market
+            val installIntent = new Intent()
+            installIntent.setAction("android.speech.tts.engine.INSTALL_TTS_DATA" /*TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA*/);
+            startActivity(installIntent);
+	        }
         }
     }
 }

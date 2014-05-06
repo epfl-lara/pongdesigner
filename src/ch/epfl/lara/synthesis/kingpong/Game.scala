@@ -2,10 +2,8 @@ package ch.epfl.lara.synthesis.kingpong
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-
 import org.jbox2d.collision.WorldManifold
 import org.jbox2d.collision.shapes.CircleShape
-
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression._

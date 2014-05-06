@@ -433,6 +433,43 @@ object TreeDSL {
     obj
   }
   
+  def soundRecorder(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color,
+      recording: Expr = category.recording)(implicit game: Game): SoundRecorder = {
+    val obj = new SoundRecorder(game, name, x, y, angle, width, height, visible, color, recording)
+    obj.setCategory(category)
+    //game.addRule(obj.defaultRule(game))
+    game.add(obj)
+    obj
+  }
+  
+  def soundTTS(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color,
+      language: Expr = category.language,
+      text: Expr = "",
+      time: Expr = category.time
+      )(implicit game: Game): SoundTTS = {
+    val obj = new SoundTTS(game, name, x, y, angle, width, height, visible, color, language, text, time)
+    obj.setCategory(category)
+    //game.addRule(obj.defaultRule(game))
+    game.add(obj)
+    obj
+  }
+
   def array(category: CategoryObject)(
       name: Expr,
       x: Expr,

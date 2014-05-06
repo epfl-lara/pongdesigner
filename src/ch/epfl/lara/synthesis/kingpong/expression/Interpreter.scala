@@ -186,6 +186,8 @@ trait Interpreter {
           UnitLiteral
         case ("gamePixelsPerUnit", ObjectLiteral(o:DrawingObject)::Nil) =>
           FloatLiteral(o.game.pixelsByUnit)
+        case ("time", Nil) =>
+          IntegerLiteral(gctx.time)
         case _ =>
           error(expr)
       }
