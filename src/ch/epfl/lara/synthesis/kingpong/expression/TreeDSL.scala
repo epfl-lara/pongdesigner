@@ -260,9 +260,23 @@ object TreeDSL {
     FingerMoveOver(obj, id, body(ref))
   }
   
+  def fingerDownOver(obj: Expr)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier("fing").setType(TVec2)
+    val ref = new IdentifierProxy(id)
+    FingerDownOver(obj, id, body(ref))
+  }
+  
   def isFingerMoveOver(obj: Expr): Expr = {
     val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
     FingerMoveOver(obj, id, NOP)
+  }
+  
+   def isFingerUpOver(obj: Expr): Expr = {
+    IsFingerUpOver(obj)
+  }
+  
+   def isFingerDownOver(obj: Expr): Expr = {
+    IsFingerDownOver(obj)
   }
   
   def let(name: String, expr: Expr)(body: Proxy => Expr): Expr = {
@@ -515,6 +529,22 @@ object TreeDSL {
       visible: Expr = category.visible,
       color: Expr = category.color)(implicit game: Game): Box[Boolean] = {
     val obj = new BooleanBox(game, name, x, y, angle, width, height, value, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
+  
+  def stringbox(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      value: Expr = category.value,
+      angle: Expr = category.angle,
+      width: Expr = category.width,
+      height: Expr = category.height,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Box[String] = {
+    val obj = new StringBox(game, name, x, y, angle, width, height, value, visible, color)
     obj.setCategory(category)
     game.add(obj)
     obj

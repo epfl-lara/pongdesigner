@@ -288,19 +288,18 @@ class NumberEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngine
 /**
  * SystemEditor
  * 
- * Wrapper to the static menu on the top left of the application
+ * Wrapper to the time properties related to the object
  */
-/*class SystemEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
+class SystemEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
   def unselect() = {
   }
   
   def isVisible() = gameEngineView.isInEditMode()
   
-  def testHovering(x: Float, y: Float, button_size: Float): Boolean = StaticMenu.testHovering(x, y, button_size)
+  def testHovering(x: Float, y: Float, button_size: Float): Boolean = SystemMenu.testHovering(x, y, button_size)
   
-  def menus: List[CustomMenu] = StaticMenu.menus
+  def menus: List[CustomMenu] = SystemMenu.menus
 }
-*/
 /**
  * GameEditor
  * 

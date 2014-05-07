@@ -357,14 +357,44 @@ trait Interpreter {
         booleanLiteralFalse
       }
       
-    case FingerDownOver(e) =>
+    case FingerDownOver(expr, id, block) =>
+      val obj = eval(expr).as[GameObject]
+      val downs = gctx.fingerDowns(_.obj.exists(_ == obj))
+      val from = downs.headOption.map(_.p)
+      if (from.isDefined) {
+        // The block is NOP if the expression is only used for its returned value.
+        // No need to instantiate a new RecContext.
+        if (block != NOP) {
+          eval(block)(gctx, rctx.withNewVar(id, from.get))
+        }
+        booleanLiteralTrue
+      } else {
+        booleanLiteralFalse
+      }
+    
+    case FingerUpOver(expr, id, block) =>
+      val obj = eval(expr).as[GameObject]
+      val downs = gctx.fingerUps(_.obj.exists(_ == obj))
+      val from = downs.headOption.map(_.p)
+      if (from.isDefined) {
+        // The block is NOP if the expression is only used for its returned value.
+        // No need to instantiate a new RecContext.
+        if (block != NOP) {
+          eval(block)(gctx, rctx.withNewVar(id, from.get))
+        }
+        booleanLiteralTrue
+      } else {
+        booleanLiteralFalse
+      }
+      
+    case IsFingerDownOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
           Literal(gctx.existsFingerDown(_.obj.exists(_ == o)))
         case _ => error(expr)
       }
 
-    case FingerUpOver(e) =>
+    case IsFingerUpOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
           Literal(gctx.existsFingerUp(_.obj.exists(_ == o)))

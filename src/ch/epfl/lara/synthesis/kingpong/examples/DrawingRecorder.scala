@@ -38,17 +38,21 @@ class DrawingRecorder extends Game {
   //val ruleWidth = drawing.stroke_width := preview_drawing.radius * 5 
   
   val ruleColor = foreach(color_objects) { obj =>
-    whenever(FingerDownOver(obj))(
-      drawing.color_drawing := obj.color,
-      preview_drawing.color := obj.color
-    )
+    fingerDownOver(obj){ pos =>
+      whenever(pos in obj)(
+	      drawing.color_drawing := obj.color,
+	      preview_drawing.color := obj.color
+      )
+    }
   }
   
   val ruleWidth = foreach(width_objects) { obj =>
-    whenever(FingerDownOver(obj))(
-      drawing.stroke_width := obj.height * 20,
-      preview_drawing.radius := obj.height / 2
-    )
+     fingerDownOver(obj){ pos =>
+      whenever(pos in obj)(
+	      drawing.stroke_width := obj.height * 20,
+	      preview_drawing.radius := obj.height / 2
+	    )
+     }
   }
   
   register(ruleColor)

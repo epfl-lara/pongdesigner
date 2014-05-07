@@ -48,7 +48,7 @@ class TestGame extends Game {
   }
   
   val r3 = foreach(moving_objects2) { obj =>
-    whenever(FingerDownOver(obj)) {
+    whenever(IsFingerDownOver(obj)) {
       obj.radius += 0.1
     } 
   }

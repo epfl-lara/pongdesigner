@@ -19,12 +19,20 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 object SystemMenu extends MenuCenter {
   var activated = false
   
-   menus = List(TrashButton, FixButton, CopyButton)
+   menus = List(TrashButton, FixButton, SetTimeButton, CopyButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     //RenameButtonRule.setText(selectedShape.mName)
     //RenameButtonRule.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
+    selectedShape match {
+      case selectedShape: SoundTTS =>
+        SetTimeButton.visible = true
+      case _ =>
+        SetTimeButton.visible = false
+    }
+
     Menus.spaceMenusOnCircle(canvas, cx, cy, menus)
+    
     for(menu <- menus) {
       menu.draw(canvas, gameEngine, selectedShape, bitmaps, cx, cy)
     }
@@ -70,8 +78,47 @@ object TrashButton extends MenuButton {
   def hint_id = R.string.change_trash_hint
 }
 
-/** Sends a shape to trash
- *  TODO : This should demonstrate advanced functionality (aka: deletion is a property)
+/** Sets the time of a SoundTTS.
+ **/
+object SetTimeButton extends MenuButton {
+  import MenuOptions._
+
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape match {
+	    case selectedShape: SoundTTS =>
+	    if(modify_prev) { // Nothing to be done here
+	      selectedShape.time set gameEngine.getGame().time.toInt
+	    } else {
+	      selectedShape.time setNext gameEngine.getGame().time.toInt
+	    }
+	    if(copy_to_prev) {
+	      selectedShape.time set selectedShape.time.next
+	    }
+	  }
+    hovered = false
+  }
+  
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
+    // Nothing
+  }
+ 
+  private val selected_hovered_icons = R.drawable.flat_button_selected_highlighted :: R.drawable.reload ::  Nil
+  private val selected_icons = R.drawable.flat_button_selected :: R.drawable.reload :: Nil
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.reload ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.reload :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) = {
+      val selected = selectedShape match { case s: SoundTTS => s.time.next == gameEngine.getGame().time case _ => false
+    }
+    (if(hovered) {
+      if(selected) selected_hovered_icons else hovered_icons} else  {
+      if(selected) selected_icons else normal_icons})
+  }
+  
+  def hint_id = R.string.change_time_hint
+}
+
+/** Puts shape properties to the init state.
  **/
 object FixButton extends MenuButton {
   import MenuOptions._

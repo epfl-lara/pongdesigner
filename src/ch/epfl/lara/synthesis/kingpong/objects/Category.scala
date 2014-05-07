@@ -34,9 +34,10 @@ object Category {
       color_drawing: Expr = ColorConstants.black,
       recording: Expr = true,
       language: Expr = "en",
+      text: Expr = "Custom text",
       time: Expr = 1)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, radius, value, randomMinValue, randomMaxValue, 
-        visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe, stroke_width, color_drawing, recording, language, time)
+        visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time)
   }
 }
 
@@ -70,6 +71,7 @@ class CategoryObject(
     val color_drawing: Expr,
     val recording: Expr,
     val language: Expr,
+    val text: Expr,
     val time: Expr)
     extends NotNull with Category { self =>
 

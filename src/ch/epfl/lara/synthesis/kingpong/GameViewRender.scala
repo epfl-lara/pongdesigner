@@ -63,7 +63,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   var touchDownPaint = new Paint()
   touchDownPaint.setColor(0xAAFF0000)
   touchDownPaint.setStyle(Paint.Style.FILL_AND_STROKE)
-  touchDownPaint.setStrokeWidth(2)
+  touchDownPaint.setStrokeWidth(3)
   touchDownPaint.setAntiAlias(true)
   var touchUpPaint = new Paint()
   touchUpPaint.set(touchDownPaint)
@@ -78,6 +78,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   
   val distancePaint = new Paint()
   distancePaint.set(touchMovePaint)
+  distancePaint.setColor(0xAAFF8800)
   distancePaint.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
   var velocityPaint = new Paint()
   velocityPaint.setColor(0x88FF00FF)
@@ -157,8 +158,9 @@ class GameViewRender(val context: Context) extends ContextUtils {
     // alias to `paint.setLinearText(true)`, since it is deprecated.
     paint.setFlags(paint.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
     paintSelected.setStrokeWidth(mapRadiusI(matrixI, 3))
-    paintPrev.setStyle(Paint.Style.FILL)
-    paintPrev.setStrokeWidth(mapRadiusI(matrixI, 3))
+    paintPrev.set(paint)
+    //paintPrev.setStyle(Paint.Style.FILL)
+    //paintPrev.setStrokeWidth(mapRadiusI(matrixI, 3))
     distancePaint.setStrokeWidth(mapRadiusI(matrixI, 2))
     
     def drawObject(o: GameObject): Unit = {
@@ -323,18 +325,32 @@ class GameViewRender(val context: Context) extends ContextUtils {
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           val value = b.name.next + ":" + b.value.next.toString
           canvas.drawText(value, b.x.next, b.y.next, paint)
-          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
+          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paintSelected)
           canvas.restore()
           
         case b: StringBox => 
           paint.setTextSize(b.height.next)
+          val valueDisplayNext = if(b.x.get != b.x.next || b.y.get != b.y.next || b.height.get != b.height.next) {
+            paintPrev.setTextSize(b.height.get)
+            canvas.save()
+            canvas.rotate(radToDegree(b.angle.get), b.x.get, b.y.get)
+            val value = b.value.get.toString
+            canvas.drawText(value, b.x.get, b.y.get, paintPrev)
+            canvas.restore()
+            canvas.drawLine(b.x.get, b.y.get, b.x.next, b.y.next, distancePaint)
+            b.value.next
+          } else if(b.value.get != b.value.next) { // Same place, different value.
+            b.value.get + "=>" + b.value.next
+          } else {
+            b.value.next
+          }
+          
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
-          val value = b.name.next + ":" + b.value.next.toString
-          canvas.drawText(value, b.x.next, b.y.next, paint)
-          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paint)
+          canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paint)
+          if(obj_to_highlight contains b) canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paintSelected)
           canvas.restore()
-          
+
         case b: BooleanBox =>
           paint.setTextSize(b.height.next)
           canvas.save()
@@ -494,7 +510,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     if(shapeEditor.selectedShape != null) {
       val (x, y) = shapeEditor.selectedShape match {
-        case selectedShape: Movable =>
+        case selectedShape: Positionable =>
           if(MenuOptions.modify_prev) {
             (selectedShape.x.get,
              selectedShape.y.get)

@@ -150,7 +150,7 @@ class SimplePong extends Game {
   }
   
   val r7 = foreach(balls) { (ball) =>
-    whenever(!started.value && FingerUpOver(paddle1)) (
+    whenever(!started.value && IsFingerUpOver(paddle1)) (
       started.value := true,
       ball.velocity := Vec2(0, -5.0f)
     )

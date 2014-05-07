@@ -225,9 +225,9 @@ object CodeGenerator extends CodeHandler {
     // Now we try to merge these statement with the conditions.
     val objs_for_conditions = conditionEvent map {
       case (FingerDown(v, objs), i) if objs.size > 0 =>
-        (objs.toList, 1, (obj: List[Expr]) => FingerDownOver(obj.head))
+        (objs.toList, 1, (obj: List[Expr]) => isFingerDownOver(obj.head))
       case (FingerUp(v, objs), i) if objs.size > 0 =>
-        (objs.toList, 1, (obj: List[Expr]) => FingerUpOver(obj.head))
+        (objs.toList, 1, (obj: List[Expr]) => isFingerUpOver(obj.head))
       case (FingerMove(u, v, objs), i) if objs.size > 0 =>
         (objs.toList, 1, (obj: List[Expr]) => isFingerMoveOver(obj.head))
       case (BeginContact(contact, objectA, objectB), i) =>

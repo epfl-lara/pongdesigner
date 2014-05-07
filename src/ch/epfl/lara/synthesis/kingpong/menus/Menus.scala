@@ -26,7 +26,7 @@ object Menus {
     var i = -1
     var radius = 1.0//Math.max(1f, n/6f)
     var offsetAngle = 0.0
-    var lm = menus
+    var lm = menus.filter(_.visible)
     while(lm != Nil) {
       i += 1
       if(i == 6) {

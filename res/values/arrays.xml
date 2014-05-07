@@ -108,7 +108,7 @@
         <item>lives</item>
         <item>zero</item>
         </string-array>
-    <string-array name="text_possibilities">
+    <string-array name="string_possibilities">
         <item>custom&#8230;</item>
         <item>Victory!</item>
         <item>Looser</item>
@@ -121,8 +121,22 @@
         <item>\u2191</item>
         <item>\u2192</item>
         <item>\u2193</item>
-                
     </string-array>
+    <string-array name="text_possibilities">
+        <item>custom&#8230;</item>
+        <item>Congratulations !</item>
+        <item>Game, over.</item>
+        <item>Welcome to the game !</item>
+        <item>Enemy approaching !</item>
+        <item>Wololo</item>
+        <item>Please try again</item>
+    </string-array>
+    <string-array name="language_possibilities">
+        <item>custom&#8230;</item>
+        <item>fr</item>
+        <item>en</item>
+    </string-array>
+    
     <!-- string-array name="colors">        
         <item>#FF00FFFF</item>  
         <item>#FFFF266E</item>

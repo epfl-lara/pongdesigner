@@ -164,11 +164,15 @@ class GameView(val context: Context, attrs: AttributeSet)
         shape = d
         true
       case Str(R.string.add_boolbox_hint) =>
-        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
+        val d = booleanbox(DefaultCategory("trigger", game))(name="condition", x=0, y=0, value=true)(game)
         shape = d
         true
       case Str(R.string.add_textbox_hint) =>
-        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
+        val d = stringbox(DefaultCategory("label", game))("Score", x=0, y=0, value = "custom text")(game)
+        shape = d
+        true
+      case Str(R.string.add_soundtts_hint) =>
+        val d = soundTTS(DefaultCategory("soundtts", game))("tts", x=0, y=0, language="en", text="Your speech here", time=game.time)(game)
         shape = d
         true
       case Str(R.string.add_integerbox_hint) =>
@@ -249,6 +253,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Selected objects, events and rules */
   var shapeEditor = new ShapeEditor(this)
   var eventEditor = new EventEditor(this)
+  var systemEditor = new SystemEditor(this)
   /*var categoryEditor = new CategoryEditor(this)
   var ruleEditor = new RuleEditor(this)
   var numberEditor = new NumberEditor(this)
@@ -779,12 +784,12 @@ class GameView(val context: Context, attrs: AttributeSet)
     var minDistance = -1f
     def checkShapeToSelect(shape: GameObject) = {
       if (previousSelectedShape != null && !afterPreviousSelectedShape) {
-        if (previousSelectedShape == shape) {
+        if (previousSelectedShape eq shape) {
           afterPreviousSelectedShape = true
         }
       } else { // We are after the previously selected shape, so we can check the distance to the finger.
         shape match {
-          case shape: Movable =>
+          case shape: Positionable =>
             val x = p.x + (if (MenuOptions.modify_prev) shape.x.next - shape.x.get else 0)
             val y = p.y + (if (MenuOptions.modify_prev) shape.y.next - shape.y.get else 0) // - shape.y + shape.prev_y
             val dist = shape.distanceSelection(x, y)
@@ -1297,8 +1302,12 @@ class GameView(val context: Context, attrs: AttributeSet)
         ColorMenu.testHovering(to.x, to.y, button_size)
         ColorMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
-      if (SystemMenu.activated) {
-        SystemMenu.testHovering(to.x, to.y, button_size)
+      
+      if (systemEditor.isVisible()) {
+        val stg_hovered = systemEditor.testHovering(to.x, to.y, button_size)
+        if(stg_hovered) {
+          systemEditor.fireTooltips(context)
+        }
         SystemMenu.onFingerMove(this, shapeEditor.selectedShape, relativeX, relativeY, shiftX, shiftY, toX, toY)
       }
     }

@@ -282,7 +282,10 @@ class KingPong extends Activity
                 params.width = params.width +dx
                 mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
                 if(mActions != null) {
-                  //mActions.setX(mCodeViewResizer.getX)
+                  mActions.setX(mCodeViewResizer.getX)
+                  val params = mActions.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
+	                val dx = - (x - xprev).toInt
+	                params.width = params.width + dx
                   mActions.requestLayout()
                 }
                 Log.d("Test", s"The layout moves dx=$dx")

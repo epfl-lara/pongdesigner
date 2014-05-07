@@ -106,7 +106,7 @@
     <string name="add_arraybox_hint">Adds a 2D array to the game</string>
     <string name="add_drawing_object_hint">Adds a drawing zone to the game</string>
     <string name="add_sound_recorder_hint">Adds a sound recorder to the game</string>
-    
+    <string name="add_soundtts_hint">Add a text-to-speech to the game</string>
     <string name="add_rule_hint">Adds a rule to the game</string>
     
     <string name="select_accelerometer_hint">Enables selecting objects affected by the accelerometer</string>
@@ -117,6 +117,7 @@
     <string name="change_name_hint">Changes the name of the shape</string>
     <string name="system_property_hint">Changes the system properties of the shape</string>
     <string name="change_text_hint">Changes the text of the shape</string>
+    <string name="change_language_hint">Changes the language for text-to-speech</string>
     <string name="change_position_hint">Changes the position of the shape</string>
     <string name="change_increment_hint">Change the number by 1</string>
     <string name="change_decrement_hint">Change the number by -1</string>
@@ -136,6 +137,7 @@
     <string name="change_rule_hint">Opens a rule for editing</string>
     <string name="change_back_hint">The object will be like that from the beginning</string>
     <string name="change_copy_hint">Duplicates this object</string>
+    <string name="change_time_hint">Set up the speech to start at this point</string>
     
     <string name="play_rule_hint">Plays the content of this rule</string>
     <string name="trash_rule_hint">Delete this rule</string>

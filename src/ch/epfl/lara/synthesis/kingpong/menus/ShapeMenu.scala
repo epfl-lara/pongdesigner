@@ -39,44 +39,34 @@ object MenuOptions {
 
 /** Change the menu. */
 object ShapeMenu extends MenuCenter {
-  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton)
+  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton, ModifyLanguageButton)
   menus = basicMenu
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     for(m <- menus) { m.visible = true }
+    ModifyLanguageButton.visible = false
+    IncrementButton.visible = false
+    DecrementButton.visible = false
+    ModifyTextButton.visible = false
     val top_shift = selectedShape match {
       case d: IntBox =>
         IncrementButton.setPos(0, -1)
         DecrementButton.setPos(0, 1)
-        ModifyTextButton.visible = false
         IncrementButton.visible = true
         DecrementButton.visible = true
         -1
       case d: StringBox =>
         ModifyTextButton.setPos(0, -1)
-        IncrementButton.visible = false
-        DecrementButton.visible = false
         ModifyTextButton.visible = true
          -1
+      case d: SoundTTS =>
+        ModifyTextButton.setPos(0, -1)
+        ModifyLanguageButton.setPos(-1, -1)
+        ModifyTextButton.visible = true
+        ModifyLanguageButton.visible = true
+        -1
       case _ =>
-        IncrementButton.visible = false
-        DecrementButton.visible = false
-        ModifyTextButton.visible = false
         0
-    }
-    selectedShape match {
-      /*case c: Camera =>
-        PinButton.visible = false
-        SpeedButton.visible = false
-        PaintButton.visible = false
-        TrashButton.visible = false
-        VisibilityButton.visible = false*/
-      case _ =>
-        PinButton.visible = true
-        SpeedButton.visible = true
-        PaintButton.visible = true
-        TrashButton.visible = true
-        VisibilityButton.visible = true
     }
     selectedShape match {
       case c: Rotationable =>
@@ -85,15 +75,13 @@ object ShapeMenu extends MenuCenter {
         RotateButton.visible = false
     }
     selectedShape match {
-      case c: Array2D =>
-        SpeedButton.visible = false
-        PinButton.visible = false
-      case c: Cell =>
-        SpeedButton.visible = false
-        PinButton.visible = false
+      case c: PhysicalObject =>
+        SpeedButton.visible = true
+        PinButton.visible = true
       case _ =>
+        SpeedButton.visible = false
+        PinButton.visible = false
     }
-    
     MoveButton.setPos(0, 0)
     SpeedButton.setPos(1, top_shift)
     PinButton.setPos(2, top_shift)
@@ -154,8 +142,24 @@ object ModifyTextButton extends MenuButton {
           }
         }
         CustomDialogs.launchChoiceDialogWithCustomchoice(context,
-            String.format(res.getString(R.string.modify_text_title), d.value.next), R.array.text_possibilities,
+            String.format(res.getString(R.string.modify_text_title), d.value.next), R.array.string_possibilities,
             updateText(_), {() => }, if(modify_prev) d.value.get else d.value.next)
+      case d: SoundTTS =>
+        def updateText(s: String): Unit = {
+          if(modify_prev) {
+            d.text.set(s)
+          } else {
+            d.text.setNext(s)
+          }
+          if(copy_to_prev) {
+            d.text.set(d.text.get)
+          } else {
+            //gameEngine.updateSelectedRule()
+          }
+        }
+        CustomDialogs.launchChoiceDialogWithCustomchoice(context,
+            String.format(res.getString(R.string.modify_text_title), d.text.next), R.array.text_possibilities,
+            updateText(_), {() => }, if(modify_prev) d.text.get else d.text.next)
       case _ => 
     }
     hovered = false
@@ -172,6 +176,43 @@ object ModifyTextButton extends MenuButton {
     (if(hovered) hovered_icons else normal_icons)
   
   def hint_id = R.string.change_text_hint
+}
+
+
+/** Button to modify the language */
+object ModifyLanguageButton extends MenuTextButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    val res = context.getResources()
+    selectedShape match {
+      case d: SoundTTS =>
+        def updateText(s: String): Unit = {
+          if(modify_prev) {
+            d.language.set(s)
+          } else {
+            d.language.setNext(s)
+          }
+          if(copy_to_prev) {
+            d.language.set(d.language.get)
+          } else {
+            //gameEngine.updateSelectedRule()
+          }
+        }
+        CustomDialogs.launchChoiceDialogWithCustomchoice(context,
+            String.format(res.getString(R.string.modify_text_title), d.language.next), R.array.language_possibilities,
+            updateText(_), {() => }, if(modify_prev) d.language.get else d.language.next)
+      case _ => 
+    }
+    hovered = false
+  }
+
+  private val hovered_icons = R.drawable.flat_button_resizable_highlighted ::  Nil
+  private val normal_icons = R.drawable.flat_button_resizable :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) =
+    (if(hovered) hovered_icons else normal_icons)
+  
+  def hint_id = R.string.change_language_hint
 }
 
 

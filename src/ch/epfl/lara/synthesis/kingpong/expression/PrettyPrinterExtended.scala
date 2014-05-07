@@ -180,9 +180,9 @@ trait PrettyPrinterExtendedTypical {
         StringMaker(c append other, size + other.size, map, mOpen, mCommentOpen)
       }
     }
-    def +<>(other: String)(implicit s: Tree): StringMaker = {
+    /*def +<>(other: String)(implicit s: Tree): StringMaker = {
       StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
-    }
+    }*/
     def +!(other: String, s: Category): StringMaker = {
       StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
     }
@@ -327,7 +327,7 @@ trait PrettyPrinterExtendedTypical {
       case Find(category, id, body) =>
         c +! (category.name, category) +< ".find{" + id + " => " + body + "}" +>
         
-    case Delete(obj) => c + indent +<> "Delete(" + obj + ")"
+    case Delete(obj) => c + indent +< "Delete(" + obj + ")" +>
     case Tuple(exprs) => 
       exprs match {
         case Seq() => c + indent +< "()" +>
@@ -341,7 +341,7 @@ trait PrettyPrinterExtendedTypical {
       ((c + indent +< "(") /: eprops) { case (c, (e, prop)) => c + e + "." + prop + "'"} + ") = " + rhs +>
     case Block(exprs) =>
       exprs.toList match {
-        case Nil => c + indent +<> "{}"
+        case Nil => c + indent +< "{}" +>
         case a::Nil => c + indent +< a +>
         case a::l => 
           ((c + indent + INDENT +< a) /: l) { case (c, stat) => c + LF + indent + INDENT + stat} +>
@@ -353,7 +353,7 @@ trait PrettyPrinterExtendedTypical {
       end +>
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
-    case NOP => c +<> "NOP"
+    case NOP => c +< "NOP" +>
     
     case Choose(vars, pred) => 
       val varsString = vars.mkString("(", ",", ")")
@@ -364,11 +364,11 @@ trait PrettyPrinterExtendedTypical {
     case StringLiteral(value: String) => c + indent + "\"" + value + "\""
     case BooleanLiteral(value: Boolean) => c + indent + value.toString
     case UnitLiteral => c + indent + "()"
-    case ObjectLiteral(null) => c + indent +<> "null"
-    case ObjectLiteral(obj) => c + indent +<> obj.name.get
+    case ObjectLiteral(null) => c + indent +< "null" +>
+    case ObjectLiteral(obj) => c + indent +< obj.name.get +>
     
     case Select(expr, property) => c + indent +< expr + "." + property +>
-    case Variable(id) => c + indent +<> id.toString
+    case Variable(id) => c + indent +< id.toString +>
     case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
     
     case ContainingCell(_, obj) => c + indent +< "cell(" + obj + ")" +>
@@ -376,9 +376,11 @@ trait PrettyPrinterExtendedTypical {
     case Column(expr) => c + indent +< expr + ".column" +>
     case Apply(arr, col, row) => c + indent +< arr + "(" + col + "," + row + ")" +>
     
-    case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + obj + (block, indent + INDENT) +>
-    case FingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + o +>
-    case FingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + o +>
+    case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + " " + obj + (block, indent + INDENT) +>
+    case FingerUpOver(obj, id, block) => c + indent +< FINGER_UP_SYMBOL + " " + obj + (block, indent + INDENT) +>
+    case FingerDownOver(obj, id, block) => c + indent +< FINGER_DOWN_SYMBOL + " " + obj + (block, indent + INDENT) +>
+    case IsFingerDownOver(o) => c + indent +< FINGER_DOWN_SYMBOL + " " + o +>
+    case IsFingerUpOver(o) => c + indent +< FINGER_UP_SYMBOL + " " + o +>
     
     case b @ BinaryOperator(lhs, rhs, _) => val op = b match {
         case _:Plus => "+"
