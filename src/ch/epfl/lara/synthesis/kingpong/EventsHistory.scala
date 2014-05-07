@@ -27,7 +27,7 @@ class EventsHistory(val game: Game) {
   /** Minimum time stored in the history. */
   def minTime = min_time
   
-  /** Maxixum time stored in the history. */
+  /** Maximum time stored in the history. */
   def maxTime = max_time
 
   def restore(t: Int): Unit = {
@@ -48,8 +48,16 @@ class EventsHistory(val game: Game) {
   /* Advance the time and store the current events in the history. */
   def step(): Unit = {
     //Log.d("kingpong", s"Before context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
-    val evts = crtEvents.synchronized {
-      val res = crtEvents.toList
+    val processedEvents = crtEvents.synchronized {
+      val res = crtEvents map {
+        case FingerMove(from, to, null) =>
+          FingerMove(from, to, game.physicalObjectFingerAt(from))
+        case FingerDown(pos, null) =>
+          FingerDown(pos, game.physicalObjectFingerAt(pos))
+        case FingerUp(pos, null) =>
+          FingerUp(pos, game.physicalObjectFingerAt(pos))
+        case e => e
+      }
       crtEvents.clear()
       res
     }
@@ -60,18 +68,7 @@ class EventsHistory(val game: Game) {
     }
     min_time = Math.max(0, Math.max(min_time, max_time - History.MAX_HISTORY_SIZE + 1))
 
-    if (evts.nonEmpty) {
-      // Here we find the objects under the finger events.
-      val processedEvents = evts.map {
-        case FingerMove(from, to, null) =>
-          FingerMove(from, to, game.physicalObjectFingerAt(from))
-        case FingerDown(pos, null) =>
-          FingerDown(pos, game.physicalObjectFingerAt(pos))
-        case FingerUp(pos, null) =>
-          FingerUp(pos, game.physicalObjectFingerAt(pos))
-        case e => e
-      }
-      
+    if (processedEvents.nonEmpty) {
       history += (time, processedEvents)
     }
     //Log.d("kingpong", s"After context step, recording_time = $recording_time, min_time = $min_time, max_time = $max_time.")
