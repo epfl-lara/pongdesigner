@@ -178,7 +178,7 @@ class KingPong extends Activity
     override def onInit(status: Int) {       
         if (status == TextToSpeech.SUCCESS) {
             //mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null);
-            //mTts.speak("Ceci est un deuxième test !", TextToSpeech.QUEUE_ADD, null);
+            //mTts.speak("Ceci est un deuxieme test !", TextToSpeech.QUEUE_ADD, null);
         }
     }
   }
@@ -616,13 +616,13 @@ class KingPong extends Activity
             }
         case TTS_CHECK =>
           if(resultCode == 1 /*TextToSpeech.Engine.CHECK_VOICE_DATA_PASS*/) {
-            // Succès, au moins un moteur de TTS à été trouvé, on l'instancie
+            // Succes, au moins un moteur de TTS a ete trouve, on l'instancie
             mTts = new TextToSpeech(this, mTtsListener)
             if (mTts.isLanguageAvailable(Locale.getDefault()) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
             	mTts.setLanguage(Locale.getDefault());
           	}
 	        } else {
-            // Echec, aucun moteur n'a été trouvé, on propose à l'utilisateur d'en installer un depuis le Market
+            // Echec, aucun moteur n'a ete trouve, on propose e l'utilisateur d'en installer un depuis le Market
             val installIntent = new Intent()
             installIntent.setAction("android.speech.tts.engine.INSTALL_TTS_DATA" /*TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA*/);
             startActivity(installIntent);

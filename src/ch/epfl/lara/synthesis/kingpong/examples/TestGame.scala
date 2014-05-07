@@ -32,7 +32,7 @@ class TestGame extends Game {
   
   val soundtts = soundTTS(cat2)(name="soundtts",x= -10.5f, y=4f, time= 1, language="en", text="Welcome to Pong Designer made by Lara at E P F L !")
   
-  val soundtts2 = soundTTS(cat2)(name="soundtts2",x= -10.5f, y=5f, time= 150, language="fr", text="Bienvenue à Pongue Dizaïneur réalisé par Lara, à l'eupéhèfelle !")
+  val soundtts2 = soundTTS(cat2)(name="soundtts2",x= -10.5f, y=5f, time= 150, language="fr", text="Bienvenue Ã  Pongue DizaÃ¯neur rÃ©alisÃ© par Lara, Ã  l'eupÃ©hÃ©felle !")
   
   val r1 = foreach(moving_objects, base.category) { (obj, base) =>
     whenever(base.y < obj.y)(
