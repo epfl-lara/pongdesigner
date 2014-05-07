@@ -13,11 +13,15 @@ package ch.epfl.lara.synthesis.kingpong
  *  Purpose:   View for rendering Pong Designer
  */
 
-import java.util.concurrent.atomic.AtomicReference
-import scala.annotation.tailrec
 import scala.collection.mutable.{ HashMap => MMap }
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent.atomic.AtomicReference
+import scala.util.Failure
+import scala.util.Success
+
 import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
@@ -55,17 +59,12 @@ import ch.epfl.lara.synthesis.kingpong.expression._
 import PrettyPrinterExtendedTypical.Mappings
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression.TreeOps
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import expression.Types._
-import expression.TreeOps
 import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
+
 
 object GameView {
   sealed trait GameState
@@ -1049,7 +1048,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             }
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
-          val relevantMove = getGame.getFingerMoveEvent(event, time)()
+          val relevantMove = getFingerMoveEvent(event, time, getGame.minTime, getGame.maxTime, getGame.eventsHistory)
           relevantMove match {
             case Some(movement @ FingerMove(from, to, objs)) =>
               if (!moveTaken(movement)) {

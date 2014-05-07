@@ -39,8 +39,6 @@ class EventsHistory(val game: Game) {
     }
   }
   
-  def getEvents(i: Int): Seq[Event] = history flatMap { case (time, eventSeq) if time == i => eventSeq case _ => Seq() }
-  
   def foreachEvent(f: (Event, Int) => Unit) = {
     for ((time, events) <- history; e <- events) f(e, time)
   }
@@ -78,11 +76,25 @@ class EventsHistory(val game: Game) {
    *  Should not be called by another thread than the one who 
    *  calls `step()`.
    */
-  def events: Seq[Event] = {
+  def lastEvents: Seq[Event] = {
     if(history.isEmpty || history.last._1 != time ) {
       Seq.empty
     } else {
       history.last._2
+    }
+  }
+
+  /**
+   *  Return the events from the given time step.
+   *  Should not be called by another thread than the one who
+   *  calls `step()`.
+   */
+  def events(t: Int): Seq[Event] = {
+    val i = history.lastIndexWhere(_._1 == t)
+    if (i >= 0) {
+      history(i)._2
+    } else {
+      Seq.empty
     }
   }
 
