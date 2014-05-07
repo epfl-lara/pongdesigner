@@ -34,6 +34,8 @@
         <item>@drawable/menu_add_array</item>
         <item>@drawable/drawing_object</item>
         <item>@drawable/microphone</item>
+        <item>@drawable/menu_add_tts</item>
+        menu_add_tts
         </array>
     <array name="menu_add_string">
         <item>@string/add_rectangle_hint</item>
@@ -44,7 +46,8 @@
         <item>@string/add_arraybox_hint</item>
         <item>@string/add_drawing_object_hint</item>
         <item>@string/add_sound_recorder_hint</item>
-    </array>
+        <item>@string/add_soundtts_hint</item>
+        </array>
     <array name="menu_constraint">
         
     </array>

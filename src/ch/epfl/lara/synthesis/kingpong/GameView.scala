@@ -641,6 +641,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.menu_add_circle,
       R.drawable.menu_add_digit,
       R.drawable.menu_add_text,
+      R.drawable.menu_add_tts,
       R.drawable.modify_text,
       R.drawable.plus,
       R.drawable.menu_add_accelerometer,
@@ -670,6 +671,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.jpeg,
       R.drawable.microphone,
       R.drawable.music,
+      R.drawable.reload,
       R.drawable.copy_menu //R.drawable.timebutton3
       )
   drawables_to_load.foreach { id =>

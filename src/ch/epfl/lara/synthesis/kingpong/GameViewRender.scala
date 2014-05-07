@@ -201,6 +201,29 @@ class GameViewRender(val context: Context) extends ContextUtils {
           if(state == Running) {
             maybePlay(gameView, soundTTS)
           }
+          if(state == Editing) {
+            paint.setTextSize(soundTTS.height.next)
+	          val valueDisplayNext = if(soundTTS.x.get != soundTTS.x.next || soundTTS.y.get != soundTTS.y.next || soundTTS.height.get != soundTTS.height.next) {
+	            paintPrev.setTextSize(soundTTS.height.get)
+	            canvas.save()
+	            canvas.rotate(radToDegree(soundTTS.angle.get), soundTTS.x.get, soundTTS.y.get)
+	            val value = soundTTS.text.get.toString
+	            canvas.drawText(value, soundTTS.x.get, soundTTS.y.get, paintPrev)
+	            canvas.restore()
+	            canvas.drawLine(soundTTS.x.get, soundTTS.y.get, soundTTS.x.next, soundTTS.y.next, distancePaint)
+	            soundTTS.text.next
+	          } else if(soundTTS.text.get != soundTTS.text.next) { // Same place, different value.
+	            soundTTS.text.get + "=>" + soundTTS.text.next
+	          } else {
+	            soundTTS.text.next
+	          }
+	          
+	          canvas.save()
+	          canvas.rotate(radToDegree(soundTTS.angle.next), soundTTS.x.next, soundTTS.y.next)
+	          canvas.drawText(valueDisplayNext, soundTTS.x.next, soundTTS.y.next, paint)
+	          if(obj_to_highlight contains soundTTS) canvas.drawText(valueDisplayNext, soundTTS.x.next, soundTTS.y.next, paintSelected)
+	          canvas.restore()
+          }
         case soundRecorder : SoundRecorder =>
           if(state == Editing) {
             drawBitmapInGame(canvas, matrix, soundRecorder, bitmaps(R.drawable.microphone), 0xFF)

@@ -64,6 +64,7 @@ object ShapeMenu extends MenuCenter {
         ModifyLanguageButton.setPos(-1, -1)
         ModifyTextButton.visible = true
         ModifyLanguageButton.visible = true
+        ModifyLanguageButton.setText(d.language.next)
         -1
       case _ =>
         0
@@ -91,7 +92,7 @@ object ShapeMenu extends MenuCenter {
     SystemButton.setPos(3, 1)
     RotateButton.setPos(-1, 1)
     
-    RenameButton.setText(selectedShape.name.get)
+    RenameButton.setText(selectedShape.name.next)
     RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
 
     if(MoveButton.hovered) {
