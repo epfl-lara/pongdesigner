@@ -118,7 +118,7 @@ object Events {
           case (e @ FingerMove(`v`, _, _)) <:: q => rec(e, time)(q)
           case (e @ FingerUp(`v`, _))      <:: _ => Some(e)
           case _ <:: q                           => rec(e, time)(q)
-          case Nil if time > 0                   => rec(e, time - 1)() //TODO why not time + 1 ?? (and time < maxTime)
+          case Nil if time < maxTime             => rec(e, time+ 1)()
           case Nil                               => None
         }
 
