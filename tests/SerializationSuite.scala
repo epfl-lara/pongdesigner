@@ -23,5 +23,12 @@ class SerializationSuite extends FlatSpec with Matchers {
 
   "GameSerializer" should "TEST" in {
 
+    val json = GameSerializer.exprToJson(game.rule1)
+    println(json.toString)
+    val expr = GameSerializer.jsonToExpr(json)
+    println(expr)
+
+    expr shouldBe game.rule1
+
   }
 }
