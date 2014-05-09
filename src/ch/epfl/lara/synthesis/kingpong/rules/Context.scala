@@ -1,11 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.rules
 
-import scala.collection.mutable.{Set => MSet}
-
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
@@ -78,4 +73,5 @@ trait EmptyContext extends Context {
   def time: Int = 0 
   def getNewName(s: String): String = s + "FRESH"
   def add(c: GameObject) = ()
+  def addAssignmentHistory(p: Positionable, a: AssignableProperty[_], path: Expr): Unit = ()
 }
