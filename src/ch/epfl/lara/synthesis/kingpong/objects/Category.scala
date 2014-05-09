@@ -9,7 +9,6 @@ import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object Category {
   def apply(name: String)(
@@ -26,6 +25,7 @@ object Category {
       density: Expr = 1,
       friction: Expr = 0.2,
       restitution: Expr = 0.5,
+      linearDamping: Expr = 0,
       fixedRotation: Expr = true,
       color: Expr = ColorConstants.black,
       sensor: Expr = false,
@@ -37,7 +37,8 @@ object Category {
       text: Expr = "Custom text",
       time: Expr = 1)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, radius, value, randomMinValue, randomMaxValue, 
-        visible, velocity, angularVelocity, density, friction, restitution, fixedRotation, color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time)
+        visible, velocity, angularVelocity, density, friction, restitution, linearDamping, fixedRotation,
+        color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time)
   }
 }
 
@@ -63,6 +64,7 @@ class CategoryObject(
     val density: Expr,
     val friction: Expr,
     val restitution: Expr,
+    val linearDamping: Expr,
     val fixedRotation: Expr,
     val color: Expr,
     val sensor: Expr,

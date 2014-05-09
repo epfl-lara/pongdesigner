@@ -377,12 +377,13 @@ object TreeDSL {
       density: Expr = category.density,
       friction: Expr = category.friction,
       restitution: Expr = category.restitution,
+      linearDamping: Expr = category.linearDamping,
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
       sensor: Expr = category.sensor,
       tpe: BodyType = category.tpe)(implicit game: Game): Circle = {
     val obj = new Circle(game, name, x, y, radius, visible, velocity, angularVelocity, 
-                         density, friction, restitution, fixedRotation, color, sensor, tpe)
+                         density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -401,12 +402,13 @@ object TreeDSL {
       density: Expr = category.density,
       friction: Expr = category.friction,
       restitution: Expr = category.restitution,
+      linearDamping: Expr = category.linearDamping,
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
       sensor: Expr = category.sensor,
       tpe: BodyType = category.tpe)(implicit game: Game): Rectangle = {
     val obj = new Rectangle(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                            density, friction, restitution, fixedRotation, color, sensor, tpe)
+                            density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -577,11 +579,12 @@ object TreeDSL {
       density: Expr = category.density,
       friction: Expr = category.friction,
       restitution: Expr = category.restitution,
+      linearDamping: Expr = category.linearDamping,
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
       tpe: BodyType = category.tpe)(implicit game: Game): Character = {
     val obj = new Character(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                            density, friction, restitution, fixedRotation, color, tpe)
+                            density, friction, restitution, linearDamping, fixedRotation, color, tpe)
     obj.setCategory(category)
     game.add(obj)
     obj

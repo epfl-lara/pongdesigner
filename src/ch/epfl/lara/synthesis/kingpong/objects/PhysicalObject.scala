@@ -29,6 +29,7 @@ abstract class PhysicalObject(
     init_density: Expr,
     init_friction: Expr,
     init_restitution: Expr,
+    init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr
     ) extends GameObject(init_name) 
@@ -143,6 +144,10 @@ abstract class PhysicalObject(
     r => fixture.setRestitution(r)
   )
 
+  val linearDamping = simplePhysicalProperty[Float]("linear-damping", init_linearDamping,
+    d => body.setLinearDamping(d)
+  )
+
   val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation,
     b => body.setFixedRotation(b)
   )
@@ -185,24 +190,26 @@ class Rectangle (
     init_density: Expr,
     init_friction: Expr,
     init_restitution: Expr,
+    init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr,
     init_sensor: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                             init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
       with ResizableRectangular
       with AngularRectangularContains {
 
   tpe = init_tpe
   
-  private var mBodyDef = new BodyDef()
+  private val mBodyDef = new BodyDef()
   mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
                            game.evaluate[Float](init_y))
 
   protected def bodyDef = {
     mBodyDef.`type` = tpe
     mBodyDef.position = Vec2(x.get, y.get)
+    mBodyDef.linearDamping = game.evaluate[Float](init_linearDamping)
     //if (init_tpe == BodyType.DYNAMIC) {
     //  body_def.bullet = true
     //}
@@ -247,7 +254,7 @@ class Rectangle (
   
   def makecopy(name: String): GameObject = {
     new Rectangle(game, name, x.init, y.init, angle.init, width.init, height.init, visible.init,
-                 velocity.init, angularVelocity.init, density.init, friction.init, restitution.init,
+                 velocity.init, angularVelocity.init, density.init, friction.init, restitution.init, linearDamping.init,
                  fixedRotation.init, color.init, sensor.init, tpe)
   }
   
@@ -268,11 +275,12 @@ class Character (
     init_density: Expr,
     init_friction: Expr,
     init_restitution: Expr,
+    init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                             init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
       with ResizableRectangular 
       with InputManager {
   
@@ -358,7 +366,7 @@ class Character (
   
   def makecopy(name: String): GameObject = {
     new Character(game, name, x.init,  y.init, angle.init, width.init, height.init, visible.init,
-                  velocity.init, angularVelocity.init, density.init, friction.init,  restitution.init,
+                  velocity.init, angularVelocity.init, density.init, friction.init,  restitution.init, linearDamping.init,
                   fixedRotation.init, color.init, tpe)
   }
 }
@@ -375,12 +383,13 @@ class Circle(
     init_density: Expr,
     init_friction: Expr,
     init_restitution: Expr,
+    init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr,
     init_sensor: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
-                           init_density, init_friction, init_restitution, init_fixedRotation, init_color)
+                           init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
       with ResizableCircular {
   
   tpe = init_tpe
@@ -425,7 +434,7 @@ class Circle(
   
   def makecopy(name: String): GameObject = {
     new Circle(game, name, x.init, y.init, radius.init, visible.init, velocity.init, angularVelocity.init,
-               density.init, friction.init, restitution.init, fixedRotation.init,
+               density.init, friction.init, restitution.init, linearDamping.init, fixedRotation.init,
                color.init, sensor.init, tpe)
   }
 }

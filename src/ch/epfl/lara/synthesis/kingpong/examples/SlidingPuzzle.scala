@@ -13,7 +13,7 @@ class SlidingPuzzle extends Game {
   val world = new PhysicalWorld(Vec2(0, 0))
 
   val arrays = Category("Arrays")()
-  val pieces = Category("Pieces")(width = 0.9, height = 0.9)
+  val pieces = Category("Pieces")(width = 0.9, height = 0.9, restitution = 0.1, linearDamping = 2)
   val borders = Category("Borders")(tpe = BodyType.STATIC, color = red)
   val wins = Category("Wins")()
   
@@ -41,7 +41,7 @@ class SlidingPuzzle extends Game {
   val r1 = foreach(pieces) { piece =>
     fingerMoveOver(piece) { move => Seq(
       //debug("Move by %s.", move.expr),
-      ApplyForce(piece, (move._2 - move._1) * 50)
+      ApplyForce(piece, (move._2 - move._1) * 80)
 
       //piece.velocity := (move._2 - move._1) * 15
 //      piece.x += move._2._1 - move._1._1,
