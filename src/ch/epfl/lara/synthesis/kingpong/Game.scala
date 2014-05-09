@@ -75,6 +75,7 @@ trait Game extends RulesManager with Context { self =>
     crtAssignmentEvents foreach { case (pos, ap, e) =>
       eventsHistory.addEvent(AssignmentEvent(Vec2(pos.x.next, pos.y.next), ap, e))
     }
+    crtAssignmentEvents.clear()
   }
 
   /** Clear the history from the given time (inclusive). 
