@@ -145,6 +145,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   var lasty = 0f
   var lastwidth = 0f
   var lastcolor = 0x0
+  val textPreviewMap = MMap[String, String]()
   
   def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
@@ -158,6 +159,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     // alias to `paint.setLinearText(true)`, since it is deprecated.
     paint.setFlags(paint.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
     paintSelected.setStrokeWidth(mapRadiusI(matrixI, 3))
+    paintSelected.setFlags(paintSelected.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
     paintPrev.set(paint)
     //paintPrev.setStyle(Paint.Style.FILL)
     //paintPrev.setStrokeWidth(mapRadiusI(matrixI, 3))
@@ -201,13 +203,13 @@ class GameViewRender(val context: Context) extends ContextUtils {
           if(state == Running) {
             maybePlay(gameView, soundTTS)
           }
-          if(state == Editing) {
-            paint.setTextSize(soundTTS.height.next)
-	          val valueDisplayNext = if(soundTTS.x.get != soundTTS.x.next || soundTTS.y.get != soundTTS.y.next || soundTTS.height.get != soundTTS.height.next) {
+          if(state == Editing || soundTTS.visible.next) {
+	          val textNext = if(soundTTS.x.get != soundTTS.x.next || soundTTS.y.get != soundTTS.y.next || soundTTS.height.get != soundTTS.height.next) {
 	            paintPrev.setTextSize(soundTTS.height.get)
 	            canvas.save()
 	            canvas.rotate(radToDegree(soundTTS.angle.get), soundTTS.x.get, soundTTS.y.get)
-	            val value = soundTTS.text.get.toString
+	            val text = soundTTS.text.get
+	            val value = if(text.length > 10) textPreviewMap.getOrElseUpdate(text, text.substring(0, 10)+"\u2026") else text
 	            canvas.drawText(value, soundTTS.x.get, soundTTS.y.get, paintPrev)
 	            canvas.restore()
 	            canvas.drawLine(soundTTS.x.get, soundTTS.y.get, soundTTS.x.next, soundTTS.y.next, distancePaint)
@@ -217,11 +219,15 @@ class GameViewRender(val context: Context) extends ContextUtils {
 	          } else {
 	            soundTTS.text.next
 	          }
-	          
+	          val valueDisplayNext = if(textNext.length > 10) textPreviewMap.getOrElseUpdate(textNext, textNext.substring(0, 10)+"\u2026") else textNext
+	          paint.setTextSize(soundTTS.height.next)
 	          canvas.save()
 	          canvas.rotate(radToDegree(soundTTS.angle.next), soundTTS.x.next, soundTTS.y.next)
 	          canvas.drawText(valueDisplayNext, soundTTS.x.next, soundTTS.y.next, paint)
-	          if(obj_to_highlight contains soundTTS) canvas.drawText(valueDisplayNext, soundTTS.x.next, soundTTS.y.next, paintSelected)
+	          if(obj_to_highlight contains soundTTS) {
+	            paintSelected.setTextSize(soundTTS.height.next)
+	            canvas.drawText(valueDisplayNext, soundTTS.x.next, soundTTS.y.next, paintSelected)
+	          }
 	          canvas.restore()
           }
         case soundRecorder : SoundRecorder =>
@@ -272,7 +278,37 @@ class GameViewRender(val context: Context) extends ContextUtils {
           d.getDrawingElements foreach { case d@DrawingElement(time, fromx, fromy, tox, toy, width, color) =>
             if(time <= game.time) {
               if(fromx == lastx && fromy == lasty && width == lastwidth && color == lastcolor) {
+                var prevTan = d.prevTan
+                val predNextTan = if(d.pred != null) {
+                  val pred = d.pred
+                  val predNextTan = pred.nextTan
+                  if(predNextTan != null) {
+                    if(prevTan == null) {
+                      prevTan = predNextTan
+                      null
+                    } else {
+                      predNextTan
+                    }
+                  } else {
+                    null
+                  }
+                } else null
+                //val radius =  Math.max(Math.abs(lastx-tox)/50, Math.abs(lasty-toy)/50)
+                if(prevTan != null) {
+                  //canvas.drawCircle(prevTan._1, prevTan._2, radius, paint)
+                  if(predNextTan != null) {
+                    //canvas.drawCircle(predNextTan._1, predNextTan._2, radius, paint)
+                    //tmpPath.cubicTo(predNextTan._1, predNextTan._2, prevTan._1, prevTan._2, tox, toy)
+                  } else {
+                    //tmpPath.quadTo(prevTan._1, prevTan._2, tox, toy)
+                  }
+                } else {
+                  //tmpPath.lineTo(tox, toy)
+                }
                 tmpPath.lineTo(tox, toy)
+                //canvas.drawLine(tox - radius, toy-radius, tox+radius, toy+radius, paint)
+                //canvas.drawLine(tox - radius, toy+radius, tox+radius, toy-radius, paint)
+                //canvas.drawCircle(tox, toy, radius, paint)
               } else {
                 if(!tmpPath.isEmpty()) {
                   paint.setColor(lastcolor)
@@ -344,15 +380,19 @@ class GameViewRender(val context: Context) extends ContextUtils {
         
         case b: IntBox => 
           paint.setTextSize(b.height.next)
+          
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           val value = b.name.next + ":" + b.value.next.toString
           canvas.drawText(value, b.x.next, b.y.next, paint)
-          if(obj_to_highlight contains b) canvas.drawText(value, b.x.next, b.y.next, paintSelected)
+          if(obj_to_highlight contains b) {
+            paintSelected.setTextSize(b.height.next)
+            canvas.drawText(value, b.x.next, b.y.next, paintSelected)
+          }
           canvas.restore()
           
         case b: StringBox => 
-          paint.setTextSize(b.height.next)
+          
           val valueDisplayNext = if(b.x.get != b.x.next || b.y.get != b.y.next || b.height.get != b.height.next) {
             paintPrev.setTextSize(b.height.get)
             canvas.save()
@@ -367,11 +407,15 @@ class GameViewRender(val context: Context) extends ContextUtils {
           } else {
             b.value.next
           }
+          paint.setTextSize(b.height.next)
           
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paint)
-          if(obj_to_highlight contains b) canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paintSelected)
+          if(obj_to_highlight contains b) {
+            paintSelected.setTextSize(b.height.next)
+            canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paintSelected)
+          }
           canvas.restore()
 
         case b: BooleanBox =>
@@ -383,6 +427,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
           val x = b.x.next
           val y = b.y.next
           canvas.drawText(b.name.next, x + h*3/2, y-h/4, paint)
+          if(obj_to_highlight contains b) {
+            paintSelected.setTextSize(b.height.next)
+            canvas.drawText(b.name.next, b.x.next, b.y.next, paintSelected)
+          }
+          
           canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
           if(c) {
             paint.setColor(0xFFBBBBBB)

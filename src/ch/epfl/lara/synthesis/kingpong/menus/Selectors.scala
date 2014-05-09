@@ -294,7 +294,7 @@ class SystemEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngine
   def unselect() = {
   }
   
-  def isVisible() = gameEngineView.isInEditMode()
+  def isVisible() = SystemMenu.activated
   
   def testHovering(x: Float, y: Float, button_size: Float): Boolean = SystemMenu.testHovering(x, y, button_size)
   

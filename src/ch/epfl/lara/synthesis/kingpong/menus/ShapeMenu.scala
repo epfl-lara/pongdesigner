@@ -61,7 +61,8 @@ object ShapeMenu extends MenuCenter {
          -1
       case d: SoundTTS =>
         ModifyTextButton.setPos(0, -1)
-        ModifyLanguageButton.setPos(-1, -1)
+        //ModifyLanguageButton.setPos(-1, -1)
+        ModifyLanguageButton.setPos(gameEngine.whitePaint, 33f/49f, -1, -1)
         ModifyTextButton.visible = true
         ModifyLanguageButton.visible = true
         ModifyLanguageButton.setText(d.language.next)

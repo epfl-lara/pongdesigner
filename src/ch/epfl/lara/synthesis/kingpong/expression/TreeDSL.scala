@@ -473,7 +473,7 @@ object TreeDSL {
       angle: Expr = category.angle,
       width: Expr = category.width,
       height: Expr = category.height,
-      visible: Expr = category.visible,
+      visible: Expr = false,
       color: Expr = category.color,
       language: Expr = category.language,
       text: Expr = "",
