@@ -6,7 +6,6 @@ import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.BodyDef
 import org.jbox2d.dynamics.BodyType
 import org.jbox2d.dynamics.FixtureDef
-import org.jbox2d.dynamics.World
 import org.jbox2d.dynamics.Fixture
 
 import ch.epfl.lara.synthesis.kingpong.Game
@@ -15,6 +14,7 @@ import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
 
@@ -31,19 +31,42 @@ abstract class PhysicalObject(
     init_restitution: Expr,
     init_linearDamping: Expr,
     init_fixedRotation: Expr,
-    init_color: Expr
-    ) extends GameObject(init_name) 
+    init_color: Expr,
+    init_tpe: BodyType
+    ) extends GameObject(init_name)
       with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
-  
-  private var _body: Body = null
+
+  tpe = init_tpe
+
+  /** The inner body of this physical object. */
   def body: Body = _body
-  
-  protected def bodyDef: BodyDef
+  protected def fixture: Fixture = body.getFixtureList()
+
+  private var _body: Body = null
+  private var bodyRemovedFromWorld = true
+
+  protected val _bodyDef = new BodyDef()
   protected def fixtureDef: Seq[FixtureDef]
-  protected def fixture = body.getFixtureList()
-  private var bodyRemovedFromWorld = false
   protected var last_fixture: GameObject = null
-  
+
+  protected def bodyDef: BodyDef = {
+    _bodyDef.`type` = tpe
+    _bodyDef.position = Vec2(getOrElseInit(x), getOrElseInit(y))
+    _bodyDef.linearDamping = getOrElseInit(linearDamping)
+    //if (init_tpe == BodyType.DYNAMIC) {
+    //  body_def.bullet = true
+    //}
+    _bodyDef
+  }
+
+  /** Initialize the fixture definition with common physical properties. */
+  protected def initFixtureDef(fixtureDef: FixtureDef): FixtureDef = {
+    fixtureDef.density = getOrElseInit(density)
+    fixtureDef.friction = getOrElseInit(friction)
+    fixtureDef.restitution = getOrElseInit(restitution)
+    fixtureDef
+  }
+
   private def removeFromWorld() = {
     game.world.world.destroyBody(body)
     bodyRemovedFromWorld = true // We keep the old body for flushing and loading properties.
@@ -61,8 +84,6 @@ abstract class PhysicalObject(
     }
   }
   
-  //MIKAEL this method always uses the initial values, is it intended ? 
-  // bodyDef and fixtureDef should be functions that use the current values, or the initial for the first time
   protected def addToWorld() = {
     val body = game.world.world.createBody(bodyDef)
     fixtureDef foreach { fixture_definition =>
@@ -151,7 +172,7 @@ abstract class PhysicalObject(
   val fixedRotation = simplePhysicalProperty[Boolean]("fixed-rotation", init_fixedRotation,
     b => body.setFixedRotation(b)
   )
-  
+
   // --------------------------------------------------------------------------
   // Actions on the body
   // --------------------------------------------------------------------------
@@ -174,6 +195,11 @@ abstract class PhysicalObject(
   
   def getAABB() = fixture.getAABB(0)
   def contains(pos: Vec2) = fixture.testPoint(pos)
+
+  protected def getOrElseInit[T : PongType](property: HistoricalProperty[T]): T = property.get match {
+    case null  => game.evaluate[T](property.init)
+    case value => value
+  }
 }
 
 class Rectangle (
@@ -196,43 +222,23 @@ class Rectangle (
     init_sensor: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
+                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
+                             init_color, init_tpe)
       with ResizableRectangular
       with AngularRectangularContains {
 
-  tpe = init_tpe
-  
-  private val mBodyDef = new BodyDef()
-  mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
-                           game.evaluate[Float](init_y))
-
-  protected def bodyDef = {
-    mBodyDef.`type` = tpe
-    mBodyDef.position = Vec2(x.get, y.get)
-    mBodyDef.linearDamping = game.evaluate[Float](init_linearDamping)
-    //if (init_tpe == BodyType.DYNAMIC) {
-    //  body_def.bullet = true
-    //}
-    mBodyDef
-  }
-  
-  protected val fixtureDef = {
+  protected def fixtureDef = {
     val shape = new PolygonShape()
-    shape.setAsBox(game.evaluate[Float](init_width)/2,
-                   game.evaluate[Float](init_height)/2)
+    shape.setAsBox(getOrElseInit(width) / 2, getOrElseInit(height) / 2)
   
     val fixture_def = new FixtureDef()
+    initFixtureDef(fixture_def)
     fixture_def.shape = shape
-    fixture_def.density = game.evaluate[Float](init_density)
-    fixture_def.friction = game.evaluate[Float](init_friction)
-    fixture_def.restitution = game.evaluate[Float](init_restitution)
-    fixture_def.isSensor = game.evaluate[Boolean](init_sensor)
+    fixture_def.isSensor = getOrElseInit(sensor)
     Seq(fixture_def)
   }
   
-  addToWorld()
-
-  protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape] 
+  protected def shape: PolygonShape = fixture.getShape().asInstanceOf[PolygonShape]
   
   val width: HistoricalRWProperty[Float] = simplePhysicalProperty[Float]("width", init_width, 
     w => {
@@ -247,11 +253,13 @@ class Rectangle (
       body.resetMassData() // update the body mass
     }
   )
-  
+
   val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor,
-    h => body.getFixtureList().setSensor(h)
+    s => fixture.setSensor(s)
   )
-  
+
+  addToWorld()
+
   def makecopy(name: String): GameObject = {
     new Rectangle(game, name, x.init, y.init, angle.init, width.init, height.init, visible.init,
                  velocity.init, angularVelocity.init, density.init, friction.init, restitution.init, linearDamping.init,
@@ -280,45 +288,28 @@ class Character (
     init_color: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
-                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
+                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
+                             init_color, init_tpe)
       with ResizableRectangular 
       with InputManager {
   
-  tpe = init_tpe
-  
-  protected val bodyDef = {
-    val body_def = new BodyDef()
-    body_def.position = Vec2(game.evaluate[Float](init_x), 
-                             game.evaluate[Float](init_y))
-    body_def.`type` = init_tpe
-    //if (init_tpe == BodyType.DYNAMIC) {
-    //  body_def.bullet = true
-    //}
-    body_def
-  }
-  
-  protected val shapeSensor = new CircleShape()
-  shapeSensor.m_radius = game.evaluate[Float](init_width)/2
-  shapeSensor.m_p.set(0f, game.evaluate[Float](init_height)/2)
-  
-  protected val fixtureDef = {
+  protected def fixtureDef = {
     val shape = new PolygonShape()
-    shape.setAsBox(game.evaluate[Float](init_width)/2,
-                   game.evaluate[Float](init_height)/2)
-  
+    shape.setAsBox(getOrElseInit(width) / 2, getOrElseInit(height) / 2)
+
+    val shapeSensor = new CircleShape()
+    shapeSensor.m_radius = getOrElseInit(width) / 2
+    shapeSensor.m_p.set(0f, getOrElseInit(height) / 2)
+
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
-    fixture_def.density = game.evaluate[Float](init_density)
-    fixture_def.friction = game.evaluate[Float](init_friction)
-    fixture_def.restitution = game.evaluate[Float](init_restitution)
+    initFixtureDef(fixture_def)
     
     val fixture_sensor = new FixtureDef()
     fixture_sensor.shape = shapeSensor
     fixture_sensor.isSensor = true
     Seq(fixture_def, fixture_sensor)
   }
-  
-  addToWorld()
   
   protected def shape: PolygonShape = {
     var f = fixture
@@ -363,7 +354,9 @@ class Character (
   )
     
   val grounded = simpleProperty[Boolean]("grounded", false)
-  
+
+  addToWorld()
+
   def makecopy(name: String): GameObject = {
     new Character(game, name, x.init,  y.init, angle.init, width.init, height.init, visible.init,
                   velocity.init, angularVelocity.init, density.init, friction.init,  restitution.init, linearDamping.init,
@@ -389,39 +382,22 @@ class Circle(
     init_sensor: Expr,
     init_tpe: BodyType = BodyType.DYNAMIC
     ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
-                           init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation, init_color)
+                             init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
+                             init_color, init_tpe)
       with ResizableCircular {
   
-  tpe = init_tpe
-  
-  private var mBodyDef = new BodyDef()
-  mBodyDef.position = Vec2(game.evaluate[Float](init_x), 
-                           game.evaluate[Float](init_y))
-
-  protected def bodyDef = {
-    mBodyDef.position = Vec2(x.get, y.get)
-    mBodyDef.`type` = tpe
-    //if (init_tpe == BodyType.DYNAMIC) {
-    //  body_def.bullet = true
-    //}
-    mBodyDef
-  }
-  
-  protected val fixtureDef = {
+  protected def fixtureDef = {
     val shape = new CircleShape()
-    shape.m_radius = game.evaluate[Float](init_radius)
+    shape.m_radius = getOrElseInit(radius)
   
     val fixture_def = new FixtureDef()
     fixture_def.shape = shape
-    fixture_def.density = game.evaluate[Float](init_density)
-    fixture_def.friction = game.evaluate[Float](init_friction)
-    fixture_def.restitution = game.evaluate[Float](init_restitution)
+    fixture_def.isSensor = getOrElseInit(sensor)
+    initFixtureDef(fixture_def)
     Seq(fixture_def)
   }
   
-  addToWorld()
-
-  val radius = simplePhysicalProperty[Float]("radius", init_radius, 
+  val radius = simplePhysicalProperty[Float]("radius", init_radius,
     r => {
       fixture.getShape().m_radius = r
       body.resetMassData() // update the body mass
@@ -429,9 +405,11 @@ class Circle(
   )
   
   val sensor = simplePhysicalProperty[Boolean]("sensor", init_sensor, 
-    h => body.getFixtureList().setSensor(h)
+    s => fixture.setSensor(s)
   )
-  
+
+  addToWorld()
+
   def makecopy(name: String): GameObject = {
     new Circle(game, name, x.init, y.init, radius.init, visible.init, velocity.init, angularVelocity.init,
                density.init, friction.init, restitution.init, linearDamping.init, fixedRotation.init,
