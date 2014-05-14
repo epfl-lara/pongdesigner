@@ -216,17 +216,17 @@ object TreeDSL {
   trait PropertyProxySingle extends PropertyProxy {
     protected def propertyPair: (Expr, PropertyId)
     def expr: Expr = Select(propertyPair._1, propertyPair._2).setType(getType)
-    def :=(e: Expr): Expr = Assign(List(propertyPair), e)
-    def +=(e: Expr): Expr = Assign(List(propertyPair), Plus(expr, e))
-    def -=(e: Expr): Expr = Assign(List(propertyPair), Minus(expr, e))
-    def *=(e: Expr): Expr = Assign(List(propertyPair), Times(expr, e))
-    def /=(e: Expr): Expr = Assign(List(propertyPair), Div(expr, e))
+    def :=(e: Expr): Expr = Assign(propertyPair, e)
+    def +=(e: Expr): Expr = Assign(propertyPair, Plus(expr, e))
+    def -=(e: Expr): Expr = Assign(propertyPair, Minus(expr, e))
+    def *=(e: Expr): Expr = Assign(propertyPair, Times(expr, e))
+    def /=(e: Expr): Expr = Assign(propertyPair, Div(expr, e))
   }
 
   trait PropertyProxyMultiple extends PropertyProxy {
     protected def propertyPairs: Seq[(Expr, PropertyId)]
     def :=(e: Expr): Expr = let("tuple", e) { tuple =>
-      propertyPairs.zipWithIndex.map{ case (pair, index) => Assign(List(pair), TupleSelect(tuple, index + 1)) }
+      propertyPairs.zipWithIndex.map{ case (pair, index) => Assign(pair, TupleSelect(tuple, index + 1)) }
     }
   }
 

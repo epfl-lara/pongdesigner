@@ -137,26 +137,20 @@ trait Interpreter {
         case v => throw InterpreterException(s"The if condition $c is not a boolean but is $v.")
       }
 
-    case assignStatement@Assign(props, rhs) =>
-      def setValue(objExpr: Expr, propertyName: PropertyId, v: Expr): Unit = {
-        //TODO check if this will work with ephemeral properties
-        val obj = eval(objExpr).as[GameObject]
-        obj.get(propertyName) match {
-          case assignable: AssignableProperty[_] => assignable.assign(v)
+    case assign @ Assign(prop, rhs) =>
+      val obj = eval(prop._1).as[GameObject]
+      obj.get(prop._2) match {
+        case assignable: AssignableProperty[_] =>
+          val value = eval(rhs)
+          assignable.assign(value)
           obj match {
             case pos: Positionable =>
-              gctx.addAssignmentHistory(pos, assignable, assignStatement)
+              //TODO shouldn't we save the rhs value instead of the whole assign expression ?
+              gctx.addAssignmentHistory(pos, assignable, assign)
             case _ =>
           }
-          case p => throw InterpreterException(s"The property $p is not assignable and is in $expr")
-        }
-      }
-      eval(rhs) match {
-        case Tuple(values) if values.size == props.size => 
-          (props zip values) foreach { case ((objExpr, propertyName), value) => setValue(objExpr, propertyName, value) }
-        case rhsValue if props.size == 1 => 
-          setValue(props.head._1, props.head._2, rhsValue)
-        case _ => throw InterpreterException(s"$props is assigned not the same number variables from $rhs")
+
+        case p => throw InterpreterException(s"The property $p is not assignable but is in $expr")
       }
       UnitLiteral
 

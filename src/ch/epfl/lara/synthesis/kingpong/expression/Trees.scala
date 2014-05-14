@@ -119,7 +119,7 @@ object Trees {
   
   case class Foreach(category: Category, id: Identifier, body: Expr) extends UnitExpr
   
-  case class Assign(prop: List[(Expr, PropertyId)], rhs: Expr) extends UnitExpr
+  case class Assign(prop: (Expr, PropertyId), rhs: Expr) extends UnitExpr
   
   object Block {
     def apply(e1: Expr, e: Expr*): Block = {

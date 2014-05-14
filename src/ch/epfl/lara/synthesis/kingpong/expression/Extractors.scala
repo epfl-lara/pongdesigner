@@ -44,15 +44,13 @@ object Extractors {
       case Let(id, t1, t2)   => Some((t1, t2, Let(id, _, _)))
       case Copy(t1, id, t2)  => Some((t1, t2, Copy(_, id, _)))
       case ApplyForce(t1, t2)     => Some((t1, t2, ApplyForce))
-      case Assign(List((t1, prop)), t2) => Some((t1, t2, (e1: Expr, e2: Expr) => Assign(List((e1, prop)), e2)))
+      case Assign((t1, prop), t2) => Some((t1, t2, (e1: Expr, e2: Expr) => Assign((e1, prop), e2)))
       case ContainingCell(t1, t2) => Some((t1, t2, ContainingCell))
       
       case FingerMoveOver(t1, id, t2) => Some((t1, t2, FingerMoveOver(_, id, _)))
       case FingerUpOver(t1, id, t2) => Some((t1, t2, FingerUpOver(_, id, _)))
       case FingerDownOver(t1, id, t2) => Some((t1, t2, FingerDownOver(_, id, _)))
-      
 
-      
       case _ => None
     }
   }
@@ -71,8 +69,8 @@ object Extractors {
       
       case Block(exprs) => Some((exprs, (as: Seq[Expr]) => Block(as)))
       case ParExpr(exprs) => Some((exprs, (as: Seq[Expr]) => ParExpr(as.toList)))
-      case Assign(objprops, t2) => Some((objprops.map(_._1)++List(t2), (as: Seq[Expr]) => Assign((as.init.toList zip objprops.map(_._2)), as.last)))
       case MethodCall(n, l) => Some((l, MethodCall(n, _)))
+
       case _ => None
     }
   }
