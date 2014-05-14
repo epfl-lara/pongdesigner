@@ -1,12 +1,14 @@
 package ch.epfl.lara.synthesis.kingpong.rules
 
+import scala.language.existentials
+import scala.annotation.tailrec
+
 import org.jbox2d.collision.WorldManifold
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.{EventsHistory, Options}
-import scala.annotation.tailrec
 
 object Events {
 
