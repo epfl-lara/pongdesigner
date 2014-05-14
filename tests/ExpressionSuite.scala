@@ -77,7 +77,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
   
   "Expression" should "be correctly built by the DSL" in {
     val e = game.ball1.x := 0
-    e should be (Assign(List((ObjectLiteral(game.ball1), "x")), IntegerLiteral(0)))
+    e should be (Assign((game.ball1.expr, "x"), IntegerLiteral(0)))
   }
   
   it should "have a syntactic sugar for multiple assignment" in {
@@ -85,8 +85,8 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val let = e.asInstanceOf[Let]
     val id = let.id
     let shouldBe Let(id, Tuple(Seq(2f, 3f)), Block(Seq(
-      Assign(List((ObjectLiteral(game.ball1), "x")), TupleSelect(Variable(id), 1)),
-      Assign(List((ObjectLiteral(game.ball1), "y")), TupleSelect(Variable(id), 2))
+      Assign((game.ball1.expr, "x"), TupleSelect(Variable(id), 1)),
+      Assign((game.ball1.expr, "y"), TupleSelect(Variable(id), 2))
     )))
   }
   
@@ -150,7 +150,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     radius.set(1)
     
     val e1 = radius += 2.5f
-    e1 should be (Assign(List((ObjectLiteral(game.ball1), "radius")), Plus(Select(ObjectLiteral(game.ball1), "radius"), FloatLiteral(2.5f))))
+    e1 should be (Assign((game.ball1.expr, "radius"), Plus(Select(game.ball1.expr, "radius"), FloatLiteral(2.5f))))
     radius.get should be (1f)
     interpreter.evaluate(e1) should be (UnitLiteral)
     radius.next should be (3.5f)
@@ -209,7 +209,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val id = foreach.id
     generalized should be (Foreach(obj.category, id, 
       If(And(Select(Variable(id), "visible"), Select(ObjectLiteral(game.block1), "visible")), 
-        Assign(List((Variable(id), "x")), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
+        Assign((Variable(id), "x"), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
         NOP)
       )
     )
@@ -221,7 +221,30 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val generalized = generalizeToCategory(e, obj)
     generalized should be (e)
   }
-  
+
+  it should "correctly compute an expression ancestors" in {
+    val e1 = Plus(Minus(Times(i2, i1), i2), Times(i2, i2))
+    TreeOps.getAncestors(e1, i1) should equal(List(
+      Plus(Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)),Times(IntegerLiteral(2),IntegerLiteral(2))),
+      Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)),
+      Times(IntegerLiteral(2),IntegerLiteral(1)),
+      IntegerLiteral(1)
+    ))
+
+    val e2 = Block(List(i1))
+    TreeOps.getAncestors(e2, i1) should equal(List(
+      Block(List(IntegerLiteral(1))),
+      IntegerLiteral(1)
+    ))
+
+    val e3 = If(i2, Block(List(i1)), NOP)
+    TreeOps.getAncestors(e3, i1) should equal(List(
+      If(IntegerLiteral(2),Block(List(IntegerLiteral(1))), NOP),
+      Block(List(IntegerLiteral(1))),
+      IntegerLiteral(1)
+    ))
+  }
+
   "TypesOps" should "have correct subtypes" in {
     isSubtypeOf(TInt, TFloat) should be (true)
     isSubtypeOf(TFloat, TInt) should be (false)
@@ -234,28 +257,4 @@ class ExpressionSuite extends FlatSpec with Matchers {
     isSubtypeOf(TFloat, TAny) should be (true)
   }
   
-  "collectFirst in TreeOps" should "compute correct ancestors" in {
-    import ch.epfl.lara.synthesis.kingpong.objects._
-	import scala.collection.mutable.ListBuffer
-	import ch.epfl.lara.synthesis.kingpong.expression._
-	import Trees._
-	import Types._
-	import Extractors._
-	val c = IntegerLiteral(1)
-	val d = IntegerLiteral(2)
-	var tree: Expr = Plus(Minus(Times(d, c), d), Times(d, d))
-	TreeOps.getAncestors(tree, c) should equal(
-	List(Plus(Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)),Times(IntegerLiteral(2),IntegerLiteral(2))), Minus(Times(IntegerLiteral(2),IntegerLiteral(1)),IntegerLiteral(2)), Times(IntegerLiteral(2),IntegerLiteral(1)), IntegerLiteral(1)))
-	
-	tree = Block(List(c))
-	
-	TreeOps.getAncestors(tree, c) should equal(
-	List(Block(List(IntegerLiteral(1))), IntegerLiteral(1)))
-	
-	tree = If(d, Block(List(c)), NOP)
-	
-	TreeOps.getAncestors(tree, c) should equal(
-	List(If(IntegerLiteral(2),Block(List(IntegerLiteral(1))),NOP), Block(List(IntegerLiteral(1))), IntegerLiteral(1))
-	)
-  }
 }
