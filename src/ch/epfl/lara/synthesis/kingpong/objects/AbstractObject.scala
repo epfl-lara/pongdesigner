@@ -105,7 +105,7 @@ class StringBox(
     init_visible: Expr,
     init_color: Expr
    ) extends Box[String](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
-                      init_value, init_visible, init_color) {
+                      init_value, init_visible, init_color) with ValueTextable {
   
   def makecopy(name: String): GameObject = {
     new StringBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 

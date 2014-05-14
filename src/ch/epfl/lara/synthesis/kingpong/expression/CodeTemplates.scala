@@ -13,7 +13,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object CodeTemplates extends CodeHandler {
   
-  class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject]) {
+  class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject], val minSnapDetect: Float) {
     val eventMove = (events.flatMap { case (e@FingerMove(from, to, objs), i) => List(e) case _=> Nil}).headOption
     val (dx, dy, eventObjects) = eventMove match {
       /*case Some(FingerDown(v, objs)) => (0, 0, objs)
@@ -26,7 +26,8 @@ object CodeTemplates extends CodeHandler {
     val isTouchMoveEvent = eventMove.nonEmpty
     
     lazy val integers: Traversable[IntBox] = objects.collect{ case b: IntBox => b}
-    lazy val texts: Traversable[StringBox] = objects.collect{ case b: StringBox => b}
+    lazy val texts: Traversable[ValueTextable] = objects.collect{ case b: ValueTextable => b}
+    lazy val times: Traversable[Timeable] = objects.collect{ case b: Timeable => b}
     lazy val booleans: Traversable[Box[Boolean]] = objects.collect{ case b: BooleanBox => b }
     lazy val rectangulars: Traversable[Rectangular] = objects.collect{ case b: Rectangular => b }
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
@@ -35,8 +36,9 @@ object CodeTemplates extends CodeHandler {
     lazy val cells: Traversable[Cell] = objects.collect{ case c: Cell => c }
   }
   
-  def inferStatements(events: Seq[(Event, Int)], objects: Traversable[GameObject]): Seq[Expr] = {
-    implicit val ctx = new TemplateContext(events, objects)
+  def inferStatements(game: Game, events: Seq[(Event, Int)], objects: Traversable[GameObject]): Seq[Expr] = {
+    val minSnapAmount = 20/game.pixelsByUnit
+    implicit val ctx = new TemplateContext(events, objects, minSnapAmount)
     val exprs = objects.flatMap(TShape.applyForObject).toList
     flattenNOP(exprs.map(flatten))
   }
@@ -224,8 +226,12 @@ object CodeTemplates extends CodeHandler {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[IntBox]
   }
   
-  trait TemplateText extends Template[StringBox] {
-    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[StringBox]
+  trait TemplateText extends Template[ValueTextable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[ValueTextable]
+  }
+  
+  trait TemplateTimeable extends Template[Timeable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Timeable]
   }
   
   trait TemplateCircular extends Template[Circular] {
@@ -256,7 +262,7 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.integers
   }
   
-  trait TemplateOtherText[T <: GameObject] extends TemplateOther[T, StringBox] {
+  trait TemplateOtherText[T <: GameObject] extends TemplateOther[T, ValueTextable] {
     def others(implicit ctx: TemplateContext) = ctx.texts
   }
 
@@ -280,7 +286,7 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.integers
   }
   
-  trait TemplateOtherPairText[T <: GameObject] extends TemplateOtherPair[T, StringBox] {
+  trait TemplateOtherPairText[T <: GameObject] extends TemplateOtherPair[T, ValueTextable] {
     def others(implicit ctx: TemplateContext) = ctx.texts
   }
   
@@ -374,7 +380,7 @@ object CodeTemplates extends CodeHandler {
   
   object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
     def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
-      if (almostTheSame(obj.x.next, other.x.get, 20)) {
+      if (almostTheSame(obj.x.next, other.x.get, ctx.minSnapDetect)) {
         val expr = obj.x := other.x
         Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
@@ -386,49 +392,49 @@ object CodeTemplates extends CodeHandler {
       s"${obj.name.next} aligns its x side to the x side of ${other.name.next}"
   }
   /*object TX_AlignLeft2 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.x.next, other_shape.prev_center_x, 20)  && other_shape.prev_center_x != other_shape.prev_x
+    def condition = almostTheSame(shape.x.next, other_shape.prev_center_x, ctx.minSnapDetect)  && other_shape.prev_center_x != other_shape.prev_x
     def result    = (shape_ident("x") := other_shape_ident("center_x"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its x side to the center side of ${other_shape.name.next}"
   }
   object TX_AlignLeft3 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.x.next, other_shape.x.get + other_shape.width.get, 20)
+    def condition = almostTheSame(shape.x.next, other_shape.x.get + other_shape.width.get, ctx.minSnapDetect)
     def result    = (shape_ident("x") := other_shape_ident("x") + other_shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its x side to the right side of ${other_shape.name.next}"
   }
   object TX_AlignRight1 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.x.get + other_shape.width.get, 20)
+    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.x.get + other_shape.width.get, ctx.minSnapDetect)
     def result    = (shape_ident("x") := other_shape_ident("x") + (other_shape_ident("width") - shape_ident("width")))
     def priority = 10
     def comment  = shape.name.next + s" aligns its right side to the right side of ${other_shape.name.next}"
   }
   object TX_AlignRight2 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.prev_center_x, 20) && other_shape.prev_center_x != other_shape.prev_x
+    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.prev_center_x, ctx.minSnapDetect) && other_shape.prev_center_x != other_shape.prev_x
     def result    = (shape_ident("x") := other_shape_ident("center_x") - shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its right side to the center of ${other_shape.name.next}"
   }
   object TX_AlignRight3 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.x.get, 20)
+    def condition = almostTheSame(shape.x.next + shape.width.get, other_shape.x.get, ctx.minSnapDetect)
     def result    = (shape_ident("x") := other_shape_ident("x") - shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its right side to the left side of ${other_shape.name.next}"
   }
   object TX_AlignCenter1 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.center_x, other_shape.x.get + other_shape.width.get, 20) && shape.center_x != shape.x.next
+    def condition = almostTheSame(shape.center_x, other_shape.x.get + other_shape.width.get, ctx.minSnapDetect) && shape.center_x != shape.x.next
     def result    = (shape_ident.center_x = other_shape_ident("x") + other_shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the right side of ${other_shape.name.next}"
   }*/
   /*object TX_AlignCenter2 extends TemplateOtherShape {
-    def condition = almostTheSame(shape.center_x, other_shape.prev_center_x, 20) && shape.center_x != shape.x.next && other_shape.prev_center_x != other_shape.prev_x
+    def condition = almostTheSame(shape.center_x, other_shape.prev_center_x, ctx.minSnapDetect) && shape.center_x != shape.x.next && other_shape.prev_center_x != other_shape.prev_x
     def result    = (shape_ident.center_x = other_shape_ident.center_x)
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the center of ${other_shape.name.next}"
   }*/
   /*object TX_AlignCenter3 extends TemplateOtherShape {
-    def condition = almostTheSame(shape.center_x, other_shape.x.get, 20) && shape.center_x != shape.x.next
+    def condition = almostTheSame(shape.center_x, other_shape.x.get, ctx.minSnapDetect) && shape.center_x != shape.x.next
     def result    = (shape_ident.center_x = other_shape_ident("x"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the left of ${other_shape.name.next}"
@@ -537,7 +543,7 @@ object CodeTemplates extends CodeHandler {
   
   object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
     def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
-      if (almostTheSame(obj.y.next, other.y.get, 20)) {
+      if (almostTheSame(obj.y.next, other.y.get, ctx.minSnapDetect)) {
         val expr = obj.y := other.y
         Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
@@ -550,49 +556,49 @@ object CodeTemplates extends CodeHandler {
   }
   
   /*object TY_AlignLeft2 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.y.next, other_shape.prev_center_y, 20)  && other_shape.prev_center_y != other_shape.prev_y
+    def condition = almostTheSame(shape.y.next, other_shape.prev_center_y, ctx.minSnapDetect)  && other_shape.prev_center_y != other_shape.prev_y
     def result    = (shape_ident("y") := other_shape_ident("center_y"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its y side to the center side of ${other_shape.name.next}"
   }
   object TY_AlignLeft3 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.y.next, other_shape.y.get + other_shape.width.get, 20)
+    def condition = almostTheSame(shape.y.next, other_shape.y.get + other_shape.width.get, ctx.minSnapDetect)
     def result    = (shape_ident("y") := other_shape_ident("y") + other_shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its y side to the bottom side of ${other_shape.name.next}"
   }
   object TY_AlignRight1 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.y.get + other_shape.width.get, 20)
+    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.y.get + other_shape.width.get, ctx.minSnapDetect)
     def result    = (shape_ident("y") := other_shape_ident("y") + (other_shape_ident("width") - shape_ident("width")))
     def priority = 10
     def comment  = shape.name.next + s" aligns its bottom side to the bottom side of ${other_shape.name.next}"
   }
   object TY_AlignRight2 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.prev_center_y, 20) && other_shape.prev_center_y != other_shape.prev_y
+    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.prev_center_y, ctx.minSnapDetect) && other_shape.prev_center_y != other_shape.prev_y
     def result    = (shape_ident("y") := other_shape_ident("center_y") - shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its bottom side to the center of ${other_shape.name.next}"
   }
   object TY_AlignRight3 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.y.get, 20)
+    def condition = almostTheSame(shape.y.next + shape.width.get, other_shape.y.get, ctx.minSnapDetect)
     def result    = (shape_ident("y") := other_shape_ident("y") - shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its bottom side to the top side of ${other_shape.name.next}"
   }
   object TY_AlignCenter1 extends TemplateOtherRectangular {
-    def condition = almostTheSame(shape.center_y, other_shape.y.get + other_shape.width.get, 20) && shape.center_y != shape.y.next
+    def condition = almostTheSame(shape.center_y, other_shape.y.get + other_shape.width.get, ctx.minSnapDetect) && shape.center_y != shape.y.next
     def result    = (shape_ident.center_y = other_shape_ident("y") + other_shape_ident("width"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the bottom side of ${other_shape.name.next}"
   }
   object TY_AlignCenter2 extends TemplateOtherShape {
-    def condition = almostTheSame(shape.center_y, other_shape.prev_center_y, 20) && shape.center_y != shape.y.next && other_shape.prev_center_y != other_shape.prev_y
+    def condition = almostTheSame(shape.center_y, other_shape.prev_center_y, ctx.minSnapDetect) && shape.center_y != shape.y.next && other_shape.prev_center_y != other_shape.prev_y
     def result    = (shape_ident.center_y = other_shape_ident.center_y)
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the center of ${other_shape.name.next}"
   }
   object TY_AlignCenter3 extends TemplateOtherShape {
-    def condition = almostTheSame(shape.center_y, other_shape.y.get, 20) && shape.center_y != shape.y.next
+    def condition = almostTheSame(shape.center_y, other_shape.y.get, ctx.minSnapDetect) && shape.center_y != shape.y.next
     def result    = (shape_ident.center_y = other_shape_ident("y"))
     def priority = 10
     def comment  = shape.name.next + s" aligns its center to the top of ${other_shape.name.next}"
@@ -679,7 +685,7 @@ object CodeTemplates extends CodeHandler {
   }
   
   /*object TAngleOnCircle extends TemplateShapeOtherCircle {
-    def condition = TOUCHMOVE_EVENT && Math.abs(Game.angle(other_shape.x.next, other_shape.y.next, xTo, yTo) - shape.angle.next) < 20
+    def condition = TOUCHMOVE_EVENT && Math.abs(Game.angle(other_shape.x.next, other_shape.y.next, xTo, yTo) - shape.angle.next) < ctx.minSnapDetect
     // TODO : Verify that such event is fired when finger down.
     def result    = shape_ident("angle") := Stat.angle(other_shape_ident.x, other_shape_ident.y, x_ident, y_ident)
     def priority = 10
@@ -1080,8 +1086,18 @@ object CodeTemplates extends CodeHandler {
 //    def comment   = s"Possible value changes for ${shape.name.next}"
   }
   
-  object TTextCopy extends TemplateOtherText[StringBox] with TemplateText {
-    def result(obj: StringBox, other: StringBox)(implicit ctx: TemplateContext) = {
+  object TTextAbsolute extends TemplateSimple[ValueTextable] with TemplateText {
+    def result(obj: ValueTextable)(implicit ctx: TemplateContext) = {
+      val expr = obj.value := obj.value.next
+      Some(expr.setPriority(5).setComment(comment(obj)))
+    }
+    
+    def comment(obj: ValueTextable)(implicit ctx: TemplateContext) = 
+      s"Change the text of ${obj.name.next} to "+'"' + obj.value.next +'"'
+  }
+  
+  object TTextCopy extends TemplateOtherText[ValueTextable] with TemplateText {
+    def result(obj: ValueTextable, other: ValueTextable)(implicit ctx: TemplateContext) = {
       if (obj.value.next == other.value.get) {
         val expr = obj.value := other.value
         val priority = if (other.value.get != "") 10 else 0
@@ -1091,14 +1107,14 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: StringBox, other: StringBox)(implicit ctx: TemplateContext) = 
+    def comment(obj: ValueTextable, other: ValueTextable)(implicit ctx: TemplateContext) = 
       s"Copy the text of " + other.name.next + s" to ${obj.name.next}"
   }
   
-  object TTextConcatenate extends TemplateOtherPairText[StringBox] with TemplateText {
+  object TTextConcatenate extends TemplateOtherPairText[ValueTextable] with TemplateText {
     override def otherOrder = false
     
-    def result(obj: StringBox, other1: StringBox, other2: StringBox)(implicit ctx: TemplateContext) = {
+    def result(obj: ValueTextable, other1: ValueTextable, other2: ValueTextable)(implicit ctx: TemplateContext) = {
       if (obj.value.next == other1.value.get + other2.value.get) {
         val expr = obj.value := other1.value + other2.value
         val priority = if(other1.value.get == "" || other2.value.get == "") 0 else 10
@@ -1108,20 +1124,50 @@ object CodeTemplates extends CodeHandler {
       }
     }
       
-    def comment(obj: StringBox, other1: StringBox, other2: StringBox)(implicit ctx: TemplateContext) = 
+    def comment(obj: ValueTextable, other1: ValueTextable, other2: ValueTextable)(implicit ctx: TemplateContext) = 
       s"Concatenate the texts of ${other1.name.next} and ${other2.name} to ${obj.name.next}"
   }
   
   // TODO: convert integers to text boxes if detected.
   
-  object TText extends TemplateParallel[StringBox] with TemplateText {
-    def condition(obj: StringBox)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
-    def priority(obj: StringBox)(implicit ctx: TemplateContext) = 10
+  object TText extends TemplateParallel[ValueTextable] with TemplateText {
+    def condition(obj: ValueTextable)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
+    def priority(obj: ValueTextable)(implicit ctx: TemplateContext) = 10
     val templates = List(
+        TTextAbsolute,
         TTextCopy,
         TTextConcatenate
     )
     //def comment   = s"Possible text changes for ${shape.name.next}"
+  }
+  
+  object TTimeAbsolute extends TemplateSimple[Timeable] with TemplateTimeable {
+    def result(obj: Timeable)(implicit ctx: TemplateContext) = {
+      val expr = obj.time := obj.time.next
+      Some(expr.setPriority(5).setComment(comment(obj)))
+    }
+    
+    def comment(obj: Timeable)(implicit ctx: TemplateContext) = 
+      s"Change the time of ${obj.name.next} to " + obj.time.next
+  }
+
+  object TTimeRepeat extends TemplateSimple[Timeable] with TemplateTimeable {
+    def result(obj: Timeable)(implicit ctx: TemplateContext) = {
+      val expr = obj.time := obj.time + (obj.time.next - obj.time.get)
+      Some(expr.setPriority(5).setComment(comment(obj)))
+    }
+    
+    def comment(obj: Timeable)(implicit ctx: TemplateContext) = 
+      s"Change the time of ${obj.name.next} by " + obj.time.next
+  }
+  
+  object TTime extends TemplateParallel[Timeable] with TemplateTimeable {
+    def condition(obj: Timeable)(implicit ctx: TemplateContext) = obj.time.get != obj.time.next
+    def priority(obj: Timeable)(implicit ctx: TemplateContext) = 10
+    val templates = List(
+        TTimeAbsolute,
+        TTimeRepeat
+    )
   }
   
   object TRadiusRelativePlus extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
@@ -1273,7 +1319,8 @@ object CodeTemplates extends CodeHandler {
         //IfHeight(THeight),
         TValue,
         TText,
-        TRadius
+        TRadius,
+        TTime
     )
     //def comment   = s"The changes for shape ${shape.name.next}"
   }

@@ -130,7 +130,8 @@ object ModifyTextButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val res = context.getResources()
     selectedShape match {
-      case d: StringBox =>
+      case d: ValueTextable =>
+        val array = if(d.isInstanceOf[StringBox]) R.array.string_possibilities else R.array.text_possibilities
         def updateText(s: String): Unit = {
           if(modify_prev) {
             d.value.set(s)
@@ -144,24 +145,8 @@ object ModifyTextButton extends MenuButton {
           }
         }
         CustomDialogs.launchChoiceDialogWithCustomchoice(context,
-            String.format(res.getString(R.string.modify_text_title), d.value.next), R.array.string_possibilities,
-            updateText(_), {() => }, if(modify_prev) d.value.get else d.value.next)
-      case d: SoundTTS =>
-        def updateText(s: String): Unit = {
-          if(modify_prev) {
-            d.text.set(s)
-          } else {
-            d.text.setNext(s)
-          }
-          if(copy_to_prev) {
-            d.text.set(d.text.get)
-          } else {
-            //gameEngine.updateSelectedRule()
-          }
-        }
-        CustomDialogs.launchChoiceDialogWithCustomchoice(context,
-            String.format(res.getString(R.string.modify_text_title), d.text.next), R.array.text_possibilities,
-            updateText(_), {() => }, if(modify_prev) d.text.get else d.text.next)
+            String.format(res.getString(R.string.modify_text_title), d.value.next), array,
+            updateText(_), {() => }, if(modify_prev) d.value.get else d.value.next)  
       case _ => 
     }
     hovered = false

@@ -545,3 +545,11 @@ trait Colorable extends GameObject {
 trait Visiblable extends GameObject {
   def visible: RWProperty[Boolean]
 }
+
+trait Timeable extends GameObject {
+  def time: RWProperty[Int]
+}
+
+trait ValueTextable extends GameObject {
+  def value: RWProperty[String]
+}

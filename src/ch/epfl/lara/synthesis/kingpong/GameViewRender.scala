@@ -208,16 +208,16 @@ class GameViewRender(val context: Context) extends ContextUtils {
 	            paintPrev.setTextSize(soundTTS.height.get)
 	            canvas.save()
 	            canvas.rotate(radToDegree(soundTTS.angle.get), soundTTS.x.get, soundTTS.y.get)
-	            val text = soundTTS.text.get
+	            val text = soundTTS.value.get
 	            val value = if(text.length > 10) textPreviewMap.getOrElseUpdate(text, text.substring(0, 10)+"\u2026") else text
 	            canvas.drawText(value, soundTTS.x.get, soundTTS.y.get, paintPrev)
 	            canvas.restore()
 	            canvas.drawLine(soundTTS.x.get, soundTTS.y.get, soundTTS.x.next, soundTTS.y.next, distancePaint)
-	            soundTTS.text.next
-	          } else if(soundTTS.text.get != soundTTS.text.next) { // Same place, different value.
-	            soundTTS.text.get + "=>" + soundTTS.text.next
+	            soundTTS.value.next
+	          } else if(soundTTS.value.get != soundTTS.value.next) { // Same place, different value.
+	            soundTTS.value.get + "=>" + soundTTS.value.next
 	          } else {
-	            soundTTS.text.next
+	            soundTTS.value.next
 	          }
 	          val valueDisplayNext = if(textNext.length > 10) textPreviewMap.getOrElseUpdate(textNext, textNext.substring(0, 10)+"\u2026") else textNext
 	          paint.setTextSize(soundTTS.height.next)
@@ -740,7 +740,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   
   def maybePlay(gameView: GameView, sound: SoundTTS) = {
     if(sound.time.next < gameView.getGame.time && !soundsTTSplayed(sound)) {
-      gameView.readAloud(sound.language.next, sound.text.next)
+      gameView.readAloud(sound.language.next, sound.value.next)
       soundsTTSplayed += sound
     } else if(sound.time.next >= gameView.getGame.time) {
       soundsTTSplayed -= sound

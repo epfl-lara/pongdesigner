@@ -35,11 +35,11 @@ case class SoundTTS (
       with Movable
       with Visiblable
       with Colorable
-      with Directionable with FixedRectangularContains {
+      with Directionable with FixedRectangularContains with Timeable with ValueTextable {
 
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  val text = simpleProperty[String]("recording", init_text)
+  val value = simpleProperty[String]("value", init_text)
   val language = simpleProperty[String]("language", init_language)
   
   val time = simpleProperty[Int]("time", init_time)

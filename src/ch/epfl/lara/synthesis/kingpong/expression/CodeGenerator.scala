@@ -221,7 +221,7 @@ object CodeGenerator extends CodeHandler {
   def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], conditionConfig: List[GameObject]): Unit = {
     // Need to store the conditions so that we can rely on them rather than on code.
     //val templaceContext = new TemplateContext(conditionEvent.head._1, game.objects)
-    val stmts = CodeTemplates.inferStatements(conditionEvent, game.objects)
+    val stmts = CodeTemplates.inferStatements(game, conditionEvent, game.objects)
     // Now we try to merge these statement with the conditions.
     val objs_for_conditions = conditionEvent map {
       case (FingerDown(v, objs), i) if objs.size > 0 =>
