@@ -152,8 +152,6 @@ trait Interpreter {
 
         case p => throw InterpreterException(s"The property $p is not assignable but is in $expr")
       }
-      val rhsValue = eval(rhs)
-      setValue(props._1, props._2, rhsValue)
       UnitLiteral
 
     case Copy(obj, id, block) =>

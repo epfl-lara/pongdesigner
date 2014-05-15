@@ -21,7 +21,7 @@ object GameSerializer {
     var categories = Map[String, Category]()
   }
     
-  trait Converter[T <: Expr] {
+  sealed trait Converter[T <: Expr] {
     def apply(expr: T): JSONObject
     def unapply(json: JSONObject)(implicit ctx: SerializerContext): Option[T]
   }
@@ -475,16 +475,68 @@ object GameSerializer {
 		case e:Tuple => toJson(e)
 		case e:TupleSelect => toJson(e)
 		case e@UnitLiteral => toJson(e)
-
+    //
   }
 
   def jsonToExpr(json: JSONObject)(implicit ctx: SerializerContext): Expr = json match {
-       case IfConverter(i) => i
-       case BlockConverter(b) => b
-       case BooleanLiteralConverter(b) => b
-       case IntegerLiteralConverter(b) => b
-       case FloatLiteralConverter(b) => b
-       case VariableConverter(b) => b
+    case BooleanLiteralConverter(e) => e
+    case IntegerLiteralConverter(e) => e
+    case VariableConverter(e) => e
+    case BlockConverter(e) => e
+    case IfConverter(e) => e
+    case EqualsConverter(e) => e
+    case PlusConverter(e) => e
+    case MinusConverter(e) => e
+    case TimesConverter(e) => e
+    case DivConverter(e) => e
+    case ModConverter(e) => e
+    
+    case LessThanConverter(e) => e
+    case GreaterThanConverter(e) => e
+    case LessEqConverter(e) => e
+    case GreaterEqConverter(e) => e
+    case AndConverter(e) => e
+    case OrConverter(e) => e
+    
+    case CollisionConverter(e) => e
+    case ContainsConverter(e) => e
+    case LetConverter(e) => e
+    case CopyConverter(e) => e
+    case ApplyForceConverter(e) => e
+    case AssignConverter(e) => e
+    case ContainingCellConverter(e) => e
+    
+    case FingerMoveOverConverter(e) => e
+    case FingerUpOverConverter(e) => e
+    case FingerDownOverConverter(e) => e
+    
+    case ApplyConverter(e) => e
+		case ChooseConverter(e) => e
+		case ColumnConverter(e) => e
+		
+		case CountConverter(e) => e
+		case DebugConverter(e) => e
+		case DeleteConverter(e) => e
+		case FindConverter(e) => e
+		case FloatLiteralConverter(e) => e
+		case ForallConverter(e) => e
+		case ForeachConverter(e) => e
+		case IsFingerDownOverConverter(e) => e
+		
+		case IsFingerUpOverConverter(e) => e
+		case MethodCallConverter(e) => e
+		case NOPConverter(e) => e 
+		case NotConverter(e) => e
+		case ObjectLiteralConverter(e) => e
+		case ParExprConverter(e) => e
+		case RowConverter(e) => e
+		case SelectConverter(e) => e
+		case StringLiteralConverter(e) => e
+		
+		case TupleConverter(e) => e
+		case TupleSelectConverter(e) => e
+		case UnitLiteralConverter(e) => e
+		case _ => throw new Exception(s"Json could not parse $json")
   }
 
   def gameToJson(game: Game): JSONObject = ???
