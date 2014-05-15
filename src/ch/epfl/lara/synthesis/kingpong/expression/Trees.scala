@@ -131,7 +131,7 @@ object Trees {
   
   case class Copy(obj: Expr, id: Identifier, body: Expr) extends UnitExpr
   
-  case class Delete(ojb: Expr) extends UnitExpr
+  case class Delete(obj: Expr) extends UnitExpr
   
   case object NOP extends UnitExpr with Terminal
 

@@ -3,6 +3,10 @@ package ch.epfl.lara.synthesis.kingpong.expression
 object Extractors {
   import Trees._
   
+  trait Builder[T <: Expr] {
+    def apply(as: Seq[Expr]): T
+  }
+  
   object UnaryOperator {
     def unapply(expr: Expr): Option[(Expr, (Expr) => Expr)] = expr match {
       case Not(e) => Some((e, Not))
@@ -22,6 +26,27 @@ object Extractors {
       case _ => None
     }
   }
+  
+  implicit val BuilderEquals = new Builder[Equals] { def apply(as: Seq[Expr]) = Equals(as.head, as.tail.head)}
+  implicit val BuilderPlus = new Builder[Plus] { def apply(as: Seq[Expr]) = Plus(as.head, as.tail.head)}
+  implicit val BuilderMinus = new Builder[Minus] { def apply(as: Seq[Expr]) = Minus(as.head, as.tail.head)}
+  implicit val BuilderTimes = new Builder[Times] { def apply(as: Seq[Expr]) = Times(as.head, as.tail.head)}
+  implicit val BuilderDiv = new Builder[Div] { def apply(as: Seq[Expr]) = Div(as.head, as.tail.head)}
+  implicit val BuilderMod = new Builder[Mod] { def apply(as: Seq[Expr]) = Mod(as.head, as.tail.head)}
+  
+  implicit val BuilderLessThan = new Builder[LessThan] { def apply(as: Seq[Expr]) = LessThan(as.head, as.tail.head)}
+  implicit val BuilderGreaterThan = new Builder[GreaterThan] { def apply(as: Seq[Expr]) = GreaterThan(as.head, as.tail.head)}
+  implicit val BuilderLessEq = new Builder[LessEq] { def apply(as: Seq[Expr]) = LessEq(as.head, as.tail.head)}
+  implicit val BuilderGreaterEq = new Builder[GreaterEq] { def apply(as: Seq[Expr]) = GreaterEq(as.head, as.tail.head)}
+  implicit val BuilderAnd = new Builder[And] { def apply(as: Seq[Expr]) = And(as.head, as.tail.head)}
+  implicit val BuilderOr = new Builder[Or] { def apply(as: Seq[Expr]) = Or(as.head, as.tail.head)}
+  
+  implicit val BuilderCollision = new Builder[Collision] { def apply(as: Seq[Expr]) = Collision(as.head, as.tail.head)}
+  implicit val BuilderContains = new Builder[Contains] { def apply(as: Seq[Expr]) = Contains(as.head, as.tail.head)}
+  //implicit val BuilderCopy = new Builder[Copy] { def apply(as: Seq[Expr]) = Copy(as.head, as.tail.head)}
+  //implicit val BuilderApplyForce = new Builder[ApplyForce] { def apply(as: Seq[Expr]) = ApplyForce(as.head, as.tail.head)}
+  //implicit val BuilderAssign = new Builder[Assign] { def apply(as: Seq[Expr]) = Assign(as.head, as.tail.head)}
+  //implicit val BuilderContainingCell = new Builder[ContainingCell] { def apply(as: Seq[Expr]) = ContainingCell(as.head, as.tail.head)}
   
   object BinaryOperator {
     def unapply(expr: Expr): Option[(Expr, Expr, (Expr, Expr) => Expr)] = expr match {
@@ -55,9 +80,6 @@ object Extractors {
     }
   }
   
-  trait Builder[T <: Expr] {
-    def apply(as: Seq[Expr]): T
-  }
   implicit val BuilderIf = new Builder[If] { def apply(as: Seq[Expr]) = If(as(0), as(1), as(2))}
   implicit val BuilderBlock = new Builder[Block] { def apply(as: Seq[Expr]) = Block(as) }
   
@@ -67,7 +89,7 @@ object Extractors {
       case If(t1, t2, t3) => Some((Seq(t1, t2, t3), BuilderIf(_)))
       case Apply(t1, t2, t3) => Some((Seq(t1, t2, t3), (as: Seq[Expr]) => Apply(as(0), as(1), as(2))))
       
-      case Block(exprs) => Some((exprs, (as: Seq[Expr]) => Block(as)))
+      case Block(exprs) => Some((exprs, BuilderBlock(_)))
       case ParExpr(exprs) => Some((exprs, (as: Seq[Expr]) => ParExpr(as.toList)))
       case MethodCall(n, l) => Some((l, MethodCall(n, _)))
 
