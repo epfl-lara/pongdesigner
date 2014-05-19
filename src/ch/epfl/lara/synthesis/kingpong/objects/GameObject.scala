@@ -281,15 +281,19 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     addProperty(p)
     p
   }
-  
-  protected def proxyProperty[T: PongType](property: Property[T]): ROProperty[T] = {
-    val p = new AliasProperty[T](property.name, this) {
+
+  protected def proxyProperty[T: PongType](name: String, property: Property[T]): ROProperty[T] = {
+    val p = new AliasProperty[T](name, this) {
       def get = property.get
       def next = property.next
       def expr = property.expr
     }
     addProperty(p)
     p
+  }
+
+  protected def proxyProperty[T: PongType](property: Property[T]): ROProperty[T] = {
+    proxyProperty(property.name, property)
   }
   
   private def addProperty(property: Property[_]): Unit = {

@@ -492,10 +492,12 @@ object TreeDSL {
       y: Expr,
       columns: Expr,
       rows: Expr,
+      cellWidth: Expr = category.cellWidth,
+      cellHeight: Expr = category.cellHeight,
       angle: Expr = category.angle,
       visible: Expr = category.visible,
       color: Expr = category.color)(implicit game: Game): Array2D = {
-    val obj = new Array2D(game, name, x, y, visible, color, columns, rows)
+    val obj = new Array2D(game, name, x, y, visible, color, cellWidth, cellHeight, columns, rows)
     obj.setCategory(category)
     game.add(obj)
     obj.cells.foreach(_ foreach { cell =>

@@ -15,6 +15,8 @@ object Category {
       angle: Expr = 0,
       width: Expr = 1,
       height: Expr = 1,
+      cellWidth: Expr = 1,
+      cellHeight: Expr = 1,
       radius: Expr = 0.5,
       value: Expr = 0,
       randomMinValue: Expr = 0,
@@ -36,7 +38,7 @@ object Category {
       language: Expr = "en",
       text: Expr = "Custom text",
       time: Expr = 1)(implicit game: Game): CategoryObject = {
-    new CategoryObject(game, name, angle, width, height, radius, value, randomMinValue, randomMaxValue, 
+    new CategoryObject(game, name, angle, width, height, cellWidth, cellHeight, radius, value, randomMinValue, randomMaxValue,
         visible, velocity, angularVelocity, density, friction, restitution, linearDamping, fixedRotation,
         color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time)
   }
@@ -54,6 +56,8 @@ class CategoryObject(
     val angle: Expr,
     val width: Expr,
     val height: Expr,
+    val cellWidth: Expr,
+    val cellHeight: Expr,
     val radius: Expr,
     val value: Expr,
     val randomMinValue: Expr,

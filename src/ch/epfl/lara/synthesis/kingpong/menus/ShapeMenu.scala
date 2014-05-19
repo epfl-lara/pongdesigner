@@ -325,7 +325,7 @@ object SizeButton extends MenuButton {
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     if(selectedShape != null) {
       selectedShape match {
-        case c:Circle =>
+        case c: Circle =>
           val dx1 = toX - relativeX - selected_shape_first_x
           val dy1 = toY - relativeY - selected_shape_first_y
           val dx2 = toX - selected_shape_first_x
@@ -338,7 +338,8 @@ object SizeButton extends MenuButton {
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
-        case r:ResizableRectangular =>
+
+        case r: ResizableRectangular =>
           val newWidth = selected_shape_first_width + relativeX*2
           val newHeight = selected_shape_first_height + relativeY*2
           val rx = r.x.getPrevOrNext(modify_prev)
@@ -349,43 +350,48 @@ object SizeButton extends MenuButton {
             r.width set r.width.next
             r.height set r.height.next
           }
-        case r:Array2D =>
+
+        case array: Array2D =>
           val newWidth = selected_shape_first_width + relativeX*2
           val newHeight = selected_shape_first_height + relativeY*2
-          val numCols = r.numColumns.getPrevOrNext(modify_prev)
-          val numRows = r.numRows.getPrevOrNext(modify_prev)
-          
-          if(newWidth/ (numCols +1) > Array2D.CELL_WIDTH) {
-            r.numColumns.setPrevOrNext(modify_prev, numCols + 1)
-            // Add a column
-            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(r, numCols, row) }
-            r.cells += newCells
+          val numCols = array.numColumns.getPrevOrNext(modify_prev)
+          val numRows = array.numRows.getPrevOrNext(modify_prev)
+          val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
+          val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
+
+          // Add a column
+          if(newWidth/ (numCols + 1) > cellWidth) {
+            array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
+            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
+            array.cells += newCells
             for(cell <- newCells) gameEngine.getGame.add(cell)
-            
-          } else if(newWidth/ (numCols - 1) < Array2D.CELL_WIDTH) {
-            // remove a column
-            r.numColumns.setPrevOrNext(modify_prev, numCols - 1)
-            val deletedColumn = r.cells.remove(r.cells.length - 1)
+
+          // Remove a column
+          } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
+            array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
+            val deletedColumn = array.cells.remove(array.cells.length - 1)
             for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
           }
-          if(newHeight/ (numRows + 1) > Array2D.CELL_HEIGHT) {
-            r.numRows.setPrevOrNext(modify_prev, numRows + 1)
-            // add a line
-            for((column, i) <- r.cells.zipWithIndex) {
-              val newCell = Cell(r, i, numRows)
+
+          // Add a line
+          if(newHeight/ (numRows + 1) > cellHeight) {
+            array.numRows.setPrevOrNext(modify_prev, numRows + 1)
+            for((column, i) <- array.cells.zipWithIndex) {
+              val newCell = Cell(array, i, numRows)
               column += newCell
               gameEngine.getGame.add(newCell)
             }
-          } else if(newHeight/ (numRows - 1) < Array2D.CELL_HEIGHT) {
-            r.numRows.setPrevOrNext(modify_prev, numRows - 1)
-            // remove a row
-            val deletedRow = for(column <- r.cells) yield column.remove(column.length - 1)
-            // Do something with the deleted row
+
+          // Remove a row
+          } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
+            array.numRows.setPrevOrNext(modify_prev, numRows - 1)
+            val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
             for(cell <- deletedRow) gameEngine.getGame.remove(cell)
           }
+
           if(copy_to_prev) {
-            r.numRows set r.numRows.next
-            r.numColumns set r.numColumns.next
+            array.numRows set array.numRows.next
+            array.numColumns set array.numColumns.next
           }
           
         case _ =>

@@ -279,11 +279,6 @@ class RandomGenerator(
   }
 }
 
-object Array2D {
-  val CELL_WIDTH = 1
-  val CELL_HEIGHT = 1
-}
-
 class Array2D(
     val game: Game,
     init_name: Expr,
@@ -291,6 +286,8 @@ class Array2D(
     init_y: Expr,
     init_visible: Expr,
     init_color: Expr,
+    init_cellWidth: Expr,
+    init_cellHeight: Expr,
     init_numColumns: Expr,
     init_numRows: Expr
     ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
@@ -298,8 +295,6 @@ class Array2D(
       with Movable
       with FixedRectangularContains { self =>
  
-  import Array2D._
-  
   private val shape = new PolygonShape()
   
   val cellsCategory = new Category {
@@ -315,21 +310,23 @@ class Array2D(
   }
   
   // Properties
-  val numRows = simpleProperty[Int]("numRows", init_numRows)
+  val numRows    = simpleProperty[Int]("numRows", init_numRows)
   val numColumns = simpleProperty[Int]("numColumns", init_numColumns)
-    
+  val cellWidth  = simpleProperty[Float]("cellWidth", init_cellWidth)
+  val cellHeight = simpleProperty[Float]("cellHeight", init_cellHeight)
+
   val width = aliasProperty[Float] (
     name  = "width", 
-    getF  = () => numColumns.get  * CELL_WIDTH,
-    nextF = () => numColumns.next * CELL_WIDTH,
-    exprF = () => numColumns.expr * CELL_WIDTH
+    getF  = () => numColumns.get  * cellWidth.get,
+    nextF = () => numColumns.next * cellWidth.next,
+    exprF = () => numColumns.expr * cellWidth.expr
   )
   
   val height = aliasProperty[Float] (
     name  = "height", 
-    getF  = () => numRows.get  * CELL_HEIGHT,
-    nextF = () => numRows.next * CELL_HEIGHT,
-    exprF = () => numRows.expr * CELL_HEIGHT
+    getF  = () => numRows.get  * cellHeight.get,
+    nextF = () => numRows.next * cellHeight.next,
+    exprF = () => numRows.expr * cellHeight.expr
   )
   
   def getShape = {
@@ -352,12 +349,13 @@ class Array2D(
     if (!this.contains(pos)) {
       ObjectLiteral.empty
     } else {
-      cells(((pos.x - left.get) / CELL_WIDTH).toInt)(((pos.y - top.get) / CELL_HEIGHT).toInt).expr
+      cells(((pos.x - left.get) / cellWidth.get).toInt)(((pos.y - top.get) / cellHeight.get).toInt).expr
     }
   }
   
   protected def makecopy(name: String) = {
-    new Array2D(game, name, x.init, y.init, visible.init, color.init, numColumns.init, numRows.init)
+    new Array2D(game, name, x.init, y.init, visible.init, color.init,
+                cellWidth.init, cellHeight.init, numColumns.init, numRows.init)
   }
 }
 
@@ -368,9 +366,7 @@ case class Cell(
     ) extends GameObject(array.name.get + "[" + row + "," + column + "]") 
       with Rectangular with Positionable
       with FixedRectangularContains {
-  
-  import Array2D._
-  
+
   private val shape = new PolygonShape()
   def noVelocity_=(b: Boolean) = {}
   def game = array.game
@@ -389,9 +385,8 @@ case class Cell(
     exprF = () => array.top.expr + height.expr * (row + 0.5f)
   )
   
-  val width = constProperty[Float] ("width", CELL_WIDTH)
-  
-  val height = constProperty[Float] ("height", CELL_HEIGHT)
+  val width = proxyProperty[Float]("width", array.cellWidth)
+  val height = proxyProperty[Float]("height", array.cellHeight)
   
   override val bottom = aliasProperty[Float] (
     name  = "bottom", 
