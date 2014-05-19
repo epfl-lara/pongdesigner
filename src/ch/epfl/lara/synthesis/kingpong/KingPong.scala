@@ -276,34 +276,19 @@ class KingPong extends Activity
             // A finger moves
             case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
               if(mLayoutcodehorizontal != null) {
-                val x = event.getRawX()
+                val dx = - (event.getRawX() - xprev).toInt
                 val params = mLayoutcodehorizontal.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-                val dx = - (x - xprev).toInt
-                params.width = params.width +dx
+                params.width += dx
                 mCodeViewResizer.setX(mCodeViewResizer.getX - dx)
-                if(mActions != null) {
-                  mActions.setX(mCodeViewResizer.getX)
-                  val params = mActions.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-	                val dx = - (x - xprev).toInt
-	                params.width = params.width + dx
-                  mActions.requestLayout()
-                }
-                Log.d("Test", s"The layout moves dx=$dx")
+                mActions.setX(mCodeViewResizer.getX)
                 mLayoutcodehorizontal.getParent().requestLayout()
-                //xprev = x
               }
               if(mLayoutcodevertical != null) {
-                val y = event.getRawY()
+                val dy = - (event.getRawY() - yprev).toInt
                 val params = mLayoutcodevertical.getLayoutParams().asInstanceOf[ViewGroup.LayoutParams]
-                val dy = - (y - yprev).toInt
                 params.height = params.height + dy
-                Log.d("Test", s"The layout moves dy=$dy")
                 mCodeViewResizer.setY(mCodeViewResizer.getY - dy)
-                if(mActions != null) {
-                  mActions.requestLayout()
-                }
                 mLayoutcodevertical.getParent().requestLayout()
-                //yprev = y
               }
               xprev = event.getRawX()
               yprev = event.getRawY()

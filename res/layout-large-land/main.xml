@@ -84,7 +84,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/gameview"
         android:layout_alignLeft="@+id/codeviewResizer"
-        android:layout_alignRight="@+id/buttons"
+        android:layout_alignRight="@+id/codeviewResizer"
         android:layout_below="@+id/codeviewResizer" />
 
 </RelativeLayout>

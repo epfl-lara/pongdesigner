@@ -566,9 +566,6 @@ class GameViewRender(val context: Context) extends ContextUtils {
   
   /** Draws the menu on the canvas */
   def drawMenuOn(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, state: GameState, eventEditor: EventEditor, shapeEditor: ShapeEditor) = {
-    // Draw the fps on the top right of the screen
-    //mFPSPaint.setTextSize(20)
-    //canvas.drawText("fps:" + fps.toString(), mWidth - 90, 20, mFPSPaint)
     MenuOptions.button_size = button_size
     state match {
       case Editing => 
