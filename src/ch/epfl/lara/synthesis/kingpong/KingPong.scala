@@ -36,7 +36,10 @@ import android.widget.ImageView
 import net.londatiga.android._
 import ch.epfl.lara.synthesis.kingpong.examples.TestGame
 import ch.epfl.lara.synthesis.kingpong.common.Messages
+import ch.epfl.lara.synthesis.kingpong.serialization.GameSerializer
 import java.util.Locale
+import java.io.OutputStreamWriter
+import android.os.Vibrator
 
 object KingPong {
   final val TTS_CHECK = 1
@@ -77,6 +80,12 @@ object KingPong {
   
   final val PREFS_NAME = "MyPrefsFile"
     
+  private def writeToFile(context: Context, s: String, filename: String): Unit = {
+    val o = new OutputStreamWriter(context.openFileOutput(filename, Context.MODE_WORLD_READABLE))
+    o.write(s)
+    o.close()
+  }
+    
   class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: Game = null) extends MyAsyncTask[String, (String, Int, Int), Game] with common.AutoShutOff {
     var max=100
     var prog =0
@@ -92,12 +101,18 @@ object KingPong {
       prog = 0
       if(saving) {
         val scala_file = filename.endsWith(".scala")
-        /*game.outputItself(filename, !scala_file, {
-        (text: String, i: Int, j: Int) => {
-          publishProgress((text, i, j))
+        if(scala_file) { //cannot do anything
+          
+        } else { // Assume the pd2 extension
+          GameSerializer.saveGame(game,
+              output => {
+                writeToFile(activity, output, filename)
+              },
+              (i, j) => {
+                publishProgress(("Saving to "+filename, i, j))
+              }
+          )
         }
-        })*/ // TODO: output the game to a file
-        
       } else {
         if(mapgames contains filename) {
           mapgames(filename)
@@ -105,12 +120,11 @@ object KingPong {
           game = mapgames(filename)()
           publishProgress(("Finished", 100, 100))
         } else {
-          game = new TestGame()
-          /*game.setGameEngine(activity.mGameView)
-          game.fromFile(filename, {
-             (text: String, i: Int, j: Int) => 
-               publishProgress((text, i, j))
-           })*/ /// TODO: Create a game from file.
+          val content: String = ""
+          game = GameSerializer.loadGame(content,
+              (i, j) =>
+                publishProgress(("Loading from "+filename, i, j)))
+          
         }
       }
       game
@@ -320,7 +334,7 @@ class KingPong extends Activity
       // Handle item selection
       item.getItemId() match {
           case R.id.save =>
-            //mGameView.saveGame(mHandler, false)
+            mGameView.saveGame(mHandler, false)
             true
           case R.id.reset =>
             val context = this
@@ -334,11 +348,10 @@ class KingPong extends Activity
             )
             true
           case R.id.exportbutton =>
-            //mGameView.saveGame(mHandler, true) // Export
+            mGameView.saveGame(mHandler, true) // Export
             true
           case R.id.load_external =>
-            //new LoadFileTask().execute()
-            //mGameView.loadGame(mHandler)
+            mGameView.loadGame(mHandler)
             true
           case R.id.brickbreaker =>   self ! Messages.FileLoad(PONGNAME_SIMPLEBRICKBREAKER)
           case R.id.supermario   =>   self ! Messages.FileLoad(PONGNAME_SUPERMARIO)
@@ -399,23 +412,52 @@ class KingPong extends Activity
     mGameView.backToBeginning()
   }
   
+  private var vibratorInstance: Vibrator = null
+  def vibrate(): Unit = {
+    if(vibratorInstance == null) {
+      vibratorInstance = this.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[Vibrator]
+      if(vibratorInstance == null) return
+    }
+    vibratorInstance.vibrate(50)
+  }
+  
+  private var startTouchDown = 0L
+  private final val MAX_MS_EDITWHILERUNNING = 750
   private val onTimeButtonListerer = (v: View, event: MotionEvent) => {
 	(event.getAction() & MotionEvent.ACTION_MASK) match {
 		case MotionEvent.ACTION_DOWN | MotionEvent.ACTION_POINTER_DOWN =>
-			mGameView.editWhileRunning = true
+		  startTouchDown = System.currentTimeMillis()
+		  mGameView.state match {
+				case GameView.Running =>
+				  if(mGameView.editWhileRunning) {
+				    mGameView.editWhileRunning = false
+				  } else {
+			      mGameView.editWhileRunning = true
+				  }
+				case GameView.Editing =>
+		  }
 			true
 		case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
-			mGameView.editWhileRunning = false
-			mGameView.state match {
-				case GameView.Editing =>
-				  mGameView.toRunning()
-				  time_button.setImageDrawable(timeButtonPause)
-
-				case GameView.Running =>
-				  mGameView.toEditing()
-				  time_button.setImageDrawable(timeButtonPlay)
-			  }
-			true
+		  if(System.currentTimeMillis() - startTouchDown > MAX_MS_EDITWHILERUNNING) {
+		    // Do nothing, just keep going !
+		    vibrate()
+		    if(mGameView.editWhileRunning) Toast.makeText(this, R.string.editwhilerunningon, Toast.LENGTH_SHORT).show() else {
+		      Toast.makeText(this, R.string.editwhilerunningoff, Toast.LENGTH_SHORT).show()
+		    }
+		    true
+		  } else {
+				mGameView.editWhileRunning = false
+				mGameView.state match {
+					case GameView.Editing =>
+					  mGameView.toRunning()
+					  time_button.setImageDrawable(timeButtonPause)
+	
+					case GameView.Running =>
+					  mGameView.toEditing()
+					  time_button.setImageDrawable(timeButtonPlay)
+				  }
+				true
+		  }
 		case MotionEvent.ACTION_MOVE =>
           false
 		case _ => false

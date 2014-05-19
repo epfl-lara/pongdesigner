@@ -27,6 +27,8 @@ trait Game extends RulesManager with Context { self =>
   
   private val _objects = ArrayBuffer.empty[GameObject]
   
+  var name: String = "untitled"
+  
   /** All objects in this game. */
   def objects: Traversable[GameObject] = _objects
 
@@ -140,6 +142,7 @@ trait Game extends RulesManager with Context { self =>
   def add(o: GameObject) = {
     o.reset(interpreter)
     o.flush()
+    o.creationTime.set(time)
     _objects += o
   }
   

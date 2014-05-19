@@ -153,5 +153,8 @@
     
     <string name="codeviewhint">Code of the game</string>
     <string name="change_image">Change l\'image</string>
-
+    
+    <string name="editwhilerunningon">Edit mode while running turned on</string>
+    <string name="editwhilerunningoff">Edit mode while running turned off</string>
+    
 </resources>

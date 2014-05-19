@@ -103,8 +103,8 @@ object Messages {
         Some((data.getString(FILENAME_TAG)))
       } else None
     }
+    def apply(s: String): Message = FILE_SAVE_AND_EXPORT ! FILENAME_TAG->s
   }
-  def apply(s: String): Message = FILE_SAVE_AND_EXPORT ! FILENAME_TAG->s
   
   object FileExport {
     def unapply(m: Message): Option[(String)] = {

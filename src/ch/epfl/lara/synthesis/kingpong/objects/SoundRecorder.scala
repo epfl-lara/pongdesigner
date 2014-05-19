@@ -13,12 +13,13 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events
 import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees
+import scala.beans.BeanProperty
 
 
 /**
  * An element drawn at a specific time.
  */
-case class SoundRecorded(recorder: SoundRecorder,
+case class SoundRecorded(var recorder: SoundRecorder,
     number: Int,
     startTime: Int,
     endTime: Int,
@@ -99,12 +100,14 @@ case class SoundRecorder (
       with Colorable
       with Directionable with FixedRectangularContains {
   
-  lazy val recordings = ArrayBuffer.tabulate[SoundRecorded](0)(n => null)
+  @BeanProperty lazy val recordings = ArrayBuffer.tabulate[SoundRecorded](0)(n => null)
   //private val mSounds = ArrayBuffer[SoundElement]() // Records all sounds.
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
   val recording = simpleProperty[Boolean]("recording", init_recording)
+  
+  
   
   def numRecords = recordings.length
   

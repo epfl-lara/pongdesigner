@@ -3,11 +3,13 @@ package ch.epfl.lara.synthesis.kingpong.serialization
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.expression.Extractors._
-import org.json.{JSONArray, JSONException, JSONObject}
+import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
+import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
+import org.json.{JSONArray, JSONException, JSONObject, JSONTokener}
 import scala.collection.mutable.ListBuffer
-import ch.epfl.lara.synthesis.kingpong.objects.Category
-import ch.epfl.lara.synthesis.kingpong.objects.GameObject
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap => MMap}
+import org.jbox2d.dynamics.BodyType
 
 object GameSerializer {
   private val CLASS_TAG = "__class__"
@@ -15,20 +17,44 @@ object GameSerializer {
   /**
    * the context used to create the game
    */
-  class SerializerContext {
-    var objects = ArrayBuffer[GameObject]()
-    var map = Map[String, GameObject]()
-    var categories = Map[String, Category]()
+  class SerializerContext(
+    val objects: ArrayBuffer[GameObject] = ArrayBuffer[GameObject](),
+    val map: MMap[String, GameObject] = MMap[String, GameObject](),
+    val identifiers: MMap[(String, Int), Identifier] = MMap[(String, Int), Identifier](),
+    val categories: MMap[String, CategoryObject] = MMap[String, CategoryObject]()
+    ) {
+    def add(o: GameObject) = {
+      if(o != null) {
+	      objects += o
+	      map += o.name.get -> o
+      }
+    }
+    def add(c: CategoryObject) = {
+      if(c != null && !(categories contains c.name)) {
+        categories += c.name -> c
+      }
+    }
+    def getOrElseUpdate(i: Identifier): Identifier = {
+      identifiers.get((i.name, i.id)) match {
+        case Some(id) => id
+        case None => 
+          identifiers += ((i.name, i.id) -> i)
+          i
+      }
+    }
+    def copy: SerializerContext = {
+      new SerializerContext(objects, map, identifiers.clone(), categories)
+    }
   }
     
-  sealed trait Converter[T <: Expr] {
+  sealed trait Converter[T] {
     def apply(expr: T): JSONObject
     def unapply(json: JSONObject)(implicit ctx: SerializerContext): Option[T]
   }
   /** A converter to convert from JSONObject to Expr and vice-versa*/
   abstract class ConverterBuilder[T <: Expr : Builder](TAG: String) extends Converter[T] {
     def apply(expr: T): JSONObject = {
-      val json = baseObject(expr)
+      val json = new JSONObject().put(CLASS_TAG, TAG)
       for((str, f) <- map) {
         json.put(str, exprToJson(f(expr)))
       }
@@ -64,19 +90,22 @@ object GameSerializer {
   }
   
   /** A converter to convert from JSONObject to Expr and vice-versa*/
-  abstract class CustomConverter[T <: Expr](TAG: String) extends Converter[T] {
+  abstract class CustomConverter[T](TAG: String) extends Converter[T] {
     def apply(expr: T): JSONObject = {
-      val json = baseObject(expr)
+      val json = new JSONObject().put(CLASS_TAG, TAG)
       for((str, f) <- map) {
         json.put(str, f(expr))
       }
       json
     }
     implicit var implicitJSON: JSONObject = null
-    var unbuilder: () => T = null
+    private var unbuilder: () => T = null
+    private var beforeUnbuilder: () => Unit = null
+    private var afterUnbuilder: () => Unit = null
     implicit var implicitContext:  SerializerContext = null
     def unbuild(f: => T) = unbuilder = {() => f}
-    
+    def beforeUnbuild(f: => Unit) = beforeUnbuilder = () => f
+    def afterUnbuild(f: => Unit) = afterUnbuilder = () => f
     //def unbuild(f: SerializerContext => T) = unbuilder = f
     //def unbuild(json: JSONObject): T
         
@@ -84,7 +113,10 @@ object GameSerializer {
       implicitContext = ctx
        if(json.getString(CLASS_TAG) == TAG) {
          implicitJSON = json
-         Some(unbuilder())
+         if(beforeUnbuilder != null) beforeUnbuilder()
+         val res = Some(unbuilder())
+         if(afterUnbuilder != null) afterUnbuilder()
+         res
        } else None
     }
     var map = ListBuffer[(String, T => JSONObject)]()
@@ -102,11 +134,18 @@ object GameSerializer {
     def _1(implicit json: JSONObject): JSONObject = json.getJSONObject(map(0)._1)
     def _2(implicit json: JSONObject): JSONObject = json.getJSONObject(map(1)._1)
     def _3(implicit json: JSONObject): JSONObject = json.getJSONObject(map(2)._1)
+    def _4(implicit json: JSONObject): JSONObject = json.getJSONObject(map(3)._1)
+    def _5(implicit json: JSONObject): JSONObject = json.getJSONObject(map(4)._1)
+    def _6(implicit json: JSONObject): JSONObject = json.getJSONObject(map(5)._1)
+    def _7(implicit json: JSONObject): JSONObject = json.getJSONObject(map(6)._1)
     
     def __1(implicit json: JSONObject): List[JSONObject] = json.getJSONObjectSeq(map(0)._1).toList
     def __2(implicit json: JSONObject): List[JSONObject] = json.getJSONObjectSeq(map(1)._1).toList
     def __3(implicit json: JSONObject): List[JSONObject] = json.getJSONObjectSeq(map(2)._1).toList
-    implicit def internalJsonToIdentifier(json: JSONObject): Identifier = jsonToIdentifier(json)
+    implicit def internalJsonToIdentifier(json: JSONObject): Identifier = {
+      val id = jsonToIdentifier(json)
+      implicitContext.getOrElseUpdate(id)
+    }
     implicit def internalJsonToExpr(json: JSONObject): Expr = jsonToExpr(json)
     implicit def internalJsonToString(json: JSONObject): String = jsonToString(json)
     implicit def internalJsonToBoolean(json: JSONObject): Boolean = jsonToBoolean(json)
@@ -115,7 +154,7 @@ object GameSerializer {
     implicit def internalJsonToExprSeq(json: List[JSONObject]): List[Expr]= json.map(jsonToExpr)
     implicit def internalJsonToIdentifierList(json: List[JSONObject]): List[Identifier]= json.map(jsonToIdentifier).toList
     implicit def internalJsonToGameObject(json: JSONObject): GameObject = implicitContext.map.getOrElse(jsonToString(json), null)
-    implicit def internalJsonToCategory(json: JSONObject): Category = implicitContext.categories.getOrElse(jsonToString(json), null)
+    implicit def internalJsonToCategory(json: JSONObject): CategoryObject = implicitContext.categories.getOrElse(jsonToString(json), null)
   }
   
   trait BinaryConverter[T <: Expr { def lhs: Expr; def rhs: Expr }] extends ConverterBuilder[T] { self: ConverterBuilder[T] =>
@@ -140,13 +179,27 @@ object GameSerializer {
 
   implicit case object CollisionConverter extends ConverterBuilder[Collision]("Collision") with BinaryConverter[Collision]
   implicit case object ContainsConverter extends ConverterBuilder[Contains]("Contains") with BinaryConverter[Contains]
-  implicit case object LetConverter extends CustomConverter[Let]("Let") {
+  
+  
+   
+  trait SaveRestoreIdentifierContext[T] extends CustomConverter[T] {
+    var savedContext: SerializerContext = null
+    beforeUnbuild{
+      savedContext = implicitContext
+      implicitContext = implicitContext.copy
+    }
+    afterUnbuild{
+      implicitContext = savedContext
+    }
+  }
+  
+  implicit case object LetConverter extends CustomConverter[Let]("Let") with SaveRestoreIdentifierContext[Let] {
     "id" <=> (_.id)
     "expr" <-> (_.expr)
     "body" <-> (_.body)
     unbuild(Let(_1, _2, _3))
   }
-  implicit case object CopyConverter extends CustomConverter[Copy]("Copy") {
+  implicit case object CopyConverter extends CustomConverter[Copy]("Copy") with SaveRestoreIdentifierContext[Copy] {
     "obj" <-> (_.obj)
     "id" <=> (_.id)
     "body" <-> (_.body)
@@ -285,7 +338,7 @@ object GameSerializer {
   }
   
   /** Forall converter */
-  implicit case object ForallConverter extends CustomConverter[Forall]("Forall") {
+  implicit case object ForallConverter extends CustomConverter[Forall]("Forall") with SaveRestoreIdentifierContext[Forall] {
     "category" <*> (_.category.name)
     "id" <=> (_.id)
     "body" <-> (_.body)
@@ -293,7 +346,7 @@ object GameSerializer {
   }
   
   /** Foreach converter */
-  implicit case object ForeachConverter extends CustomConverter[Foreach]("Foreach") {
+  implicit case object ForeachConverter extends CustomConverter[Foreach]("Foreach") with SaveRestoreIdentifierContext[Foreach] {
     "category" <*> (_.category.name)
     "id" <=> (_.id)
     "body" <-> (_.body)
@@ -356,9 +409,38 @@ object GameSerializer {
   
   /** TupleSelect converter */
   implicit case object ObjectLiteralConverter extends CustomConverter[ObjectLiteral]("ObjectLiteral") {
-    "name" <*> (_.value.name.get)
+    "value" <*> (_.value.name.get)
     unbuild(new ObjectLiteral(_1))
   }
+  
+  
+  /**
+   * Other kind of converters
+   */
+  /** TupleSelect converter */
+  implicit case object DrawingElementConverter extends CustomConverter[DrawingElement]("DrawingElement") {
+    "time" <+> (_.time)
+    "fromx" <~> (_.fromx)
+    "fromy" <~> (_.fromx)
+    "tox" <~> (_.fromx)
+    "toy" <~> (_.fromx)
+    "width" <~> (_.fromx)
+    "color" <+> (_.color)
+    unbuild(DrawingElement(_1, _2, _3, _4, _5, _6, _7))
+  }
+  
+  /**
+   * Other kind of converters
+   */
+  /** TupleSelect converter */
+  implicit case object SoundRecordedConverter extends CustomConverter[SoundRecorded]("SoundRecorded") {
+    "number" <+> (_.number)
+    "startTime" <+> (_.startTime)
+    "endTime" <+> (_.endTime)
+    "uri" <*> (_.uri)
+    unbuild(SoundRecorded(null, _1, _2, _3, _4))
+  }
+  
   
   /***
    * Base type converter functions (identifiers, ints, etc.)
@@ -413,7 +495,7 @@ object GameSerializer {
     json.getDouble("value").toFloat
   }
   
-  def toJson[T <: Expr](e: T)(implicit converter: Converter[T]): JSONObject = {
+  def toJson[T](e: T)(implicit converter: Converter[T]): JSONObject = {
     converter(e)
   }
 
@@ -475,8 +557,10 @@ object GameSerializer {
 		case e:Tuple => toJson(e)
 		case e:TupleSelect => toJson(e)
 		case e@UnitLiteral => toJson(e)
-    //
+    // Please also add any element in the method below jsonToExpr.
   }
+  
+  def fromJson[T](json: JSONObject)(implicit converter: Converter[T], ctx: SerializerContext): Option[T] = converter.unapply(json)
 
   def jsonToExpr(json: JSONObject)(implicit ctx: SerializerContext): Expr = json match {
     case BooleanLiteralConverter(e) => e
@@ -538,12 +622,186 @@ object GameSerializer {
 		case UnitLiteralConverter(e) => e
 		case _ => throw new Exception(s"Json could not parse $json")
   }
+  
+  def gameObjectToJson(g: GameObject): JSONObject = {
+    val cl = g.getClass()
+    val json = new JSONObject().put(CLASS_TAG, cl)
+    json.put("category", g.category.name)
+    for(p <- g.properties) {
+      p match {
+        case p:AliasProperty[_] => // Store nothing
+        case p:ConstProperty[_] => //json.put(p.name, exprToJson(p.expr))
+        case p:HistoricalProperty[_] => json.put(p.name, exprToJson(p.init))
+        case _ => println(s"Unknown property not stored : $p")
+      }
+    }
+    g match {
+      case g: DrawingObject =>
+        val elements = g.getDrawingElements
+        for(elem <- elements) {
+          json.accumulate("DrawingElements", toJson(elem))
+        }
+      case g: SoundRecorder =>
+        val elements = g.getRecordings
+        for(elem <- elements) {
+          // TODO : Save sounds apart for zipping
+          json.accumulate("SoundsRecorded", toJson(elem))
+        }
+      case _ =>
+    }
+    json
+  }
+  
+  def categoryToJson(category: CategoryObject)(implicit ctx: SerializerContext): JSONObject = {
+    val json = new JSONObject().put(CLASS_TAG, "category")
+    json.put("name", category.name)
+    json.put("angle", exprToJson(category.angle))
+		json.put("width", exprToJson(category.width))
+		json.put("height", exprToJson(category.height))
+		json.put("cellWidth", exprToJson(category.cellWidth))
+		json.put("cellHeight", exprToJson(category.cellHeight))
+		json.put("radius", exprToJson(category.radius))
+		json.put("value", exprToJson(category.value))
+		json.put("randomMinValue", exprToJson(category.randomMinValue))
+		json.put("randomMaxValue", exprToJson(category.randomMaxValue))
+		json.put("visible", exprToJson(category.visible))
+		json.put("velocity", exprToJson(category.velocity))
+		json.put("angularVelocity", exprToJson(category.angularVelocity))
+		json.put("density", exprToJson(category.density))
+		json.put("friction", exprToJson(category.friction))
+		json.put("restitution", exprToJson(category.restitution))
+		json.put("linearDamping", exprToJson(category.linearDamping))
+		json.put("fixedRotation", exprToJson(category.fixedRotation))
+		json.put("color", exprToJson(category.color))
+		json.put("sensor", exprToJson(category.sensor))
+		json.put("tpe", if(category.tpe == BodyType.STATIC) "STATIC" else if(category.tpe == BodyType.DYNAMIC) "DYNAMIC" else "KINEMATIC" )
+		json.put("stroke_width", exprToJson(category.stroke_width))
+		json.put("color_drawing", exprToJson(category.color_drawing))
+		json.put("recording", exprToJson(category.recording))
+		json.put("language", exprToJson(category.language))
+		json.put("text", exprToJson(category.text))
+		json.put("time", exprToJson(category.time))
+		json
+  }
+  
+  def jsonToCategory(json: JSONObject, game: Game)(implicit ctx: SerializerContext): CategoryObject = {
+    val name = json.getString("name")
+    var created = false
+    val category = ctx.categories.getOrElse(name, { created = true; new CategoryObject(
+        game,
+        name,
+        jsonToExpr(json.getJSONObject("angle")),
+				jsonToExpr(json.getJSONObject("width")),
+				jsonToExpr(json.getJSONObject("height")),
+				jsonToExpr(json.getJSONObject("cellWidth")),
+				jsonToExpr(json.getJSONObject("cellHeight")),
+				jsonToExpr(json.getJSONObject("radius")),
+				jsonToExpr(json.getJSONObject("value")),
+				jsonToExpr(json.getJSONObject("randomMinValue")),
+				jsonToExpr(json.getJSONObject("randomMaxValue")),
+				jsonToExpr(json.getJSONObject("visible")),
+				jsonToExpr(json.getJSONObject("velocity")),
+				jsonToExpr(json.getJSONObject("angularVelocity")),
+				jsonToExpr(json.getJSONObject("density")),
+				jsonToExpr(json.getJSONObject("friction")),
+				jsonToExpr(json.getJSONObject("restitution")),
+				jsonToExpr(json.getJSONObject("linearDamping")),
+				jsonToExpr(json.getJSONObject("fixedRotation")),
+				jsonToExpr(json.getJSONObject("color")),
+				jsonToExpr(json.getJSONObject("sensor")),
+				{ val s = json.getString("tpe"); if(s == "STATIC") BodyType.STATIC else if(s == "DYNAMIC") BodyType.DYNAMIC else BodyType.KINEMATIC},
+				jsonToExpr(json.getJSONObject("stroke_width")),
+				jsonToExpr(json.getJSONObject("color_drawing")),
+				jsonToExpr(json.getJSONObject("recording")),
+				jsonToExpr(json.getJSONObject("language")),
+				jsonToExpr(json.getJSONObject("text")),
+				jsonToExpr(json.getJSONObject("time")))}
+    )
+    if(created) {
+      ctx.categories += name -> category
+      category
+    } else {
+      category
+    }
+  }
+  
+  def jsonToGameObject(json: JSONObject, game: Game)(implicit ctx: SerializerContext): Option[GameObject] = {
+    val cl = json.get(CLASS_TAG)
+    val category = jsonToCategory(json.getJSONObject("category"), game)
+    val obj: GameObject =
+           if(cl == classOf[Rectangle].getName()) { rectangle(category)("", 0, 0)(game)
+    } else if(cl == classOf[Circle].getName()) {    circle(category)("", 0, 0)(game)
+    } else if(cl == classOf[Character].getName()) { character(category)("", 0, 0)(game)
+    } else if(cl == classOf[IntBox].getName()) { intbox(category)("", 0, 0)(game)
+    } else if(cl == classOf[StringBox].getName()) { stringbox(category)("", 0, 0)(game)
+    } else if(cl == classOf[BooleanBox].getName()) { booleanbox(category)("", 0, 0)(game)
+    } else if(cl == classOf[Joystick].getName()) { joystick(category)("", 0, 0)(game)
+    } else if(cl == classOf[RandomGenerator].getName()) { randomGenerator(category)("", 0, 0)(game)
+    } else if(cl == classOf[Array2D].getName()) { array(category)("", 0, 0, 1, 1)(game)
+    } else if(cl == classOf[SoundTTS].getName()) { soundTTS(category)("", 0, 0)(game)
+    } else if(cl == classOf[DrawingObject].getName()) { drawingObject(category)("", 0, 0)(game)
+    //} else if(cl == classOf[SoundRecorded].getName()) { soundrecorded(category)("", 0, 0)(game)
+    } else if(cl == classOf[SoundRecorder].getName()) { soundRecorder(category)("", 0, 0)(game)
+    } else null
+    category.add(obj)
+    for(p <- obj.properties) {
+      p match {
+        case p:AliasProperty[_] => // Store nothing
+        case p:ConstProperty[_] => // p.jsonToInt(json.get(p.name))
+        case p:HistoricalProperty[_] => p.setInit(jsonToExpr(json.getJSONObject(p.name)))
+        case _ => println(s"Unknown property not stored : $p")
+      }
+    }
+    obj match {
+      case obj: DrawingObject =>
+        for(j <- json.getJSONObjectSeq("DrawingElements"); d <- fromJson[DrawingElement](j)) {
+          obj.addDrawingElement(d)
+        }
+      case obj: SoundRecorder =>
+        for(j <- json.getJSONObjectSeq("SoundsRecorded"); d <- fromJson[SoundRecorded](j)) {
+          // TODO : Recover sounds from zip before inserting them there.
+          d.recorder = obj
+          obj.recordings += d
+        }
+      case _ =>
+    }
+    
+    None
+  }
 
-  def gameToJson(game: Game): JSONObject = ???
-  def jsonToGame(json: JSONObject): Game = ???
-
-  private def baseObject(expr: Expr): JSONObject = {
-    new JSONObject().put(CLASS_TAG, expr.getClass.getSimpleName)
+  /**
+   * Converts a game to JSON
+   */
+  def gameToJson(game: Game): JSONObject = {
+    val json = new JSONObject().put(CLASS_TAG, "Game")
+    
+    for(obj <- game.objects) {
+      json.accumulate("objects", gameObjectToJson(obj))
+    }
+    for(rule <- game.rules) {
+      json.accumulate("rules", exprToJson(rule))
+    }
+    json
+  }
+  
+  /**
+   * Converts a json to a game
+   */
+  def jsonToGame(json: JSONObject): Option[Game] = {
+    if(json.get(CLASS_TAG) != "Game") return None;
+    val game = new Game { val world = new PhysicalWorld(new org.jbox2d.common.Vec2(0, 0f)) }
+    
+    implicit val ctx = new SerializerContext
+    for(j <- json.getJSONObjectSeq("objects");
+        someobj = jsonToGameObject(j, game);
+        obj <- someobj) {
+      game.add(obj)
+      ctx.add(obj)
+    }
+    for(j <- json.getJSONObjectSeq("rules")) {
+      game.addRule(jsonToExpr(j))
+    }
+    Some(game)
   }
 
   private implicit class RichJSONObject(val obj: JSONObject) extends AnyVal {
@@ -551,6 +809,31 @@ object GameSerializer {
       val array = obj.getJSONArray(name)
       for (i <- 0 to array.length) yield array.getJSONObject(i)
     }
+  }
+  
+  /**
+   * Parses a game from a file.
+   */
+  def loadGame(content: String, callbackProgress: (Int, Int) => Unit = null): Game = {
+    if(callbackProgress != null) callbackProgress(10, 100)
+    val json = new JSONTokener(content).nextValue().asInstanceOf[JSONObject]
+    if(callbackProgress != null) callbackProgress(50, 100)
+    val game = jsonToGame(json)
+    if(callbackProgress != null) callbackProgress(100, 100)
+    game.getOrElse(null)
+  }
+  
+  /**
+   * Writes a game to a file.
+   */
+  def saveGame(game: Game, writer: String => Unit, callbackProgress: (Int, Int) => Unit = null): Unit = {
+    if(callbackProgress != null) callbackProgress(10, 100)
+    val json = gameToJson(game)
+    if(callbackProgress != null) callbackProgress(50, 100)
+    val content = json.toString
+    if(callbackProgress != null) callbackProgress(80, 100)
+    writer(content)
+    if(callbackProgress != null) callbackProgress(100, 100)
   }
 
 //  private implicit class RichJSONArray(array: JSONArray) extends AnyVal {

@@ -21,6 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.Failure
 import scala.util.Success
+import java.io.File
 
 import android.app.Activity
 import android.content.Context
@@ -39,6 +40,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
@@ -134,6 +136,41 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   private var gameViewRender = new GameViewRender(context)
   def grid = gameViewRender.grid
+  
+  def saveGame(handler: Handler, and_export: Boolean = false): Unit = {
+    val f = getContext().getFilesDir()
+    val file_array = "Custom..." :: (f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
+      if(name.endsWith(".pg2")) List(name.substring(0, name.length-4)) else {
+        if(name.endsWith(".scala")) List(name) else Nil
+      }
+    })
+    val str_id = if(and_export) R.string.exportFileAs else R.string.saveFileAs
+    CustomDialogs.launchChoiceDialogWithCustomchoice(getContext(), getContext().getResources().getString(str_id), file_array, { (filename: String) =>
+      var name = filename
+      val scala_file = name.endsWith(".scala")
+      if(!name.endsWith(".pd2") && !scala_file) {
+        name = name + ".pd2"
+      }
+      val msg = if(and_export) FileSaveAndExport(name) else FileSave(name)
+      handler.sendMessage(msg)
+      ()
+    }, { () =>
+      
+    })
+  }
+  def loadGame(handler: Handler): Unit = {
+    val f = getContext().getFilesDir()
+    val file_array = f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
+      if(name.endsWith(".pg2")) List(name.substring(0, name.length-4)) else Nil
+    }
+    CustomDialogs.launchChoiceDialog(getContext(), getContext().getResources().getString(R.string.loadFileAs), file_array, { (fileid: Int) =>
+      var name = file_array(fileid)
+      if(!name.endsWith(".pg2")) name = name + ".pg2"
+      val msg = FileLoad(name)
+      handler.sendMessage(msg);
+    }, { () =>
+    })
+  }
 
   def render(canvas: Canvas) = {
     gameViewRender.render(canvas, this, matrix, matrixI, game, cv_obj_to_highlight, bitmaps, state, mRuleState == STATE_SELECTING_EVENTS, eventEditor, shapeEditor)
@@ -573,6 +610,11 @@ class GameView(val context: Context, attrs: AttributeSet)
     //TODO Mikael, do we really need this loop ? 
     // It result in a crash when reseting after a physical object deletion.
     game.objects.foreach { obj =>
+      if(obj.creationTime.get == game.time) { // We push the object to the beginning.
+        obj.historicalProperties foreach { p =>
+		      p.setInit(p.getExpr)
+		    }
+      }
       obj.validate()
       if (obj.setExistenceAt(game.time)) {
         obj.flush()
