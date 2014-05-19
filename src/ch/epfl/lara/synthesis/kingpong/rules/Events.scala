@@ -15,13 +15,17 @@ object Events {
   private implicit val tmpManifold = new WorldManifold()
   
   sealed trait Event {
-    def obj = Set[GameObject]()
+    def objects: Set[GameObject]
     def selectableBy(x: Float, y: Float) = false
     def distanceSquareTo(x: Float, y: Float) = Float.PositiveInfinity
     def isNumerical = false
     def isCrossing = false
     def isFinger = false
     def isContact = false
+  }
+
+  trait NoObjects { self: Event =>
+    def objects = Set.empty[GameObject]
   }
   
   sealed trait SelectableEvent extends Event {
@@ -49,30 +53,33 @@ object Events {
     }
   }
 
-  case class FingerDown(p: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent {
+  case class FingerDown(p: Vec2, objects: Set[GameObject]) extends Event with SelectableEvent {
     override def isFinger = true
   }
-  case class FingerUp(p: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent{
+  case class FingerUp(p: Vec2, objects: Set[GameObject]) extends Event with SelectableEvent{
     override def isFinger = true
   }
-  case class FingerMove(from: Vec2, to: Vec2, override val obj: Set[GameObject]) extends Event with SelectableEvent{
+  case class FingerMove(from: Vec2, to: Vec2, objects: Set[GameObject]) extends Event with SelectableEvent{
     override def isFinger = true
     def p = from
   }
 
   case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
+    def objects = Set(objectA, objectB)
     override def isContact = true
   }
   case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
+    def objects = Set(objectA, objectB)
     override def isContact = true
   }
   case class EndContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
+    def objects = Set(objectA, objectB)
     override def isContact = true
   }
 
-  case class AccelerometerChanged(vector: Vec2) extends Event
+  case class AccelerometerChanged(vector: Vec2) extends Event with NoObjects
   
-  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event with SelectableEvent
+  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event with SelectableEvent with NoObjects
 
   object ::> {def unapply[A] (l: Seq[A]): Option[(Seq[A],A)] = if(l.nonEmpty) Some( (l.init, l.last) ) else None }
   object <:: {def unapply[A] (l: Seq[A]): Option[(A, Seq[A])] = if(l.nonEmpty) Some( (l.head, l.tail) ) else None }

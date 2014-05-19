@@ -337,7 +337,7 @@ trait Interpreter {
 
     case FingerMoveOver(expr, id, block) =>
       val obj = eval(expr).as[GameObject]
-      val moves = gctx.fingerMoves(_.obj.exists(_ == obj))
+      val moves = gctx.fingerMoves(_.objects.exists(_ == obj))
       val from = moves.headOption.map(_.from)
       if (from.isDefined) {
         // The block is NOP if the expression is only used for its returned value.
@@ -353,7 +353,7 @@ trait Interpreter {
       
     case FingerDownOver(expr, id, block) =>
       val obj = eval(expr).as[GameObject]
-      val downs = gctx.fingerDowns(_.obj.exists(_ == obj))
+      val downs = gctx.fingerDowns(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
         // The block is NOP if the expression is only used for its returned value.
@@ -368,7 +368,7 @@ trait Interpreter {
     
     case FingerUpOver(expr, id, block) =>
       val obj = eval(expr).as[GameObject]
-      val downs = gctx.fingerUps(_.obj.exists(_ == obj))
+      val downs = gctx.fingerUps(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
         // The block is NOP if the expression is only used for its returned value.
@@ -384,14 +384,14 @@ trait Interpreter {
     case IsFingerDownOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
-          Literal(gctx.existsFingerDown(_.obj.exists(_ == o)))
+          Literal(gctx.existsFingerDown(_.objects.exists(_ == o)))
         case _ => error(expr)
       }
 
     case IsFingerUpOver(e) =>
       eval(e) match {
         case ObjectLiteral(o) =>
-          Literal(gctx.existsFingerUp(_.obj.exists(_ == o)))
+          Literal(gctx.existsFingerUp(_.objects.exists(_ == o)))
         case _ => error(expr)
       }
 

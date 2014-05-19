@@ -213,47 +213,36 @@ object CodeGenerator extends CodeHandler {
   }
   */
   
-  import JBox2DInterface._
   /**
    * Creates a rule based on the selected event and the status of the game.
    * This function generates the condition to which the code has been modified.
    **/
-  def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], conditionConfig: List[GameObject]): Unit = {
-    // Need to store the conditions so that we can rely on them rather than on code.
-    //val templaceContext = new TemplateContext(conditionEvent.head._1, game.objects)
-    val stmts = CodeTemplates.inferStatements(game, conditionEvent, game.objects)
-    // Now we try to merge these statement with the conditions.
-    val objs_for_conditions = conditionEvent map {
+  def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], selectedObjects: List[GameObject]): Unit = {
+
+    // Selected objects union the ones linked to the selected events
+    val templateObjects: Set[GameObject] = selectedObjects.toSet ++ conditionEvent.flatMap(_._1.objects)
+
+    // Infer the rule body using templates
+    val ruleBody = CodeTemplates.inferStatements(game, conditionEvent, templateObjects)
+
+    // Get the conditions expressions from the selected events
+    val conditionsExpr = conditionEvent collect {
       case (FingerDown(v, objs), i) if objs.size > 0 =>
-        (objs.toList, 1, (obj: List[Expr]) => isFingerDownOver(obj.head))
+        isFingerDownOver(objs.head.expr)
       case (FingerUp(v, objs), i) if objs.size > 0 =>
-        (objs.toList, 1, (obj: List[Expr]) => isFingerUpOver(obj.head))
+        isFingerUpOver(objs.head.expr)
       case (FingerMove(u, v, objs), i) if objs.size > 0 =>
-        (objs.toList, 1, (obj: List[Expr]) => isFingerMoveOver(obj.head))
-      case (BeginContact(contact, objectA, objectB), i) =>
-        (List[GameObject](objectA, objectB), 2, (obj: List[Expr]) => Collision(obj.head, obj.tail.head))
-      case _ => (List[GameObject](), 0, (obj: List[Expr]) => NOP)
+        isFingerMoveOver(objs.head.expr)
+      case (BeginContact(_, objectA, objectB), i) =>
+        Collision(objectA.expr, objectB.expr)
     }
-    import language.postfixOps 
-    // Get the categories
-    val categories = objs_for_conditions flatMap {
-      case (objs, num, cond) =>
-        objs.map(obj => obj.category)
-      case _ => Nil
-    }
-    def instances(proxies: Seq[Proxy]): Seq[Expr] = {
-      val proxies_instances = categories.zip(proxies).toMap
-      objs_for_conditions map {
-        case (objs, num, fun) => fun(objs.map( obj => proxies_instances.get(obj.category) match { case Some(proxy) => proxy.expr case None => obj: Expr}))
-      }
-    }
-    
-    val rule = /*foreach(categories) { objs =>
-      whenever(and(instances(objs))){
-        stmts
-      }
-    }*/ whenever(and(objs_for_conditions.map{case (a, _, c)=> c(a.map(ObjectLiteral.apply))})) {
-      stmts
+
+    // Construct the final rule from the conditions (if any) and the inferred body
+    val rule: Expr = conditionsExpr match {
+      case Nil =>
+        ruleBody
+      case _ =>
+        whenever(and(conditionsExpr))(ruleBody: _*)
     }
     
     game.addRule(rule)
