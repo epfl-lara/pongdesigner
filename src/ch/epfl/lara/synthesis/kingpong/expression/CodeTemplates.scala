@@ -14,12 +14,10 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 object CodeTemplates extends CodeHandler {
   
   class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject], val minSnapDetect: Float) {
-    val eventMove = (events.flatMap { case (e@FingerMove(from, to, objs), i) => List(e) case _=> Nil}).headOption
+    val eventMove = events.collect{ case (e: FingerMove, _) => e }.headOption
     val (dx, dy, eventObjects) = eventMove match {
-      /*case Some(FingerDown(v, objs)) => (0, 0, objs)
-      case Some(FingerUp(v, objs))=> (0, 0, objs)*/
-      case Some(FingerMove(from, to, objs)) => (0, 0, objs)
-      case _ => (0, 0, Set.empty[GameObject])
+      case Some(FingerMove(from, to, objs)) => (to.x - from.x, to.y - from.y, objs)
+      case None => (0f, 0f, Set.empty[GameObject])
     }
     val isMovementHorizontal = Math.abs(dx) > 10 * Math.abs(dy)
     val isMovementVertical = Math.abs(dy) > 10 * Math.abs(dx)
