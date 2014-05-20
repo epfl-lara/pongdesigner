@@ -310,7 +310,7 @@ trait PrettyPrinterExtendedTypical {
     s match {
       case i: Identifier => c +< i.toString +>
       case Let(id, expr, body) =>
-        c + indent +< "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + (body, indent + INDENT)
+        c + indent +< "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + (body, indent) +>
       
       case MethodCall(method, Nil) => c +< method + "()" +>
       case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>

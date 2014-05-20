@@ -432,7 +432,7 @@ class KingPong extends Activity
 				  if(mGameView.editWhileRunning) {
 				    mGameView.editWhileRunning = false
 				  } else {
-			      mGameView.editWhileRunning = true
+			      mGameView.editWhileRunning = true 
 				  }
 				case GameView.Editing =>
 		  }
