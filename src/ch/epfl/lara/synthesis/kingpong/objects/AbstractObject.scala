@@ -293,6 +293,7 @@ class Array2D(
     ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
       with Rectangular
       with Movable
+      with Colorable
       with FixedRectangularContains { self =>
  
   private val shape = new PolygonShape()
@@ -364,7 +365,7 @@ case class Cell(
     column: Int,
     row: Int
     ) extends GameObject(array.name.get + "[" + row + "," + column + "]") 
-      with Rectangular with Positionable
+      with Rectangular
       with FixedRectangularContains {
 
   private val shape = new PolygonShape()

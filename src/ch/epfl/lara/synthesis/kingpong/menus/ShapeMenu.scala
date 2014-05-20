@@ -1,17 +1,14 @@
 package ch.epfl.lara.synthesis.kingpong.menus
 
 import scala.collection.mutable.HashMap
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import ch.epfl.lara.synthesis.kingpong._
-import ch.epfl.lara.synthesis.kingpong.objects._
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.drawable.Drawable
-import android.content.Context
-import org.jbox2d.dynamics.BodyType
-import org.jbox2d.common.Vec2
-import scala.collection.mutable.ArrayBuffer
 
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.objects._
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
@@ -70,20 +67,12 @@ object ShapeMenu extends MenuCenter {
       case _ =>
         0
     }
-    selectedShape match {
-      case c: Rotationable =>
-        RotateButton.visible = true
-      case _ =>
-        RotateButton.visible = false
-    }
-    selectedShape match {
-      case c: PhysicalObject =>
-        SpeedButton.visible = true
-        PinButton.visible = true
-      case _ =>
-        SpeedButton.visible = false
-        PinButton.visible = false
-    }
+
+    RotateButton.visible = selectedShape.isInstanceOf[Rotationable]
+    PaintButton.visible  = selectedShape.isInstanceOf[Colorable]
+    SpeedButton.visible  = selectedShape.isInstanceOf[PhysicalObject]
+    PinButton.visible    = selectedShape.isInstanceOf[PhysicalObject]
+
     MoveButton.setPos(0, 0)
     SpeedButton.setPos(1, top_shift)
     PinButton.setPos(2, top_shift)
@@ -152,15 +141,10 @@ object ModifyTextButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
-  
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.modify_text ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.modify_text :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_text_hint
 }
@@ -196,8 +180,7 @@ object ModifyLanguageButton extends MenuTextButton {
   private val hovered_icons = R.drawable.flat_button_resizable_highlighted ::  Nil
   private val normal_icons = R.drawable.flat_button_resizable :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_language_hint
 }
@@ -330,7 +313,7 @@ object SizeButton extends MenuButton {
           val dy1 = toY - relativeY - selected_shape_first_y
           val dx2 = toX - selected_shape_first_x
           val dy2 = toY - selected_shape_first_y
-          val dr = Math.sqrt((dx2*dx2+dy2*dy2)).toFloat-Math.sqrt((dx1*dx1+dy1*dy1)).toFloat
+          val dr = Math.sqrt(dx2*dx2+dy2*dy2).toFloat - Math.sqrt(dx1*dx1+dy1*dy1).toFloat
           val newRadius =selected_shape_first_radius + dr
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
@@ -459,10 +442,8 @@ object PinButton extends MenuButton {
 
 /** Button to change the color of the shape */
 object PaintButton extends MenuButton {
-  import MenuOptions._
 
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    // Nothing to declare
     ColorMenu.onFingerUp(gameEngine, selectedShape, x, y)
     hovered = false
     ColorMenu.activated = false
@@ -486,17 +467,14 @@ object PaintButton extends MenuButton {
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.menu_paint ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.menu_paint :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_paint_hint
 }
 
 object SystemButton extends MenuButton {
-  import MenuOptions._
 
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    // Nothing to declare
     SystemMenu.onFingerUp(gameEngine, selectedShape, x, y)
     hovered = false
     SystemMenu.activated = false
@@ -520,8 +498,7 @@ object SystemButton extends MenuButton {
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.gear ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.gear :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.system_property_hint
 }
@@ -529,25 +506,18 @@ object SystemButton extends MenuButton {
 /** Changes the visibility of a shape */
 object VisibilityButton extends MenuButton {
   import MenuOptions._
-  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    selectedShape match {
-      case selectedShape: Visiblable =>
-        if(MenuOptions.modify_prev) {
-          selectedShape.visible set !selectedShape.visible.get
-        } else {
-          selectedShape.visible setNext !selectedShape.visible.next
-        }
-        if(copy_to_prev) {
-          selectedShape.visible set selectedShape.visible.next
-        }
-        hovered = false
-      case _ =>
-    }
-
-  }
-  
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = selectedShape match {
+    case selectedShape: Visiblable =>
+      if(MenuOptions.modify_prev) {
+        selectedShape.visible set !selectedShape.visible.get
+      } else {
+        selectedShape.visible setNext !selectedShape.visible.next
+      }
+      if(copy_to_prev) {
+        selectedShape.visible set selectedShape.visible.next
+      }
+      hovered = false
+    case _ =>
   }
 
   private val eyeNoneList = R.drawable.eye :: noneList
@@ -556,9 +526,16 @@ object VisibilityButton extends MenuButton {
   private val hovered_icons_none = R.drawable.flat_button_highlighted :: eyeNoneList
   private val normal_icons_none = R.drawable.flat_button :: eyeNoneList
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) if(!selectedShape.visible.next) hovered_icons_none else hovered_icons else if(!selectedShape.visible.next) normal_icons_none else normal_icons)
-  
+  def icons(gameEngine: GameView, selectedShape: GameObject) = {
+    if(hovered) {
+      if (!selectedShape.visible.next) hovered_icons_none else hovered_icons
+    } else if(!selectedShape.visible.next) {
+      normal_icons_none
+    } else {
+      normal_icons
+    }
+  }
+
   def hint_id = R.string.change_visible_hint
 }
 
@@ -587,15 +564,10 @@ object IncrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
-  
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.flat_button_p1 ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.flat_button_p1 :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_increment_hint
 }
@@ -621,15 +593,10 @@ object DecrementButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
-  
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.flat_button_m1 ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.flat_button_m1 :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_decrement_hint
 }
@@ -638,24 +605,22 @@ object DecrementButton extends MenuButton {
 object RenameButton extends MenuTextButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    val res = context.getResources()
     val array = selectedShape match {
-        case _: Rectangle => R.array.rename_rectangles
-        case _: StringBox => R.array.rename_textbox
-        case _: IntBox => R.array.rename_integerbox
-        case _: Circle => R.array.rename_circles
-        case _ => R.array.rename_circles
-      }
-      CustomDialogs.launchChoiceDialogWithCustomchoice(context, String.format(res.getString(R.string.rename_title), selectedShape.name.get), array, gameEngine.shapeEditor.renameSelectedShape(_), {() => })
-      hovered = false
+      case _: Rectangle => R.array.rename_rectangles
+      case _: StringBox => R.array.rename_textbox
+      case _: IntBox => R.array.rename_integerbox
+      case _: Circle => R.array.rename_circles
+      case _ => R.array.rename_circles
+    }
+    val titleString = String.format(context.getResources().getString(R.string.rename_title), selectedShape.name.get)
+    CustomDialogs.launchChoiceDialogWithCustomchoice(context, titleString, array, gameEngine.shapeEditor.renameSelectedShape(_), () => ())
     hovered = false
   }
 
   private val hovered_icons = R.drawable.flat_button_resizable_highlighted ::  Nil
   private val normal_icons = R.drawable.flat_button_resizable :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_name_hint
 }
@@ -695,7 +660,7 @@ object RotateButton extends MenuButton {
           val cosAngle = dotProduct/norms
           def snap(angle: Float) = Math.toRadians(Math.floor((Math.toDegrees(angle) + 7.5f)/15) * 15).toFloat
           
-          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + (Math.atan2(sinAngle, cosAngle).toFloat)))
+          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + Math.atan2(sinAngle, cosAngle).toFloat))
           if(copy_to_prev) {
             c.angle set c.angle.next
           }
@@ -707,8 +672,7 @@ object RotateButton extends MenuButton {
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_rotate ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.move_rotate :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_rotate_hint
 }

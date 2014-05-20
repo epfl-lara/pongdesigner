@@ -1,19 +1,20 @@
 package ch.epfl.lara.synthesis.kingpong.menus
 
-import ch.epfl.lara.synthesis.kingpong._
-import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import scala.collection.immutable.List
+import scala.collection.mutable.HashMap
+
+import android.content.Context
+import android.content.res.Resources
 import android.graphics.RectF
 import android.graphics.Rect
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.Canvas
-import android.content.Context
-import scala.collection.mutable.HashMap
 import android.graphics.drawable.NinePatchDrawable
-import android.content.res.Resources
-import org.jbox2d.common.Vec2
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.objects._
+import android.util.Log
 
 object Menus {
   import MenuOptions._
@@ -139,7 +140,7 @@ trait CustomMenu {
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit
   var hovered = false
   var visible = true
-  protected val noneList =  R.drawable.none::Nil
+  protected val noneList =  R.drawable.none :: Nil
   def icons(gameEngine: GameView, selectedShape: GameObject): List[Int]
   
   protected def hint_id: Int
@@ -157,9 +158,7 @@ trait Selectable {
   private var selected = false
   def toggleSelected() = {
     selected = !selected
-    for(s <- exclusionList) {
-      s.selected = false
-    }
+    exclusionList.foreach(_.unselect())
   }
   def exclusionList: List[Selectable]
   def isSelected = selected
@@ -173,32 +172,31 @@ abstract class MenuButton extends CustomMenu {
   import MenuOptions._
   var rectData = new Rect(0, 0, 0, 0)
   var rectFData = new RectF(0, 0, 0, 0)
+
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     x = x_final(cx)
     y = y_final(cy)
     if(visible) {
-      icons(gameEngine, selectedShape) foreach {
-        id => val d = bitmaps.getOrElse(id, null)
-        if(d!= null) {
-          rectFData.set(x - button_size/2, y - button_size/2, x + button_size/2, y + button_size/2)
-          rectFData.round(rectData)
-          d.setBounds(rectData)
-          d.draw(canvas)
+      icons(gameEngine, selectedShape) foreach {id =>
+        bitmaps.get(id) match {
+          case Some(bitmap) =>
+            rectFData.set(x - button_size/2, y - button_size/2, x + button_size/2, y + button_size/2)
+            rectFData.round(rectData)
+            bitmap.setBounds(rectData)
+            bitmap.draw(canvas)
+          case None =>
+            Log.w("kingpong", s"Bitmap with id $id not found.")
         }
       }
     }
   }
+
   def testHovering(atX: Float, atY: Float, button_size: Float): Boolean = {
     val t = button_size/2
     hovered = visible && atX >= x - t && atX <= x + t && atY >= y - t && atY <= y + t
     hovered
   }
-  def Vec2(x: Float, y: Float): Vec2 = new Vec2(x, y)
-  implicit class Adder(c: Vec2) {
-    def +(other: Vec2): Vec2 = Vec2(c.x + other.x, c.y + other.y)
-  }
 }
-
 
 /**
  * A menu button displaying text

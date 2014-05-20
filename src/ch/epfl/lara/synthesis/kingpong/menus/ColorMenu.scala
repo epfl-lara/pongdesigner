@@ -1,21 +1,19 @@
 package ch.epfl.lara.synthesis.kingpong.menus
 
-
 import scala.collection.mutable.HashMap
-import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong._
+
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.drawable.Drawable
-import android.content.Context
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
-import ch.epfl.lara.synthesis.kingpong.expression._
-//import ch.epfl.lara.synthesis.kingpong.ast.Expr
-//import ch.epfl.lara.synthesis.kingpong.ast.Action
-//import ch.epfl.lara.synthesis.kingpong.ast.EConstantNumber
 import android.graphics.RectF
 import android.graphics.Rect
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
+
+import ch.epfl.lara.synthesis.kingpong._
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+import ch.epfl.lara.synthesis.kingpong.expression._
+import ch.epfl.lara.synthesis.kingpong.objects._
 
 object ColorMenu extends MenuCenter {
   var activated = false
@@ -87,10 +85,7 @@ class ColorCircleMenu extends CustomMenu {
     hovered
   }
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    // Do nothing
-    if(hovered) {
-      hovered = false
-    }
+    hovered = false
   }
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = { 
     if(hovered) {
@@ -122,8 +117,7 @@ class ColorCircleMenu extends CustomMenu {
   private val hovered_icons = R.drawable.flat_button_highlighted ::  Nil
   private val normal_icons = R.drawable.flat_button :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_paint_hint
 }
@@ -174,8 +168,7 @@ class ImagePickerMenu extends MenuButton {
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.jpeg ::   Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.jpeg :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_paint_hint
 }

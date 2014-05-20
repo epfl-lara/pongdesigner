@@ -23,6 +23,7 @@ object JBox2DInterface {
   }
 
   implicit class Vec2Extended(val v: Vec2) extends AnyVal {
+    def +(other: Vec2) = v.add(other)
     def distance(to: Vec2) = MathUtils.distance(v, to)
     def distanceSquared(to: Vec2) = MathUtils.distanceSquared(v, to)
   }
