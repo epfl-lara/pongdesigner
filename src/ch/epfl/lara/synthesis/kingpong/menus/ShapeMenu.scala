@@ -403,8 +403,8 @@ object ArraySizeButton extends MenuButton {
     }
   }
 
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_size ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.move_size :: Nil
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.array_resize ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.array_resize :: Nil
 
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
 
