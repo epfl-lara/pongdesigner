@@ -12,7 +12,6 @@ import android.graphics.Canvas
 import android.graphics.drawable.NinePatchDrawable
 
 import ch.epfl.lara.synthesis.kingpong._
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import android.util.Log
 
@@ -116,7 +115,11 @@ trait CustomMenu {
   // Computed absolute position of the center of the menu
   protected var x: Float = 0f
   protected var y: Float = 0f
-  
+  private var cached_hint: String = null
+
+  var hovered = false
+  var visible = true
+
   def getX() = x
   def getY() = y
   
@@ -127,25 +130,23 @@ trait CustomMenu {
     dx = new_dx
     dy = new_dy
   }
+
   @inline def x_final(cx: Float) = cx + button_size * dx
   @inline def y_final(cy: Float) = cy + button_size * dy
-  
+
+  def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {}
+  def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {}
+
   /** Marks the button as hovered if the finger is on it */
   def testHovering(atX: Float, atY: Float, button_size: Float): Boolean
-  /** Called whenever a finger up is selected */
-  def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-  }
-  def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = { 
-  }
+
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit
-  var hovered = false
-  var visible = true
+
   protected val noneList =  R.drawable.none :: Nil
   def icons(gameEngine: GameView, selectedShape: GameObject): List[Int]
   
   protected def hint_id: Int
-  private var cached_hint: String = null
-  
+
   def hint(res: Resources): String = {
     if(cached_hint == null) {
       cached_hint = res.getString(hint_id)

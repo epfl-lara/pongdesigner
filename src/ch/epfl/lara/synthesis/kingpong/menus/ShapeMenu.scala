@@ -1,6 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.menus
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import android.content.Context
 import android.graphics.Canvas
@@ -36,9 +36,10 @@ object MenuOptions {
 
 /** Change the menu. */
 object ShapeMenu extends MenuCenter {
-  val basicMenu = List(MoveButton, PaintButton, PinButton, SizeButton, SpeedButton, VisibilityButton, IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton, ModifyLanguageButton)
-  menus = basicMenu
-  
+  menus = List(MoveButton, PaintButton, PinButton, SizeButton, ArraySizeButton, SpeedButton, VisibilityButton,
+               IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton,
+               ModifyLanguageButton)
+
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     for(m <- menus) { m.visible = true }
     ModifyLanguageButton.visible = false
@@ -68,6 +69,7 @@ object ShapeMenu extends MenuCenter {
         0
     }
 
+    ArraySizeButton.visible = selectedShape.isInstanceOf[Array2D]
     RotateButton.visible = selectedShape.isInstanceOf[Rotationable]
     PaintButton.visible  = selectedShape.isInstanceOf[Colorable]
     SpeedButton.visible  = selectedShape.isInstanceOf[PhysicalObject]
@@ -77,6 +79,7 @@ object ShapeMenu extends MenuCenter {
     SpeedButton.setPos(1, top_shift)
     PinButton.setPos(2, top_shift)
     VisibilityButton.setPos(3, top_shift)
+    ArraySizeButton.setPos(1, top_shift)
     SizeButton.setPos(1, 1)
     PaintButton.setPos(2, 1)
     SystemButton.setPos(3, 1)
@@ -94,6 +97,9 @@ object ShapeMenu extends MenuCenter {
     } else if(SizeButton.hovered) {
       for(m <- menus) { m.visible = false }
       SizeButton.visible = true
+    } else if(ArraySizeButton.hovered) {
+      for(m <- menus) { m.visible = false }
+      ArraySizeButton.visible = true
     } else if(RotateButton.hovered) {
       for(m <- menus) { m.visible = false }
       RotateButton.visible = true
@@ -278,30 +284,6 @@ object SpeedButton extends MenuButton {
 object SizeButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    /*selectedShape match {
-      case c:Circle =>
-        if(modify_prev) {
-          c.radius set Math.floor((c.radius.get + smallest_size)/smallest_size2).toFloat * smallest_size2
-        } else {
-          c.radius setNext Math.floor((c.radius.next+smallest_size)/smallest_size2).toFloat * smallest_size2
-        }
-        if(copy_to_prev) {
-          c.radius set c.radius.next
-        }
-      case r:ResizableRectangular =>
-        if(modify_prev) {
-          r.width set (Math.floor((r.width.get + smallest_size)/smallest_size2) * smallest_size2).toInt
-          r.height set (Math.floor((r.height.get + smallest_size)/smallest_size2) * smallest_size2).toInt
-        } else {
-          r.width setNext (Math.floor((r.width.next + smallest_size)/smallest_size2) * smallest_size2).toInt
-          r.height setNext (Math.floor((r.height.next + smallest_size)/smallest_size2) * smallest_size2).toInt
-        }
-        if(copy_to_prev) {
-          r.width set r.width.next
-          r.height set r.height.next
-        }
-      case _ =>
-    }*/
     hovered = false
   }
   
@@ -339,8 +321,6 @@ object SizeButton extends MenuButton {
           val newHeight = selected_shape_first_height + relativeY*2
           val numCols = array.numColumns.getPrevOrNext(modify_prev)
           val numRows = array.numRows.getPrevOrNext(modify_prev)
-          val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
-          val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
 
           if (newWidth > 0)
             array.cellWidth.setPrevOrNext(modify_prev, newWidth / numCols)
@@ -351,41 +331,6 @@ object SizeButton extends MenuButton {
             array.cellWidth set array.cellWidth.next
             array.cellHeight set array.cellHeight.next
           }
-
-//          // Add a column
-//          if(newWidth/ (numCols + 1) > cellWidth) {
-//            array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
-//            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
-//            array.cells += newCells
-//            for(cell <- newCells) gameEngine.getGame.add(cell)
-//
-//          // Remove a column
-//          } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
-//            array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
-//            val deletedColumn = array.cells.remove(array.cells.length - 1)
-//            for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
-//          }
-//
-//          // Add a line
-//          if(newHeight/ (numRows + 1) > cellHeight) {
-//            array.numRows.setPrevOrNext(modify_prev, numRows + 1)
-//            for((column, i) <- array.cells.zipWithIndex) {
-//              val newCell = Cell(array, i, numRows)
-//              column += newCell
-//              gameEngine.getGame.add(newCell)
-//            }
-//
-//          // Remove a row
-//          } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
-//            array.numRows.setPrevOrNext(modify_prev, numRows - 1)
-//            val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
-//            for(cell <- deletedRow) gameEngine.getGame.remove(cell)
-//          }
-//
-//          if(copy_to_prev) {
-//            array.numRows set array.numRows.next
-//            array.numColumns set array.numColumns.next
-//          }
           
         case _ =>
       }
@@ -395,10 +340,75 @@ object SizeButton extends MenuButton {
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_size ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.move_size :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_size_hint
+}
+
+/** Button to change the number of rows and columns of the array */
+object ArraySizeButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    hovered = false
+  }
+
+  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
+    if(selectedShape != null) {
+      selectedShape match {
+        case array: Array2D =>
+          val newWidth = selected_shape_first_width + relativeX*2
+          val newHeight = selected_shape_first_height + relativeY*2
+          val numCols = array.numColumns.getPrevOrNext(modify_prev)
+          val numRows = array.numRows.getPrevOrNext(modify_prev)
+          val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
+          val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
+
+          // Add a column
+          if(newWidth/ (numCols + 1) > cellWidth) {
+            array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
+            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
+            array.cells += newCells
+            for(cell <- newCells) gameEngine.getGame.add(cell)
+
+          // Remove a column
+          } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
+            array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
+            val deletedColumn = array.cells.remove(array.cells.length - 1)
+            for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
+          }
+
+          // Add a line
+          if(newHeight/ (numRows + 1) > cellHeight) {
+            array.numRows.setPrevOrNext(modify_prev, numRows + 1)
+            for((column, i) <- array.cells.zipWithIndex) {
+              val newCell = Cell(array, i, numRows)
+              column += newCell
+              gameEngine.getGame.add(newCell)
+            }
+
+          // Remove a row
+          } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
+            array.numRows.setPrevOrNext(modify_prev, numRows - 1)
+            val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
+            for(cell <- deletedRow) gameEngine.getGame.remove(cell)
+          }
+
+          if(copy_to_prev) {
+            array.numRows set array.numRows.next
+            array.numColumns set array.numColumns.next
+          }
+
+        case _ =>
+      }
+    }
+  }
+
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_size ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.move_size :: Nil
+
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
+
+  def hint_id = R.string.change_arraysize_hint
 }
 
 /** Button to change the pin state of the shape */

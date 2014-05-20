@@ -92,12 +92,12 @@
     <string name="tutorial_13">Apply the rule once</string>
     <string name="tutorial_14">You can also modify some code portions</string>
     <string name="tutorial_end">The tutorial is finished. You can open an existing game to test it</string>
-    
+
     <string name="menu_add_shape_hint">Adds a shape to the game</string>
     <string name="menu_add_constraint_hint">Add or edit a constraint/rule to the game</string>
     <string name="menu_add_category_hint">Add or modify a category to the game</string>
     <string name="menu_fix_hint">Fix a rule which went wrong</string>
-    
+
     <string name="add_rectangle_hint">Adds a rectangle to the game</string>
     <string name="add_circle_hint">Adds a circle to the game</string>
     <string name="add_integerbox_hint">Adds a integer to the game</string>
@@ -108,7 +108,7 @@
     <string name="add_sound_recorder_hint">Adds a sound recorder to the game</string>
     <string name="add_soundtts_hint">Add a text-to-speech to the game</string>
     <string name="add_rule_hint">Adds a rule to the game</string>
-    
+
     <string name="select_accelerometer_hint">Enables selecting objects affected by the accelerometer</string>
     <string name="select_gravity2d_hint">Enables selecting objects affected by the 2D gravity</string>
     <string name="select_camera_hint">Enables selecting an object followed by the camera, and changing the camera\'s properties</string>
@@ -124,6 +124,7 @@
     <string name="change_speed_hint">Drag to change the speed</string>
     <string name="change_rotate_hint">Drag to change the angle</string>
     <string name="change_size_hint">Drag to change the size</string>
+    <string name="change_arraysize_hint">Drag to change the array dimensions</string>
     <string name="change_paint_hint">Drag to select the paint</string>
     <string name="change_nail_hint">Switches between a static and a dynamic shape</string>
     <string name="change_visible_hint">Change the visibility (and physical interaction) of the shape</string>
@@ -138,7 +139,7 @@
     <string name="change_back_hint">The object will be like that from the beginning</string>
     <string name="change_copy_hint">Duplicates this object</string>
     <string name="change_time_hint">Set up the speech to start at this point</string>
-    
+
     <string name="play_rule_hint">Plays the content of this rule</string>
     <string name="trash_rule_hint">Delete this rule</string>
     <string name="resize_layout_hint">Resize the layout of the game</string>
@@ -150,11 +151,11 @@
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="addshapegroup">+</string>
-    
+
     <string name="codeviewhint">Code of the game</string>
     <string name="change_image">Change l\'image</string>
-    
+
     <string name="editwhilerunningon">Edit mode while running turned on</string>
     <string name="editwhilerunningoff">Edit mode while running turned off</string>
-    
+
 </resources>
