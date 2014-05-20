@@ -120,7 +120,8 @@ object KingPong {
           game = mapgames(filename)()
           publishProgress(("Finished", 100, 100))
         } else {
-          val content: String = ""
+          val file = new java.io.File(activity.getFilesDir(), filename)
+          val content: String = scala.io.Source.fromFile(file).mkString
           game = GameSerializer.loadGame(content,
               (i, j) =>
                 publishProgress(("Loading from "+filename, i, j)))

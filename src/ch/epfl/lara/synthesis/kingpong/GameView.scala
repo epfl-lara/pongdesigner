@@ -130,6 +130,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   with common.ContextUtils
   with Implicits {
   import GameView._
+  
+  final val EXTENSION = ".pd2"
 
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
@@ -140,7 +142,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def saveGame(handler: Handler, and_export: Boolean = false): Unit = {
     val f = getContext().getFilesDir()
     val file_array = "Custom..." :: (f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
-      if(name.endsWith(".pg2")) List(name.substring(0, name.length-4)) else {
+      if(name.endsWith(EXTENSION)) List(name.substring(0, name.length-4)) else {
         if(name.endsWith(".scala")) List(name) else Nil
       }
     })
@@ -148,8 +150,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     CustomDialogs.launchChoiceDialogWithCustomchoice(getContext(), getContext().getResources().getString(str_id), file_array, { (filename: String) =>
       var name = filename
       val scala_file = name.endsWith(".scala")
-      if(!name.endsWith(".pd2") && !scala_file) {
-        name = name + ".pd2"
+      if(!name.endsWith(EXTENSION) && !scala_file) {
+        name = name + EXTENSION
       }
       val msg = if(and_export) FileSaveAndExport(name) else FileSave(name)
       handler.sendMessage(msg)
@@ -161,11 +163,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   def loadGame(handler: Handler): Unit = {
     val f = getContext().getFilesDir()
     val file_array = f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
-      if(name.endsWith(".pg2")) List(name.substring(0, name.length-4)) else Nil
+      if(name.endsWith(EXTENSION)) List(name.substring(0, name.length-4)) else List(name)
     }
     CustomDialogs.launchChoiceDialog(getContext(), getContext().getResources().getString(R.string.loadFileAs), file_array, { (fileid: Int) =>
       var name = file_array(fileid)
-      if(!name.endsWith(".pg2")) name = name + ".pg2"
+      if(!name.endsWith(EXTENSION)) name = name + EXTENSION
       val msg = FileLoad(name)
       handler.sendMessage(msg);
     }, { () =>

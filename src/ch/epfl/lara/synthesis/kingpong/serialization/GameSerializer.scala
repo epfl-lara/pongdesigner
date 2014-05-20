@@ -727,7 +727,7 @@ object GameSerializer {
   
   def jsonToGameObject(json: JSONObject, game: Game)(implicit ctx: SerializerContext): Option[GameObject] = {
     val cl = json.get(CLASS_TAG)
-    val category = jsonToCategory(json.getJSONObject("category"), game)
+    val category: CategoryObject = ctx.categories.getOrElse(json.getString("category"), DefaultCategory("", game))
     val obj: GameObject =
            if(cl == classOf[Rectangle].getName()) { rectangle(category)("", 0, 0)(game)
     } else if(cl == classOf[Circle].getName()) {    circle(category)("", 0, 0)(game)
@@ -743,7 +743,10 @@ object GameSerializer {
     //} else if(cl == classOf[SoundRecorded].getName()) { soundrecorded(category)("", 0, 0)(game)
     } else if(cl == classOf[SoundRecorder].getName()) { soundRecorder(category)("", 0, 0)(game)
     } else null
-    category.add(obj)
+    if(category.name == "") {
+      val category = DefaultCategory(obj)
+      obj.setCategory(category)
+    }
     for(p <- obj.properties) {
       p match {
         case p:AliasProperty[_] => // Store nothing
@@ -807,7 +810,7 @@ object GameSerializer {
   private implicit class RichJSONObject(val obj: JSONObject) extends AnyVal {
     def getJSONObjectSeq(name: String): Seq[JSONObject] = {
       val array = obj.getJSONArray(name)
-      for (i <- 0 to array.length) yield array.getJSONObject(i)
+      for (i <- 0 until array.length) yield array.getJSONObject(i)
     }
   }
   
