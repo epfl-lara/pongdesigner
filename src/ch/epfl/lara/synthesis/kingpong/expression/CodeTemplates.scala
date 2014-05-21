@@ -362,20 +362,20 @@ object CodeTemplates extends CodeHandler {
       s"If the finger goes to the left, ${obj.name.next} moves horizontally to the right."
   }
   
-  object TX_MoveDX extends TemplateSimple[Movable] with TemplateMovable {
+  object TX_MoveDX_Pos extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && !ctx.isMovementVertical) {
         val expr = fingerMoveOver(obj) { move =>
           obj.x += move._2._1 - move._1._1
         }
-        Some(expr.setPriority(15).setComment(comment(obj)))
+        Some(expr.setPriority(14).setComment(comment(obj)))
       } else {
         None
       }
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"${obj.name.next} moves horizontally in the same direction as the finger."
+      s"${obj.name.next} moves horizontally in the same direction as the finger using the object position."
   }
   
 //  object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
@@ -451,7 +451,7 @@ object CodeTemplates extends CodeHandler {
       TX_relative,
       TX_absolute,
       TX_MoveInvertedDX,
-      TX_MoveDX
+      TX_MoveDX_Pos
 //      TX_AlignLeft1
       //IfWidth(TX_AlignLeft2),
       //IfWidth(TX_AlignLeft3),
@@ -528,20 +528,20 @@ object CodeTemplates extends CodeHandler {
       s"If the finger goes to the bottom, ${obj.name.next} moves vertically to the top."
   }
   
-  object TY_MoveDY extends TemplateSimple[Movable] with TemplateMovable {
+  object TY_MoveDY_Pos extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = fingerMoveOver(obj) { move =>
           obj.y += move._2._2 - move._1._2
         }
-        Some(expr.setPriority(15).setComment(comment(obj)))
+        Some(expr.setPriority(14).setComment(comment(obj)))
       } else {
         None
       }
     }
     
     def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.name.next + " moves vertically in the same direction as the finger"
+      obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the object position."
   }
   
 //  object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
@@ -617,7 +617,7 @@ object CodeTemplates extends CodeHandler {
       TY_relative,
       TY_absolute,
       TY_MoveInvertedDY,
-      TY_MoveDY
+      TY_MoveDY_Pos
 //      TY_AlignLeft1,
 
     /*IfHeight(TY_AlignLeft2),
@@ -651,15 +651,34 @@ object CodeTemplates extends CodeHandler {
     def priority = 11
     def comment = s"The position of ${shape.name.next} is the mirror of ${other_shape2.name} relative to ${other_shape.name.next}"
   }*/
-  
+
+
+  object TXY_Move_Force extends TemplateSimple[Movable] with TemplateMovable {
+    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+      if (ctx.isTouchMoveEvent && !ctx.isMovementHorizontal && !ctx.isMovementVertical &&
+          almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy)) {
+        val expr = fingerMoveOver(obj) { move =>
+          ApplyForce(obj, (move._2 - move._1) * 80)
+        }
+        Some(expr.setPriority(15).setComment(comment(obj)))
+      } else {
+        None
+      }
+    }
+
+    def comment(obj: Movable)(implicit ctx: TemplateContext) =
+      obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the force."
+  }
+
   
   object TXY extends TemplateParallel[Movable] with TemplateMovable {
     def condition(obj: Movable)(implicit ctx: TemplateContext) = obj.x.get != obj.x.next || obj.y.get != obj.y.next
     def priority(obj: Movable)(implicit ctx: TemplateContext) = 10
     val templates = List(
-        //TXY_CenterMirror,
-        TArraySnapWithVelocity,
-        TXY_Independent
+      //TXY_CenterMirror,
+      TXY_Move_Force,
+      TArraySnapWithVelocity,
+      TXY_Independent
     )
     //def comment = s"All x and y changes for ${shape.name.next}"
   }
