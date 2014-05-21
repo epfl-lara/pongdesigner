@@ -196,35 +196,25 @@ object CodeGenerator extends CodeHandler {
    **/
   def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], selectedObjects: List[GameObject]): Unit = {
 
-    Log.d("kingpong",
-      s"""Create new rule with events:
-         |${conditionEvent.mkString("[", ", ", "]")}
-         |and objects:
-         |${selectedObjects.mkString("[", ", ", "]")}""".stripMargin)
-
     // Selected objects union the ones linked to the selected events
     val templateObjects: Set[GameObject] = selectedObjects.toSet ++ conditionEvent.flatMap(_._1.objects)
-
-    Log.d("kingpong",
-      s"""All inferred objects:
-         |${templateObjects.mkString("[", ", ", "]")}""".stripMargin)
 
     // Infer the rule body using templates
     val ruleBody = CodeTemplates.inferStatements(game, conditionEvent, templateObjects)
 
-    Log.d("kingpong",
-      s"""Inferred rule body:
-         |$ruleBody""".stripMargin)
+    // Check if the body is already guarded by a finger move
+    val alreadyMoveGuarded = TreeOps.exists(_.isInstanceOf[FingerMoveOver])(ruleBody)
+    //TODO this simple check is not enough for complex cases like parallel expressions that contains or not a guard
 
     // Get the conditions expressions from the selected events
-    val conditionsExpr = conditionEvent collect {
-      case (FingerDown(v, objs), i) if objs.size > 0 =>
+    val conditionsExpr = conditionEvent.map(_._1).collect {
+      case FingerDown(_, objs) if objs.size > 0 =>
         isFingerDownOver(objs.head.expr)
-      case (FingerUp(v, objs), i) if objs.size > 0 =>
+      case FingerUp(_, objs) if objs.size > 0 =>
         isFingerUpOver(objs.head.expr)
-      case (FingerMove(u, v, objs), i) if objs.size > 0 =>
+      case FingerMove(_, _, objs) if objs.size > 0 && !alreadyMoveGuarded =>
         isFingerMoveOver(objs.head.expr)
-      case (BeginContact(_, objectA, objectB), i) =>
+      case BeginContact(_, objectA, objectB) =>
         Collision(objectA.expr, objectB.expr)
     }
 
@@ -235,7 +225,26 @@ object CodeGenerator extends CodeHandler {
       case _ =>
         whenever(and(conditionsExpr))(ruleBody: _*)
     }
-    
+
+    Log.d("kingpong",
+      s"""Create new rule with events:
+         |  ${conditionEvent.map(_._1).mkString("[", ", ", "]")}
+         |and objects:
+         |  ${selectedObjects.mkString("[", ", ", "]")}
+         |All inferred objects:
+         |  ${templateObjects.mkString("[", ", ", "]")}
+         |Inferred rule body:
+         |  $ruleBody
+         |Inferred final rule:
+         |  $rule""".stripMargin)
+
+    // Rule body:
+//    List(ParExpr(List(
+//      FingerMoveOver(ObjectLiteral(Rectangle 2), move, Assign((ObjectLiteral(Rectangle 2), x), Plus(Select(ObjectLiteral(Rectangle 2), x), Minus(TupleSelect(TupleSelect(Variable(move), 2), 1), TupleSelect(TupleSelect(Variable(move), 1), 1))) ) ),
+//      Assign((ObjectLiteral(Rectangle 2), x), FloatLiteral(8.0)),
+//      Assign((ObjectLiteral(Rectangle 2), x), Plus(Select(ObjectLiteral(Rectangle 2), x), FloatLiteral(3.3262281)) )
+//    ) ) )
+
     game.addRule(rule)
     
     // TODO : Detect rule conditions
