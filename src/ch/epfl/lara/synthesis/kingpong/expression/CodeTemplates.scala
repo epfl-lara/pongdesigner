@@ -300,33 +300,33 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.cells
   }
 
-  object TX_DY1 extends TemplateSimple[Movable] with TemplateMovable {
-    def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dy) && !ctx.isMovementHorizontal) {
-        val expr = obj.x := obj.x - ctx.dy
-        Some(expr.setPriority(0).setComment(comment(obj)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes upwards, ${obj.name.next} moves horizontally to the right."
-  }
-  
-  object TX_DY2 extends TemplateSimple[Movable] with TemplateMovable {
-    def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dy) && !ctx.isMovementHorizontal) {
-        val expr = obj.x := obj.x + ctx.dy
-        Some(expr.setPriority(0).setComment(comment(obj)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes downwards, ${obj.name.next} moves horizontally to the right."
-  }
+//  object TX_DY1 extends TemplateSimple[Movable] with TemplateMovable {
+//    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+//      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dy) && !ctx.isMovementHorizontal) {
+//        val expr = obj.x := obj.x - ctx.dy
+//        Some(expr.setPriority(0).setComment(comment(obj)))
+//      } else {
+//        None
+//      }
+//    }
+//    
+//    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
+//      s"If the finger goes upwards, ${obj.name.next} moves horizontally to the right."
+//  }
+//  
+//  object TX_DY2 extends TemplateSimple[Movable] with TemplateMovable {
+//    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+//      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dy) && !ctx.isMovementHorizontal) {
+//        val expr = obj.x := obj.x + ctx.dy
+//        Some(expr.setPriority(0).setComment(comment(obj)))
+//      } else {
+//        None
+//      }
+//    }
+//    
+//    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
+//      s"If the finger goes downwards, ${obj.name.next} moves horizontally to the right."
+//  }
   
   object TX_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
@@ -348,7 +348,7 @@ object CodeTemplates extends CodeHandler {
       s"Absolute positionning of ${obj.name.next} to x = ${obj.x.next.toInt}."
   }
   
-  object TX_DX1 extends TemplateSimple[Movable] with TemplateMovable {
+  object TX_MoveInvertedDX extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, -ctx.dx) && !ctx.isMovementVertical) {
         val expr = obj.x := obj.x + (-ctx.dx)
@@ -362,10 +362,12 @@ object CodeTemplates extends CodeHandler {
       s"If the finger goes to the left, ${obj.name.next} moves horizontally to the right."
   }
   
-  object TX_DX2 extends TemplateSimple[Movable] with TemplateMovable {
+  object TX_MoveDX extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.x.next - obj.x.get, ctx.dx) && !ctx.isMovementVertical) {
-        val expr = obj.x := obj.x + ctx.dx
+        val expr = fingerMoveOver(obj) { move =>
+          obj.x += move._2._1 - move._1._1
+        }
         Some(expr.setPriority(15).setComment(comment(obj)))
       } else {
         None
@@ -376,19 +378,20 @@ object CodeTemplates extends CodeHandler {
       s"${obj.name.next} moves horizontally in the same direction as the finger."
   }
   
-  object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
-    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
-      if (almostTheSame(obj.x.next, other.x.get, ctx.minSnapDetect)) {
-        val expr = obj.x := other.x
-        Some(expr.setPriority(10).setComment(comment(obj, other)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
-      s"${obj.name.next} aligns its x side to the x side of ${other.name.next}"
-  }
+//  object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
+//    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
+//      if (almostTheSame(obj.x.next, other.x.get, ctx.minSnapDetect)) {
+//        val expr = obj.x := other.x
+//        Some(expr.setPriority(10).setComment(comment(obj, other)))
+//      } else {
+//        None
+//      }
+//    }
+//    
+//    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
+//      s"${obj.name.next} aligns its x side to the x side of ${other.name.next}"
+//  }
+  
   /*object TX_AlignLeft2 extends TemplateOtherRectangular {
     def condition = almostTheSame(shape.x.next, other_shape.prev_center_x, ctx.minSnapDetect)  && other_shape.prev_center_x != other_shape.prev_x
     def result    = (shape_ident("x") := other_shape_ident("center_x"))
@@ -443,13 +446,13 @@ object CodeTemplates extends CodeHandler {
     def priority(obj: Movable)(implicit ctx: TemplateContext) = 10
     
     val templates = List(
-      TX_DY1,
-      TX_DY2,
+//      TX_DY1,
+//      TX_DY2,
       TX_relative,
       TX_absolute,
-      TX_DX1,
-      TX_DX2,
-      TX_AlignLeft1
+      TX_MoveInvertedDX,
+      TX_MoveDX
+//      TX_AlignLeft1
       //IfWidth(TX_AlignLeft2),
       //IfWidth(TX_AlignLeft3),
       //IfWidth(TX_AlignCenter1),
@@ -463,33 +466,33 @@ object CodeTemplates extends CodeHandler {
     //def comment   = s"Possible x changes for ${shape.name.next}"
   }
 
-  object TY_DX1 extends TemplateSimple[Movable] with TemplateMovable {
-    def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dx) && !ctx.isMovementVertical) {
-        val expr = obj.y := obj.y + (-ctx.dx)
-        Some(expr.setPriority(0).setComment(comment(obj)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes to the left, ${obj.name.next} moves vertically to the bottom."
-  }
-  
-  object TY_DX2 extends TemplateSimple[Movable] with TemplateMovable {
-    def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dx) && !ctx.isMovementVertical) {
-        val expr = obj.y := obj.y + ctx.dx
-        Some(expr.setPriority(0).setComment(comment(obj)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes to the left, ${obj.name.next} moves vertically to the top."
-  }
+//  object TY_DX1 extends TemplateSimple[Movable] with TemplateMovable {
+//    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+//      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dx) && !ctx.isMovementVertical) {
+//        val expr = obj.y := obj.y + (-ctx.dx)
+//        Some(expr.setPriority(0).setComment(comment(obj)))
+//      } else {
+//        None
+//      }
+//    }
+//    
+//    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
+//      s"If the finger goes to the left, ${obj.name.next} moves vertically to the bottom."
+//  }
+//  
+//  object TY_DX2 extends TemplateSimple[Movable] with TemplateMovable {
+//    def result(obj: Movable)(implicit ctx: TemplateContext) = {
+//      if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dx) && !ctx.isMovementVertical) {
+//        val expr = obj.y := obj.y + ctx.dx
+//        Some(expr.setPriority(0).setComment(comment(obj)))
+//      } else {
+//        None
+//      }
+//    }
+//    
+//    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
+//      s"If the finger goes to the left, ${obj.name.next} moves vertically to the top."
+//  }
   
   object TY_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
@@ -511,7 +514,7 @@ object CodeTemplates extends CodeHandler {
       s"Absolute positionning of ${obj.name.next} to y = " + obj.y.next.toInt
   }
   
-  object TY_DY1 extends TemplateSimple[Movable] with TemplateMovable {
+  object TY_MoveInvertedDY extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, -ctx.dy) && !ctx.isMovementHorizontal) {
         val expr = obj.y += -ctx.dy
@@ -525,10 +528,12 @@ object CodeTemplates extends CodeHandler {
       s"If the finger goes to the bottom, ${obj.name.next} moves vertically to the top."
   }
   
-  object TY_DY2 extends TemplateSimple[Movable] with TemplateMovable {
+  object TY_MoveDY extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
       if (ctx.isTouchMoveEvent && almostTheSameDiff(obj.y.next - obj.y.get, ctx.dy) && !ctx.isMovementHorizontal) {
-        val expr = obj.y += ctx.dy
+        val expr = fingerMoveOver(obj) { move =>
+          obj.y += move._2._2 - move._1._2
+        }
         Some(expr.setPriority(15).setComment(comment(obj)))
       } else {
         None
@@ -539,19 +544,19 @@ object CodeTemplates extends CodeHandler {
       obj.name.next + " moves vertically in the same direction as the finger"
   }
   
-  object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
-    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
-      if (almostTheSame(obj.y.next, other.y.get, ctx.minSnapDetect)) {
-        val expr = obj.y := other.y
-        Some(expr.setPriority(10).setComment(comment(obj, other)))
-      } else {
-        None
-      }
-    }
-    
-    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
-      s"${obj.name.next} aligns its y side to the y side of ${other.name.next}"
-  }
+//  object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
+//    def result(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = {
+//      if (almostTheSame(obj.y.next, other.y.get, ctx.minSnapDetect)) {
+//        val expr = obj.y := other.y
+//        Some(expr.setPriority(10).setComment(comment(obj, other)))
+//      } else {
+//        None
+//      }
+//    }
+//
+//    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
+//      s"${obj.name.next} aligns its y side to the y side of ${other.name.next}"
+//  }
   
   /*object TY_AlignLeft2 extends TemplateOtherRectangular {
     def condition = almostTheSame(shape.y.next, other_shape.prev_center_y, ctx.minSnapDetect)  && other_shape.prev_center_y != other_shape.prev_y
@@ -607,14 +612,15 @@ object CodeTemplates extends CodeHandler {
     def priority(obj: Movable)(implicit ctx: TemplateContext) = 10
     
     val templates = List(
-      TY_DX1,
-      TY_DX2,
+//      TY_DX1,
+//      TY_DX2,
       TY_relative,
       TY_absolute,
-      TY_DY1,
-      TY_DY2,
-      TY_AlignLeft1/*,
-      IfHeight(TY_AlignLeft2),
+      TY_MoveInvertedDY,
+      TY_MoveDY
+//      TY_AlignLeft1,
+
+    /*IfHeight(TY_AlignLeft2),
       IfHeight(TY_AlignLeft3),
       IfHeight(TY_AlignCenter1),
       TY_AlignCenter2,

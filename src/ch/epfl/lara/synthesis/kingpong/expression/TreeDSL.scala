@@ -2,6 +2,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 // Remove implicit warnings
 import language.implicitConversions
+import scala.annotation.tailrec
 
 import org.jbox2d.dynamics.BodyType
 
@@ -10,7 +11,6 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-
 
 object TreeDSL {
   
@@ -352,11 +352,12 @@ object TreeDSL {
 
   def isNull(expr: Expr): Expr  = expr =:= ObjectLiteral(null)
   def notNull(expr: Expr): Expr = expr =!= ObjectLiteral(null)
-  
-  def and(exprs: Seq[Expr]): Expr = exprs.size match {
-    case 0 => BooleanLiteral(true)
-    case 1 => exprs.head
-    case n if n>=2 => and(And(exprs.head, exprs.tail.head)::exprs.tail.tail.toList)
+
+  @tailrec
+  def and(exprs: List[Expr]): Expr = exprs match {
+    case Nil           => BooleanLiteral(true)
+    case e1 :: Nil     => e1
+    case e1 :: e2 :: t => and(And(e1, e2) :: t)
   }
   
   private def identifierFromCategory(cat: Category): Identifier = cat.name match {

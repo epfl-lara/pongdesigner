@@ -1,15 +1,13 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
 import android.content.Context
-import scala.collection.mutable.HashMap
+import android.util.Log
+
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.common._
-import org.jbox2d.common.Vec2
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import CodeTemplates._
 
 trait CodeHandler {
 
@@ -198,11 +196,25 @@ object CodeGenerator extends CodeHandler {
    **/
   def createRule(context: Context, game: Game, conditionEvent: List[(Event, Int)], selectedObjects: List[GameObject]): Unit = {
 
+    Log.d("kingpong",
+      s"""Create new rule with events:
+         |${conditionEvent.mkString("[", ", ", "]")}
+         |and objects:
+         |${selectedObjects.mkString("[", ", ", "]")}""".stripMargin)
+
     // Selected objects union the ones linked to the selected events
     val templateObjects: Set[GameObject] = selectedObjects.toSet ++ conditionEvent.flatMap(_._1.objects)
 
+    Log.d("kingpong",
+      s"""All inferred objects:
+         |${templateObjects.mkString("[", ", ", "]")}""".stripMargin)
+
     // Infer the rule body using templates
     val ruleBody = CodeTemplates.inferStatements(game, conditionEvent, templateObjects)
+
+    Log.d("kingpong",
+      s"""Inferred rule body:
+         |$ruleBody""".stripMargin)
 
     // Get the conditions expressions from the selected events
     val conditionsExpr = conditionEvent collect {
