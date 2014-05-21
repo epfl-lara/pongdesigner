@@ -125,7 +125,7 @@ class BooleanBox(
     init_visible: Expr,
     init_color: Expr
    ) extends Box[Boolean](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
-                         init_value, init_visible, init_color) {
+                         init_value, init_visible, init_color) with Booleanable {
   
   def makecopy(name: String): GameObject = {
     new BooleanBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
@@ -450,7 +450,7 @@ class Gravity(
     init_radius: Expr,
 	  init_visible: Expr, 
 	  init_color: Expr
-	 ) extends GameObject(init_name) with Rotationable with ResizableCircular with FixedRectangularContains {
+	 ) extends GameObject(init_name) with Movable with Rotationable with ResizableCircular with FixedRectangularContains {
   
   def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)
@@ -495,19 +495,44 @@ class Gravity(
   
   val xTo = namedProperty[Float] (
     name  = "xTo", 
-    getF  = () => (x.get + radius.get * Math.cos(Math.toRadians(angle.get))).toFloat,
-    nextF = () => (x.next + radius.next * Math.cos(Math.toRadians(angle.next))).toFloat
+    getF  = () => (x.get + radius.get * Math.cos(angle.get)).toFloat,
+    nextF = () => (x.next + radius.next * Math.cos(angle.next)).toFloat
     //exprF = () => (x.expr + radius.expr * MethodCall("cosDeg", List(angle.expr)))
   )
   
   val yTo = namedProperty[Float] (
     name  = "yTo", 
-    getF  = () => (y.get + radius.get * Math.sin(Math.toRadians(angle.get))).toFloat,
-    nextF = () => (y.next + radius.next * Math.sin(Math.toRadians(angle.next))).toFloat
+    getF  = () => (y.get + radius.get * Math.sin(angle.get)).toFloat,
+    nextF = () => (y.next + radius.next * Math.sin(angle.next)).toFloat
     //exprF = () => (y.expr + radius.expr * MethodCall("sinDeg", List(angle.expr)))
   )
   
-  def vector = Vec2((radius.get * Math.cos(Math.toRadians(angle.get))).toFloat, (radius.get * Math.sin(Math.toRadians(angle.get))).toFloat)
+  private var cache: Vec2 = Vec2(0, 0)
+  private var savedRadius = 0f
+  private var savedAngle = 0f
+  
+  def vector = {
+    if(radius.get != savedRadius || angle.get != savedAngle) {
+      savedRadius = radius.get
+      savedAngle = angle.get
+      val res = Vec2((savedRadius * Math.cos(savedAngle)).toFloat, (savedRadius * Math.sin(savedAngle)).toFloat)
+      cache = res
+      res
+    } else cache
+  }
+  
+  private var cacheNext: Vec2 = Vec2(0, 0)
+  private var savedRadiusNext = 0f
+  private var savedAngleNext = 0f
+  def vectorNext = {
+    if(radius.next != savedRadiusNext || angle.next != savedAngleNext) {
+      savedRadiusNext = radius.next
+      savedAngleNext = angle.next
+      val res = Vec2((savedRadiusNext * Math.cos(savedAngleNext)).toFloat, (savedRadiusNext * Math.sin(savedAngleNext)).toFloat)
+      cacheNext = res
+      res
+    } else cacheNext
+  }
   
   /*simplePhysicalProperty[Vec2] (
     name  = "vector",

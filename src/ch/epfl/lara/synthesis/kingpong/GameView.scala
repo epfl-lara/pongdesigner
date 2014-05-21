@@ -296,6 +296,15 @@ class GameView(val context: Context, attrs: AttributeSet)
     val minDiff2 = (minDiff /: points) { case (minDiff, o) => val n = o - i; if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
     i + minDiff2
   }
+  
+  def snapRatio(t: (Float, Float), other: (Float, Float)*)(maxAnglDiffe: Float = 5): (Float, Float) = {
+    val angle1 = Math.toDegrees(Math.atan2(t._2, t._1))
+    val result = ((maxAnglDiffe, angle1, t) /: other) { case (old@(diff, angle, vec), o) =>
+      val a = Math.toDegrees(Math.atan2(o._2, o._1))
+      val newDiff = Math.min(Math.min(Math.abs(a - angle), Math.abs(a - angle + 360)), Math.abs(a - angle - 360)).toFloat
+      if (newDiff < diff) (newDiff, a, o) else old }
+    result._3
+  }
 
   var gameEngineEditors: List[GameEngineEditor] = _
   def addGameEngineEditor(g: GameEngineEditor) = {

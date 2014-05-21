@@ -199,6 +199,13 @@ class GameViewRender(val context: Context) extends ContextUtils {
       
 
       o match {
+        case o: Gravity =>
+          if(state == Editing) {
+            drawVelocity(o, o.x.next, o. y.next, o.vectorNext, velocityPaint)
+		        if(o.vectorNext.x != o.vector.x || o.vectorNext.y != o.vector.y) {
+		          drawVelocity(o, o.x.get, o.y.get, o.vector, velocityPaintShaded)
+		        }
+          }
         case soundTTS: SoundTTS => 
           if(state == Running) {
             maybePlay(gameView, soundTTS)
@@ -426,7 +433,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
           val h = b.height.next
           val x = b.x.next
           val y = b.y.next
-          canvas.drawText(b.name.next, x + h*3/2, y-h/4, paint)
+          canvas.drawText(b.name.next, x + h*3/2, y+h/4, paint)
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
             canvas.drawText(b.name.next, b.x.next, b.y.next, paintSelected)
@@ -473,8 +480,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
   
     /** Draw a velocity vector from the given point */
     def drawVelocity(o: GameObject, x: Float, y: Float, velocity: Vec2, paint: Paint) {
-      o match { //canvas: Canvas, v: Float, x: Float, y: Float, vx: Float, vy: Float, paint: Paint
-        case o: Speed with Movable =>
+      //o match { //canvas: Canvas, v: Float, x: Float, y: Float, vx: Float, vy: Float, paint: Paint
+       // case o: Speed with Movable =>
           val middleX = x
           val middleY = y
           val v = velocity.length()
@@ -491,8 +498,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
             canvas.drawLine(toX, toY, toX + cosRot*unitVectorX + sinRot*unitVectorY, toY - sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
             canvas.drawLine(toX, toY, toX + cosRot*unitVectorX - sinRot*unitVectorY, toY + sinRot*unitVectorX + cosRot*unitVectorY, velocityPaint)
           }
-        case _ =>
-      }
+       // case _ =>
+      //}
     }
     
     if(game == null) return;

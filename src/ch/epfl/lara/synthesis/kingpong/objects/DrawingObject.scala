@@ -67,8 +67,8 @@ case class DrawingObject(
   def getDrawingElements = mDrawings
   def addDrawingElement(time: Int, fromx: Float, fromy: Float, tox: Float, toy: Float, stroke_width: Float, color: Int): Unit = {
     // Convert it into relative coordinates [0, 1] and rotation.
-    val cosa = Math.cos(-Math.toRadians(angle.get)).toFloat
-    val sina = Math.sin(-Math.toRadians(angle.get)).toFloat
+    val cosa = Math.cos(-angle.get).toFloat
+    val sina = Math.sin(-angle.get).toFloat
     @inline def scaleX(a: Float): Float = (a - (x.get - width.get / 2))/width.get
     @inline def scaleY(a: Float): Float = (a - (y.get - height.get / 2))/height.get
     val unrotatedfromX = scaleX(fromx * cosa - fromy * sina)
@@ -95,7 +95,7 @@ case class DrawingObject(
           val y2 = p.fromy
           val x3 = p.tox
           val y3 = p.toy
-          val angle = Math.abs(Math.atan2(x3-x2, y3-y2)-Math.atan2(x2-x1, y2-y1))
+          val angle = Math.abs(Math.atan2(y3-y2, x3-x2)-Math.atan2(y2-y1, x2-x1))
           if(angle < Math.PI / 4 || angle >= (2-1/4.0)*Math.PI) {
             // Make the two lines continuous.
             val d1 = Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2)).toFloat

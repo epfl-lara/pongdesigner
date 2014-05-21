@@ -120,6 +120,7 @@
     <string name="change_language_hint">Changes the language for text-to-speech</string>
     <string name="change_position_hint">Changes the position of the shape</string>
     <string name="change_increment_hint">Change the number by 1</string>
+    <string name="change_boolean_hint">Toggles the boolean</string>
     <string name="change_decrement_hint">Change the number by -1</string>
     <string name="change_speed_hint">Drag to change the speed</string>
     <string name="change_rotate_hint">Drag to change the angle</string>

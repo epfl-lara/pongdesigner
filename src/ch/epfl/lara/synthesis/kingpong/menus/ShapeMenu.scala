@@ -38,7 +38,7 @@ object MenuOptions {
 object ShapeMenu extends MenuCenter {
   menus = List(MoveButton, PaintButton, PinButton, SizeButton, ArraySizeButton, SpeedButton, VisibilityButton,
                IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton,
-               ModifyLanguageButton)
+               ModifyLanguageButton, BooleanButton)
 
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     for(m <- menus) { m.visible = true }
@@ -46,6 +46,7 @@ object ShapeMenu extends MenuCenter {
     IncrementButton.visible = false
     DecrementButton.visible = false
     ModifyTextButton.visible = false
+    BooleanButton.visible = false
     val top_shift = selectedShape match {
       case d: IntBox =>
         IncrementButton.setPos(0, -1)
@@ -326,10 +327,12 @@ object SizeButton extends MenuButton {
           val numCols = array.numColumns.getPrevOrNext(modify_prev)
           val numRows = array.numRows.getPrevOrNext(modify_prev)
 
-          if (newWidth > 0)
-            array.cellWidth.setPrevOrNext(modify_prev, newWidth / numCols)
-          if (newHeight > 0)
-            array.cellHeight.setPrevOrNext(modify_prev, newHeight / numRows)
+          val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (1, 1))()
+          
+          if (rWidth > 0)
+            array.cellWidth.setPrevOrNext(modify_prev, rWidth / numCols)
+          if (rHeight > 0)
+            array.cellHeight.setPrevOrNext(modify_prev, rHeight / numRows)
 
           if(copy_to_prev) {
             array.cellWidth set array.cellWidth.next
@@ -592,20 +595,14 @@ object BooleanButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
         case d: Booleanable =>
-          val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
-          if(MenuOptions.modify_prev && !bothShouldChange) {
+          if(MenuOptions.modify_prev) {
             d.value set !d.value.get
           } else {
             d.value setNext !d.value.next
           }
-          if(copy_to_prev || bothShouldChange) {
+          if(copy_to_prev) {
             d.value set d.value.next
-          } else {
-            /*if(EditRuleButton.selected && MenuOptions.modify_prev) {
-              
-            }*/
           }
-          //d.setChanged("value", (d.value.get != d.value))
         case _ =>
     }
     hovered = false
@@ -618,13 +615,18 @@ object BooleanButton extends MenuButton {
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
     val on = selectedShape match {
-      case selectedShape: Booleanable => selectedShape.value.get
+      case selectedShape: Booleanable => 
+        if(MenuOptions.modify_prev) {
+          selectedShape.value.get
+        } else {
+          selectedShape.value.next
+        }
       case _ => false
     }
     if(hovered) (if(on) hovered_icons_on else hovered_icons_off)  else (if(on) normal_icons_on else normal_icons_off)
   }
   
-  def hint_id = R.string.change_increment_hint
+  def hint_id = R.string.change_boolean_hint
 }
 
 
@@ -682,7 +684,7 @@ object RenameButton extends MenuTextButton {
 }
 
 
-/** Button to change the speed of the shape */
+/** Button to change the rotation of the shape */
 object RotateButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {

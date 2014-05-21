@@ -600,13 +600,13 @@ object TreeDSL {
       y: Expr,
       angle: Expr = category.angle,
       radius: Expr = category.radius,
-      visible: Expr = category.visible,
+      visible: Expr = false,
       color: Expr = category.color)(implicit game: Game): Gravity = {
     val vecGravity = game.world.getGravity
     
     val (nradius, nangle) : (Expr, Expr) = angle match { // By default, if the angle is null, takes the current world gravity.
       case NumericLiteral(0) =>
-        (vecGravity.length(), Math.toDegrees(Math.atan2(vecGravity.x, vecGravity.y)))
+        (vecGravity.length(), Math.toDegrees(Math.atan2(vecGravity.y, vecGravity.x)))
       case _ =>
         (radius, angle)
     }
