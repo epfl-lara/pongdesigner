@@ -678,6 +678,7 @@ object CodeTemplates extends CodeHandler {
       //TXY_CenterMirror,
       TXY_Move_Force,
       TArraySnapWithVelocity,
+      TArraySnapWithForce,
       TXY_Independent
     )
     //def comment = s"All x and y changes for ${shape.name.next}"
@@ -1315,16 +1316,38 @@ object CodeTemplates extends CodeHandler {
       if (other.contains(obj.center.get) &&
           almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
           almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
-        val expr = whenever(Contains(other, obj)) (
-          obj.velocity := (other.center - obj.center) * 10
-        )
-        Some(expr.setPriority(20)) //TODO priority ? 
+//        val expr = whenever(Contains(other, obj)) (
+//          obj.velocity := (other.center - obj.center) * 10
+//        )
+        //TODO This template should return the condition. But for the moment there is a conflit with state conditions.
+        val expr = obj.velocity := (other.center - obj.center) * 10
+        Some(expr.setPriority(14))
       } else {
         None
       }
     }
     
     def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
+      s"Snap ${obj.name.get} to the center of the cell using its velocity."
+  }
+
+  object TArraySnapWithForce extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
+      if (other.contains(obj.center.get) &&
+        almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
+        almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
+//        val expr = whenever(Contains(other, obj)) (
+//          ApplyForce(obj, (other.center - obj.center) * 10)
+//        )
+        //TODO This template should return the condition. But for the moment there is a conflit with state conditions.
+        val expr = ApplyForce(obj, (other.center - obj.center) * 10)
+        Some(expr.setPriority(15))
+      } else {
+        None
+      }
+    }
+
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
       s"Snap ${obj.name.get} to the center of the cell using its velocity."
   }
   
