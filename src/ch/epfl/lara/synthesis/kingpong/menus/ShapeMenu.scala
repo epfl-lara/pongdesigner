@@ -53,6 +53,10 @@ object ShapeMenu extends MenuCenter {
         IncrementButton.visible = true
         DecrementButton.visible = true
         -1
+      case d: BooleanBox =>
+        BooleanButton.setPos(0, -1)
+        BooleanButton.visible = true
+        - 1
       case d: StringBox =>
         ModifyTextButton.setPos(0, -1)
         ModifyTextButton.visible = true
@@ -581,6 +585,48 @@ object IncrementButton extends MenuButton {
   
   def hint_id = R.string.change_increment_hint
 }
+
+/** Button to increment a boolean */
+object BooleanButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape match {
+        case d: Booleanable =>
+          val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
+          if(MenuOptions.modify_prev && !bothShouldChange) {
+            d.value set !d.value.get
+          } else {
+            d.value setNext !d.value.next
+          }
+          if(copy_to_prev || bothShouldChange) {
+            d.value set d.value.next
+          } else {
+            /*if(EditRuleButton.selected && MenuOptions.modify_prev) {
+              
+            }*/
+          }
+          //d.setChanged("value", (d.value.get != d.value))
+        case _ =>
+    }
+    hovered = false
+  }
+  
+  private val hovered_icons_on = R.drawable.flat_button_highlighted :: R.drawable.boolean_on ::  Nil
+  private val hovered_icons_off = R.drawable.flat_button_highlighted :: R.drawable.boolean_off ::  Nil
+  private val normal_icons_on = R.drawable.flat_button :: R.drawable.boolean_on :: Nil
+  private val normal_icons_off = R.drawable.flat_button :: R.drawable.boolean_off :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) = {
+    val on = selectedShape match {
+      case selectedShape: Booleanable => selectedShape.value.get
+      case _ => false
+    }
+    if(hovered) (if(on) hovered_icons_on else hovered_icons_off)  else (if(on) normal_icons_on else normal_icons_off)
+  }
+  
+  def hint_id = R.string.change_increment_hint
+}
+
 
 /** Button to decrement a number */
 object DecrementButton extends MenuButton {

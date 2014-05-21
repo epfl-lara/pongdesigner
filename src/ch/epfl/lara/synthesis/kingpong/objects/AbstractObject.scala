@@ -435,3 +435,102 @@ case class Cell(
   //TODO we cannot copy a cell!!!
   protected def makecopy(name: String) = ???
 }
+
+
+
+/**
+ * Gravity in the game.
+ */
+class Gravity(
+    val game: Game,
+    init_name: Expr, 
+	  init_x: Expr,
+	  init_y: Expr,
+	  init_angle: Expr,
+    init_radius: Expr,
+	  init_visible: Expr, 
+	  init_color: Expr
+	 ) extends GameObject(init_name) with Rotationable with ResizableCircular with FixedRectangularContains {
+  
+  def noVelocity_=(b: Boolean): Unit = {}
+  val x = simpleProperty[Float]("x", init_x)
+  val y = simpleProperty[Float]("y", init_y)
+  val angle = simpleProperty[Float]("angle", init_angle)
+  val visible = simpleProperty[Boolean]("visible", init_visible)
+  val color = simpleProperty[Int]("color", init_color)
+
+  private val shape = new PolygonShape()
+  
+  val radius = simpleProperty[Float]("radius", init_radius)
+  
+  val smallradius = namedProperty[Float] (
+      name = "halfradius",
+      getF = () => (radius.get/10),
+      nextF = () => (radius.next/10)
+  )
+
+  override val left = namedProperty[Float](
+    name = "left",
+    getF = () => Math.min(x.get, xTo.get),
+    nextF = () => Math.min(x.next, xTo.next)
+  )
+  
+  override val right = namedProperty[Float](
+    name = "right",
+    getF = () => Math.max(x.get, xTo.get),
+    nextF = () => Math.max(x.next, xTo.next)
+  )
+  
+  override val top = namedProperty[Float](
+    name = "top",
+    getF = () => Math.min(y.get, yTo.get),
+    nextF = () => Math.min(y.next, yTo.next)
+  )
+  
+  override val bottom = namedProperty[Float](
+    name = "bottom",
+    getF = () => Math.max(y.get, yTo.get),
+    nextF = () => Math.max(y.next, yTo.next)
+  )
+  
+  val xTo = namedProperty[Float] (
+    name  = "xTo", 
+    getF  = () => (x.get + radius.get * Math.cos(Math.toRadians(angle.get))).toFloat,
+    nextF = () => (x.next + radius.next * Math.cos(Math.toRadians(angle.next))).toFloat
+    //exprF = () => (x.expr + radius.expr * MethodCall("cosDeg", List(angle.expr)))
+  )
+  
+  val yTo = namedProperty[Float] (
+    name  = "yTo", 
+    getF  = () => (y.get + radius.get * Math.sin(Math.toRadians(angle.get))).toFloat,
+    nextF = () => (y.next + radius.next * Math.sin(Math.toRadians(angle.next))).toFloat
+    //exprF = () => (y.expr + radius.expr * MethodCall("sinDeg", List(angle.expr)))
+  )
+  
+  def vector = Vec2((radius.get * Math.cos(Math.toRadians(angle.get))).toFloat, (radius.get * Math.sin(Math.toRadians(angle.get))).toFloat)
+  
+  /*simplePhysicalProperty[Vec2] (
+    name  = "vector",
+    init = Tuple((init_x + init_radius * MethodCall("cosDeg", List(init_angle))), (init_y + init_radius * MethodCall("sinDeg", List(init_angle)))),
+    f = () => {
+      val g = Vec2(xTo.next - x.next, yTo.next - y.next)
+      game.updateGravity(g)
+    }
+    //exprF = () => (x.expr + radius.expr * MethodCall("cosDeg", List(angle.expr)))
+  )*/
+
+  def getAABB = {
+    val one_corner = Vec2(x.get, y.get)
+    val other_corner = Vec2(xTo.get, yTo.get)
+    new org.jbox2d.collision.AABB(one_corner, other_corner)
+  }
+  
+  def getShape = {
+    shape.setAsBox(Math.abs(x.get - xTo.get), Math.abs(y.get - yTo.get), Vec2((x.get + xTo.get) / 2, (y.get + yTo.get) / 2), 0f)
+    shape
+  }
+
+  def makecopy(name: String): GameObject = {
+    new Gravity(game, name, x.init, y.init, angle.init, radius.init, visible.init, color.init)
+  }
+}

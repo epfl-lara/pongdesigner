@@ -11,6 +11,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import Interpreter.NumericLiteral
 
 object TreeDSL {
   
@@ -593,6 +594,26 @@ object TreeDSL {
     obj
   }
   
-  
+  def gravity(category: CategoryObject)(
+      name: Expr,
+      x: Expr,
+      y: Expr,
+      angle: Expr = category.angle,
+      radius: Expr = category.radius,
+      visible: Expr = category.visible,
+      color: Expr = category.color)(implicit game: Game): Gravity = {
+    val vecGravity = game.world.getGravity
+    
+    val (nradius, nangle) : (Expr, Expr) = angle match { // By default, if the angle is null, takes the current world gravity.
+      case NumericLiteral(0) =>
+        (vecGravity.length(), Math.toDegrees(Math.atan2(vecGravity.x, vecGravity.y)))
+      case _ =>
+        (radius, angle)
+    }
+    val obj = new Gravity(game, name, x, y, nangle, nradius, visible, color)
+    obj.setCategory(category)
+    game.add(obj)
+    obj
+  }
   
 }

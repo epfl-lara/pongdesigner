@@ -20,14 +20,7 @@ import ch.epfl.lara.synthesis.kingpong.objects.AssignableProperty
 
 case class InterpreterException(msg: String) extends Exception(msg)
 
-trait Interpreter {
-  
-  /** Initialize the recursive context. */
-  def initRC(): RecContext
-  
-  /** Initialize the global context. */
-  def initGC(): Context
-  
+object Interpreter {
   object NumericLiteral {
     def unapply(expr: Expr): Option[Float] = expr match {
       case IntegerLiteral(i) => Some(i.toFloat)
@@ -35,6 +28,18 @@ trait Interpreter {
       case _ => None
     }
   }
+}
+
+trait Interpreter {
+  import Interpreter._
+  
+  /** Initialize the recursive context. */
+  def initRC(): RecContext
+  
+  /** Initialize the global context. */
+  def initGC(): Context
+  
+  
   
   trait RecContext {
     def withNewVar(id: Identifier, e: Expr): RecContext
@@ -182,6 +187,10 @@ trait Interpreter {
           FloatLiteral(o.game.pixelsByUnit)
         case ("time", Nil) =>
           IntegerLiteral(gctx.time)
+        case ("cosDeg", NumericLiteral(angrad)) =>
+          FloatLiteral(Math.cos(Math.toRadians(angrad)).toFloat)
+        case ("sinDeg", NumericLiteral(angrad)) =>
+          FloatLiteral(Math.sin(Math.toRadians(angrad)).toFloat)
         case _ =>
           error(expr)
       }

@@ -220,6 +220,14 @@ class GameView(val context: Context, attrs: AttributeSet)
         val d = intbox(DefaultCategory("score", game))("Score", x=0, y=0, value = 0)(game)
         shape = d
         true
+      case Str(R.string.select_gravity2d_hint) =>
+        game.gravity match {
+          case Some(g) => shape = g
+          case _ =>
+            val d = gravity(DefaultCategory("gravity", game))("gravity", x=0, y=0)(game)
+            shape = d
+        } 
+        true
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
@@ -694,6 +702,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.bing,
       R.drawable.bingselected,
       R.drawable.numbers,
+      R.drawable.boolean_on,
+      R.drawable.boolean_off,
       R.drawable.flat_button,
       R.drawable.flat_button_highlighted,
       R.drawable.flat_button_selected,
@@ -703,6 +713,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.cross_move,
       R.drawable.move_velocity,
       R.drawable.move_size,
+      R.drawable.array_resize,
       R.drawable.move_rotate,
       R.drawable.wrench,
       R.drawable.wrench_selected,

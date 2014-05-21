@@ -374,8 +374,8 @@ trait Rectangular extends GameObject with Positionable {
   override def toString = name.get
 }
 
-trait FixedRectangularContains { self: Rectangular =>
-  def contains(pos: Vec2) = {
+trait FixedRectangularContains { self: GameObject =>
+  override def contains(pos: Vec2) = {
     pos.x >= left.get &&
     pos.x <= right.get &&
     pos.y >= top.get &&
@@ -383,7 +383,7 @@ trait FixedRectangularContains { self: Rectangular =>
   }
 }
 
-trait AngularRectangularContains { self: Rectangular with Directionable =>
+trait AngularRectangularContains { self: Positionable with Directionable =>
   def contains(pos: Vec2) = {
     val a = angle.get
     val xget = x.get
@@ -544,6 +544,10 @@ trait Rotationable extends Directionable {
 
 trait Colorable extends GameObject {
   def color: RWProperty[Int]
+}
+
+trait Booleanable extends GameObject {
+  def value: RWProperty[Boolean]
 }
 
 trait Visiblable extends GameObject {

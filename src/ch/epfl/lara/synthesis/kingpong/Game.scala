@@ -17,6 +17,8 @@ trait Game extends RulesManager with Context { self =>
   private implicit val worldManifold = new WorldManifold()
   
   val world: PhysicalWorld
+  var worldgravityangle = 0.0f
+  var worldgravityradius = 0.0f
   
   // If the time is to be restored at the next step
   var scheduledRestoreTime: Option[Int] = None
@@ -29,6 +31,8 @@ trait Game extends RulesManager with Context { self =>
   
   var name: String = "untitled"
   
+  var gravity: Option[Gravity] = None
+    
   /** All objects in this game. */
   def objects: Traversable[GameObject] = _objects
 
@@ -121,11 +125,21 @@ trait Game extends RulesManager with Context { self =>
     rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
     addAssignmentEvents()
     aliveObjects foreach {_.preStep(this)}
+    updateWorldGravity()
     world.step()                                       /// One step forward in the world
     aliveObjects foreach {_.postStep(this)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
     // TODO : Garbage collect objects that have been deleted for too much time.
+  }
+  
+  def updateWorldGravity() {
+    if(gravity.nonEmpty &&
+        (gravity.get.angle.get != worldgravityangle || gravity.get.radius.get != worldgravityradius)) {
+      worldgravityangle = gravity.get.angle.get
+      worldgravityradius = gravity.get.radius.get
+      world.setGravity(gravity.get.vector)
+    }
   }
   
   /**
@@ -144,6 +158,11 @@ trait Game extends RulesManager with Context { self =>
     o.flush()
     o.creationTime.set(time)
     _objects += o
+    o match {
+      case o:Gravity =>
+        gravity = Some(o)
+      case _ =>
+    }
   }
   
   def remove(o: GameObject) = {
