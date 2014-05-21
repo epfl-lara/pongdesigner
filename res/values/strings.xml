@@ -158,4 +158,8 @@
     <string name="editwhilerunningon">Edit mode while running turned on</string>
     <string name="editwhilerunningoff">Edit mode while running turned off</string>
 
+    <string name="generalize_title">Choose a way to generalize rule over %1$s.</string>
+    <string name="generalize_condition">All %1$s should be true.</string>
+    <string name="generalize_modification">Change %1$s for all %1$s.</string>
+    <string name="generalize_global">Apply this rule for all shapes similar to %1$s.</string>
 </resources>

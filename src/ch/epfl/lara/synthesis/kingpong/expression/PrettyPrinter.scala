@@ -76,6 +76,13 @@ trait PrettyPrinterTypical {
     if(seq.isEmpty) "" else seq reduceLeft { (l: CharSequence, r: CharSequence) => l + LF +  r }
   }.makeStyle
   
+  /**
+   * Prints a set of RuleIterator
+   */
+  def print(s: Expr): CharSequence = {
+    print(NO_INDENT, s)
+  }.makeStyle
+  
 
   private def print(indent: String, s: Tree): CharSequence = s match {
     case Delete(obj) => indent + "Delete(" + print(NO_INDENT, obj) + ")"

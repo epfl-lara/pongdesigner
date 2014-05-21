@@ -48,7 +48,7 @@ class GameLoop(holder: SurfaceHolder, view: GameView) extends Thread {
           }
 
           while (sleepTime < 0 && framesSkipped < MAX_FRAMES_SKIPPED) {
-            Log.d("kingpong", "GameLoop missed a frame.")
+            //Log.d("kingpong", "GameLoop missed a frame.")
             view.update()
             sleepTime += FRAME_PERIOD_MS
             framesSkipped += 1

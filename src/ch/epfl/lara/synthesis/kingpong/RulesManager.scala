@@ -32,6 +32,7 @@ trait RulesManager {
   }
   
   def getRuleByIndex(index: Int): Expr = _rules(index)
+  def getIndexByRule(rule: Expr): Int = _rules.indexOf(rule)
   def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
   
   def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())

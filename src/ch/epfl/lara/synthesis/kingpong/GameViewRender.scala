@@ -147,7 +147,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   var lastcolor = 0x0
   val textPreviewMap = MMap[String, String]()
   
-  def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
+  def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, isFixingRules: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
     if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
     canvas.save()
@@ -522,11 +522,17 @@ class GameViewRender(val context: Context) extends ContextUtils {
       EventDrawing.canvas = canvas
       EventDrawing.gameView = gameView
       EventDrawing.eventEditor = eventEditor
-      game.foreachEvent(EventDrawing)
       // Divide the luminosity by two
       canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
       // Add a quarter of the luminosity
       canvas.drawColor(0xFF404040, PorterDuff.Mode.ADD)
+      game.foreachEvent(EventDrawing)
+    }
+    if(isFixingRules) {
+      // Divide the luminosity by two
+      canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
+      // Add a quarter of the luminosity, except more red.
+      canvas.drawColor(0xFF804040, PorterDuff.Mode.ADD)
     }
     drawMenuOn(canvas, gameView, matrix, matrixI, state, eventEditor, shapeEditor)
     drawDebugOn(canvas, gameView)

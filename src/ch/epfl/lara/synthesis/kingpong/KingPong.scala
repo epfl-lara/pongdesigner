@@ -239,10 +239,7 @@ class KingPong extends Activity
     menus.MenuOptions.context = this
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
-      override def onDown(event: MotionEvent): Boolean = { 
-        Log.d("KingPong","onDown: " + event.toString());
-        val x = event.getX()
-        val y = event.getY()
+      def retrieveTextPosition(x: Float, y: Float): Int = {
         var closest_pos = 0
         var distance = 1897865f
         val layout = mCodeView.getLayout();
@@ -260,12 +257,28 @@ class KingPong extends Activity
             }
           }
         }
+        closest_pos
+      }
+      
+      override def onLongPress(event: MotionEvent): Unit = {
+        Log.d("KingPong","onLongPress: " + event.toString());
+        val x = event.getX()
+        val y = event.getY()
+        vibrate()
+        val closest_pos = retrieveTextPosition(x, y)
+        mGameView.codeViewOnLongPress(closest_pos)
+      }
+      override def onDown(event: MotionEvent): Boolean = { 
+        Log.d("KingPong","onDown: " + event.toString());
+        val x = event.getX()
+        val y = event.getY()
+        val closest_pos = retrieveTextPosition(x, y)
         mCodeView.setSelection(closest_pos)
-        mGameView.codeViewListener(event)
+        mGameView.codeViewMotionEventListener(event)
         return true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
-        mGameView.codeViewListener(e2);
+        mGameView.codeViewMotionEventListener(e2);
       }
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
@@ -277,6 +290,7 @@ class KingPong extends Activity
     });
     
     mCodeView.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
+    
     if(mCodeViewResizer != null) {
       var xprev = 0f
       var yprev = 0f

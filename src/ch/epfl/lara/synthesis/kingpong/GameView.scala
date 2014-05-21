@@ -175,7 +175,10 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   def render(canvas: Canvas) = {
-    gameViewRender.render(canvas, this, matrix, matrixI, game, cv_obj_to_highlight, bitmaps, state, mRuleState == STATE_SELECTING_EVENTS, eventEditor, shapeEditor)
+    gameViewRender.render(canvas, this, matrix, matrixI,
+        game, cv_obj_to_highlight, bitmaps, state,
+        mRuleState == STATE_SELECTING_EVENTS, mRuleState == STATE_SELECTING_TO_FIX,
+        eventEditor, shapeEditor)
   }
 
   lazy val button_size = gameViewRender.button_size
@@ -249,8 +252,10 @@ class GameView(val context: Context, attrs: AttributeSet)
         val game = getGame()
         mRuleState match {
           case STATE_MODIFYING_GAME =>
+            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench_selected))
             mRuleState = STATE_SELECTING_TO_FIX
           case STATE_SELECTING_TO_FIX =>
+            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench))
             mRuleState = STATE_MODIFYING_GAME
         }
         false
@@ -453,7 +458,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var cv_treeContainingConst: Option[Expr] = None
   var cv_indexOfTree: Option[Int] = None
   var cv_oldValue = 0
-  def codeViewListener(event: MotionEvent): Boolean = {
+  def codeViewMotionEventListener(event: MotionEvent): Boolean = {
     (cv_constToModify, cv_constToModifyInitial, cv_treeContainingConst, cv_indexOfTree) match {
       case (Some(const), Some(init), Some(tree), Some(index)) =>
         val action = event.getAction()
@@ -487,20 +492,6 @@ class GameView(val context: Context, attrs: AttributeSet)
                   cv_oldValue = newValue
                   cv_constToModifyEnd = replaceCodeView(cv_constToModifyStart, cv_constToModifyEnd, tree, newTree, newConst)
                 }
-
-              /*case COLOR_SUBTYPE => 
-                // Taken into account by a menu
-              case SCORE_SUBTYPE => 
-                c.setValue((numberEditor.selectedDragNumberInitialValue + simpleRelativeX / 48f).toInt)
-              case COORD_SUBTYPE => 
-                c.setValue(Math.round(numberEditor.selectedDragNumberInitialValue + Math.abs(simpleRelativeX)*simpleRelativeX / (48*48f)).toInt)
-                //c.setValue((selectedDragNumberInitialValue + simpleRelativeX).toInt)
-              case SPEED_SUBTYPE => 
-                c.setValue(numberEditor.selectedDragNumberInitialValue * (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))
-              case ANGLE_SUBTYPE =>
-                c.setValue(((Math.round(Game.angle(0, 0, simpleRelativeX, simpleRelativeY)/15)*15)))
-              case FACTOR_SUBTYPE => 
-                c.setValue(numberEditor.selectedDragNumberInitialValue* (Math.exp((simpleRelativeX/200f) * Math.log(2)).toFloat))*/
               case _ =>
             }
 
@@ -512,6 +503,42 @@ class GameView(val context: Context, attrs: AttributeSet)
         }
       case _ =>
         false
+    }
+  }
+  
+  /**
+   * Implements generalization option for rules.
+   */
+  def codeViewOnLongPress(pos: Int): Unit = {
+    
+    // At this moment, pops up a menu with generalization, deletion, etc.
+    if (cv_mapping_consts != null) {
+      cv_mapping_consts.get(pos) match {
+        case Some((ObjectLiteral(o), rule)) => // Ask to generalize
+          val name = o.name.get
+          val isAssigned: Boolean = false // if the object is being assigned somewhere
+          val isRead: Boolean = false   // if the object is being read somewhere
+          val isTested: Boolean = false // if the object is inside a condition
+          val isGeneralizable: Boolean = true // If we can generalize the rule.
+          
+          val choices = ListBuffer[(String, () => Unit)]()
+          if(isGeneralizable) choices += ((str(R.string.generalize_global, name), { () =>
+            // Invoke global
+            val index = game.getIndexByRule(rule) 
+            if(index != -1) {
+              val newRule = TreeOps.generalizeToCategory(rule, o)
+              game.setRuleByIndex(newRule, index)
+            }
+            ()
+          }
+          ))
+          
+          CustomDialogs.launchChoiceDialog(getContext(), str(R.string.generalize_title, name), choices.toList.map(_._1), { (i: Int) =>
+			      var function = choices(i)._2
+			      function()
+			    }, { () => })
+        case _ => // Nothing to be done
+      }
     }
   }
 
@@ -674,6 +701,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       R.drawable.move_size,
       R.drawable.move_rotate,
       R.drawable.wrench,
+      R.drawable.wrench_selected,
       R.drawable.nail,
       R.drawable.nail_big,
       R.drawable.trashcan,
@@ -940,7 +968,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               case STATE_SELECTING_TO_FIX =>
                 // Filter out events and keep only assignment events.
                 val eventListFiltered = eventListSorted.collect({ case (a: AssignmentEvent, b: Int) => (a, b) })
-                selectFix(p, eventListFiltered)
+                selectFix(p, eventListFiltered, eventEditor.selectedObjects)
             }
           case STATE_MODIFYING_CATEGORY =>
           //categoryEditor.onFingerUp(touchCoords(0), touchCoords(1))
@@ -981,9 +1009,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip to select the right parexpr if multiple executed at this time.
    */
-  def selectFix(p: Vec2, eventList: List[(AssignmentEvent, Int)]) = {
+  def selectFix(p: Vec2, eventList: List[(AssignmentEvent, Int)], objectList: List[GameObject]) = {
     val mQuickAction = new QuickAction(activity, false)
-    val actionItems = ListBuffer[(String, Drawable, ParExpr, Expr, Int)]()
+    val actionItems = ListBuffer[(String, Drawable, () => Unit)]()
     var alreadyDone = Set[Expr]()
     for (e @ (AssignmentEvent(pos, a, assignStatement), time) <- eventList) {
       if(!alreadyDone(assignStatement)) {
@@ -1004,9 +1032,18 @@ class GameView(val context: Context, attrs: AttributeSet)
 	            case parExpr: ParExpr =>
 	              for (alternative <- parExpr.exprs) {
 	                if (alternative eq assignStatement) {
-	                  actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), parExpr, alternative, indexRule))
+	                  actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), () => ()))
 	                } else {
-	                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), parExpr, alternative, indexRule))
+	                  val action = { () =>
+	                    val newParExpr = alternative orElse parExpr
+						          val rule: Expr = game.getRuleByIndex(indexRule)
+						          val newRule: Expr = TreeOps.postMap {
+						            e => if (e eq parExpr) Some(newParExpr) else None
+						          }(rule)
+						          game.setRuleByIndex(newRule, indexRule)
+                      // TODO : Include the new expression in the tree.
+	                  }
+	                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), action))
 	                }
 	              }
 	            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
@@ -1015,28 +1052,42 @@ class GameView(val context: Context, attrs: AttributeSet)
 	      }
       }
     }
+    // Also add the generalization on rules.
+    for(obj <- objectList) {
+      val obj_expr = obj.expr
+      for(rule <- game.getRulesbyObject(obj)) {
+        if(TreeOps.exists(_ == obj_expr)(rule)) { // We can generalize this rule.
+          val text = "Generalize from "+obj.name.get+" to all "+obj.category.name+" the rule:\n"+PrettyPrinter.print(rule)
+          val drawable = drw(R.drawable.event_unselected_disambiguate)
+          val action = { () => 
+            val index = game.getIndexByRule(rule) 
+            if(index != -1) {
+              val newRule = TreeOps.generalizeToCategory(rule, obj)
+              game.setRuleByIndex(newRule, index)
+            }
+          }
+          actionItems += ((text, drawable, action))
+        }
+      }
+    }
+    
+    
     val actionItemsSorted = actionItems.sortBy {
-      case ((str, drawable, e1, e2, i)) => str.length
+      case ((str, drawable, action)) => str.length
     }
 
     // Creating the dialog box
-    val mapIndex = (for (((str, drawable, parExpr, expr, indexRule), index) <- actionItems.zipWithIndex) yield {
+    val mapIndex = (for (((str, drawable, action), index) <- actionItems.zipWithIndex) yield {
       mQuickAction.addActionItem(new ActionItem(index, str, drawable))
-      index -> ((parExpr, expr, indexRule))
+      index -> action
     }).toMap
 
     mQuickAction.setOnActionItemClickListener { (quickAction: QuickAction, pos: Int, actionId: Int) =>
       mapIndex.get(actionId) match {
-        case Some((parExpr, expr, indexRule)) =>
+        case Some(action) =>
           mQuickAction.dismiss()
           // Change to the selected property.
-          val newParExpr = expr orElse parExpr
-          val rule: Expr = game.getRuleByIndex(indexRule)
-          val newRule: Expr = TreeOps.postMap {
-            e => if (e eq parExpr) Some(newParExpr) else None
-          }(rule)
-          game.setRuleByIndex(newRule, indexRule)
-        // TODO : Include the new expression in the tree.
+          action()
         case None =>
           mQuickAction.dismiss()
         case _ =>
