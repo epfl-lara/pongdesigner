@@ -240,7 +240,11 @@ class GameView(val context: Context, attrs: AttributeSet)
               setModeModifyGame()
             }
           case STATE_SELECTING_EFFECTS =>
-            CodeGenerator.createRule(context, getGame(), eventEditor.selectedEventTime, eventEditor.selectedObjects)
+            val conditionObjects = eventEditor.selectedObjects.toSet
+            //TODO in the future the user should be able to select the action objects during the second phase of the inferrence process.
+            val actionObjects = getGame().aliveObjects.toSet
+
+            CodeGenerator.createRule(getGame(), eventEditor.selectedEventTime, conditionObjects, actionObjects)
             setModeModifyGame()
             true
           case STATE_MODIFYING_CATEGORY =>
