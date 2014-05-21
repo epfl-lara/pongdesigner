@@ -12,28 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import CodeTemplates._
 
 trait CodeHandler {
-  /*import Expression.Subtype._*/
-  /** Conversions */
-  def coord(i: Int): Expr = { val res: Expr = i; /*res.setSubtype(COORD_SUBTYPE);*/ res }
-  def coord(i: Float): Expr = { val res: Expr = i; /*res.setSubtype(COORD_SUBTYPE);*/ res }
-  def number(i: Int): Expr = { val res: Expr = i; /*res.setSubtype(SCORE_SUBTYPE);*/ res }
-  def color(i: Int): Expr =  { val res: Expr = i; /*res.setSubtype(COLOR_SUBTYPE);*/ res }
-  def speed(i: Vec2): Expr =  { val res: Expr = i; /*res.setSubtype(SPEED_SUBTYPE);*/ res }
-  def factor(i: Float): Expr =  { val res: Expr = i; /*res.setSubtype(FACTOR_SUBTYPE);*/ res }
-  def angle(i: Float): Expr = { val res: Expr = i; /*res.setSubtype(ANGLE_SUBTYPE);*/ res }
-  
-  /** Identifiers used when generating code */
-  /*val xFrom_ident = EIdent("xFrom")
-  val xTo_ident = EIdent("xTo")
-  val yFrom_ident = EIdent("yFrom")
-  val yTo_ident = EIdent("yTo")
-  val x_ident = EIdent("x")
-  val y_ident = EIdent("y")
-  val newValue_ident = EIdent("newValue")
-  val dx_ident = Val("dx")
-  val dy_ident = Val("dy")
-  */
-  
+
   /** Determines if two differences are almost the same up to a 40% factor */
   def almostTheSameDiff(val1:Float, val2:Float): Boolean = {
     if(val1 != 0) {
