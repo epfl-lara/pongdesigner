@@ -406,7 +406,7 @@ object ArraySizeButton extends MenuButton {
             cell.deletionTime.set(gameEngine.getGame.time)
             //gameEngine.getGame.remove(cell)
           }
-          }
+        }
 
         // Add a line
         if(newHeight/ (numRows + 1) > cellHeight) {

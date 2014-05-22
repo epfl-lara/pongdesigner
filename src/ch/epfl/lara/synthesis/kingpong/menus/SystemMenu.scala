@@ -12,17 +12,11 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 object SystemMenu extends MenuCenter {
   var activated = false
   
-  menus = List(TrashButton, FixButton, SetTimeButton, CopyButton)
+  menus = List(TrashButton, FixButton, SetTimeButton, CopyButton, CutButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
-    //RenameButtonRule.setText(selectedShape.mName)
-    //RenameButtonRule.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
-    selectedShape match {
-      case selectedShape: SoundTTS =>
-        SetTimeButton.visible = true
-      case _ =>
-        SetTimeButton.visible = false
-    }
+    SetTimeButton.visible = selectedShape.isInstanceOf[SoundTTS]
+    CutButton.visible = selectedShape.isInstanceOf[Rectangle]
 
     Menus.spaceMenusOnCircle(canvas, cx, cy, menus)
     
@@ -134,4 +128,28 @@ object CopyButton extends MenuButton {
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_copy_hint
+}
+
+object CutButton extends MenuButton {
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape match {
+      case rect: Rectangle =>
+        val pieces = gameEngine.cutRectangle(rect, 3, 3)
+        rect.deletionTime.set(gameEngine.getGame.time)
+//        gameEngine.getGame.remove(rect)
+        pieces foreach gameEngine.getGame.add
+
+      case _ =>
+    }
+
+    hovered = false
+  }
+
+  //TODO change the icon menu
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.reload ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.reload :: Nil
+
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
+
+  def hint_id = R.string.change_cut_hint
 }

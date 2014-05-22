@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.view
 
 import android.graphics.{Rect, Path, Canvas, Bitmap}
+import android.graphics.drawable.{BitmapDrawable, Drawable}
 
 /**
  * Some utility functions for android bitmaps.
@@ -29,20 +30,24 @@ object BitmapUtils {
     targetBitmap
   }
 
-  def cutBitmap(sourceBitmap: Bitmap, columns: Int, rows: Int): Seq[Bitmap] = {
-    require(columns > 0 && rows > 0, "Number of columns and rows must be both positive.")
+  def cutBitmap(sourceBitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): Bitmap = {
+    Bitmap.createBitmap(sourceBitmap, x, y, width, height)
+  }
 
-    val width = sourceBitmap.getWidth / columns
-    val height = sourceBitmap.getHeight / rows
+  def cutDrawable(sourceDrawable: Drawable, x: Int, y: Int, width: Int, height: Int): Bitmap = {
+    val bitmap = drawableToBitmap(sourceDrawable)
+    cutBitmap(bitmap, x, y, width, height)
+  }
 
-    for {
-      column <- 0 until columns
-      row    <- 0 until rows
-    } yield {
-      val x = column * width
-      val y = row * height
-      Bitmap.createBitmap(sourceBitmap, x, y, width, height)
-    }
+  def drawableToBitmap(drawable: Drawable): Bitmap = drawable match {
+    case b: BitmapDrawable =>
+      b.getBitmap
+    case _ =>
+      val bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888)
+      val canvas = new Canvas(bitmap)
+      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
+      drawable.draw(canvas)
+      bitmap
   }
 
 }

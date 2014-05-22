@@ -26,13 +26,7 @@ import java.io.File
 import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.Path
-import android.graphics.Rect
-import android.graphics.RectF
-import android.graphics.Typeface
+import android.graphics._
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.hardware.Sensor
@@ -66,7 +60,6 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
 import ch.epfl.lara.synthesis.kingpong.view.BitmapUtils
-
 
 object GameView {
   sealed trait GameState
@@ -827,6 +820,12 @@ class GameView(val context: Context, attrs: AttributeSet)
     bitmaps(id) = res.getDrawable(id)
   }
 
+  private def addBitmap(bitmap: Bitmap): Int = {
+    val id = Stream.from(0).find(i => !(bitmaps contains i)).get
+    bitmaps(id) = new BitmapDrawable(res, bitmap)
+    id
+  }
+
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
     Log.d("kingpong", "surfaceChanged()")
     mWidth = width
@@ -1301,11 +1300,52 @@ class GameView(val context: Context, attrs: AttributeSet)
             case _: Circle => BitmapUtils.toRoundedShape(srcBitmap)
             case _         => srcBitmap
           }
-          val id = Stream.from(0).find(i => !(bitmaps contains i)).get
-          bitmaps(id) = new BitmapDrawable(getResources(), finalBitmap)
+          val id = addBitmap(finalBitmap)
           selectedShape.color setNext id
         case _ =>
       }
+    }
+  }
+
+  /**
+   * Cut the given rectangle into `columns * rows` pieces of identical size.
+   */
+  def cutRectangle(rect: Rectangle, columns: Int, rows: Int): Seq[Rectangle] = {
+    Log.d("kingpong", s"Cut $rect into $columns columns and $rows rows.")
+    assert(columns > 0 && rows > 0, "Number of columns and rows must be both positive.")
+
+    val width = rect.width.get / columns
+    val height = rect.height.get / rows
+    val srcBitmapOpt = rect.color.get match {
+      case color if color >>> 24 == 0 && bitmaps.contains(color) =>
+        val bitmap = BitmapUtils.drawableToBitmap(bitmaps(color))
+        Some(bitmap, bitmap.getWidth / columns, bitmap.getHeight / rows)
+      case _ =>
+        None
+    }
+
+    for {
+      column <- 0 until columns
+      row    <- 0 until rows
+    } yield {
+      val x = rect.left.get + column * width + width / 2
+      val y = rect.top.get + row * height + height / 2
+      val freshName = getGame.getNewName(rect.name.get)
+      val piece = rect.getCopy(freshName).asInstanceOf[Rectangle]
+      piece.x.setInit(x)
+      piece.y.setInit(y)
+      piece.width.setInit(width)
+      piece.height.setInit(height)
+
+      srcBitmapOpt match {
+        case Some((srcBitmap, width, height)) =>
+          val bitmap = BitmapUtils.cutBitmap(srcBitmap, column * width, row * height, width, height)
+          val id = addBitmap(bitmap)
+          piece.color.setInit(id)
+        case _ =>
+      }
+
+      piece
     }
   }
 
