@@ -79,7 +79,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   val distancePaint = new Paint()
   distancePaint.set(touchMovePaint)
   distancePaint.setColor(0xAAFF8800)
-  distancePaint.setPathEffect(new DashPathEffect(Array[Float](5.0f,5.0f), 0))
+  distancePaint.setPathEffect(new DashPathEffect(Array[Float](0.5f,0.5f), 0))
   var velocityPaint = new Paint()
   velocityPaint.setColor(0x88FF00FF)
   velocityPaint.setStyle(Paint.Style.STROKE)
@@ -646,8 +646,6 @@ class GameViewRender(val context: Context) extends ContextUtils {
     event match {
       case e if eventIsSelected =>
         if(event.isFinger) paint = touchSelectedPaint
-      case FingerMove(_, _, _) =>
-        paint = touchMovePaint
       case FingerRelated(_) =>
         paint = touchDownPaint
       case _ =>
