@@ -646,6 +646,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
     event match {
       case e if eventIsSelected =>
         if(event.isFinger) paint = touchSelectedPaint
+      case FingerMove(_, _, _) =>
+        paint = touchMovePaint
       case FingerRelated(_) =>
         paint = touchDownPaint
       case _ =>
@@ -700,7 +702,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
         if(timestamp == game.time) finger = (p.x, p.y, 0xBA)::finger
       case FingerMove(v, v2, obj) =>
         val p = mapVectorFromGame(matrix, v, render_in_array, render_out_vec)
-        val p2 = mapVectorFromGame(matrix, v2, render_in_array, render_out_vec)
+        val p2 = mapVectorFromGame(matrix, v2, render_in_array, render_out_vec2)
         if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) {
           drawCross(canvas, p.x, p.y, touchSelectedPaint)
           canvas.drawCircle(p2.x, p2.y, 15, touchSelectedPaint)

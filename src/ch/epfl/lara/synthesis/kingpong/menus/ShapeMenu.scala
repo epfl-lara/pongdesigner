@@ -389,7 +389,11 @@ object ArraySizeButton extends MenuButton {
         // Add a column
         if(newWidth/ (numCols + 1) > cellWidth) {
           array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
-          val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
+          val newCells = ArrayBuffer.tabulate(numRows) { row => 
+            val res = Cell(array, numCols, row)
+            res.creationTime.set(gameEngine.getGame.time)
+            res
+          }
           array.cells += newCells
           for(cell <- newCells) gameEngine.getGame.add(cell)
 
@@ -397,14 +401,18 @@ object ArraySizeButton extends MenuButton {
         } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
           array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
           val deletedColumn = array.cells.remove(array.cells.length - 1)
-          for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
-        }
+          for(cell <- deletedColumn) {
+            cell.deletionTime.set(gameEngine.getGame.time)
+            //gameEngine.getGame.remove(cell)
+          }
+          }
 
         // Add a line
         if(newHeight/ (numRows + 1) > cellHeight) {
           array.numRows.setPrevOrNext(modify_prev, numRows + 1)
           for((column, i) <- array.cells.zipWithIndex) {
             val newCell = Cell(array, i, numRows)
+            newCell.creationTime.set(gameEngine.getGame.time)
             column += newCell
             gameEngine.getGame.add(newCell)
           }
@@ -413,9 +421,11 @@ object ArraySizeButton extends MenuButton {
         } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
           array.numRows.setPrevOrNext(modify_prev, numRows - 1)
           val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
-          for(cell <- deletedRow) gameEngine.getGame.remove(cell)
+          for(cell <- deletedRow) {
+            cell.deletionTime.set(gameEngine.getGame.time)
+            //gameEngine.getGame.remove(cell)
+          }
         }
-
         if(copy_to_prev) {
           array.numRows set array.numRows.next
           array.numColumns set array.numColumns.next

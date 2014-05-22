@@ -469,6 +469,7 @@ class KingPong extends Activity
 	
 					case GameView.Running =>
 					  mGameView.toEditing()
+					  mTts.stop()
 					  time_button.setImageDrawable(timeButtonPlay)
 				  }
 				true

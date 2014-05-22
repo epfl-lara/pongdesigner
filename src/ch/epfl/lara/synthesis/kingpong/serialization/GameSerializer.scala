@@ -623,35 +623,7 @@ object GameSerializer {
 		case _ => throw new Exception(s"Json could not parse $json")
   }
   
-  def gameObjectToJson(g: GameObject): JSONObject = {
-    val cl = g.getClass().getName()
-    val json = new JSONObject().put(CLASS_TAG, cl)
-    json.put("category", g.category.name)
-    for(p <- g.properties) {
-      p match {
-        case p:AliasProperty[_] => // Store nothing
-        case p:ConstProperty[_] => //json.put(p.name, exprToJson(p.expr))
-        case p:HistoricalProperty[_] => json.put(p.name, exprToJson(p.init))
-        case _ => println(s"Unknown property not stored : $p")
-      }
-    }
-    g match {
-      case g: DrawingObject =>
-        val elements = g.getDrawingElements
-        for(elem <- elements) {
-          json.accumulate("DrawingElements", toJson(elem))
-        }
-      case g: SoundRecorder =>
-        val elements = g.getRecordings
-        for(elem <- elements) {
-          // TODO : Save sounds apart for zipping
-          json.accumulate("SoundsRecorded", toJson(elem))
-        }
-      case _ =>
-    }
-    json
-  }
-  
+ 
   def categoryToJson(category: CategoryObject): JSONObject = {
     val json = new JSONObject().put(CLASS_TAG, "category")
     json.put("name", category.name)
@@ -725,6 +697,37 @@ object GameSerializer {
     }
   }
   
+  def gameObjectToJson(g: GameObject): JSONObject = {
+    val cl = g.getClass().getName()
+    val json = new JSONObject().put(CLASS_TAG, cl)
+    json.put("category", g.category.name)
+    for(p <- g.properties) {
+      p match {
+        case p:AliasProperty[_] => // Store nothing
+        case p:ConstProperty[_] => //json.put(p.name, exprToJson(p.expr))
+        case p:HistoricalProperty[_] => json.put(p.name, exprToJson(p.init))
+        case _ => println(s"Unknown property not stored : $p")
+      }
+    }
+    g match {
+      case g: DrawingObject =>
+        val elements = g.getDrawingElements
+        for(elem <- elements) {
+          json.accumulate("DrawingElements", toJson(elem))
+        }
+      case g: SoundRecorder =>
+        val elements = g.getRecordings
+        for(elem <- elements) {
+          // TODO : Save sounds apart for zipping
+          json.accumulate("SoundsRecorded", toJson(elem))
+        }
+      case d: Array2D =>
+        
+      case _ =>
+    }
+    json
+  }
+  
   def jsonToGameObject(json: JSONObject, game: Game)(implicit ctx: SerializerContext): Option[GameObject] = {
     val cl = json.get(CLASS_TAG)
     println("Loading as game object:" + json)
@@ -738,7 +741,10 @@ object GameSerializer {
     } else if(cl == classOf[BooleanBox].getName()) { booleanbox(category)("", 0, 0)(game)
     } else if(cl == classOf[Joystick].getName()) { joystick(category)("", 0, 0)(game)
     } else if(cl == classOf[RandomGenerator].getName()) { randomGenerator(category)("", 0, 0)(game)
-    } else if(cl == classOf[Array2D].getName()) { array(category)("", 0, 0, 1, 1)(game)
+    } else if(cl == classOf[Array2D].getName()) {
+      val numRows =jsonToExpr(json.getJSONObject("numRows"))
+      val numCols = jsonToExpr(json.getJSONObject("numColumns"))
+      array(category)("", 0, 0, numCols, numRows)(game)
     } else if(cl == classOf[SoundTTS].getName()) { soundTTS(category)("", 0, 0)(game)
     } else if(cl == classOf[DrawingObject].getName()) { drawingObject(category)("", 0, 0)(game)
     //} else if(cl == classOf[SoundRecorded].getName()) { soundrecorded(category)("", 0, 0)(game)

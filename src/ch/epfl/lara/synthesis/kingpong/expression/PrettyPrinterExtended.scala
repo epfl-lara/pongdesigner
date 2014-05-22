@@ -254,7 +254,7 @@ trait PrettyPrinterExtendedTypical {
   /**
    * Print the definition of a set of game objects.
    */
-  val accepted_properties = List("x", "y", "radius", "width", "height", "velocity", "color", "visible", "friction", "restitution", "linear-damping", "value", "language", "text")
+  val accepted_properties = List("x", "y", "radius", "width", "height", "velocity", "color", "visible", "friction", "restitution", "linear-damping", "value", "language", "text", "time")
   def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker()) = {
     val ending = printIterable[GameObject](c, objects, { case (c, obj) =>
       val name = obj.name.get
