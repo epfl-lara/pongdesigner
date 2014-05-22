@@ -108,7 +108,7 @@ trait ActionBarHandler extends common.ContextUtils {
         def onGroupClick(parent: ExpandableListView, v: View, groupPosition: Int, id: Long) = {
           menuCallBacks(actions(groupPosition))
         }
-      });
+      })
 
     }
   }
@@ -136,7 +136,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
 
-  private var gameViewRender = new GameViewRender(context)
+  private val gameViewRender = new GameViewRender(context)
   def grid = gameViewRender.grid
   
   def saveGame(handler: Handler, and_export: Boolean = false): Unit = {
@@ -231,7 +231,6 @@ class GameView(val context: Context, attrs: AttributeSet)
       case Str(R.string.menu_add_constraint_hint) =>
         var menuSelected = false
         val res = context.getResources()
-        val game = getGame()
         mRuleState match {
           case STATE_MODIFYING_GAME =>
             eventEditor.unselect()
@@ -261,7 +260,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         menuSelected
       case Str(R.string.menu_fix_hint) =>
         // Allows to select objects to which a rule was applied recently.
-        val game = getGame()
         mRuleState match {
           case STATE_MODIFYING_GAME =>
             changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench_selected))
@@ -284,7 +282,6 @@ class GameView(val context: Context, attrs: AttributeSet)
    * Snap i to the grid, or others to the grid, or i to points.
    * @param i The point to snap to the grid
    * @param other Other points which could also snap to the grid
-   * @param points Points to which i could also snap to.
    * @return The new point with the least movement so that either i snaps to the grid, other snaps to the grid or i snaps to a point.
    */
   def snapX(i: Float, other: Float*)(implicit snap_i: Float*): Float = {
@@ -297,7 +294,6 @@ class GameView(val context: Context, attrs: AttributeSet)
    * Snap i to the grid, or others to the grid, or i to points.
    * @param i The point to snap to the grid
    * @param other Other points which could also snap to the grid
-   * @param points Points to which i could also snap to.
    * @return The new point with the least movement so that either i snaps to the grid, other snaps to the grid or i snaps to a point.
    */
   def snapY(i: Float, other: Float*)(implicit snap_i: Float*): Float = {
@@ -413,7 +409,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     if (game != null) {
       val a = (Array(0f, 0f, 0f, 0f) /: game.aliveObjects) {
         case (a, obj: Positionable) =>
-          val aabb = obj.getAABB()
           val xmin = obj.left.next
           val xmax = obj.right.next
           val ymin = obj.top.next
@@ -518,7 +513,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           case MotionEvent.ACTION_MOVE | MotionEvent.ACTION_UP =>
             val x = event.getRawX()
             val y = event.getRawY()
-            val dx = (x - xstart)
+            val dx = x - xstart
 
             (const, init) match {
               case (IntegerLiteral(number_value), IntegerLiteral(initial_value)) =>
@@ -574,8 +569,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           ))
           
           CustomDialogs.launchChoiceDialog(getContext(), str(R.string.generalize_title, name), choices.toList.map(_._1), { (i: Int) =>
-			      var function = choices(i)._2
-			      function()
+			      choices(i)._2()
 			    }, { () => })
         case _ => // Nothing to be done
       }
@@ -1017,7 +1011,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         SystemMenu.cancelHovered()
         //RuleMenu.cancelHovered()
 
-        val touchCoords = p
         mRuleState match {
           case STATE_SELECTING_EVENTS | STATE_SELECTING_TO_FIX =>
             // Detects objects and events.
@@ -1330,22 +1323,21 @@ class GameView(val context: Context, attrs: AttributeSet)
    */
   def getRoundedShape(scaleBitmapImage: Bitmap): Bitmap = {
     val targetSize = Math.min(scaleBitmapImage.getWidth, scaleBitmapImage.getHeight)
-    val targetBitmap = Bitmap.createBitmap(targetSize,
-      targetSize, Bitmap.Config.ARGB_8888);
+    val targetBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
 
-    val canvas = new Canvas(targetBitmap);
-    val path = new Path();
+    val canvas = new Canvas(targetBitmap)
+    val path = new Path()
     path.addCircle((targetSize.toFloat - 1) / 2,
       (targetSize.toFloat - 1) / 2,
-      (targetSize / 2),
-      Path.Direction.CCW);
+      targetSize / 2,
+      Path.Direction.CCW)
 
-    canvas.clipPath(path);
-    val sourceBitmap = scaleBitmapImage;
+    canvas.clipPath(path)
+    val sourceBitmap = scaleBitmapImage
     canvas.drawBitmap(sourceBitmap,
       new Rect(0, 0, sourceBitmap.getWidth(), sourceBitmap.getHeight()),
-      new Rect(0, 0, targetSize, targetSize), null);
-    return targetBitmap;
+      new Rect(0, 0, targetSize, targetSize), null)
+    targetBitmap
   }
   
   /**
@@ -1611,7 +1603,6 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /** Hold all touch events and pre-format them before dispatching them back. */
   private object EventHolder extends SensorEventListener {
-    import EventHolder._
 
     private val accAlpha = 0.8f
     private val accLast = Vec2(0, 0)

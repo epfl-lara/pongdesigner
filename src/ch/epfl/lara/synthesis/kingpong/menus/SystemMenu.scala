@@ -42,19 +42,14 @@ object SystemMenu extends MenuCenter {
 object TrashButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    if(modify_prev) { // Nothing to be done here
-      selectedShape.deletionTime set gameEngine.getGame().time.toInt
+    if(modify_prev) {
+      selectedShape.deletionTime set gameEngine.getGame().time
     } else {
-      selectedShape.deletionTime setNext gameEngine.getGame().time.toInt
+      selectedShape.deletionTime setNext gameEngine.getGame().time
     }
     if(copy_to_prev) {
       selectedShape.deletionTime set selectedShape.deletionTime.next
     }
-    
-    val res = context.getResources()
-    /*CustomDialogs.launchOKCancelDialog(context,
-        String.format(res.getString(R.string.delete_title), selectedShape.name),
-        res.getString(R.string.confirm_delete), false, { _ => selectedShape.delete(); gameEngine.shapeEditor.unselect()}, {_ => ()})*/
     hovered = false
   }
   
@@ -75,9 +70,9 @@ object SetTimeButton extends MenuButton {
     selectedShape match {
 	    case selectedShape: SoundTTS =>
 	    if(modify_prev) { // Nothing to be done here
-	      selectedShape.time set gameEngine.getGame().time.toInt
+	      selectedShape.time set gameEngine.getGame().time
 	    } else {
-	      selectedShape.time setNext gameEngine.getGame().time.toInt
+	      selectedShape.time setNext gameEngine.getGame().time
 	    }
 	    if(copy_to_prev) {
 	      selectedShape.time set selectedShape.time.next
