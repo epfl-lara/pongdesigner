@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.menus
 
 import scala.collection.mutable.HashMap
 
-import android.content.Context
 import android.content.res.Resources
 import android.graphics.RectF
 import android.graphics.Rect
@@ -10,17 +9,14 @@ import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.Canvas
 import android.graphics.drawable.NinePatchDrawable
+import android.util.Log
 
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.objects._
-import android.util.Log
 
 object Menus {
   import MenuOptions._
-  def recoverDrawables(c: Context) = {
-    
-  }
-  
+
   def spaceMenusOnCircle(canvas: Canvas, cx: Float, cy: Float, menus: List[CustomMenu]) = {
     val n = menus.size
     var i = -1

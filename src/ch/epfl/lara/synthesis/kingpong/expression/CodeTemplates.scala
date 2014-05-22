@@ -4,8 +4,6 @@ import scala.collection.mutable.{Set => MSet}
 
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._

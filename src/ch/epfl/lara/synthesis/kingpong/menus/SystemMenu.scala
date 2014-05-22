@@ -1,25 +1,18 @@
 package ch.epfl.lara.synthesis.kingpong.menus
 
-
 import scala.collection.mutable.HashMap
-import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong._
+
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.drawable.Drawable
-import android.content.Context
-import ch.epfl.lara.synthesis.kingpong.expression.Trees._
+
+import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression._
-import android.graphics.RectF
-import android.graphics.Rect
-import android.graphics.Paint
 import ch.epfl.lara.synthesis.kingpong.objects._
 
 object SystemMenu extends MenuCenter {
   var activated = false
   
-   menus = List(TrashButton, FixButton, SetTimeButton, CopyButton)
+  menus = List(TrashButton, FixButton, SetTimeButton, CopyButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     //RenameButtonRule.setText(selectedShape.mName)
@@ -65,15 +58,10 @@ object TrashButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
- 
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.trashcan ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.trashcan :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_trash_hint
 }
@@ -98,21 +86,18 @@ object SetTimeButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
- 
   private val selected_hovered_icons = R.drawable.flat_button_selected_highlighted :: R.drawable.reload ::  Nil
   private val selected_icons = R.drawable.flat_button_selected :: R.drawable.reload :: Nil
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.reload ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.reload :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
-      val selected = selectedShape match { case s: SoundTTS => s.time.next == gameEngine.getGame().time case _ => false
+    val selected = selectedShape match { case s: SoundTTS => s.time.next == gameEngine.getGame().time case _ => false }
+    if (hovered) {
+      if (selected) selected_hovered_icons else hovered_icons
+    } else  {
+      if (selected) selected_icons else normal_icons
     }
-    (if(hovered) {
-      if(selected) selected_hovered_icons else hovered_icons} else  {
-      if(selected) selected_icons else normal_icons})
   }
   
   def hint_id = R.string.change_time_hint
@@ -121,7 +106,6 @@ object SetTimeButton extends MenuButton {
 /** Puts shape properties to the init state.
  **/
 object FixButton extends MenuButton {
-  import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape.historicalProperties foreach { p =>
       p.setInit(p.getExpr)
@@ -129,24 +113,18 @@ object FixButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
- 
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.back_arrow ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.back_arrow :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_back_hint
 }
 
-/** Sends a shape to trash
+/** Copy an object
  *  TODO : This should demonstrate advanced functionality (aka: creation/duplication)
  **/
 object CopyButton extends MenuButton {
-  import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val freshName = gameEngine.getGame.getNewName(selectedShape.name.get)
     val fresh = selectedShape.getCopy(freshName)
@@ -156,15 +134,10 @@ object CopyButton extends MenuButton {
     hovered = false
   }
   
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Nothing
-  }
- 
   private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.copy_menu ::  Nil
   private val normal_icons = R.drawable.flat_button :: R.drawable.copy_menu :: Nil
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) hovered_icons else normal_icons)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
   def hint_id = R.string.change_copy_hint
 }

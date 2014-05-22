@@ -296,70 +296,68 @@ object SizeButton extends MenuButton {
   }
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    if(selectedShape != null) {
-      selectedShape match {
-        case c: Circle =>
-          val dx1 = toX - relativeX - selected_shape_first_x
-          val dy1 = toY - relativeY - selected_shape_first_y
-          val dx2 = toX - selected_shape_first_x
-          val dy2 = toY - selected_shape_first_y
-          val dr = Math.sqrt(dx2*dx2+dy2*dy2).toFloat - Math.sqrt(dx1*dx1+dy1*dy1).toFloat
-          val newRadius =selected_shape_first_radius + dr
-          val rx = c.x.getPrevOrNext(modify_prev)
-          val ry = c.y.getPrevOrNext(modify_prev)
-          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevOrNext(modify_prev))-rx))
-          if(copy_to_prev) {
-            c.radius set c.radius.next
+    selectedShape match {
+      case c: Circle =>
+        val dx1 = toX - relativeX - selected_shape_first_x
+        val dy1 = toY - relativeY - selected_shape_first_y
+        val dx2 = toX - selected_shape_first_x
+        val dy2 = toY - selected_shape_first_y
+        val dr = Math.sqrt(dx2*dx2+dy2*dy2).toFloat - Math.sqrt(dx1*dx1+dy1*dy1).toFloat
+        val newRadius =selected_shape_first_radius + dr
+        val rx = c.x.getPrevOrNext(modify_prev)
+        val ry = c.y.getPrevOrNext(modify_prev)
+        c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevOrNext(modify_prev))-rx))
+        if(copy_to_prev) {
+          c.radius set c.radius.next
+        }
+
+      case r: ResizableRectangular =>
+        val newWidth = selected_shape_first_width + relativeX*2
+        val newHeight = selected_shape_first_height + relativeY*2
+        val rx = r.x.getPrevOrNext(modify_prev)
+        val ry = r.y.getPrevOrNext(modify_prev)
+        r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))
+        r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)-ry)))
+        if(copy_to_prev) {
+          r.width set r.width.next
+          r.height set r.height.next
+        }
+
+      case array: Array2D =>
+        val rx = array.x.getPrevOrNext(modify_prev)
+        val ry = array.y.getPrevOrNext(modify_prev)
+        val newWidth = selected_shape_first_width + relativeX*2
+        val newHeight = selected_shape_first_height + relativeY*2
+        val numCols = array.numColumns.getPrevOrNext(modify_prev)
+        val numRows = array.numRows.getPrevOrNext(modify_prev)
+        if(newWidth > 0 && newHeight > 0) {
+          val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (numCols, numRows))()
+          // The ratio is kept. Now we try to align the right side or the bottom side with the grid.
+          val cRight = rx+rWidth/2
+          val cBottom = ry+rHeight/2
+          val newRight =  gameEngine.snapX(cRight, cRight - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)
+          val newBottom = gameEngine.snapX(cBottom, cBottom - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)
+
+          val (kWidth, kHeight) = if(Math.abs(newRight - cRight) < Math.abs(newBottom - cBottom)) {
+            val nWidth = 2*(newRight-rx)
+            (nWidth, rHeight*nWidth/rWidth)
+          } else {
+            val nHeight = 2*(newBottom-ry)
+            (rWidth*nHeight/rHeight, nHeight)
           }
 
-        case r: ResizableRectangular =>
-          val newWidth = selected_shape_first_width + relativeX*2
-          val newHeight = selected_shape_first_height + relativeY*2
-          val rx = r.x.getPrevOrNext(modify_prev)
-          val ry = r.y.getPrevOrNext(modify_prev)
-          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)-ry)))
-          if(copy_to_prev) {
-            r.width set r.width.next
-            r.height set r.height.next
-          }
+          if (kWidth > 0)
+            array.cellWidth.setPrevOrNext(modify_prev, kWidth / numCols)
+          if (kHeight > 0)
+            array.cellHeight.setPrevOrNext(modify_prev, kHeight / numRows)
+        }
 
-        case array: Array2D =>
-          val rx = array.x.getPrevOrNext(modify_prev)
-          val ry = array.y.getPrevOrNext(modify_prev)
-          val newWidth = selected_shape_first_width + relativeX*2
-          val newHeight = selected_shape_first_height + relativeY*2
-          val numCols = array.numColumns.getPrevOrNext(modify_prev)
-          val numRows = array.numRows.getPrevOrNext(modify_prev)
-          if(newWidth > 0 && newHeight > 0) {
-	          val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (numCols, numRows))()
-	          // The ratio is kept. Now we try to align the right side or the bottom side with the grid.
-	          val cRight = rx+rWidth/2
-	          val cBottom = ry+rHeight/2
-	          val newRight =  gameEngine.snapX(cRight, cRight - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)
-	          val newBottom = gameEngine.snapX(cBottom, cBottom - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)
-	          
-	          val (kWidth, kHeight) = if(Math.abs(newRight - cRight) < Math.abs(newBottom - cBottom)) {
-	            val nWidth = 2*(newRight-rx)
-	            (nWidth, rHeight*nWidth/rWidth)
-	          } else {
-	            val nHeight = 2*(newBottom-ry)
-	            (rWidth*nHeight/rHeight, nHeight)
-	          }
-	          
-	          if (kWidth > 0)
-	            array.cellWidth.setPrevOrNext(modify_prev, kWidth / numCols)
-	          if (kHeight > 0)
-	            array.cellHeight.setPrevOrNext(modify_prev, kHeight / numRows)
-          }
+        if(copy_to_prev) {
+          array.cellWidth set array.cellWidth.next
+          array.cellHeight set array.cellHeight.next
+        }
 
-          if(copy_to_prev) {
-            array.cellWidth set array.cellWidth.next
-            array.cellHeight set array.cellHeight.next
-          }
-          
-        case _ =>
-      }
+      case _ =>
     }
   }
   
@@ -379,53 +377,51 @@ object ArraySizeButton extends MenuButton {
   }
 
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    if(selectedShape != null) {
-      selectedShape match {
-        case array: Array2D =>
-          val newWidth = selected_shape_first_width + relativeX*2
-          val newHeight = selected_shape_first_height + relativeY*2
-          val numCols = array.numColumns.getPrevOrNext(modify_prev)
-          val numRows = array.numRows.getPrevOrNext(modify_prev)
-          val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
-          val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
+    selectedShape match {
+      case array: Array2D =>
+        val newWidth = selected_shape_first_width + relativeX*2
+        val newHeight = selected_shape_first_height + relativeY*2
+        val numCols = array.numColumns.getPrevOrNext(modify_prev)
+        val numRows = array.numRows.getPrevOrNext(modify_prev)
+        val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
+        val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
 
-          // Add a column
-          if(newWidth/ (numCols + 1) > cellWidth) {
-            array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
-            val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
-            array.cells += newCells
-            for(cell <- newCells) gameEngine.getGame.add(cell)
+        // Add a column
+        if(newWidth/ (numCols + 1) > cellWidth) {
+          array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
+          val newCells = ArrayBuffer.tabulate(numRows) { row => Cell(array, numCols, row) }
+          array.cells += newCells
+          for(cell <- newCells) gameEngine.getGame.add(cell)
 
-          // Remove a column
-          } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
-            array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
-            val deletedColumn = array.cells.remove(array.cells.length - 1)
-            for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
+        // Remove a column
+        } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
+          array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
+          val deletedColumn = array.cells.remove(array.cells.length - 1)
+          for(cell <- deletedColumn) gameEngine.getGame.remove(cell)
+        }
+
+        // Add a line
+        if(newHeight/ (numRows + 1) > cellHeight) {
+          array.numRows.setPrevOrNext(modify_prev, numRows + 1)
+          for((column, i) <- array.cells.zipWithIndex) {
+            val newCell = Cell(array, i, numRows)
+            column += newCell
+            gameEngine.getGame.add(newCell)
           }
 
-          // Add a line
-          if(newHeight/ (numRows + 1) > cellHeight) {
-            array.numRows.setPrevOrNext(modify_prev, numRows + 1)
-            for((column, i) <- array.cells.zipWithIndex) {
-              val newCell = Cell(array, i, numRows)
-              column += newCell
-              gameEngine.getGame.add(newCell)
-            }
+        // Remove a row
+        } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
+          array.numRows.setPrevOrNext(modify_prev, numRows - 1)
+          val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
+          for(cell <- deletedRow) gameEngine.getGame.remove(cell)
+        }
 
-          // Remove a row
-          } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
-            array.numRows.setPrevOrNext(modify_prev, numRows - 1)
-            val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
-            for(cell <- deletedRow) gameEngine.getGame.remove(cell)
-          }
+        if(copy_to_prev) {
+          array.numRows set array.numRows.next
+          array.numColumns set array.numColumns.next
+        }
 
-          if(copy_to_prev) {
-            array.numRows set array.numRows.next
-            array.numColumns set array.numColumns.next
-          }
-
-        case _ =>
-      }
+      case _ =>
     }
   }
 
@@ -457,10 +453,6 @@ object PinButton extends MenuButton {
       }
     }
     hovered = false
-  }
-  
-  override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    // Do nothing
   }
   
   private val nailNoneList = R.drawable.nail :: noneList
