@@ -556,7 +556,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           ))
           
           CustomDialogs.launchChoiceDialog(getContext(), str(R.string.generalize_title, name), choices.toList.map(_._1), { (i: Int) =>
-			      choices(i)._2()
+			      choices(i)._2.apply()
 			    }, { () => })
         case _ => // Nothing to be done
       }
