@@ -35,20 +35,20 @@ trait RulesManager {
   def getIndexByRule(rule: Expr): Int = _rules.indexOf(rule)
   def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
   
-  def getRulesbyObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List())
-  def getRulesbyObject(o: Iterable[GameObject]): Iterable[Expr] = (o flatMap getRulesbyObject)
+  def getRulesByObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List.empty)
+  def getRulesByObject(objects: Iterable[GameObject]): Iterable[Expr] = objects flatMap getRulesByObject
   
   def addRule(r: Expr): Unit = {
-    def addToCategory(category: Category) {
-      for(o<-category.objects) _rulesByObject.getOrElseUpdate(o, MSet()) += r
+    def addToCategory(category: Category) = category.objects foreach { obj =>
+      _rulesByObject.getOrElseUpdate(obj, MSet.empty) += r
     }
-    TreeOps.preTraversal(_ match {
+    TreeOps.preTraversal {
       case ObjectLiteral(o) => _rulesByObject.getOrElseUpdate(o, MSet()) += r
-      case Foreach(category, id, body) => addToCategory(category)
-      case Forall(category, id, body) => addToCategory(category)
-      case Find(category, id, body) => addToCategory(category)
-      case c =>
-    })(r)
+      case Foreach(category, _, _) => addToCategory(category)
+      case Forall(category, _, _) => addToCategory(category)
+      case Find(category, _, _) => addToCategory(category)
+      case _ => //do nothing
+    }(r)
     _rules += r
   }
 }

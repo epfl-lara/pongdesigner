@@ -13,7 +13,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 trait Game extends RulesManager with Context { self => 
-  protected implicit val seflImplicit = self
+  protected implicit val selfImplicit = self
   private implicit val worldManifold = new WorldManifold()
   
   val world: PhysicalWorld

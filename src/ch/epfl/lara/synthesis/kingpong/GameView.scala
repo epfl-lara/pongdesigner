@@ -932,7 +932,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def performSelection(p: Vec2) = {
     val objectsTouched = game.abstractObjectFingerAt(p)
     cv_obj_to_highlight = objectsTouched.toSet
-    val rulesConcerned = game.getRulesbyObject(objectsTouched)
+    val rulesConcerned = game.getRulesByObject(objectsTouched)
     shapeEditor.unselect()
     // The selected shape should be the first after the previousSelectedShape,
     // or the closest else.
@@ -1138,7 +1138,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     // Also add the generalization on rules.
     for(obj <- objectList) {
       val obj_expr = obj.expr
-      for(rule <- game.getRulesbyObject(obj)) {
+      for(rule <- game.getRulesByObject(obj)) {
         if(TreeOps.exists(_ == obj_expr)(rule)) { // We can generalize this rule.
           val text = "Generalize from "+obj.name.get+" to all "+obj.category.name+" the rule:\n"+PrettyPrinter.print(rule)
           val drawable = drw(R.drawable.event_unselected_disambiguate)
