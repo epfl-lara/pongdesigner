@@ -27,17 +27,13 @@ import ch.epfl.lara.synthesis.kingpong.common._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.rules._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
-
-
 
 class GameViewRender(val context: Context) extends ContextUtils {
   import GameView._
   
   private val screenDensity = context.getResources.getDisplayMetrics.density
   
-  private val rectF = new RectF()
   private val paint = new Paint()
   paint.setAntiAlias(true)
   private val paintPrev = new Paint(paint)
@@ -92,8 +88,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
   var rectFData = new RectF(0, 0, 0, 0)
   var rectData = new Rect(0, 0, 0, 0)
   
-  val metrics = new DisplayMetrics();    
-  context.getSystemService(Context.WINDOW_SERVICE).asInstanceOf[WindowManager].getDefaultDisplay().getMetrics(metrics);    
+  val metrics = new DisplayMetrics()
+  context.getSystemService(Context.WINDOW_SERVICE).asInstanceOf[WindowManager].getDefaultDisplay().getMetrics(metrics)
   lazy val button_size:Float = if(5 * 80 * metrics.density >= Math.min(metrics.widthPixels, metrics.heightPixels)) 40 * metrics.density else 80 * metrics.density
   
   private[kingpong] var grid: Grid = new Grid(step=1, offset=0, stroke_width=1, color=0x88000000)

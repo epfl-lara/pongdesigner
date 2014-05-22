@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.objects._
+import ch.epfl.lara.synthesis.kingpong.view.RenderConstants
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
@@ -68,7 +69,7 @@ object ShapeMenu extends MenuCenter {
       case d: SoundTTS =>
         ModifyTextButton.setPos(0, -1)
         //ModifyLanguageButton.setPos(-1, -1)
-        ModifyLanguageButton.setPos(gameEngine.whitePaint, 33f/49f, -1, -1)
+        ModifyLanguageButton.setPos(RenderConstants.whitePaint, 33f/49f, -1, -1)
         ModifyTextButton.visible = true
         ModifyLanguageButton.visible = true
         ModifyLanguageButton.setText(d.language.next)
@@ -94,7 +95,7 @@ object ShapeMenu extends MenuCenter {
     RotateButton.setPos(-1, 1)
     
     RenameButton.setText(selectedShape.name.next)
-    RenameButton.setPos(gameEngine.whitePaint, 33f/49f, 0, top_shift-1)
+    RenameButton.setPos(RenderConstants.whitePaint, 33f/49f, 0, top_shift-1)
 
     if(MoveButton.hovered) {
       for(m <- menus) { m.visible = false }

@@ -380,12 +380,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     eventEditor.unselect()
   }
 
-  var whitePaint = new Paint()
-  whitePaint.setColor(0xFFFFFFFF)
-  whitePaint.setStyle(Paint.Style.FILL_AND_STROKE)
-  whitePaint.setStrokeWidth(1)
-  whitePaint.setAntiAlias(true)
-
   /** The game model currently rendered. */
   private var game: Game = null
   def setGame(g: Game) = {
