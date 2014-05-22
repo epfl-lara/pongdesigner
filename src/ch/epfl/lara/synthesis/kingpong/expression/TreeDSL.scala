@@ -606,7 +606,7 @@ object TreeDSL {
     
     val (nradius, nangle) : (Expr, Expr) = angle match { // By default, if the angle is null, takes the current world gravity.
       case NumericLiteral(0) =>
-        (vecGravity.length(), Math.toDegrees(Math.atan2(vecGravity.y, vecGravity.x)))
+        (vecGravity.length(), Math.atan2(vecGravity.y, vecGravity.x))
       case _ =>
         (radius, angle)
     }

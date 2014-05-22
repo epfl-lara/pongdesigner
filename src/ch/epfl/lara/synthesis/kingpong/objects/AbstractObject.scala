@@ -450,7 +450,7 @@ class Gravity(
     init_radius: Expr,
 	  init_visible: Expr, 
 	  init_color: Expr
-	 ) extends GameObject(init_name) with Movable with Rotationable with ResizableCircular with FixedRectangularContains {
+	 ) extends GameObject(init_name) with Movable with Rotationable with FixedRectangularContains with Visiblable with Colorable with Booleanable {
   
   def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)
@@ -458,6 +458,7 @@ class Gravity(
   val angle = simpleProperty[Float]("angle", init_angle)
   val visible = simpleProperty[Boolean]("visible", init_visible)
   val color = simpleProperty[Int]("color", init_color)
+  val value = simpleProperty[Boolean]("enabled", true)
 
   private val shape = new PolygonShape()
   
@@ -471,26 +472,26 @@ class Gravity(
 
   override val left = namedProperty[Float](
     name = "left",
-    getF = () => Math.min(x.get, xTo.get),
-    nextF = () => Math.min(x.next, xTo.next)
+    getF = () => Math.min(x.get, xTo.get-smallradius.get),
+    nextF = () => Math.min(x.next, xTo.next-smallradius.next)
   )
   
   override val right = namedProperty[Float](
     name = "right",
-    getF = () => Math.max(x.get, xTo.get),
-    nextF = () => Math.max(x.next, xTo.next)
+    getF = () => Math.max(x.get, xTo.get+smallradius.get),
+    nextF = () => Math.max(x.next, xTo.next+smallradius.next)
   )
   
   override val top = namedProperty[Float](
     name = "top",
-    getF = () => Math.min(y.get, yTo.get),
-    nextF = () => Math.min(y.next, yTo.next)
+    getF = () => Math.min(y.get, yTo.get-smallradius.get),
+    nextF = () => Math.min(y.next, yTo.next-smallradius.next)
   )
   
   override val bottom = namedProperty[Float](
     name = "bottom",
-    getF = () => Math.max(y.get, yTo.get),
-    nextF = () => Math.max(y.next, yTo.next)
+    getF = () => Math.max(y.get, yTo.get+smallradius.get),
+    nextF = () => Math.max(y.next, yTo.next+smallradius.next)
   )
   
   val xTo = namedProperty[Float] (

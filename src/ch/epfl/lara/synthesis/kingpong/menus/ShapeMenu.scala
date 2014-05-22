@@ -54,10 +54,13 @@ object ShapeMenu extends MenuCenter {
         IncrementButton.visible = true
         DecrementButton.visible = true
         -1
-      case d: BooleanBox =>
+      case d: Booleanable =>
         BooleanButton.setPos(0, -1)
         BooleanButton.visible = true
-        - 1
+        if(d.isInstanceOf[BooleanBox]) - 1 else { // Gravity
+          BooleanButton.setPos(1, 0)
+          0
+        }
       case d: StringBox =>
         ModifyTextButton.setPos(0, -1)
         ModifyTextButton.visible = true
@@ -228,9 +231,9 @@ object MoveButton extends MenuButton {
       selectedShape match {
         case selectedShape: Movable =>
           selectedShape.x.setPrevOrNext(modify_prev,
-              gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevOrNext(modify_prev) + shiftX, selectedShape.right.getPrevOrNext(modify_prev) + shiftX*/)(points=selected_shape_first_x))
+              gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevOrNext(modify_prev) + shiftX, selectedShape.right.getPrevOrNext(modify_prev) + shiftX*/)(snap_i=selected_shape_first_x))
           selectedShape.y.setPrevOrNext(modify_prev,
-              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevOrNext(modify_prev) + shiftY, selectedShape.bottom.getPrevOrNext(modify_prev) + shiftY*/)(points=selected_shape_first_y))
+              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevOrNext(modify_prev) + shiftY, selectedShape.bottom.getPrevOrNext(modify_prev) + shiftY*/)(snap_i=selected_shape_first_y))
           if(copy_to_prev) {
             selectedShape.x set selectedShape.x.next
             selectedShape.y set selectedShape.y.next
@@ -304,7 +307,7 @@ object SizeButton extends MenuButton {
           val newRadius =selected_shape_first_radius + dr
           val rx = c.x.getPrevOrNext(modify_prev)
           val ry = c.y.getPrevOrNext(modify_prev)
-          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(points=rx+c.radius.getPrevOrNext(modify_prev))-rx))
+          c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevOrNext(modify_prev))-rx))
           if(copy_to_prev) {
             c.radius set c.radius.next
           }
@@ -314,25 +317,41 @@ object SizeButton extends MenuButton {
           val newHeight = selected_shape_first_height + relativeY*2
           val rx = r.x.getPrevOrNext(modify_prev)
           val ry = r.y.getPrevOrNext(modify_prev)
-          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(points=rx+selected_shape_first_width/2)-rx)))
-          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(points=ry+selected_shape_first_height/2)-ry)))
+          r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))
+          r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)-ry)))
           if(copy_to_prev) {
             r.width set r.width.next
             r.height set r.height.next
           }
 
         case array: Array2D =>
+          val rx = array.x.getPrevOrNext(modify_prev)
+          val ry = array.y.getPrevOrNext(modify_prev)
           val newWidth = selected_shape_first_width + relativeX*2
           val newHeight = selected_shape_first_height + relativeY*2
           val numCols = array.numColumns.getPrevOrNext(modify_prev)
           val numRows = array.numRows.getPrevOrNext(modify_prev)
-
-          val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (1, 1))()
-          
-          if (rWidth > 0)
-            array.cellWidth.setPrevOrNext(modify_prev, rWidth / numCols)
-          if (rHeight > 0)
-            array.cellHeight.setPrevOrNext(modify_prev, rHeight / numRows)
+          if(newWidth > 0 && newHeight > 0) {
+	          val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (numCols, numRows))()
+	          // The ratio is kept. Now we try to align the right side or the bottom side with the grid.
+	          val cRight = rx+rWidth/2
+	          val cBottom = ry+rHeight/2
+	          val newRight =  gameEngine.snapX(cRight, cRight - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)
+	          val newBottom = gameEngine.snapX(cBottom, cBottom - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)
+	          
+	          val (kWidth, kHeight) = if(Math.abs(newRight - cRight) < Math.abs(newBottom - cBottom)) {
+	            val nWidth = 2*(newRight-rx)
+	            (nWidth, rHeight*nWidth/rWidth)
+	          } else {
+	            val nHeight = 2*(newBottom-ry)
+	            (rWidth*nHeight/rHeight, nHeight)
+	          }
+	          
+	          if (kWidth > 0)
+	            array.cellWidth.setPrevOrNext(modify_prev, kWidth / numCols)
+	          if (kHeight > 0)
+	            array.cellHeight.setPrevOrNext(modify_prev, kHeight / numRows)
+          }
 
           if(copy_to_prev) {
             array.cellWidth set array.cellWidth.next

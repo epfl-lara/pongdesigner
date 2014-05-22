@@ -200,7 +200,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
 
       o match {
         case o: Gravity =>
-          if(state == Editing) {
+          if(o.visible.get || o.visible.next || state == Editing) {
             drawVelocity(o, o.x.next, o. y.next, o.vectorNext, velocityPaint)
 		        if(o.vectorNext.x != o.vector.x || o.vectorNext.y != o.vector.y) {
 		          drawVelocity(o, o.x.get, o.y.get, o.vector, velocityPaintShaded)

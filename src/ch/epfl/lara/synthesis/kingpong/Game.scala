@@ -19,6 +19,7 @@ trait Game extends RulesManager with Context { self =>
   val world: PhysicalWorld
   var worldgravityangle = 0.0f
   var worldgravityradius = 0.0f
+  var worldgravityenabled = true
   
   // If the time is to be restored at the next step
   var scheduledRestoreTime: Option[Int] = None
@@ -135,10 +136,16 @@ trait Game extends RulesManager with Context { self =>
   
   def updateWorldGravity() {
     if(gravity.nonEmpty &&
-        (gravity.get.angle.get != worldgravityangle || gravity.get.radius.get != worldgravityradius)) {
+        (gravity.get.angle.get != worldgravityangle || gravity.get.radius.get != worldgravityradius || gravity.get.value.get != worldgravityenabled)) {
       worldgravityangle = gravity.get.angle.get
       worldgravityradius = gravity.get.radius.get
-      world.setGravity(gravity.get.vector)
+      worldgravityenabled = gravity.get.value.get
+      if(worldgravityenabled) {
+        world.setGravity(gravity.get.vector)
+      } else {
+        world.setGravity(Vec2(0, 0))
+      }
+      
     }
   }
   

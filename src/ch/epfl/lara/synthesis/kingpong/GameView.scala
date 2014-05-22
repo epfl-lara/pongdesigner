@@ -282,28 +282,46 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /**
    * Snap i to the grid, or others to the grid, or i to points.
-   * @return the new point.
+   * @param i The point to snap to the grid
+   * @param other Other points which could also snap to the grid
+   * @param points Points to which i could also snap to.
+   * @return The new point with the least movement so that either i snaps to the grid, other snaps to the grid or i snaps to a point.
    */
-  def snapX(i: Float, other: Float*)(implicit points: Float*): Float = {
-    val p = grid.snap(i) - i
-    val minDiff = (p /: other) { case (sn, o) => val n = grid.snap(o) - o; if (Math.abs(n) < Math.abs(sn)) n else sn }
-    val minDiff2 = (minDiff /: points) { case (minDiff, o) => val n = o - i; if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+  def snapX(i: Float, other: Float*)(implicit snap_i: Float*): Float = {
+    val minDiff0 = grid.snap(i) - i
+    val minDiff1 = (minDiff0 /: other)  { case (minDiff, o) => val n = grid.snap(o) - o; if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+    val minDiff2 = (minDiff1 /: snap_i) { case (minDiff, o) => val n = o - i;            if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
     i + minDiff2
   }
-  def snapY(i: Float, other: Float*)(implicit points: Float*): Float = {
-    val p = grid.snap(i) - i
-    val minDiff = (p /: other) { case (sn, o) => val n = grid.snap(o) - o; if (Math.abs(n) < Math.abs(sn)) n else sn }
-    val minDiff2 = (minDiff /: points) { case (minDiff, o) => val n = o - i; if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+  /**
+   * Snap i to the grid, or others to the grid, or i to points.
+   * @param i The point to snap to the grid
+   * @param other Other points which could also snap to the grid
+   * @param points Points to which i could also snap to.
+   * @return The new point with the least movement so that either i snaps to the grid, other snaps to the grid or i snaps to a point.
+   */
+  def snapY(i: Float, other: Float*)(implicit snap_i: Float*): Float = {
+    val minDiff0 = grid.snap(i) - i
+    val minDiff1 = (minDiff0 /: other)  { case (minDiff, o) => val n = grid.snap(o) - o; if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
+    val minDiff2 = (minDiff1 /: snap_i) { case (minDiff, o) => val n = o - i;            if (Math.abs(n) < Math.abs(minDiff)) n else minDiff }
     i + minDiff2
   }
   
+  /**
+   * All ratios should be positive
+   */
   def snapRatio(t: (Float, Float), other: (Float, Float)*)(maxAnglDiffe: Float = 5): (Float, Float) = {
     val angle1 = Math.toDegrees(Math.atan2(t._2, t._1))
     val result = ((maxAnglDiffe, angle1, t) /: other) { case (old@(diff, angle, vec), o) =>
       val a = Math.toDegrees(Math.atan2(o._2, o._1))
       val newDiff = Math.min(Math.min(Math.abs(a - angle), Math.abs(a - angle + 360)), Math.abs(a - angle - 360)).toFloat
       if (newDiff < diff) (newDiff, a, o) else old }
-    result._3
+    // It should be wider.
+    if(result._3._1 / result._3._2 > t._1 / t._2) {
+      (t._2 * result._3._1 / result._3._2, t._2)
+    } else {
+      (t._1, t._1 * result._3._2 / result._3._1)
+    }
   }
 
   var gameEngineEditors: List[GameEngineEditor] = _
