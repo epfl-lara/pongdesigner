@@ -202,15 +202,6 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
    */
   lazy val expr: ObjectLiteral = ObjectLiteral(this)
 
-  /**
-   * //MIKAEL add comment
-   */
-  def copyPropertiesFrom(other: GameObject): self.type = {
-    //MIKAEL check if this is always correct
-    (_writableProperties zip other._writableProperties).foreach { case (v1, v2) => v1.set(v2.getExpr) }
-    self
-  }
-  
   /** Get a specific property. */
   def getProperty(property: String): Option[Property[_]] = {
     _propertiesMap.get(property).orElse(_ephemeralPropertiesMap.get(property))
@@ -307,12 +298,14 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   def getCopy(name: String): GameObject = {
-    makecopy(name)
-      .copyPropertiesFrom(this)
-      .setCategory(this.category)
+    val copy = rawCopy(_.getExpr) //TODO change this
+    copy.setCategory(this.category)
+    copy.name.setInit(name)
+    copy.name.set(name)
+    copy
   }
   
-  protected def makecopy(name: String): GameObject
+  protected def rawCopy(f: HistoricalProperty[_] => Expr): GameObject
   
   def selectableBy(xCursor: Float, yCursor: Float):Boolean = false
   def distanceSelection(x: Float, y: Float): Float = Float.MaxValue

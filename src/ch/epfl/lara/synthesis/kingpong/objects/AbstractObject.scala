@@ -87,9 +87,8 @@ class IntBox(
    ) extends Box[Int](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
                       init_value, init_visible, init_color) {
   
-  def makecopy(name: String): GameObject = {
-    new IntBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
-               value.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new IntBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
   }
 }
 
@@ -107,9 +106,8 @@ class StringBox(
    ) extends Box[String](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
                       init_value, init_visible, init_color) with ValueTextable {
   
-  def makecopy(name: String): GameObject = {
-    new StringBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
-                  value.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new StringBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
   }
 }
 
@@ -127,9 +125,8 @@ class BooleanBox(
    ) extends Box[Boolean](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
                          init_value, init_visible, init_color) with Booleanable {
   
-  def makecopy(name: String): GameObject = {
-    new BooleanBox(game, name, x.init, y.init, angle.init, width.init,  height.init, 
-                  value.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new BooleanBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
   }
 }
 
@@ -209,8 +206,8 @@ class Joystick(
     shape
   }
 
-  def makecopy(name: String): GameObject = {
-    new Joystick(game, name, x.init, y.init, angle.init, radius.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Joystick(game, f(name), f(x), f(y), f(angle), f(radius), f(visible), f(color))
   }
 }
 
@@ -273,9 +270,8 @@ class RandomGenerator(
     shape
   }
 
-  def makecopy(name: String): GameObject = {
-    new RandomGenerator(game, name, x.init, y.init, angle.init, width.init, height.init, 
-        minValue.init, maxValue.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new RandomGenerator(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(minValue), f(maxValue), f(visible), f(color))
   }
 }
 
@@ -354,9 +350,8 @@ class Array2D(
     }
   }
   
-  protected def makecopy(name: String) = {
-    new Array2D(game, name, x.init, y.init, visible.init, color.init,
-                cellWidth.init, cellHeight.init, numColumns.init, numRows.init)
+  protected def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Array2D(game, f(name), f(x), f(y), f(visible), f(color), f(cellWidth), f(cellHeight), f(numColumns), f(numRows))
   }
 }
 
@@ -433,10 +428,8 @@ case class Cell(
   }
     
   //TODO we cannot copy a cell!!!
-  protected def makecopy(name: String) = ???
+  protected def rawCopy(f: HistoricalProperty[_] => Expr) = ???
 }
-
-
 
 /**
  * Gravity in the game.
@@ -556,7 +549,7 @@ class Gravity(
     shape
   }
 
-  def makecopy(name: String): GameObject = {
-    new Gravity(game, name, x.init, y.init, angle.init, radius.init, visible.init, color.init)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Gravity(game, f(name), f(x), f(y), f(angle), f(radius), f(visible), f(color))
   }
 }

@@ -1,19 +1,15 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import scala.collection.mutable.ArrayBuffer
+
 import org.jbox2d.collision.shapes.PolygonShape
-import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.collision.shapes.Shape
+
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
-import ch.epfl.lara.synthesis.kingpong.rules.Events
-import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees
-
 
 /**
  * An element drawn at a specific time.
@@ -25,11 +21,10 @@ case class DrawingElement(time: Int, fromx: Float, fromy: Float, tox: Float, toy
   var nextTan: (Float, Float) = _
 }
 
-
 /**
  * Provides time-dependent drawing facilities for presentations.
  */
-case class DrawingObject(
+class DrawingObject(
     val game: Game,
     init_name: Expr, 
     init_x: Expr,
@@ -51,15 +46,14 @@ case class DrawingObject(
   
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
-  //val width_drawing= simpleProperty[Float]("width_drawing", 0.02f)
-  
+
   val stroke_width = simpleProperty[Float]("stroke_width", init_stroke_width)
   
   val width_drawing = aliasProperty (
     name  = "bottom", 
-    getF  = () => stroke_width.get/(width.get * game.pixelsByUnit),
-    nextF = () => stroke_width.next/(width.next * game.pixelsByUnit),
-    exprF = () => stroke_width.expr/(width.expr * MethodCall("gamePixelsPerUnit", ObjectLiteral(this)::Nil))
+    getF  = () => stroke_width.get / (width.get * game.pixelsByUnit),
+    nextF = () => stroke_width.next / (width.next * game.pixelsByUnit),
+    exprF = () => stroke_width.expr / (width.expr * MethodCall("gamePixelsPerUnit", expr :: Nil))
   )
   
   val color_drawing= simpleProperty[Int]("color_drawing", init_color_drawing)
@@ -113,7 +107,6 @@ case class DrawingObject(
   }
     
   val defaultRule = { (g: Game) =>
-    import g._
     import Trees._
     fingerMoveOver(this) { move =>
       whenever(move._2 in this) {
@@ -121,8 +114,7 @@ case class DrawingObject(
       }
     }
   }
-  
-  
+
   // --------------------------------------------------------------------------
   // Utility functions
   // --------------------------------------------------------------------------  
@@ -140,10 +132,7 @@ case class DrawingObject(
     shape
   }
 
-  //def contains(pos: Vec2) = getAABB.contains(pos)
-  
-  def makecopy(name: String): GameObject = {
-    this.copy(init_name = name)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new DrawingObject(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(stroke_width), f(color_drawing))
   }
 }
-

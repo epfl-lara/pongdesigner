@@ -1,20 +1,15 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
+import scala.beans.BeanProperty
+import scala.collection.mutable.ArrayBuffer
+
 import org.jbox2d.collision.shapes.PolygonShape
-import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.collision.shapes.Shape
+
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
-import ch.epfl.lara.synthesis.kingpong.rules.Events
-import scala.collection.mutable.ArrayBuffer
-import ch.epfl.lara.synthesis.kingpong.expression.Trees
-import scala.beans.BeanProperty
-
 
 /**
  * An element drawn at a specific time.
@@ -75,14 +70,10 @@ case class SoundRecorded(var recorder: SoundRecorder,
   }
     
   //TODO we cannot copy a cell!!!
-  protected def makecopy(name: String) = ???
+  protected def rawCopy(f: HistoricalProperty[_] => Expr) = ???
 }
 
-
-/**
- * Provides time-dependent drawing facilities for presentations.
- */
-case class SoundRecorder (
+class SoundRecorder (
     val game: Game,
     init_name: Expr, 
     init_x: Expr,
@@ -101,14 +92,11 @@ case class SoundRecorder (
       with Directionable with FixedRectangularContains {
   
   @BeanProperty lazy val recordings = ArrayBuffer.tabulate[SoundRecorded](0)(n => null)
-  //private val mSounds = ArrayBuffer[SoundElement]() // Records all sounds.
-  
+
   val width = simpleProperty[Float]("width", init_width)
   val height = simpleProperty[Float]("height", init_height)
   val recording = simpleProperty[Boolean]("recording", init_recording)
-  
-  
-  
+
   def numRecords = recordings.length
   
   // --------------------------------------------------------------------------
@@ -128,10 +116,7 @@ case class SoundRecorder (
     shape
   }
 
-  //def contains(pos: Vec2) = getAABB.contains(pos)
-  
-  def makecopy(name: String): GameObject = {
-    this.copy(init_name = name)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new SoundRecorder(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(recording))
   }
 }
-

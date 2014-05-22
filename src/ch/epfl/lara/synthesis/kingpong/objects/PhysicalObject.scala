@@ -260,10 +260,9 @@ class Rectangle (
 
   addToWorld()
 
-  def makecopy(name: String): GameObject = {
-    new Rectangle(game, name, x.init, y.init, angle.init, width.init, height.init, visible.init,
-                 velocity.init, angularVelocity.init, density.init, friction.init, restitution.init, linearDamping.init,
-                 fixedRotation.init, color.init, sensor.init, tpe)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Rectangle(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(velocity), f(angularVelocity),
+                  f(density), f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe)
   }
   
   override def contains(pos: Vec2) = super[AngularRectangularContains].contains(pos)
@@ -357,10 +356,9 @@ class Character (
 
   addToWorld()
 
-  def makecopy(name: String): GameObject = {
-    new Character(game, name, x.init,  y.init, angle.init, width.init, height.init, visible.init,
-                  velocity.init, angularVelocity.init, density.init, friction.init,  restitution.init, linearDamping.init,
-                  fixedRotation.init, color.init, tpe)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Character(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(velocity), f(angularVelocity),
+                  f(density), f(friction),  f(restitution), f(linearDamping), f(fixedRotation), f(color), tpe)
   }
 }
 
@@ -410,9 +408,8 @@ class Circle(
 
   addToWorld()
 
-  def makecopy(name: String): GameObject = {
-    new Circle(game, name, x.init, y.init, radius.init, visible.init, velocity.init, angularVelocity.init,
-               density.init, friction.init, restitution.init, linearDamping.init, fixedRotation.init,
-               color.init, sensor.init, tpe)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new Circle(game, f(name), f(x), f(y), f(radius), f(visible), f(velocity), f(angularVelocity), f(density),
+               f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe)
   }
 }

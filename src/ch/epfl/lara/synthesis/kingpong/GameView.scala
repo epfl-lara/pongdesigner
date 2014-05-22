@@ -29,7 +29,6 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
-import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
@@ -66,6 +65,7 @@ import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
+import ch.epfl.lara.synthesis.kingpong.view.BitmapUtils
 
 
 object GameView {
@@ -1291,49 +1291,24 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /**
    * Sets an image for the selected shape
-   * @param i The Bitmap to apply to the shape.
+   * @param srcBitmap The Bitmap to apply to the shape.
    */
-  def setImageSelectedShape(i: Bitmap) = {
+  def setImageSelectedShape(srcBitmap: Bitmap) = {
     if (shapeEditor.selectedShape != null) {
       shapeEditor.selectedShape match {
         case selectedShape: Colorable =>
-          val finalbitmap = selectedShape match {
-            case c: Circle =>
-              getRoundedShape(i)
-            case _ =>
-              i
+          val finalBitmap = selectedShape match {
+            case _: Circle => BitmapUtils.toRoundedShape(srcBitmap)
+            case _         => srcBitmap
           }
           val id = Stream.from(0).find(i => !(bitmaps contains i)).get
-          bitmaps(id) = new BitmapDrawable(getResources(), finalbitmap)
+          bitmaps(id) = new BitmapDrawable(getResources(), finalBitmap)
           selectedShape.color setNext id
         case _ =>
       }
     }
   }
 
-  /**
-   * Making image in circular shape
-   * Source: http://www.androiddevelopersolution.com/2012/09/crop-image-in-circular-shape-in-android.html
-   */
-  def getRoundedShape(scaleBitmapImage: Bitmap): Bitmap = {
-    val targetSize = Math.min(scaleBitmapImage.getWidth, scaleBitmapImage.getHeight)
-    val targetBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
-
-    val canvas = new Canvas(targetBitmap)
-    val path = new Path()
-    path.addCircle((targetSize.toFloat - 1) / 2,
-      (targetSize.toFloat - 1) / 2,
-      targetSize / 2,
-      Path.Direction.CCW)
-
-    canvas.clipPath(path)
-    val sourceBitmap = scaleBitmapImage
-    canvas.drawBitmap(sourceBitmap,
-      new Rect(0, 0, sourceBitmap.getWidth(), sourceBitmap.getHeight()),
-      new Rect(0, 0, targetSize, targetSize), null)
-    targetBitmap
-  }
-  
   /**
    * Credits to:
    * https://gist.github.com/viktorklang/5409467

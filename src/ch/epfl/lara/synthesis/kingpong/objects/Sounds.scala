@@ -1,23 +1,14 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
 import org.jbox2d.collision.shapes.PolygonShape
-import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.collision.shapes.Shape
+
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
-import ch.epfl.lara.synthesis.kingpong.rules.Events
-import scala.collection.mutable.ArrayBuffer
-import ch.epfl.lara.synthesis.kingpong.expression.Trees
 
-/**
- * Provides time-dependent drawing facilities for presentations.
- */
-case class SoundTTS (
+class SoundTTS (
     val game: Game,
     init_name: Expr, 
     init_x: Expr,
@@ -44,14 +35,7 @@ case class SoundTTS (
   
   val time = simpleProperty[Int]("time", init_time)
   val played = simpleProperty[Boolean]("played", false)
-  
-  /*lazy val defaultRule = {
-    whenever(!played && time < MethodCall("time", Nil))(
-      MethodCall("read", List(language.expr, text.expr)),
-      played := false
-    )
-  }*/
-  
+
   // --------------------------------------------------------------------------
   // Utility functions
   // --------------------------------------------------------------------------  
@@ -69,10 +53,8 @@ case class SoundTTS (
     shape
   }
 
-  //def contains(pos: Vec2) = getAABB.contains(pos)
-  
-  def makecopy(name: String): GameObject = {
-    this.copy(init_name = name)
+  def rawCopy(f: HistoricalProperty[_] => Expr) = {
+    new SoundTTS(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(language),
+                 f(value), f(time))
   }
 }
-
