@@ -163,4 +163,29 @@
     <string name="generalize_condition">All %1$s should be true.</string>
     <string name="generalize_modification">Change %1$s for all %1$s.</string>
     <string name="generalize_global">Apply this rule for all shapes similar to %1$s.</string>
+    
+    <string name="set_restitution_title">Set restitution</string>
+    <string-array name="restitution_possibilities">
+        <item>Custom&#8230;</item>
+        <item>None (0)</item>
+        <item>Small (0.5)</item>
+        <item>Middle (0.5)</item>
+        <item>Elastic (1)</item>
+    </string-array>
+    <string name="set_friction_title">Set friction</string>
+    <string-array name="friction_possibilities">
+        <item>Custom&#8230;</item>
+        <item>Slipery (0)</item>
+        <item>Small (0.1)</item>
+        <item>Middle (0.5)</item>
+        <item>Sticky (1)</item>
+    </string-array>
+    <string name="set_linear_damping_title">Set linear damping</string>
+    <string-array name="linear_damping_possibilities">
+        <item>Custom&#8230;</item>
+        <item>None (0)</item>
+        <item>Small (0.5)</item>
+        <item>Middle (1)</item>
+        <item>Big (2)</item>
+    </string-array>
 </resources>

@@ -1,4 +1,4 @@
-package ch.epfl.lara.synthesis.kingpong.common
+package ch.epfl.lara.synthesis.kingpong
 
 import android.content.Context
 import android.widget.EditText
@@ -10,6 +10,7 @@ import android.view.View
 import android.view.View.MeasureSpec
 import android.widget.TextView
 import android.content.DialogInterface
+import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 
 object CustomDialogs {
   /**
@@ -22,8 +23,9 @@ object CustomDialogs {
       title: String,
       message: String,
       needInput: Boolean,
-      funcOK: String => Unit,
-      funcCanceled: String => Unit) {
+      funcOK: String => Any,
+      funcCanceled: String => Any,
+      defaultInput: =>String = "") {
     val alert = new AlertDialog.Builder(context)
 
     alert.setTitle(title)
@@ -32,6 +34,7 @@ object CustomDialogs {
     // Set an EditText view to get user input 
     val input = if(needInput) {
       val input = new EditText(context)
+      input.setText(defaultInput)
       alert.setView(input)
       input
     } else null
@@ -55,7 +58,7 @@ object CustomDialogs {
    * The array is supplied as a resource integer.
    * If the first value is chosen, opens a custom dialog to read a custom value entered by the user.
    **/
-  def launchChoiceDialogWithCustomchoice(context: Context, title: String, array: Int, funcOK: String => Unit, funcCanceled: () => Unit) {
+  def launchChoiceDialogWithCustomchoice(context: Context, title: String, array: Int, funcOK: String => Any, funcCanceled: () => Unit, defaultForCustom: => String = "") {
     val alert = new AlertDialog.Builder(context)
 
     alert.setTitle(title)
@@ -65,7 +68,7 @@ object CustomDialogs {
          // of the selected item
          val string_array = context.getResources().getStringArray(array)
          if(which == 0) {
-           launchOKCancelDialog(context, title, "", true, funcOK, (_ => funcCanceled())) // the user clicked on custom
+           launchOKCancelDialog(context, title, "", true, funcOK, (_ => funcCanceled()), defaultForCustom) // the user clicked on custom
          } else {
            funcOK(string_array(which))
          }
@@ -79,7 +82,7 @@ object CustomDialogs {
    * The array is supplied as a resource integer.
    * If the first value is chosen, opens a custom dialog to read a custom value entered by the user.
    **/
-  def launchChoiceDialogWithCustomchoice(context: Context, title: String, string_array: List[CharSequence], funcOK: String => Unit, funcCanceled: () => Unit) {
+  def launchChoiceDialogWithCustomchoice(context: Context, title: String, string_array: List[CharSequence], funcOK: String => Any, funcCanceled: () => Unit) {
     val alert = new AlertDialog.Builder(context)
 
     alert.setTitle(title)
@@ -262,5 +265,5 @@ object CustomDialogs {
       }
     })
     alert.show()
-  }*/
+  } */
 }

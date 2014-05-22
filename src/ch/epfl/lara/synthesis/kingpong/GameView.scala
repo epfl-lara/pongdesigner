@@ -395,6 +395,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setGame(g: Game) = {
     game = g
     game.setInstantProperties(state == Editing)
+    shapeEditor.selectedShape = null
   }
   def getGame() = game
   def hasGame(): Boolean = game != null
@@ -580,43 +581,90 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
     }
   }
+  
+  /** Extracts the first float of a string */
+  implicit class RichString(s: String) {
+    val floatRegexp = """(-?\d+(?:\.\d*)?(?:(?:e|E)-?\d+)?|-?\.(?:\d+)(?:(?:e|E)-?\d+)?)""".r
+    def floatOrElse(d: Float) = try { (floatRegexp findFirstIn s) match { case Some(r) => r.toFloat case None => d}} catch { case _: Exception => d }
+  }
+  
+  def onCodeSelectionChanged(start: Int, end: Int) = {
+    if (cv_mapping_code != null) {
+      cv_mapping_code.get(start) match {
+        case Some(category) if category != null =>
+          cv_obj_to_highlight = category.flatMap(_.objects).toSet
+        case Some(_) =>
+          cv_obj_to_highlight = Set.empty
+        case None =>
+          cv_obj_to_highlight = Set.empty
+      }
+      cv_mapping_properties.get(start) match {
+        case Some(prop) =>
+          prop.name match {
+            case "color" => // TODO : Invoke color picker
+            case "restitution" =>
+              prop match {
+                case prop: RWProperty[Float] =>
+                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+	                  Str(R.string.set_restitution_title), R.array.restitution_possibilities,
+	                  (res: String) => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  , { () => 
+	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+                case _ =>
+              }
+             
+            case "friction" =>
+              prop match {
+                case prop: RWProperty[Float] =>
+                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+	                  Str(R.string.set_friction_title), R.array.friction_possibilities,
+	                  (res: String)  => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  , { () => 
+	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+                case _ =>
+              }
+            case "linear-damping" =>
+              prop match {
+                case prop: RWProperty[Float] =>
+                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+	                  Str(R.string.set_linear_damping_title), R.array.linear_damping_possibilities,
+	                  (res: String)  => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  , { () => 
+	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+                case _ =>
+              }
+            case _ =>
+          }
+        case None =>
+      }
+    }
+    if (cv_mapping_consts != null) {
+      cv_mapping_consts.get(start) match {
+        case Some((constLiteral, mainTree)) =>
+          // Find the tree in which this literal is
+          println(s"Found const literal: $constLiteral")
+          val tree = cv_mapping_trees(start).lastOption
+          println(s"The rule is: $tree")
+          cv_constToModify = Some(constLiteral)
+          cv_constToModifyInitial = Some(constLiteral)
+          cv_treeContainingConst = Some(mainTree)
+          cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
+          mCvMapping.mConstantsPos.get(start) match {
+            case Some((a, b)) =>
+              cv_constToModifyStart = a
+              cv_constToModifyEnd = b
+            case None =>
+          }
+        case None =>
 
+      }
+    }
+    
+  }
+  
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
     this.codeview = code
-    codeview.setOnSelectionChangedListener({
-      case (start, end) =>
-        if (cv_mapping_code != null) {
-          cv_mapping_code.get(start) match {
-            case Some(category) if category != null =>
-              cv_obj_to_highlight = category.flatMap(_.objects).toSet
-            case Some(_) =>
-              cv_obj_to_highlight = Set.empty
-            case None =>
-              cv_obj_to_highlight = Set.empty
-          }
-        }
-        if (cv_mapping_consts != null) {
-          cv_mapping_consts.get(start) match {
-            case Some((constLiteral, mainTree)) =>
-              // Find the tree in which this literal is
-              println(s"Found const literal: $constLiteral")
-              val tree = cv_mapping_trees(start).lastOption
-              println(s"The rule is: $tree")
-              cv_constToModify = Some(constLiteral)
-              cv_constToModifyInitial = Some(constLiteral)
-              cv_treeContainingConst = Some(mainTree)
-              cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
-              mCvMapping.mConstantsPos.get(start) match {
-                case Some((a, b)) =>
-                  cv_constToModifyStart = a
-                  cv_constToModifyEnd = b
-                case None =>
-              }
-            case None =>
-
-          }
-        }
-    })
+    codeview.setOnSelectionChangedListener(onCodeSelectionChanged(_, _))
   }
 
   /**

@@ -219,6 +219,7 @@ trait PrettyPrinterExtendedTypical {
     def +<(other: String, start: Property[_]): StringMaker = {
       (this open start) + other
     }
+    /** Add a comment to the code, to be colored in another color. */
     def +#<(comment: String): StringMaker = {
       (this open comment)
     }
@@ -253,10 +254,11 @@ trait PrettyPrinterExtendedTypical {
   /**
    * Print the definition of a set of game objects.
    */
-  val accepted_properties = List("name", "x", "y", "radius", "width", "height", "velocity", "color", "visible")
+  val accepted_properties = List("x", "y", "radius", "width", "height", "velocity", "color", "visible", "friction", "restitution", "linear-damping", "value", "language", "text")
   def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker()) = {
     val ending = printIterable[GameObject](c, objects, { case (c, obj) =>
-      val e = c + obj.getClass.getName + "(" + obj.category + ")(" + LF
+      val name = obj.name.get
+      val e = c + "val " + name + "=" + obj.getClass.getName.replaceAll(""".*\.""", "") + LF + "  category=" + obj.category + LF
       val delimiter = "  " andThen (LF + "  ")
       val e1 = (e /: accepted_properties) { case (e, name) => obj.getProperty(name) match {
         case Some(prop) => 
@@ -265,7 +267,7 @@ trait PrettyPrinterExtendedTypical {
           e
       }}
         // or  e +#< name +< (prop.get.toString, prop) +>(prop) +#>
-      e1 + ")"
+      e1
     })
     ending + LF
   }
