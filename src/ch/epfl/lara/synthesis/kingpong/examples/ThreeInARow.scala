@@ -71,6 +71,7 @@ class ThreeInARow extends Game {
         piece.name := "still",
         copy(piece) { clone => Seq(
           clone.name := "piece",
+          clone.velocity := Vec2(0, 0),
           let("col", random.value) { col => Seq(
             clone.x := gameboard.cell(col, 0).x, 
             clone.y := gameboard.cell(col, 0).y
