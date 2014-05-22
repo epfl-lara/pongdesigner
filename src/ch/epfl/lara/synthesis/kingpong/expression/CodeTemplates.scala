@@ -26,7 +26,7 @@ object CodeTemplates extends CodeHandler {
     lazy val integers: Traversable[IntBox] = objects.collect{ case b: IntBox => b}
     lazy val texts: Traversable[ValueTextable] = objects.collect{ case b: ValueTextable => b}
     lazy val times: Traversable[Timeable] = objects.collect{ case b: Timeable => b}
-    lazy val booleans: Traversable[Box[Boolean]] = objects.collect{ case b: BooleanBox => b }
+    lazy val booleans: Traversable[Booleanable] = objects.collect{ case b: Booleanable => b }
     lazy val rectangulars: Traversable[Rectangular] = objects.collect{ case b: Rectangular => b }
     lazy val circles: Traversable[Circular] = objects.collect{ case b: Circular => b }
     lazy val positionables: Traversable[Positionable] = objects.collect{ case b: Positionable => b }
@@ -243,6 +243,10 @@ object CodeTemplates extends CodeHandler {
   trait TemplateRectangular extends Template[Rectangular] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Rectangular]
   }
+
+  trait TemplateBooleanable extends Template[Booleanable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Booleanable]
+  }
   
   trait TemplateOtherObject[T <: GameObject] extends TemplateOther[T, GameObject] {
     def others(implicit ctx: TemplateContext) = ctx.objects
@@ -274,6 +278,10 @@ object CodeTemplates extends CodeHandler {
   
   trait TemplateOtherCell[T <: GameObject] extends TemplateOther[T, Cell] {
     def others(implicit ctx: TemplateContext) = ctx.cells
+  }
+
+  trait TemplateOtherBooleanable[T <: GameObject] extends TemplateOther[T, Booleanable] {
+    def others(implicit ctx: TemplateContext) = ctx.booleans
   }
   
   trait TemplateOtherPairObject[T <: GameObject] extends TemplateOtherPair[T, GameObject] {
@@ -1189,8 +1197,8 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: Timeable)(implicit ctx: TemplateContext) = obj.time.get != obj.time.next
     def priority(obj: Timeable)(implicit ctx: TemplateContext) = 10
     val templates = List(
-        TTimeAbsolute,
-        TTimeRepeat
+      TTimeAbsolute,
+      TTimeRepeat
     )
   }
   
@@ -1297,16 +1305,62 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: Circular)(implicit ctx: TemplateContext) = obj.radius.get != obj.radius.next
     def priority(obj: Circular)(implicit ctx: TemplateContext) = 10
     val templates = List(
-        TRadiusRelativePlus, 
-        TRadiusRelativeTimes,
-        TRadiusAbsolute,
-        //TRadiusSwitch,
-        TRadiusMoveX,
-        TRadiusMoveX_rev,
-        TRadiusMoveY,
-        TRadiusMoveY_rev
+      TRadiusRelativePlus,
+      TRadiusRelativeTimes,
+      TRadiusAbsolute,
+      //TRadiusSwitch,
+      TRadiusMoveX,
+      TRadiusMoveX_rev,
+      TRadiusMoveY,
+      TRadiusMoveY_rev
     )
     // def comment   = s"Possible radius changes for ${shape.name.next}"
+  }
+
+
+  object TBooleanAbsolute extends TemplateSimple[Booleanable] with TemplateBooleanable {
+    def result(obj: Booleanable)(implicit ctx: TemplateContext) = {
+      val expr = obj.value := obj.value.next
+      Some(expr.setPriority(10).setComment(comment(obj)))
+    }
+
+    def comment(obj: Booleanable)(implicit ctx: TemplateContext) =
+      s"Change the boolean value of ${obj.name.next} absolutely."
+  }
+
+  object TBooleanToggle extends TemplateSimple[Booleanable] with TemplateBooleanable {
+    def result(obj: Booleanable)(implicit ctx: TemplateContext) = {
+      val expr = obj.value := !obj.value
+      Some(expr.setPriority(9).setComment(comment(obj)))
+    }
+
+    def comment(obj: Booleanable)(implicit ctx: TemplateContext) =
+      s"Toggle the boolean value of ${obj.name.next}."
+  }
+
+  object TBooleanCopy extends TemplateOtherBooleanable[Booleanable] with TemplateBooleanable {
+    def result(obj: Booleanable, other: Booleanable)(implicit ctx: TemplateContext) = {
+      if (obj.value.next == other.value.get) {
+        val expr = obj.value := other.value
+        Some(expr.setPriority(8).setComment(comment(obj, other)))
+      } else {
+        None
+      }
+    }
+
+    def comment(obj: Booleanable, other: Booleanable)(implicit ctx: TemplateContext) =
+      s"Copy the boolean value of ${other.name.next} in ${obj.name.next}."
+  }
+
+
+  object TBoolean extends TemplateParallel[Booleanable] with TemplateBooleanable {
+    def condition(obj: Booleanable)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
+    def priority(obj: Booleanable)(implicit ctx: TemplateContext) = 10
+    val templates = List(
+      TBooleanAbsolute,
+      TBooleanToggle,
+      TBooleanCopy
+    )
   }
   
   /* Array templates */
@@ -1356,17 +1410,18 @@ object CodeTemplates extends CodeHandler {
     def condition(obj: GameObject)(implicit ctx: TemplateContext) = true
     def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
     val templates = List(
-        TXY,
-        TAngle,
-        //TVelocity,
-        TColor,
-        TVisible,
-        //IfWidth(TWidth),
-        //IfHeight(THeight),
-        TValue,
-        TText,
-        TRadius,
-        TTime
+      TXY,
+      TAngle,
+      //TVelocity,
+      TColor,
+      TVisible,
+      //IfWidth(TWidth),
+      //IfHeight(THeight),
+      TValue,
+      TText,
+      TRadius,
+      TBoolean,
+      TTime
     )
     //def comment   = s"The changes for shape ${shape.name.next}"
   }
