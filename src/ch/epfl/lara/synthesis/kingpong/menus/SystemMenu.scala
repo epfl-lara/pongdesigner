@@ -123,7 +123,6 @@ object CopyButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val freshName = gameEngine.getGame.getNewName(selectedShape.name.get)
     val fresh = selectedShape.getCopy(freshName)
-    fresh.creationTime.setInit(gameEngine.getGame.time)
     gameEngine.getGame.add(fresh)
       
     hovered = false

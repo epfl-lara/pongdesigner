@@ -125,8 +125,14 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   /** Save the current state to the history. */
   def save(t: Int) = _historicalProperties.foreach { _.save(t) }
 
+  //TODO In the restore function, we test if the object exists at time - 1.
+  //     This means the creation time is NOT included in the history to be consistent with the initial time of -1.
+  //     We could change this behaviour in the future...
+
   /** Restore the state from the specified discrete time. */
-  def restore(t: Int) = _historicalProperties.foreach { _.restore(t) }
+  def restore(t: Int) = if (existsAt(t - 1)) {
+    _historicalProperties.foreach { _.restore(t) }
+  }
 
   /** Clear the history of this object. */
   def clear(from: Int) = _historicalProperties.foreach { _.clear(from) }

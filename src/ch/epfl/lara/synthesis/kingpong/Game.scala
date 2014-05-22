@@ -161,9 +161,9 @@ trait Game extends RulesManager with Context { self =>
   }
 
   def add(o: GameObject) = {
+    o.creationTime.setInit(time)
     o.reset(interpreter)
     o.flush()
-    o.creationTime.set(time)
     _objects += o
     o match {
       case o:Gravity =>
