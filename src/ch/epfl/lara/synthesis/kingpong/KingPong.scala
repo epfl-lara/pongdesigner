@@ -357,6 +357,8 @@ class KingPong extends Activity
             CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
                 { _ =>
                   mGameView.setGame(new TestGame())
+                  time_button.setImageDrawable(timeButtonPlay)
+                  mTts.stop()
                   mGameView.backToBeginning()
                 },
                 { _ => }
@@ -424,6 +426,7 @@ class KingPong extends Activity
 
   private def onBackButtonClick() = {
     time_button.setImageDrawable(timeButtonPlay)
+    mTts.stop()
     mGameView.backToBeginning()
   }
   
