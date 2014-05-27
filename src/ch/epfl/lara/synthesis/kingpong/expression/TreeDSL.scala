@@ -501,7 +501,11 @@ object TreeDSL {
       color: Expr = category.color)(implicit game: Game): Array2D = {
     val obj = new Array2D(game, name, x, y, visible, color, cellWidth, cellHeight, columns, rows)
     obj.setCategory(category)
-    val cellCategory = Category("Cells of "+obj.name.get)()
+    val categoryName = name match {
+      case StringLiteral(s) => "Cells of " + s
+      case _ => category.name
+    }
+    val cellCategory = Category(categoryName)()
     game.add(obj)
     obj.cells.foreach(_ foreach { cell =>
       game.add(cell)

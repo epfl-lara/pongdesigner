@@ -346,7 +346,7 @@ object TreeOps {
       e
     } else {
       val cat = obj.category
-      val id = FreshIdentifier(cat.name)
+      val id = FreshIdentifier(Option(cat.name).map(_.replaceAll("""\b(\w)\w*\b""", """$1""").replaceAll(" ", "").toLowerCase()).getOrElse("a"))
       val body = replace(Map(ObjectLiteral(obj) -> Variable(id)), e)
       Foreach(cat, id, body)
     }
