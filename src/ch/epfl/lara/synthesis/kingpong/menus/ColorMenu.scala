@@ -92,15 +92,7 @@ class ColorCircleMenu extends CustomMenu {
       if(selectedShape != null) {
         selectedShape match {
           case selectedShape: Colorable =>
-            if(MenuOptions.modify_prev) {
-              selectedShape.color.set(color)
-            } else {
-              selectedShape.color.setNext(color)
-            }
-            if(copy_to_prev) {
-              selectedShape.color.set(selectedShape.color.next)
-            }
-            
+            selectedShape.color.setPrevNext(color)
           case _ =>
         }
       } else {
@@ -143,15 +135,6 @@ class ImagePickerMenu extends MenuButton {
       if(selectedShape != null) {
         selectedShape match {
           case selectedShape: Colorable =>
-            if(MenuOptions.modify_prev) {
-              //selectedShape.color.set(color)
-            } else {
-              //selectedShape.color.setNext(color)
-            }
-            if(copy_to_prev) {
-              //selectedShape.color.set(selectedShape.color.next)
-            }
-            
           case _ =>
         }
       } else {

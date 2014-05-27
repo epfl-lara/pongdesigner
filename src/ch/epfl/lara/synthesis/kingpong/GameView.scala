@@ -339,15 +339,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   var mRuleState = STATE_MODIFYING_GAME
   def setModeSelectCategory() = {
     mRuleState = STATE_MODIFYING_CATEGORY
-    MenuOptions.copy_to_prev = true
-    MenuOptions.modify_prev = false
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
   }
 
   /** Switches the current mode to selecting effects */
   def setModeSelectEffects(): Unit = {
     mRuleState = STATE_SELECTING_EFFECTS
-    MenuOptions.copy_to_prev = false
-    MenuOptions.modify_prev = false
+    MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT
     game.setInstantProperties(false)
     Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
   }
@@ -356,8 +354,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeSelectEvents() = {
     mRuleState = STATE_SELECTING_EVENTS
     gameEngineEditors foreach (_.unselect())
-    MenuOptions.modify_prev = false // irrelevant
-    MenuOptions.copy_to_prev = true // irrelevant
+    MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT // irrelevant
     game.setInstantProperties(true)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_maker))
   }
@@ -365,8 +362,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Switches the current mode to the global modification of the game */
   def setModeModifyGame(resetView: Boolean = true) {
     mRuleState = STATE_MODIFYING_GAME
-    MenuOptions.modify_prev = false
-    MenuOptions.copy_to_prev = true
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
     game.setInstantProperties(true)
     game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
@@ -588,9 +584,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 case prop: RWProperty[Float] =>
                    CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
 	                  Str(R.string.set_restitution_title), R.array.restitution_possibilities,
-	                  (res: String) => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  (res: String) => prop.setPrevNext(res floatOrElse prop.getPrevNext)
 	                  , { () => 
-	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+	                  }, prop.getPrevNext.toString)
                 case _ =>
               }
              
@@ -599,9 +595,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 case prop: RWProperty[Float] =>
                    CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
 	                  Str(R.string.set_friction_title), R.array.friction_possibilities,
-	                  (res: String)  => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext)
 	                  , { () => 
-	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+	                  }, prop.getPrevNext.toString)
                 case _ =>
               }
             case "linear-damping" =>
@@ -609,9 +605,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 case prop: RWProperty[Float] =>
                    CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
 	                  Str(R.string.set_linear_damping_title), R.array.linear_damping_possibilities,
-	                  (res: String)  => prop.setPrevOrNext(MenuOptions.modify_prev, res floatOrElse prop.getPrevOrNext(MenuOptions.modify_prev))
+	                  (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext)
 	                  , { () => 
-	                  }, prop.getPrevOrNext(MenuOptions.modify_prev).toString)
+	                  }, prop.getPrevNext.toString)
                 case _ =>
               }
             case _ =>
@@ -698,8 +694,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     Log.d("kingpong", "toRunning()")
     // Remove objects that have been created after the date.
     mRuleState = STATE_MODIFYING_GAME
-    MenuOptions.modify_prev = false
-    MenuOptions.copy_to_prev = true
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
 
     eventEditor.unselect()
@@ -871,25 +866,21 @@ class GameView(val context: Context, attrs: AttributeSet)
       touchDownOriginal = pos
       shapeEditor.selectedShape match {
         case selectedShape: Movable =>
-          if (MenuOptions.modify_prev) {
-            selectedShapeCoords = selectedShape.center.get
-          } else {
-            selectedShapeCoords = selectedShape.center.next
-          }
+          selectedShapeCoords = selectedShape.center.getPrevNext
           MenuOptions.selected_shape_first_x = selectedShapeCoords.x
           MenuOptions.selected_shape_first_y = selectedShapeCoords.y
 
           selectedShape match {
             case selectedShape: Circle =>
-              MenuOptions.selected_shape_first_radius = selectedShape.radius.getPrevOrNext(MenuOptions.modify_prev)
+              MenuOptions.selected_shape_first_radius = selectedShape.radius.getPrevNext
             case selectedShape: Rectangular =>
-              MenuOptions.selected_shape_first_width = selectedShape.width.getPrevOrNext(MenuOptions.modify_prev)
-              MenuOptions.selected_shape_first_height = selectedShape.height.getPrevOrNext(MenuOptions.modify_prev)
+              MenuOptions.selected_shape_first_width = selectedShape.width.getPrevNext
+              MenuOptions.selected_shape_first_height = selectedShape.height.getPrevNext
             case _ =>
           }
           selectedShape match {
             case selectedShape: Directionable =>
-              MenuOptions.selected_shape_first_angle = selectedShape.angle.getPrevOrNext(MenuOptions.modify_prev)
+              MenuOptions.selected_shape_first_angle = selectedShape.angle.getPrevNext
             case _ =>
           }
           if (MoveButton.hovered) {
@@ -940,8 +931,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       } else { // We are after the previously selected shape, so we can check the distance to the finger.
         shape match {
           case shape: Positionable =>
-            val x = p.x + (if (MenuOptions.modify_prev) shape.x.next - shape.x.get else 0)
-            val y = p.y + (if (MenuOptions.modify_prev) shape.y.next - shape.y.get else 0) // - shape.y + shape.prev_y
+            val x = p.x + (if (MenuOptions.modify_policy.modifiesCurrent) shape.x.get - shape.x.next else 0)
+            val y = p.y + (if (MenuOptions.modify_policy.modifiesCurrent) shape.y.get - shape.y.next else 0) // - shape.y + shape.prev_y
             val dist = shape.distanceSelection(x, y)
             if (dist < minDistance || minDistance == -1) {
               minDistance = dist

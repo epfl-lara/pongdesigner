@@ -13,9 +13,20 @@ import ch.epfl.lara.synthesis.kingpong.view.RenderConstants
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
-  var copy_to_prev = true
+  //var copy_to_prev = true
   /** Option indicating if the changes are made on the previous state or the current state. */
-  var modify_prev = false
+  //var modify_prev = false
+  
+  case class Policy(value: Int) extends AnyVal {
+    @inline def modifiesCurrent: Boolean = (value & 1) == 1
+    @inline def modifiesNext: Boolean = (value & 2) == 2
+  }
+
+  final val MODIFY_CURRENT = Policy(1)
+  final val MODIFY_NEXT = Policy(2)
+  final val MODIFY_BOTH = Policy(3)
+  
+  implicit var modify_policy: Policy = MODIFY_BOTH // Not typed but performance is good.
   
   /** Coordinates of the selected shape before moving. */
   var selected_shape_first_x = 0f
@@ -137,20 +148,11 @@ object ModifyTextButton extends MenuButton {
       case d: ValueTextable =>
         val array = if(d.isInstanceOf[StringBox]) R.array.string_possibilities else R.array.text_possibilities
         def updateText(s: String): Unit = {
-          if(modify_prev) {
-            d.value.set(s)
-          } else {
-            d.value.setNext(s)
-          }
-          if(copy_to_prev) {
-            d.value.set(d.value.get)
-          } else {
-            //gameEngine.updateSelectedRule()
-          }
+          d.value.setPrevNext(s)         
         }
         CustomDialogs.launchChoiceDialogWithCustomchoice(context,
-            String.format(res.getString(R.string.modify_text_title), d.value.next), array,
-            updateText(_), {() => }, if(modify_prev) d.value.get else d.value.next)  
+            String.format(res.getString(R.string.modify_text_title), d.value.getPrevNext), array,
+            updateText(_), {() => }, d.value.getPrevNext)  
       case _ => 
     }
     hovered = false
@@ -173,20 +175,11 @@ object ModifyLanguageButton extends MenuTextButton {
     selectedShape match {
       case d: SoundTTS =>
         def updateText(s: String): Unit = {
-          if(modify_prev) {
-            d.language.set(s)
-          } else {
-            d.language.setNext(s)
-          }
-          if(copy_to_prev) {
-            d.language.set(d.language.get)
-          } else {
-            //gameEngine.updateSelectedRule()
-          }
+          d.language.setPrevNext(s)
         }
         CustomDialogs.launchChoiceDialogWithCustomchoice(context,
-            String.format(res.getString(R.string.modify_text_title), d.language.next), R.array.language_possibilities,
-            updateText(_), {() => }, if(modify_prev) d.language.get else d.language.next)
+            String.format(res.getString(R.string.modify_text_title), d.language.getPrevNext), R.array.language_possibilities,
+            updateText(_), {() => }, d.language.getPrevNext)
       case _ => 
     }
     hovered = false
@@ -231,14 +224,10 @@ object MoveButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case selectedShape: Movable =>
-          selectedShape.x.setPrevOrNext(modify_prev,
-              gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevOrNext(modify_prev) + shiftX, selectedShape.right.getPrevOrNext(modify_prev) + shiftX*/)(snap_i=selected_shape_first_x))
-          selectedShape.y.setPrevOrNext(modify_prev,
-              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevOrNext(modify_prev) + shiftY, selectedShape.bottom.getPrevOrNext(modify_prev) + shiftY*/)(snap_i=selected_shape_first_y))
-          if(copy_to_prev) {
-            selectedShape.x set selectedShape.x.next
-            selectedShape.y set selectedShape.y.next
-          }
+          selectedShape.x.setPrevNext(
+              gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevNext + shiftX, selectedShape.right.getPrevNext + shiftX*/)(snap_i=selected_shape_first_x))
+          selectedShape.y.setPrevNext(
+              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevNext + shiftY, selectedShape.bottom.getPrevNext + shiftY*/)(snap_i=selected_shape_first_y))
         case _ =>
       }
     }
@@ -263,14 +252,7 @@ object SpeedButton extends MenuButton {
     if(selectedShape != null && !selectedShape.noVelocity) {
       selectedShape match {
         case selectedShape: PhysicalObject =>
-          if(modify_prev) {
-            selectedShape.velocity set (selectedShape.velocity.get + Vec2(shiftX.toFloat, shiftY.toFloat))
-          } else {
-            selectedShape.velocity setNext (selectedShape.velocity.next + Vec2(shiftX.toFloat, shiftY.toFloat))
-          }
-          if(copy_to_prev) {
-            selectedShape.velocity set selectedShape.velocity.next
-          }
+          selectedShape.velocity setPrevNext (selectedShape.velocity.getPrevNext + Vec2(shiftX.toFloat, shiftY.toFloat))
         case _ =>
       }
     }
@@ -305,32 +287,25 @@ object SizeButton extends MenuButton {
         val dy2 = toY - selected_shape_first_y
         val dr = Math.sqrt(dx2*dx2+dy2*dy2).toFloat - Math.sqrt(dx1*dx1+dy1*dy1).toFloat
         val newRadius =selected_shape_first_radius + dr
-        val rx = c.x.getPrevOrNext(modify_prev)
-        val ry = c.y.getPrevOrNext(modify_prev)
-        c.radius.setPrevOrNext(modify_prev,  Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevOrNext(modify_prev))-rx))
-        if(copy_to_prev) {
-          c.radius set c.radius.next
-        }
+        val rx = c.x.getPrevNext
+        val ry = c.y.getPrevNext
+        c.radius.setPrevNext(Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevNext)-rx))
 
       case r: ResizableRectangular =>
         val newWidth = selected_shape_first_width + relativeX*2
         val newHeight = selected_shape_first_height + relativeY*2
-        val rx = r.x.getPrevOrNext(modify_prev)
-        val ry = r.y.getPrevOrNext(modify_prev)
-        r.width.setPrevOrNext(modify_prev,  Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))
-        r.height.setPrevOrNext(modify_prev, Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)-ry)))
-        if(copy_to_prev) {
-          r.width set r.width.next
-          r.height set r.height.next
-        }
+        val rx = r.x.getPrevNext
+        val ry = r.y.getPrevNext
+        r.width.setPrevNext(Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))
+        r.height.setPrevNext(Math.max(smallest_size, 2*(gameEngine.snapY(ry+newHeight/2, ry+newHeight/2 - selected_shape_first_height)(snap_i=ry+selected_shape_first_height/2)-ry)))
 
       case array: Array2D =>
-        val rx = array.x.getPrevOrNext(modify_prev)
-        val ry = array.y.getPrevOrNext(modify_prev)
+        val rx = array.x.getPrevNext
+        val ry = array.y.getPrevNext
         val newWidth = selected_shape_first_width + relativeX*2
         val newHeight = selected_shape_first_height + relativeY*2
-        val numCols = array.numColumns.getPrevOrNext(modify_prev)
-        val numRows = array.numRows.getPrevOrNext(modify_prev)
+        val numCols = array.numColumns.getPrevNext
+        val numRows = array.numRows.getPrevNext
         if(newWidth > 0 && newHeight > 0) {
           val (rWidth, rHeight) = gameEngine.snapRatio((newWidth, newHeight), (selected_shape_first_width, selected_shape_first_height), (numCols, numRows))()
           // The ratio is kept. Now we try to align the right side or the bottom side with the grid.
@@ -348,14 +323,9 @@ object SizeButton extends MenuButton {
           }
 
           if (kWidth > 0)
-            array.cellWidth.setPrevOrNext(modify_prev, kWidth / numCols)
+            array.cellWidth.setPrevNext(kWidth / numCols)
           if (kHeight > 0)
-            array.cellHeight.setPrevOrNext(modify_prev, kHeight / numRows)
-        }
-
-        if(copy_to_prev) {
-          array.cellWidth set array.cellWidth.next
-          array.cellHeight set array.cellHeight.next
+            array.cellHeight.setPrevNext(kHeight / numRows)
         }
 
       case _ =>
@@ -382,14 +352,14 @@ object ArraySizeButton extends MenuButton {
       case array: Array2D =>
         val newWidth = selected_shape_first_width + relativeX*2
         val newHeight = selected_shape_first_height + relativeY*2
-        val numCols = array.numColumns.getPrevOrNext(modify_prev)
-        val numRows = array.numRows.getPrevOrNext(modify_prev)
-        val cellWidth = array.cellWidth.getPrevOrNext(modify_prev)
-        val cellHeight = array.cellHeight.getPrevOrNext(modify_prev)
+        val numCols = array.numColumns.getPrevNext
+        val numRows = array.numRows.getPrevNext
+        val cellWidth = array.cellWidth.getPrevNext
+        val cellHeight = array.cellHeight.getPrevNext
 
         // Add a column
         if(newWidth/ (numCols + 1) > cellWidth) {
-          array.numColumns.setPrevOrNext(modify_prev, numCols + 1)
+          array.numColumns.setPrevNext(numCols + 1)
           val newCells = ArrayBuffer.tabulate(numRows) { row => 
             val res = Cell(array, numCols, row)
             res.creationTime.set(gameEngine.getGame.time)
@@ -400,7 +370,7 @@ object ArraySizeButton extends MenuButton {
 
         // Remove a column
         } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
-          array.numColumns.setPrevOrNext(modify_prev, numCols - 1)
+          array.numColumns.setPrevNext(numCols - 1)
           val deletedColumn = array.cells.remove(array.cells.length - 1)
           for(cell <- deletedColumn) {
             cell.deletionTime.set(gameEngine.getGame.time)
@@ -410,7 +380,7 @@ object ArraySizeButton extends MenuButton {
 
         // Add a line
         if(newHeight/ (numRows + 1) > cellHeight) {
-          array.numRows.setPrevOrNext(modify_prev, numRows + 1)
+          array.numRows.setPrevNext(numRows + 1)
           for((column, i) <- array.cells.zipWithIndex) {
             val newCell = Cell(array, i, numRows)
             newCell.creationTime.set(gameEngine.getGame.time)
@@ -420,18 +390,13 @@ object ArraySizeButton extends MenuButton {
 
         // Remove a row
         } else if(newHeight/ (numRows - 1) < cellHeight && numRows > 1) {
-          array.numRows.setPrevOrNext(modify_prev, numRows - 1)
+          array.numRows.setPrevNext(numRows - 1)
           val deletedRow = for(column <- array.cells) yield column.remove(column.length - 1)
           for(cell <- deletedRow) {
             cell.deletionTime.set(gameEngine.getGame.time)
             //gameEngine.getGame.remove(cell)
           }
         }
-        if(copy_to_prev) {
-          array.numRows set array.numRows.next
-          array.numColumns set array.numColumns.next
-        }
-
       case _ =>
     }
   }
@@ -452,14 +417,7 @@ object PinButton extends MenuButton {
     if(selectedShape.noVelocity) {
       selectedShape match {
         case selectedShape: PhysicalObject =>
-          if(modify_prev) {
-            selectedShape.velocity set Vec2(0,0)
-          } else {
-            selectedShape.velocity setNext Vec2(0,0)
-          }
-          if(copy_to_prev) {
-            selectedShape.velocity set selectedShape.velocity.next
-          }
+            selectedShape.velocity setPrevNext Vec2(0,0)
         case _ =>
       }
     }
@@ -547,14 +505,7 @@ object VisibilityButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = selectedShape match {
     case selectedShape: Visiblable =>
-      if(MenuOptions.modify_prev) {
-        selectedShape.visible set !selectedShape.visible.get
-      } else {
-        selectedShape.visible setNext !selectedShape.visible.next
-      }
-      if(copy_to_prev) {
-        selectedShape.visible set selectedShape.visible.next
-      }
+      selectedShape.visible setPrevNext !selectedShape.visible.getPrevNext
       hovered = false
     case _ =>
   }
@@ -584,20 +535,7 @@ object IncrementButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
         case d: IntBox =>
-          val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
-          if(MenuOptions.modify_prev && !bothShouldChange) {
-            d.value set d.value.get + 1
-          } else {
-            d.value setNext d.value.next + 1
-          }
-          if(copy_to_prev || bothShouldChange) {
-            d.value set d.value.next
-          } else {
-            /*if(EditRuleButton.selected && MenuOptions.modify_prev) {
-              
-            }*/
-          }
-          //d.setChanged("value", (d.value.get != d.value))
+          d.value setPrevNext d.value.getPrevNext + 1
         case _ =>
     }
     hovered = false
@@ -617,14 +555,7 @@ object BooleanButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
         case d: Booleanable =>
-          if(MenuOptions.modify_prev) {
-            d.value set !d.value.get
-          } else {
-            d.value setNext !d.value.next
-          }
-          if(copy_to_prev) {
-            d.value set d.value.next
-          }
+          d.value setPrevNext !d.value.getPrevNext
         case _ =>
     }
     hovered = false
@@ -638,11 +569,7 @@ object BooleanButton extends MenuButton {
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
     val on = selectedShape match {
       case selectedShape: Booleanable => 
-        if(MenuOptions.modify_prev) {
-          selectedShape.value.get
-        } else {
-          selectedShape.value.next
-        }
+        selectedShape.value.getPrevNext
       case _ => false
     }
     if(hovered) (if(on) hovered_icons_on else hovered_icons_off)  else (if(on) normal_icons_on else normal_icons_off)
@@ -658,16 +585,7 @@ object DecrementButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
       case d: IntBox =>
-        val bothShouldChange = false //(gameEngine.selectedEvent != null && gameEngine.selectedEvent.value.shape1 == selectedShape)
-        if(MenuOptions.modify_prev && !bothShouldChange) {
-          d.value.set(d.value.get - 1)
-        } else {
-          d.value.setNext(d.value.get - 1)
-        }
-        if(copy_to_prev || bothShouldChange) {
-          d.value.set(d.value.next)
-        } else {
-        }
+        d.value.setPrevNext(d.value.getPrevNext - 1)
       case _ =>
     }
     hovered = false
@@ -712,14 +630,6 @@ object RotateButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
       case c:Rotationable =>
-        /*if(modify_prev) {
-          c.angle set Math.toRadians(Math.floor((Math.toDegrees(c.angle.get) + 7.5f)/15) * 15).toFloat
-        } else {
-          c.angle setNext Math.toRadians(Math.floor((Math.toDegrees(c.angle.next) + 7.5f)/15) * 15).toFloat
-        }*/
-        if(copy_to_prev) {
-          c.angle set c.angle.next
-        }
       case _ =>
     }
     hovered = false
@@ -729,8 +639,8 @@ object RotateButton extends MenuButton {
     if(selectedShape != null) {
       selectedShape match {
         case c:Rotationable with Positionable =>
-          val dx = toX - c.x.getPrevOrNext(modify_prev)
-          val dy = toY - c.y.getPrevOrNext(modify_prev)
+          val dx = toX - c.x.getPrevNext
+          val dy = toY - c.y.getPrevNext
           val dxPrev = dx - relativeX
           val dyPrev = dy - relativeY
           val crossProduct = dxPrev * dy - dyPrev * dx
@@ -740,10 +650,7 @@ object RotateButton extends MenuButton {
           val cosAngle = dotProduct/norms
           def snap(angle: Float) = Math.toRadians(Math.floor((Math.toDegrees(angle) + 7.5f)/15) * 15).toFloat
           
-          c.angle.setPrevOrNext(modify_prev, snap(selected_shape_first_angle + Math.atan2(sinAngle, cosAngle).toFloat))
-          if(copy_to_prev) {
-            c.angle set c.angle.next
-          }
+          c.angle.setPrevNext(snap(selected_shape_first_angle + Math.atan2(sinAngle, cosAngle).toFloat))
         case _ =>
       }
     }

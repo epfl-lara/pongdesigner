@@ -589,13 +589,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
     if(shapeEditor.selectedShape != null) {
       val (x, y) = shapeEditor.selectedShape match {
         case selectedShape: Positionable =>
-          if(MenuOptions.modify_prev) {
-            (selectedShape.x.get,
-             selectedShape.y.get)
-          } else {
-            (selectedShape.x.next,
-             selectedShape.y.next)
-          }
+            (selectedShape.x.getPrevNext,
+             selectedShape.y.getPrevNext)
         case _ =>
           (0f, 0f)
       }

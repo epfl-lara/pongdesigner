@@ -1,7 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
 import android.util.Log
-
 import ch.epfl.lara.synthesis.kingpong.common.History
 import ch.epfl.lara.synthesis.kingpong.common.Snap
 import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
@@ -9,6 +8,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
 import ch.epfl.lara.synthesis.kingpong.rules.Context
+import ch.epfl.lara.synthesis.kingpong.menus.MenuOptions
 
 abstract class Property[@specialized T : PongType]() { self => 
   
@@ -26,8 +26,8 @@ abstract class Property[@specialized T : PongType]() { self =>
   def next: T  
   
   /** Depending on the argument, get the prev or the next */
-  def getPrevOrNext(b: Boolean) = {
-    if(b) get else next
+  def getPrevNext(implicit modify_policy: MenuOptions.Policy) = {
+    if(modify_policy.modifiesCurrent) get else next
   }
 
   /** Get the Pong type of this property. */
@@ -87,11 +87,10 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
   def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
   
   /** Depending on the argument, get the prev or the next */
-  def setPrevOrNext(b: Boolean, v: T): self.type = {
-    if(b) set(v) else setNext(v)
-  }
-  def setPrevOrNext(b: Boolean, e: Expr): self.type = {
-    if(b) set(e) else setNext(e)
+  def setPrevNext(v: T)(implicit modify_policy: MenuOptions.Policy): self.type = {
+    if(modify_policy.modifiesCurrent) set(v)
+    if(modify_policy.modifiesNext) setNext(v)
+    self
   }
 }
 

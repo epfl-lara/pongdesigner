@@ -36,14 +36,7 @@ object SystemMenu extends MenuCenter {
 object TrashButton extends MenuButton {
   import MenuOptions._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
-    if(modify_prev) {
-      selectedShape.deletionTime set gameEngine.getGame().time
-    } else {
-      selectedShape.deletionTime setNext gameEngine.getGame().time
-    }
-    if(copy_to_prev) {
-      selectedShape.deletionTime set selectedShape.deletionTime.next
-    }
+    selectedShape.deletionTime setPrevNext gameEngine.getGame().time
     hovered = false
   }
   
@@ -63,14 +56,7 @@ object SetTimeButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
 	    case selectedShape: SoundTTS =>
-	    if(modify_prev) { // Nothing to be done here
-	      selectedShape.time set gameEngine.getGame().time
-	    } else {
-	      selectedShape.time setNext gameEngine.getGame().time
-	    }
-	    if(copy_to_prev) {
-	      selectedShape.time set selectedShape.time.next
-	    }
+	      selectedShape.time setPrevNext gameEngine.getGame().time
 	  }
     hovered = false
   }
