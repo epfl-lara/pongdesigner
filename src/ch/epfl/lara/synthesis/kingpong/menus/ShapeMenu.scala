@@ -366,7 +366,10 @@ object ArraySizeButton extends MenuButton {
             res
           }
           array.cells += newCells
-          for(cell <- newCells) gameEngine.getGame.add(cell)
+          for(cell <- newCells) {
+            gameEngine.getGame.add(cell)
+            cell.setCategory(array.cells(0)(0).category)
+          }
 
         // Remove a column
         } else if(newWidth/ (numCols - 1) < cellWidth && numCols > 1) {
@@ -386,6 +389,7 @@ object ArraySizeButton extends MenuButton {
             newCell.creationTime.set(gameEngine.getGame.time)
             column += newCell
             gameEngine.getGame.add(newCell)
+            newCell.setCategory(array.cells(0)(0).category)
           }
 
         // Remove a row
