@@ -246,7 +246,7 @@ trait PrettyPrinterExtendedTypical {
   /**
    * External printing function
    */
-  def print(s: Iterable[Expr], c: StringMaker = StringMaker()): StringMaker = {
+  def print(s: Traversable[Expr], c: StringMaker = StringMaker()): StringMaker = {
     val res = printIterable[Expr](c, s, print)
     res
   }
@@ -275,7 +275,7 @@ trait PrettyPrinterExtendedTypical {
   /**
    * Prints a set of functions printable with a function.
    */
-  def printIterable[T](c: StringMaker, s: Iterable[T], f: (StringMaker, T) => StringMaker): StringMaker = {
+  def printIterable[T](c: StringMaker, s: Traversable[T], f: (StringMaker, T) => StringMaker): StringMaker = {
     val delimiter = "" andThen LF
     (c /: s) { case (e, r) => f(e + delimiter.get, r) }
   }
@@ -317,7 +317,7 @@ trait PrettyPrinterExtendedTypical {
       case MethodCall(method, Nil) => c +< method + "()" +>
       case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>
       case ParExpr(Nil) => c
-      case ParExpr(a::_) => print(c, indent, a) +< "//<-->" +>
+      case ParExpr(a::l) => c +< a + ("//" + l.size +" more") +>
       case TupleSelect(expr, index) =>
         //TODO this only applies to pair of coordinates...
         c + indent + expr + "." + (if(index == 1) "x" else "y")

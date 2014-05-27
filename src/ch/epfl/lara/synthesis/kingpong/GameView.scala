@@ -912,51 +912,31 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Selects objects
    */
-  var previousSelectedShape: GameObject = null
+  var previouslySelectedShape: GameObject = null
   def performSelection(p: Vec2) = {
-    val objectsTouched = game.abstractObjectFingerAt(p)
+    val objectsTouched = game.abstractObjectFingerAt(p).toList
     cv_obj_to_highlight = objectsTouched.toSet
     val rulesConcerned = game.getRulesByObject(objectsTouched)
     shapeEditor.unselect()
-    // The selected shape should be the first after the previousSelectedShape,
-    // or the closest else.
-    var afterPreviousSelectedShape = false
     var shapeToSelect: GameObject = null
-    var minDistance = -1f
-    def checkShapeToSelect(shape: GameObject) = {
-      if (previousSelectedShape != null && !afterPreviousSelectedShape) {
-        if (previousSelectedShape eq shape) {
-          afterPreviousSelectedShape = true
-        }
-      } else { // We are after the previously selected shape, so we can check the distance to the finger.
-        shape match {
-          case shape: Positionable =>
-            val x = p.x + (if (MenuOptions.modify_policy.modifiesCurrent) shape.x.get - shape.x.next else 0)
-            val y = p.y + (if (MenuOptions.modify_policy.modifiesCurrent) shape.y.get - shape.y.next else 0) // - shape.y + shape.prev_y
-            val dist = shape.distanceSelection(x, y)
-            if (dist < minDistance || minDistance == -1) {
-              minDistance = dist
-              shapeToSelect = shape
-            }
-          case _ =>
-        }
-      }
-    }
 
-    objectsTouched foreach checkShapeToSelect
-    if (shapeToSelect == null) {
-      if (afterPreviousSelectedShape) {
-        objectsTouched foreach checkShapeToSelect
+    if(objectsTouched.size == 0) {
+    } else if(objectsTouched.size == 1) {
+      shapeToSelect = objectsTouched.head
+    } else {
+      val indexPrevious = objectsTouched.indexWhere(_ eq previouslySelectedShape)
+      if(indexPrevious == objectsTouched.length - 1) { // this element is the last one.
+        shapeToSelect = objectsTouched.head
       } else {
-        previousSelectedShape = null
-        objectsTouched foreach checkShapeToSelect
+        shapeToSelect = objectsTouched(indexPrevious + 1)
       }
     }
     if (shapeToSelect != null) {
       shapeEditor.select(shapeToSelect)
-      previousSelectedShape = shapeToSelect
+      previouslySelectedShape = shapeToSelect
       updateCodeView(rulesConcerned, Set(shapeToSelect))
     } else {
+      shapeEditor.select(null)
       updateCodeView(rulesConcerned, Set())
     }
   }
@@ -1035,7 +1015,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               case STATE_SELECTING_TO_FIX =>
                 // Filter out events and keep only assignment events.
                 val eventListFiltered = eventListSorted.collect({ case (a: AssignmentEvent, b: Int) => (a, b) })
-                selectFix(p, eventListFiltered, eventEditor.selectedObjects)
+                selectFix(p, eventListFiltered, objectList)
             }
           case STATE_MODIFYING_CATEGORY =>
           //categoryEditor.onFingerUp(touchCoords(0), touchCoords(1))
@@ -1369,7 +1349,7 @@ class GameView(val context: Context, attrs: AttributeSet)
    * @param objects The objects to highlight.
    */
   var codeViewFutureCancel: () => Boolean = null
-  def updateCodeView(rules: Iterable[Expr], objects: Iterable[GameObject]) = {
+  def updateCodeView(rules: Traversable[Expr], objects: Iterable[GameObject]) = {
     val cancelPrevious = codeViewFutureCancel
     if(cancelPrevious != null) {
       codeViewFutureCancel = null

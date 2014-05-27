@@ -231,8 +231,8 @@ trait Game extends RulesManager with Context { self =>
   /**
    * Returns the set of objects containing at this position.
    */
-  def abstractObjectFingerAt(pos: Vec2): Set[GameObject] = {
-    (aliveObjects filter (_.contains(pos))).toSet
+  def abstractObjectFingerAt(pos: Vec2): Traversable[GameObject] = {
+    (aliveObjects filter (_.contains(pos)))
   }
 
   private[kingpong] def onAccelerometerChanged(vector: Vec2): Unit = {

@@ -36,7 +36,7 @@ trait RulesManager {
   def findRuleIndex(ruleMatcher: Expr => Boolean): Int = _rules.indexWhere(ruleMatcher)
   
   def getRulesByObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List.empty)
-  def getRulesByObject(objects: Iterable[GameObject]): Iterable[Expr] = objects flatMap getRulesByObject
+  def getRulesByObject(objects: Traversable[GameObject]): Traversable[Expr] = objects flatMap getRulesByObject
   
   def addRule(r: Expr): Unit = {
     def addToCategory(category: Category) = category.objects foreach { obj =>

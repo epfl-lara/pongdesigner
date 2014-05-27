@@ -511,7 +511,7 @@ trait Positionable extends GameObject {
     val dy = yCursor-y.next
     val r = selectableAreaRadius
     val res = Math.sqrt(dx*dx + dy*dy).toFloat
-    if(res < 0) 0 else res
+    if(res < r) 0 else res-r
   }
   
   def bottom: Property[Float]
