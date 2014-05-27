@@ -11,9 +11,9 @@ import scala.language.postfixOps
 object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val FOR_SYMBOL = "for"
   override val IN_SYMBOL = "in"
-  override val FINGER_MOVE_SYMBOL = "movedOn "
-  override val FINGER_DOWN_SYMBOL = "downOn "
-  override val FINGER_UP_SYMBOL = "upOn "
+  override val FINGER_MOVE_SYMBOL = "on movedOn "
+  override val FINGER_DOWN_SYMBOL = "on downOn "
+  override val FINGER_UP_SYMBOL = "on upOn "
   override val COLLIDES_SYMBOL = "collides"
   override val IF_SYMBOL = "if"
 }
