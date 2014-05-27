@@ -816,7 +816,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   private def addBitmap(bitmap: Bitmap): Int = {
-    val id = Stream.from(0).find(i => !(bitmaps contains i)).get
+    val id = Stream.from(128).find(i => !(bitmaps contains i)).get
     bitmaps(id) = new BitmapDrawable(res, bitmap)
     id
   }
@@ -1292,7 +1292,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             case _         => srcBitmap
           }
           val id = addBitmap(finalBitmap)
-          selectedShape.color setNext id
+          selectedShape.color setPrevNext id
         case _ =>
       }
     }

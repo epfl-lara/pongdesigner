@@ -59,12 +59,14 @@ object KingPong {
   final val PONGNAME_SLIDING = "SlidingPuzzle"  
   final val PONGNAME_THREEINAROW = "ThreeInARow"  
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
+  final val PONGNAME_TESTGAME = "TestGame"
   private var mapgames: Map[String,()=>Game] = Map.empty
   mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
   mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
   mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
   mapgames += (PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()))
   mapgames += (PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()))
+  mapgames += (PONGNAME_TESTGAME -> (() => new examples.TestGame()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -180,6 +182,7 @@ class KingPong extends Activity
   import R.drawable._
   import KingPong._
 
+  // prove: task == null || mGameView == null || mGameView.game == task.game
   private lazy val mGameView: GameView = R.id.gameview
   private lazy val mCodeView: EditTextCursorWatcher = (code: TextView).asInstanceOf[EditTextCursorWatcher]
   private lazy val mSeekBar: SeekBar = time_bar
@@ -356,7 +359,7 @@ class KingPong extends Activity
             val res = context.getResources()
             CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
                 { _ =>
-                  mGameView.setGame(new TestGame())
+                  self ! Messages.FileLoad(PONGNAME_TESTGAME)
                   time_button.setImageDrawable(timeButtonPlay)
                   mTts.stop()
                   mGameView.backToBeginning()
@@ -389,6 +392,7 @@ class KingPong extends Activity
 
   onPause {
     mGameView.onPause()
+    task.game = mGameView.getGame()
     time_button.setImageDrawable(timeButtonPlay)
   }
   
