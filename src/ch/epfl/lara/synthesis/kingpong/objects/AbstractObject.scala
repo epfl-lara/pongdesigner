@@ -367,49 +367,49 @@ case class Cell(
   def noVelocity_=(b: Boolean) = {}
   def game = array.game
   
-  val x = aliasProperty[Float] (
+  val x = namedProperty[Float] (
     name  = "x", 
     getF  = () => array.left.get  + width.get  * (column + 0.5f),
-    nextF = () => array.left.next + width.next * (column + 0.5f),
-    exprF = () => array.left.expr + width.expr * (column + 0.5f) 
+    nextF = () => array.left.next + width.next * (column + 0.5f)
+    //,    exprF = () => array.left.expr + width.expr * (column + 0.5f) 
   )
   
-  val y = aliasProperty[Float] (
+  val y = namedProperty[Float] (
     name  = "y", 
     getF  = () => array.top.get  + height.get  * (row + 0.5f),
-    nextF = () => array.top.next + height.next * (row + 0.5f),
-    exprF = () => array.top.expr + height.expr * (row + 0.5f)
+    nextF = () => array.top.next + height.next * (row + 0.5f)
+    //,    exprF = () => array.top.expr + height.expr * (row + 0.5f)
   )
   
   val width = proxyProperty[Float]("width", array.cellWidth)
   val height = proxyProperty[Float]("height", array.cellHeight)
   
-  override val bottom = aliasProperty[Float] (
+  override val bottom = namedProperty[Float] (
     name  = "bottom", 
     getF  = () => array.top.get  + height.get  * (row + 1),
-    nextF = () => array.top.next + height.next * (row + 1),
-    exprF = () => array.top.expr + height.expr * (row + 1)
+    nextF = () => array.top.next + height.next * (row + 1)
+    //,    exprF = () => array.top.expr + height.expr * (row + 1)
   )
   
-  override val top = aliasProperty[Float] (
+  override val top = namedProperty[Float] (
     name  = "top", 
     getF  = () => array.top.get  + height.get  * row,
-    nextF = () => array.top.next + height.next * row,
-    exprF = () => array.top.expr + height.expr * row
+    nextF = () => array.top.next + height.next * row
+    //,    exprF = () => array.top.expr + height.expr * row
   )
   
-  override val left = aliasProperty[Float] (
+  override val left = namedProperty[Float] (
     name  = "left", 
     getF  = () => array.left.get  + width.get  * column,
-    nextF = () => array.left.next + width.next * column,
-    exprF = () => array.left.expr + width.expr * column
+    nextF = () => array.left.next + width.next * column
+    //,    exprF = () => array.left.expr + width.expr * column
   )
   
-  override val right = aliasProperty[Float] (
+  override val right = namedProperty[Float] (
     name  = "right", 
     getF  = () => array.left.get  + width.get  * (column + 1),
-    nextF = () => array.left.next + width.next * (column + 1),
-    exprF = () => array.left.expr + width.expr * (column + 1)
+    nextF = () => array.left.next + width.next * (column + 1)
+    //,    exprF = () => array.left.expr + width.expr * (column + 1)
   )
   
   val angle = proxyProperty(array.angle)
