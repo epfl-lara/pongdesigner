@@ -85,6 +85,16 @@ trait PrettyPrinterTypical {
   
 
   private def print(indent: String, s: Tree): CharSequence = s match {
+    case Foreach(cat, id, body) =>
+      indent + s"$FOR_SYMBOL " + id.toString+ s" $IN_SYMBOL " + cat + s":$LF" + print(NO_INDENT, body)
+    case Forall(category, id, body) =>
+       category.name + ".forall{" + id + " => " + print(NO_INDENT, body) + "}"
+    case Find(category, id, body) =>
+       category.name + ".find{" + id + " => " + print(NO_INDENT, body) + "}"
+    case TupleSelect(expr, index) =>
+        //TODO this only applies to pair of coordinates...
+        print(indent, expr) + "." + (if(index == 1) "x" else "y")
+    case Select(expr, property) =>print(indent, expr) + "." + property
     case Delete(obj) => indent + "Delete(" + print(NO_INDENT, obj) + ")"
     case Tuple(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
     case b @ BinaryOperator(lhs, rhs, _)=> val op = b match {
@@ -147,6 +157,8 @@ trait PrettyPrinterTypical {
       LF + print(indent, body)
     case IsFingerDownOver(o) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
     case IsFingerUpOver(o) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
+    
+    case s => s.toString
   }
 }
 
