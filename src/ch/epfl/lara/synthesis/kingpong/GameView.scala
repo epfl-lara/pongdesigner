@@ -713,14 +713,15 @@ class GameView(val context: Context, attrs: AttributeSet)
     //TODO Mikael, do we really need this loop ? 
     // It result in a crash when reseting after a physical object deletion.
     game.objects.foreach { obj =>
+      obj.validate()
+      obj.save(game.time)
+      if (obj.setExistenceAt(game.time)) {
+        obj.flush()
+      }
       if(obj.creationTime.get == game.time) { // We push the object to the beginning.
         obj.historicalProperties foreach { p =>
 		      p.setInit(p.getExpr)
 		    }
-      }
-      obj.validate()
-      if (obj.setExistenceAt(game.time)) {
-        obj.flush()
       }
     }
     game.setInstantProperties(false)
