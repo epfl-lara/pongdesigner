@@ -165,6 +165,9 @@
     <string name="generalize_modification">Change %1$s for all %1$s.</string>
     <string name="generalize_global">Apply this rule for all shapes similar to %1$s.</string>
     
+    <string name="rule_in_progress_title">Rule in progress</string>
+    <string name="rule_in_progress_msg">You are designing a rule. Keep it and play the game?</string>
+    
     <string name="set_restitution_title">Set restitution</string>
     <string-array name="restitution_possibilities">
         <item>Custom&#8230;</item>

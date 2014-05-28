@@ -280,13 +280,13 @@ object SizeButton extends MenuButton {
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
     selectedShape match {
-      case c: Circle =>
+      case c: ResizableCircular =>
         val dx1 = toX - relativeX - selected_shape_first_x
         val dy1 = toY - relativeY - selected_shape_first_y
         val dx2 = toX - selected_shape_first_x
         val dy2 = toY - selected_shape_first_y
         val dr = Math.sqrt(dx2*dx2+dy2*dy2).toFloat - Math.sqrt(dx1*dx1+dy1*dy1).toFloat
-        val newRadius =selected_shape_first_radius + dr
+        val newRadius = selected_shape_first_radius + dr
         val rx = c.x.getPrevNext
         val ry = c.y.getPrevNext
         c.radius.setPrevNext(Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevNext)-rx))

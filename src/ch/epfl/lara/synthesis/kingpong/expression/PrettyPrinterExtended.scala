@@ -117,10 +117,10 @@ object PrettyPrinterExtendedTypical {
         if(i >= start) i + amount else i
       }
       this.copy(
-          mObjects.mapValues(_.map{case (i,j) => (map(i), map(j))}),
+          mObjects.mapValues(_.map{case (i,j) => (map(i), map(j))}).view.force,
           mPosCategories.map{ case (k, v) => (map(k), v)},
           mPos.map{ case (k, v) => (map(k), v)},
-          mProperties.mapValues(_.map{case (i,j) => (map(i), map(j))}),
+          mProperties.mapValues(_.map{case (i,j) => (map(i), map(j))}).view.force,
           mConstantsPos.map{ case (k, (v1, v2)) => (map(k), (map(v1), map(v2)))},
           mComment.map{ case (k, v) => (map(k), v)}
        )

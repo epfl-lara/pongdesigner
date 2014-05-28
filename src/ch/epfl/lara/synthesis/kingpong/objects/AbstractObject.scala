@@ -443,7 +443,7 @@ class Gravity(
     init_radius: Expr,
 	  init_visible: Expr, 
 	  init_color: Expr
-	 ) extends GameObject(init_name) with Movable with Rotationable with FixedRectangularContains with Visiblable with Colorable with Booleanable {
+	 ) extends GameObject(init_name) with Movable with Rotationable with ResizableCircular with FixedRectangularContains with Visiblable with Colorable with Booleanable {
   
   def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)

@@ -47,10 +47,6 @@ class GameViewRender(val context: Context) extends ContextUtils {
   val tmpMatrix = new Matrix
   val tmpDrawingObjectRect1 = new RectF(0, 0, 1, 1)
   val tmpDrawingObjectRect2 = new RectF(0, 0, 1, 1)
-  val selectPaint = new Paint(paintSelected)
-  selectPaint.setStrokeWidth(4)
-  selectPaint.setStyle(Paint.Style.STROKE)
-  selectPaint.setAntiAlias(true)
   var circlePaint = new Paint()
   circlePaint.setColor(0xFF000000)
   circlePaint.setStyle(Paint.Style.STROKE)
@@ -70,7 +66,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
 
   private val touchSelectedPaint = new Paint(paintSelected)
   touchSelectedPaint.setStyle(Paint.Style.STROKE)
-  touchSelectedPaint.setStrokeWidth(1)
+  touchSelectedPaint.setStrokeWidth(2)
   
   val distancePaint = new Paint()
   distancePaint.set(touchMovePaint)
@@ -143,7 +139,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
   var lastcolor = 0x0
   val textPreviewMap = MMap[String, String]()
   
-  def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, isFixingRules: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
+  def render(canvas: Canvas, gameView: GameView, matrix: Matrix, matrixI: Matrix, game: Game, obj_to_highlight: Set[GameObject], width_highlight: Float, bitmaps: MMap[Int, Drawable], state: GameState, isSelectingEvents: Boolean, isFixingRules: Boolean, eventEditor: EventEditor, shapeEditor: ShapeEditor): Unit = {
     canvas.drawRGB(0xFF, 0xFF, 0xFF)
     if(state == Editing) grid.drawOn(matrix, matrixI, canvas)
     canvas.save()
@@ -154,7 +150,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     paint.setStrokeWidth(mapRadiusI(matrixI, 3))
     // alias to `paint.setLinearText(true)`, since it is deprecated.
     paint.setFlags(paint.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
-    paintSelected.setStrokeWidth(mapRadiusI(matrixI, 3))
+    paintSelected.setStrokeWidth(mapRadiusI(matrixI, width_highlight))
     paintSelected.setFlags(paintSelected.getFlags() | Paint.LINEAR_TEXT_FLAG | Paint.SUBPIXEL_TEXT_FLAG)
     paintPrev.set(paint)
     //paintPrev.setStyle(Paint.Style.FILL)
@@ -717,10 +713,10 @@ class GameViewRender(val context: Context) extends ContextUtils {
   }
   
   def drawFinger(canvas: Canvas, fingerDrawable: Drawable, x: Float, y: Float, alpha: Int) = {
-    val width = 44
-    val height = 64
-    val xc = 8
-    val yc = 63
+    val width = 72
+    val height = 101
+    val xc = 27
+    val yc = 8
     val left = (x - xc).toInt
     val top = (y - yc).toInt
     fingerDrawable.setBounds(left, top, left + width - 1, top + height - 1)

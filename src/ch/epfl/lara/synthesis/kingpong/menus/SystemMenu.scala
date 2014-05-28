@@ -132,8 +132,8 @@ object CutButton extends MenuButton {
   }
 
   //TODO change the icon menu
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.reload ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.reload :: Nil
+  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.shred ::  Nil
+  private val normal_icons = R.drawable.flat_button :: R.drawable.shred :: Nil
 
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
 

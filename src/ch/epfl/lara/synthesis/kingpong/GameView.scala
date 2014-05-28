@@ -168,8 +168,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   def render(canvas: Canvas) = {
+    val current_time = System.currentTimeMillis()
+    val width_selection = if(current_time - timeSelectionStart < timeSelectionAnimationDuration)
+      3 + (7f * (timeSelectionAnimationDuration - (current_time - timeSelectionStart)))/timeSelectionAnimationDuration 
+      else 3
+    
     gameViewRender.render(canvas, this, matrix, matrixI,
-        game, cv_obj_to_highlight, bitmaps, state,
+        game, cv_obj_to_highlight, width_selection, bitmaps, state,
         mRuleState == STATE_SELECTING_EVENTS, mRuleState == STATE_SELECTING_TO_FIX,
         eventEditor, shapeEditor)
   }
@@ -241,10 +246,10 @@ class GameView(val context: Context, attrs: AttributeSet)
             }
           case STATE_SELECTING_EFFECTS =>
             val conditionObjects = eventEditor.selectedObjects.toSet
-            //TODO in the future the user should be able to select the action objects during the second phase of the inferrence process.
+            //TODO in the future the user should be able to select the action objects during the second phase of the inference process.
             val actionObjects = getGame().aliveObjects.toSet
-
             CodeGenerator.createRule(getGame(), eventEditor.selectedEventTime, conditionObjects, actionObjects)
+            updateCodeViewBasedOnSelection()
             setModeModifyGame()
             true
           case STATE_MODIFYING_CATEGORY =>
@@ -260,6 +265,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           case STATE_SELECTING_TO_FIX =>
             changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench))
             mRuleState = STATE_MODIFYING_GAME
+          case _ => 
         }
         false
       case _ =>
@@ -454,6 +460,12 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   // Mapping from codeview (cv) to objects and vice-versa
   var cv_obj_to_highlight: Set[GameObject] = Set.empty
+  var timeSelectionStart = 0L
+  final val timeSelectionAnimationDuration = 500
+  def setObjsToHighlight(s: Set[GameObject]) = {
+    cv_obj_to_highlight = s
+    timeSelectionStart = System.currentTimeMillis()
+  }
   var mCvMapping: Mappings = null
   def cv_mapping_=(m: Mappings): Unit = {
     mCvMapping = m
@@ -546,6 +558,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             if(index != -1) {
               val newRule = TreeOps.generalizeToCategory(rule, o)
               game.setRuleByIndex(newRule, index)
+              updateCodeViewBasedOnSelection()
             }
             ()
           }
@@ -566,14 +579,14 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
   
   def onCodeSelectionChanged(start: Int, end: Int) = {
-    if (cv_mapping_code != null) {
+    if (cv_mapping_code != null && start != 0 && end != 0) {
       cv_mapping_code.get(start) match {
         case Some(category) if category != null =>
-          cv_obj_to_highlight = category.flatMap(_.objects).toSet
+          setObjsToHighlight(category.flatMap(_.objects).toSet)
         case Some(_) =>
-          cv_obj_to_highlight = Set.empty
+          setObjsToHighlight(Set.empty)
         case None =>
-          cv_obj_to_highlight = Set.empty
+          setObjsToHighlight(Set.empty)
       }
       cv_mapping_properties.get(start) match {
         case Some(prop) =>
@@ -692,6 +705,10 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Change the current state to Running. */
   def toRunning(): Unit = if (state == Editing) {
     Log.d("kingpong", "toRunning()")
+    if(mRuleState == STATE_SELECTING_EFFECTS) {
+      // First accept the rule.
+      menuCallBacks(Str(R.string.menu_add_constraint_hint))
+    }
     // Remove objects that have been created after the date.
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
@@ -750,6 +767,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   val bitmaps = new MMap[Int, Drawable]()
   val drawables_to_load: List[Int] =
     List(R.drawable.finger,
+      R.drawable.shred,
       R.drawable.bing,
       R.drawable.bingselected,
       R.drawable.numbers,
@@ -871,7 +889,7 @@ class GameView(val context: Context, attrs: AttributeSet)
           MenuOptions.selected_shape_first_y = selectedShapeCoords.y
 
           selectedShape match {
-            case selectedShape: Circle =>
+            case selectedShape: Circular =>
               MenuOptions.selected_shape_first_radius = selectedShape.radius.getPrevNext
             case selectedShape: Rectangular =>
               MenuOptions.selected_shape_first_width = selectedShape.width.getPrevNext
@@ -915,8 +933,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   var previouslySelectedShape: GameObject = null
   def performSelection(p: Vec2) = {
     val objectsTouched = game.abstractObjectFingerAt(p).toList
-    cv_obj_to_highlight = objectsTouched.toSet
-    val rulesConcerned = game.getRulesByObject(objectsTouched)
     shapeEditor.unselect()
     var shapeToSelect: GameObject = null
 
@@ -932,11 +948,20 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
     }
     if (shapeToSelect != null) {
-      shapeEditor.select(shapeToSelect)
       previouslySelectedShape = shapeToSelect
-      updateCodeView(rulesConcerned, Set(shapeToSelect))
+    }
+    shapeEditor.select(shapeToSelect)
+    updateCodeViewBasedOnSelection()
+  }
+  
+  def updateCodeViewBasedOnSelection() {
+    val selectedShape = shapeEditor.selectedShape
+    val selectedShapeSet = Set(selectedShape)
+    setObjsToHighlight(selectedShapeSet)
+    val rulesConcerned = game.getRulesByObject(selectedShapeSet)
+    if (selectedShape != null) {
+      updateCodeView(rulesConcerned, Set(selectedShape))
     } else {
-      shapeEditor.select(null)
       updateCodeView(rulesConcerned, Set())
     }
   }
@@ -1010,6 +1035,7 @@ class GameView(val context: Context, attrs: AttributeSet)
                       case (eventListSelected, objectListSelected) =>
                         eventEditor.selectedEventTime = eventListSelected
                         eventEditor.selectedObjects = objectListSelected
+                        setObjsToHighlight(objectListSelected.toSet)
                     }
                 }
               case STATE_SELECTING_TO_FIX =>
@@ -1111,6 +1137,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             if(index != -1) {
               val newRule = TreeOps.generalizeToCategory(rule, obj)
               game.setRuleByIndex(newRule, index)
+              updateCodeViewBasedOnSelection()
             }
           }
           actionItems += ((text, drawable, action))
