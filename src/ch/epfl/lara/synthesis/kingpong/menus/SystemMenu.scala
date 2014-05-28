@@ -117,13 +117,23 @@ object CopyButton extends MenuButton {
 }
 
 object CutButton extends MenuButton {
+  import common.Implicits._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
       case rect: Rectangle =>
-        val pieces = gameEngine.cutRectangle(rect, 3, 3)
-        rect.deletionTime.set(gameEngine.getGame.time)
-//        gameEngine.getGame.remove(rect)
-        pieces foreach gameEngine.getGame.add
+        CustomDialogs.launchChoiceDialogWithCustomchoice(gameEngine.context, gameEngine.str(R.string.shredding_title, selectedShape.name.get), R.array.shredding_values,
+            { (res: String) =>
+              val rows = res intOrElse 1
+              val cols = res int2OrElse 1
+              if(rows != 1 || cols != 1) {
+	              val pieces = gameEngine.cutRectangle(rect, rows, cols)
+				        rect.deletionTime.set(gameEngine.getGame.time)
+				//        gameEngine.getGame.remove(rect)
+				        pieces foreach gameEngine.getGame.add
+				        pieces.foreach(_.creationTime.set(gameEngine.getGame.time))
+              }
+            }, () => {}, "3 x 3")
+        
 
       case _ =>
     }

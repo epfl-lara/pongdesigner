@@ -105,4 +105,15 @@ object Implicits {
 
     def clone(v: GameObject) = v
   }
+  
+    
+  /** Extracts the first float of a string */
+  implicit class RichString(s: String) {
+    val floatRegexp = """(-?\d+(?:\.\d*)?(?:(?:e|E)-?\d+)?|-?\.(?:\d+)(?:(?:e|E)-?\d+)?)""".r
+    val intRegexp = """(\d+)""".r
+    val int2Regexp = """(\d+)(?=[^\d]*$)""".r
+    def floatOrElse(d: Float) = try { (floatRegexp findFirstIn s) match { case Some(r) => r.toFloat case None => d}} catch { case _: Exception => d }
+    def intOrElse(d: Int) = try { (intRegexp findFirstIn s) match { case Some(r) => r.toInt case None => d}} catch { case _: Exception => d }
+    def int2OrElse(d: Int) = try { (int2Regexp findFirstIn s) match { case Some(r) => r.toInt case None => d}} catch { case _: Exception => d }
+  }
 }

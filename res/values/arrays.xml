@@ -170,4 +170,11 @@
         <item>en</item>
         <item>fr</item>
     </string-array>
+    <string-array name="shredding_values">
+        <item>Custom (Rows x Columns)&#8230;</item>
+        <item>3 x 3</item>
+        <item>8 x 8</item>
+        <item>1 x 2 (vertical)</item>
+        <item>2 x 1 (horizontal)</item>
+    </string-array>
 </resources>

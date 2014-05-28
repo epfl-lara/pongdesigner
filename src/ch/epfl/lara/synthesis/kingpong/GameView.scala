@@ -572,12 +572,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
   }
   
-  /** Extracts the first float of a string */
-  implicit class RichString(s: String) {
-    val floatRegexp = """(-?\d+(?:\.\d*)?(?:(?:e|E)-?\d+)?|-?\.(?:\d+)(?:(?:e|E)-?\d+)?)""".r
-    def floatOrElse(d: Float) = try { (floatRegexp findFirstIn s) match { case Some(r) => r.toFloat case None => d}} catch { case _: Exception => d }
-  }
-  
   def onCodeSelectionChanged(start: Int, end: Int) = {
     if (cv_mapping_code != null && start != 0 && end != 0) {
       cv_mapping_code.get(start) match {
