@@ -10,8 +10,8 @@
     <array name="menu_arrays_drawable">
         <item>@drawable/menu_add_object</item>
         <item>@drawable/menu_add_category</item>
-        <item>@drawable/menu_rule_editor</item>
-        <item>@drawable/wrench</item>
+        <item>@drawable/bm_menu_rule_editor</item>
+        <item>@drawable/bm_wrench</item>
     </array>
     <array name="menu_arrays_hint">
         <item>@string/menu_add_shape_hint</item>
@@ -26,15 +26,15 @@
         <item>@array/menu_fix_string</item>
     </array>
     <array name="menu_add">
-        <item>@drawable/menu_add_rect</item>
-        <item>@drawable/menu_add_circle</item>
-        <item>@drawable/menu_add_digit</item>
-        <item>@drawable/menu_add_text</item>
+        <item>@drawable/bm_menu_add_rect</item>
+        <item>@drawable/bm_menu_add_circle</item>
+        <item>@drawable/bm_menu_add_digit</item>
+        <item>@drawable/bm_menu_add_text</item>
         <item>@drawable/menu_add_boolean</item>
         <item>@drawable/menu_add_array</item>
         <item>@drawable/drawing_object</item>
-        <item>@drawable/microphone</item>
-        <item>@drawable/menu_add_tts</item>
+        <item>@drawable/bm_microphone</item>
+        <item>@drawable/bm_menu_add_tts</item>
         menu_add_tts
         </array>
     <array name="menu_add_string">
@@ -60,9 +60,9 @@
     </array>
     
     <array name="menu_categories">
-        <item>@drawable/menu_add_accelerometer</item>
-        <item>@drawable/menu_add_force_field</item>
-        <item>@drawable/menu_camera</item>
+        <item>@drawable/bm_menu_add_accelerometer</item>
+        <item>@drawable/bm_menu_add_force_field</item>
+        <item>@drawable/bm_menu_camera</item>
     </array>
     <array name="menu_categories_string">
         <item>@string/select_accelerometer_hint</item>

@@ -130,8 +130,15 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   //     We could change this behaviour in the future...
 
   /** Restore the state from the specified discrete time. */
-  def restore(t: Int) = if (existsAt(t - 1)) {
-    _historicalProperties.foreach { _.restore(t) }
+  def restore(t: Int): Unit = {
+    creationTime.restore(t)
+    deletionTime.restore(t)
+    if(existsAt(t)) {
+	    _historicalProperties.foreach{ hp =>
+	      if((hp ne creationTime) && (hp ne deletionTime)) hp.restore(t)
+	    }
+	  }
+    setExistenceAt(t)
   }
 
   /** Clear the history of this object. */
@@ -308,6 +315,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
     copy.setCategory(this.category)
     copy.name.setInit(name)
     copy.name.set(name)
+    copy.name.setNext(name)
     copy
   }
   

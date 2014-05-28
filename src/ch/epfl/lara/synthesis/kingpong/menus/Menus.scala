@@ -138,7 +138,7 @@ trait CustomMenu {
 
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit
 
-  protected val noneList =  R.drawable.none :: Nil
+  protected val noneList =  R.drawable.bm_none :: Nil
   def icons(gameEngine: GameView, selectedShape: GameObject): List[Int]
   
   protected def hint_id: Int

@@ -4,7 +4,7 @@ object History {
   val MAX_HISTORY_SIZE = 300
 }
 
-trait History extends Any {  
+trait History extends AnyRef {  self =>
   /** Save the current value to the history with the specified 
    *  discrete time.
    */

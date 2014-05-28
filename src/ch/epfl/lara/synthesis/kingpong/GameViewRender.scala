@@ -231,7 +231,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
           }
         case soundRecorder : SoundRecorder =>
           if(state == Editing) {
-            drawBitmapInGame(canvas, matrix, soundRecorder, bitmaps(R.drawable.microphone), 0xFF)
+            drawBitmapInGame(canvas, matrix, soundRecorder, bitmaps(R.drawable.bm_microphone), 0xFF)
           }
           if(state == Running) {
             maybeRecord(game, soundRecorder)
@@ -239,9 +239,9 @@ class GameViewRender(val context: Context) extends ContextUtils {
         case sound : SoundRecorded =>
           if(state == Editing || gameView.editWhileRunning) {
             if(sound.startTime <= game.time && game.time <= sound.endTime) {
-              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.music), 0xFF)
+              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.bm_music), 0xFF)
             } else {
-              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.music), 0x8F)
+              drawBitmapInGame(canvas, matrix, sound, bitmaps(R.drawable.bm_music), 0x8F)
             }
           }
           if(state == Editing) {
@@ -251,7 +251,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
                 mp.release()
 			          sounds -= sound
             }
-            //drawBitmapInGame(canvas, matrix, d, bitmaps(R.drawable.microphone))
+            //drawBitmapInGame(canvas, matrix, d, bitmaps(R.drawable.bm_microphone))
           }
           if(state == Running) {
             maybePlay(game, sound)
@@ -521,17 +521,28 @@ class GameViewRender(val context: Context) extends ContextUtils {
       EventDrawing.canvas = canvas
       EventDrawing.gameView = gameView
       EventDrawing.eventEditor = eventEditor
+      EventDrawing.noAssignmentEvent = true
       // Divide the luminosity by two
       canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
       // Add a quarter of the luminosity
       canvas.drawColor(0xFF404040, PorterDuff.Mode.ADD)
+      
+
       game.foreachEvent(EventDrawing)
     }
     if(isFixingRules) {
+      EventDrawing.matrix = matrix
+      EventDrawing.matrixI = matrixI
+      EventDrawing.canvas = canvas
+      EventDrawing.gameView = gameView
+      EventDrawing.eventEditor = eventEditor
+      EventDrawing.noAssignmentEvent = false
       // Divide the luminosity by two
       canvas.drawColor(0xFF808080, PorterDuff.Mode.MULTIPLY)
       // Add a quarter of the luminosity, except more red.
       canvas.drawColor(0xFF804040, PorterDuff.Mode.ADD)
+      
+      game.foreachEvent(EventDrawing)
     }
     drawMenuOn(canvas, gameView, matrix, matrixI, state, eventEditor, shapeEditor)
     drawDebugOn(canvas, gameView)
@@ -649,13 +660,24 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     val bitmaps = gameView.bitmaps
     event match {
+      case c: AssignmentEvent => 
+        paint.setColor(0xFFFF0000)
+        paint.setAlpha(alpha)
+        val p = mapVectorFromGame(matrix, c.p, render_in_array, render_out_vec)
+        rectFData.set(p.x - 24, p.y - 24, p.x + 25, p.y + 24)
+        rectFData.round(rectData)
+        val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bm_assignmentselected) else  bitmaps(R.drawable.bm_assignment)
+        bitmap.setBounds(rectData)
+        bitmap.setAlpha(alpha)
+        canvas.drawCircle(p.x, p.y, mapRadiusI(matrixI, 10), paint) // TODO : Delete
+        bitmap.draw(canvas)
       case c: BeginContact => 
         paint.setColor(0xFFFF0000)
         paint.setAlpha(alpha)
         val p = mapVectorFromGame(matrix, c.p, render_in_array, render_out_vec)
         rectFData.set(p.x - 24, p.y - 21, p.x + 25, p.y + 21)
         rectFData.round(rectData)
-        val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bingselected) else  bitmaps(R.drawable.bing)
+        val bitmap = if(eventEditor.selectedEventTime.indexWhere(_._1 == event) >= 0) bitmaps(R.drawable.bm_bingselected) else  bitmaps(R.drawable.bm_bing)
         bitmap.setBounds(rectData)
         bitmap.setAlpha(alpha)
         canvas.drawCircle(p.x, p.y, mapRadiusI(matrixI, 10), paint) // TODO : Delete
@@ -699,7 +721,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     }
     def recDrawFinger(l: List[(Float, Float, Int)]): Unit = l match {
       case Nil =>
-      case (x, y, alpha)::q => drawFinger(canvas, bitmaps(R.drawable.finger), x, y, alpha)
+      case (x, y, alpha)::q => drawFinger(canvas, bitmaps(R.drawable.bm_finger), x, y, alpha)
         recDrawFinger(q)
     }
     recDrawFinger(finger)
@@ -725,13 +747,15 @@ class GameViewRender(val context: Context) extends ContextUtils {
   }
   
   object EventDrawing extends((Event, Int) => Unit) {
+    var noAssignmentEvent: Boolean = true
     var matrix: Matrix = _
     var matrixI: Matrix = _
     var canvas: Canvas = _
     var gameView: GameView = _
     var eventEditor: EventEditor = _
     def apply(event: Event, time: Int): Unit = {
-      drawEventOn(event, gameView, eventEditor, time, canvas, matrix, matrixI)
+      if(event.isInstanceOf[AssignmentEvent] ^ noAssignmentEvent)
+        drawEventOn(event, gameView, eventEditor, time, canvas, matrix, matrixI)
     }
   }
   

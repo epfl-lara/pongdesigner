@@ -158,8 +158,8 @@ object ModifyTextButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.modify_text ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.modify_text :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_modify_text ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_modify_text :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -185,8 +185,8 @@ object ModifyLanguageButton extends MenuTextButton {
     hovered = false
   }
 
-  private val hovered_icons = R.drawable.flat_button_resizable_highlighted ::  Nil
-  private val normal_icons = R.drawable.flat_button_resizable :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_resizable_highlighted ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button_resizable :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -233,7 +233,7 @@ object MoveButton extends MenuButton {
     }
   }
   
-  val private_icon = List(R.drawable.cross_move)
+  val private_icon = List(R.drawable.bm_cross_move)
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = private_icon
   
@@ -258,12 +258,12 @@ object SpeedButton extends MenuButton {
     }
   }
   
-  private val velocityNoneList =  R.drawable.move_velocity :: noneList
+  private val velocityNoneList =  R.drawable.bm_move_velocity :: noneList
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_velocity ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.move_velocity :: Nil
-  private val hovered_icons_none = R.drawable.flat_button_highlighted :: velocityNoneList
-  private val normal_icons_none = R.drawable.flat_button :: velocityNoneList
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_move_velocity ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_move_velocity :: Nil
+  private val hovered_icons_none = R.drawable.bm_flat_button_highlighted :: velocityNoneList
+  private val normal_icons_none = R.drawable.bm_flat_button :: velocityNoneList
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
     (if(hovered) if(selectedShape.noVelocity) hovered_icons_none else hovered_icons else if(selectedShape.noVelocity) normal_icons_none else normal_icons)
@@ -332,8 +332,8 @@ object SizeButton extends MenuButton {
     }
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_size ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.move_size :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_move_size ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_move_size :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -405,8 +405,8 @@ object ArraySizeButton extends MenuButton {
     }
   }
 
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.array_resize ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.array_resize :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_array_resize ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_array_resize :: Nil
 
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
 
@@ -428,12 +428,12 @@ object PinButton extends MenuButton {
     hovered = false
   }
   
-  private val nailNoneList = R.drawable.nail :: noneList
+  private val nailNoneList = R.drawable.bm_nail :: noneList
        
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.nail ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.nail :: Nil
-  private val hovered_icons_none = R.drawable.flat_button_highlighted :: nailNoneList
-  private val normal_icons_none = R.drawable.flat_button :: nailNoneList
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_nail ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_nail :: Nil
+  private val hovered_icons_none = R.drawable.bm_flat_button_highlighted :: nailNoneList
+  private val normal_icons_none = R.drawable.bm_flat_button :: nailNoneList
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
     (if(hovered) if(!selectedShape.noVelocity) hovered_icons_none else hovered_icons else if(!selectedShape.noVelocity) normal_icons_none else normal_icons)
@@ -465,8 +465,8 @@ object PaintButton extends MenuButton {
     hovered
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.menu_paint ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.menu_paint :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_menu_paint ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_menu_paint :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -496,8 +496,8 @@ object SystemButton extends MenuButton {
     hovered
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.gear ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.gear :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_gear ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_gear :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -514,11 +514,11 @@ object VisibilityButton extends MenuButton {
     case _ =>
   }
 
-  private val eyeNoneList = R.drawable.eye :: noneList
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.eye ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.eye :: Nil
-  private val hovered_icons_none = R.drawable.flat_button_highlighted :: eyeNoneList
-  private val normal_icons_none = R.drawable.flat_button :: eyeNoneList
+  private val eyeNoneList = R.drawable.bm_eye :: noneList
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_eye ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_eye :: Nil
+  private val hovered_icons_none = R.drawable.bm_flat_button_highlighted :: eyeNoneList
+  private val normal_icons_none = R.drawable.bm_flat_button :: eyeNoneList
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
     if(hovered) {
@@ -545,8 +545,8 @@ object IncrementButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.flat_button_p1 ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.flat_button_p1 :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_flat_button_p1 ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_flat_button_p1 :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -565,10 +565,10 @@ object BooleanButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons_on = R.drawable.flat_button_highlighted :: R.drawable.boolean_on ::  Nil
-  private val hovered_icons_off = R.drawable.flat_button_highlighted :: R.drawable.boolean_off ::  Nil
-  private val normal_icons_on = R.drawable.flat_button :: R.drawable.boolean_on :: Nil
-  private val normal_icons_off = R.drawable.flat_button :: R.drawable.boolean_off :: Nil
+  private val hovered_icons_on = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_boolean_on ::  Nil
+  private val hovered_icons_off = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_boolean_off ::  Nil
+  private val normal_icons_on = R.drawable.bm_flat_button :: R.drawable.bm_boolean_on :: Nil
+  private val normal_icons_off = R.drawable.bm_flat_button :: R.drawable.bm_boolean_off :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
     val on = selectedShape match {
@@ -595,8 +595,8 @@ object DecrementButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.flat_button_m1 ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.flat_button_m1 :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_flat_button_m1 ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_flat_button_m1 :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -619,8 +619,8 @@ object RenameButton extends MenuTextButton {
     hovered = false
   }
 
-  private val hovered_icons = R.drawable.flat_button_resizable_highlighted ::  Nil
-  private val normal_icons = R.drawable.flat_button_resizable :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_resizable_highlighted ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button_resizable :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -660,8 +660,8 @@ object RotateButton extends MenuButton {
     }
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.move_rotate ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.move_rotate :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_move_rotate ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_move_rotate :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   

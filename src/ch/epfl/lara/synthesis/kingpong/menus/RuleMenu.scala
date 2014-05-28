@@ -53,7 +53,7 @@ object MoveRuleButton extends MenuButton {
     }
   }
   
-  def icons(gameEngine: GameView, selectedShape: GameObject) = List(R.drawable.cross_move)
+  def icons(gameEngine: GameView, selectedShape: GameObject) = List(R.drawable.bm_cross_move)
   
   def hint_id = R.string.change_position_hint
 }
@@ -77,8 +77,8 @@ object TrashRuleButton extends MenuButton {
   }
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) R.drawable.flat_button_highlighted else R.drawable.flat_button) :: 
-       R.drawable.trashcan ::  Nil
+    (if(hovered) R.drawable.bm_flat_button_highlighted else R.drawable.bm_flat_button) :: 
+       R.drawable.bm_trashcan ::  Nil
 
   def hint_id = R.string.change_trash_hint
 }
@@ -115,7 +115,7 @@ object EditRuleButton extends MenuButton {
   }
   
  def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) (if(selected) R.drawable.flat_button_selected_highlighted else R.drawable.flat_button_highlighted) else (if(selected) R.drawable.flat_button_selected else R.drawable.flat_button)) :: R.drawable.existing_rules :: Nil
+    (if(hovered) (if(selected) R.drawable.bm_flat_button_selected_highlighted else R.drawable.bm_flat_button_highlighted) else (if(selected) R.drawable.bm_flat_button_selected else R.drawable.bm_flat_button)) :: R.drawable.bm_existing_rules :: Nil
     
  def hint_id = R.string.change_rule_hint
 }
@@ -142,7 +142,7 @@ object ApplyRuleButton extends MenuButton {
   }
   
   def icons(gameEngine: GameView, selectedShape: GameObject) =
-    (if(hovered) R.drawable.flat_button_highlighted else R.drawable.flat_button) :: R.drawable.timebutton3 :: Nil
+    (if(hovered) R.drawable.bm_flat_button_highlighted else R.drawable.bm_flat_button) :: R.drawable.timebutton3 :: Nil
 
  def hint_id = R.string.play_rule_hint
 }
@@ -276,36 +276,36 @@ object CodeEditorHandle {
         case w@WhenEverRule(condition, code) =>
           // TODO : Display the text of the condition + the name of the rule
           // Maybe a different icon ?
-          val outscreenBitmap = gameEngine.bitmaps(R.drawable.outscreen)
+          val outscreenBitmap = gameEngine.bitmaps(R.drawable.bm_outscreen)
           outscreenBitmap.setAlpha(0xFF)
           outscreenBitmap.setBounds(rectData)
           outscreenBitmap.draw(canvas)
           if(w.shape != null) drawNameBeforeRule(canvas, rule, w.shape.name, color_background)
         case WhenFingerMovesOnRule(EIdentShape(s1), coords, code) =>
           // TODO : Display the GameObject + a finger movement icon
-          val miniFingerMove =  gameEngine.bitmaps(R.drawable.fingermove)
+          val miniFingerMove =  gameEngine.bitmaps(R.drawable.bm_fingermove)
           miniFingerMove.setBounds(rectData)
           miniFingerMove.draw(canvas) 
           drawNameBeforeRule(canvas, rule, s1.name, color_background)
         case WhenFingerDownOnRule(EIdentShape(s), code) =>
-          val miniFingerDown =  gameEngine.bitmaps(R.drawable.fingerdown)
+          val miniFingerDown =  gameEngine.bitmaps(R.drawable.bm_fingerdown)
           miniFingerDown.setBounds(rectData)
           miniFingerDown.draw(canvas)
           drawNameBeforeRule(canvas, rule, s.name, color_background)
         case WhenFingerUpOnRule(EIdentShape(s), code) =>
-          val miniFingerUp=  gameEngine.bitmaps(R.drawable.fingerup)
+          val miniFingerUp=  gameEngine.bitmaps(R.drawable.bm_fingerup)
           miniFingerUp.setBounds(rectData)
           miniFingerUp.draw(canvas) 
           drawNameBeforeRule(canvas, rule, s.name, color_background)
        case WhenCollisionBetweenRule(EIdentShape(s1), EIdentShape(s2), code) =>
-          val bingBitmap=  gameEngine.bitmaps(R.drawable.bing)
+          val bingBitmap=  gameEngine.bitmaps(R.drawable.bm_bing)
           bingBitmap.setAlpha(0xFF)
           bingBitmap.setBounds(rectData)
           bingBitmap.draw(canvas)
           drawNameBeforeRule(canvas, rule, s1.name, color_background)
           drawNameAfterRule(canvas, rule, s2.name, color_background)
         case WhenIntegerChangesRule(EIdentShape(s1), coords, code) =>
-          val numbersBitmap=  gameEngine.bitmaps(R.drawable.numbers)
+          val numbersBitmap=  gameEngine.bitmaps(R.drawable.bm_numbers)
           numbersBitmap.setAlpha(0xFF)
           numbersBitmap.setBounds(rectData)
           numbersBitmap.draw(canvas)

@@ -106,8 +106,8 @@ class ColorCircleMenu extends CustomMenu {
     }
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted ::  Nil
-  private val normal_icons = R.drawable.flat_button :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -148,8 +148,8 @@ class ImagePickerMenu extends MenuButton {
     }
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.jpeg ::   Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.jpeg :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_jpeg ::   Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_jpeg :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   

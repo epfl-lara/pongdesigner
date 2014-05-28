@@ -277,11 +277,12 @@ trait Game extends RulesManager with Context { self =>
     if(prefix == "") {
       prefix = DEFAULT_NAME
     }
+    if(!objects.exists(_.name.get == prefix)) return prefix
     var postFix = 1
-    
-    //TODO find postfix
-    prefix //+ 42
-    //Stream.from(1).map(prefix+_).find(get(_) == None).getOrElse(DEFAULT_NAME)
+    while(objects.exists(_.name.get == prefix + postFix)) {
+      postFix += 1
+    }
+    prefix + postFix
   }
   
 }

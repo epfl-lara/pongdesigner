@@ -260,10 +260,10 @@ class GameView(val context: Context, attrs: AttributeSet)
         // Allows to select objects to which a rule was applied recently.
         mRuleState match {
           case STATE_MODIFYING_GAME =>
-            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench_selected))
+            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.bm_wrench_selected))
             mRuleState = STATE_SELECTING_TO_FIX
           case STATE_SELECTING_TO_FIX =>
-            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.wrench))
+            changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.bm_wrench))
             mRuleState = STATE_MODIFYING_GAME
           case _ => 
         }
@@ -362,7 +362,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT // irrelevant
     game.setInstantProperties(true)
-    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_maker))
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_maker))
   }
 
   /** Switches the current mode to the global modification of the game */
@@ -371,7 +371,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
     game.setInstantProperties(true)
     game.restore(game.time)
-    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
     eventEditor.unselect()
   }
 
@@ -706,7 +706,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     // Remove objects that have been created after the date.
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
-    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.menu_rule_editor))
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
 
     eventEditor.unselect()
 
@@ -759,70 +759,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Menu drawing */
   private val res: Resources = context.getResources()
   val bitmaps = new MMap[Int, Drawable]()
-  val drawables_to_load: List[Int] =
-    List(R.drawable.finger,
-      R.drawable.shred,
-      R.drawable.bing,
-      R.drawable.bingselected,
-      R.drawable.numbers,
-      R.drawable.boolean_on,
-      R.drawable.boolean_off,
-      R.drawable.flat_button,
-      R.drawable.flat_button_highlighted,
-      R.drawable.flat_button_selected,
-      R.drawable.flat_button_selected_highlighted,
-      R.drawable.flat_button_m1,
-      R.drawable.flat_button_p1,
-      R.drawable.cross_move,
-      R.drawable.move_velocity,
-      R.drawable.move_size,
-      R.drawable.array_resize,
-      R.drawable.move_rotate,
-      R.drawable.wrench,
-      R.drawable.wrench_selected,
-      R.drawable.nail,
-      R.drawable.nail_big,
-      R.drawable.trashcan,
-      R.drawable.eye,
-      R.drawable.menu_paint,
-      R.drawable.none,
-      R.drawable.menu_add_rect,
-      R.drawable.menu_add_circle,
-      R.drawable.menu_add_digit,
-      R.drawable.menu_add_text,
-      R.drawable.menu_add_tts,
-      R.drawable.modify_text,
-      R.drawable.plus,
-      R.drawable.menu_add_accelerometer,
-      R.drawable.menu_add_force_field,
-      R.drawable.menu_rule_editor,
-      R.drawable.menu_rule_maker,
-      R.drawable.prev_effects,
-      R.drawable.next_effects,
-      R.drawable.menu_camera,
-      R.drawable.existing_rules,
-      R.drawable.flat_button_resizable,
-      R.drawable.flat_button_resizable_highlighted,
-      //R.drawable.cursor_square,
-      R.drawable.fingerdown_button,
-      R.drawable.fingermove_button,
-      R.drawable.fingerup_button,
-      //R.drawable.menu_rule_apply,
-      //R.drawable.no_collision,
-      //R.drawable.no_collision_effect,
-      R.drawable.collision_effect,
-      R.drawable.outscreen,
-      R.drawable.fingerdown,
-      R.drawable.fingerup,
-      R.drawable.fingermove,
-      R.drawable.gear,
-      R.drawable.back_arrow,
-      R.drawable.jpeg,
-      R.drawable.microphone,
-      R.drawable.music,
-      R.drawable.reload,
-      R.drawable.copy_menu //R.drawable.timebutton3
-      )
+  val drawables_to_load: List[Int] = ((R.drawable.bm_aaaa + 1) to (R.drawable.bm_zzzz - 1)).toList
   drawables_to_load.foreach { id =>
     bitmaps(id) = res.getDrawable(id)
   }
@@ -1097,9 +1034,11 @@ class GameView(val context: Context, attrs: AttributeSet)
 	        if (trace.size >= 2) {
 	          trace.init.last match {
 	            case parExpr: ParExpr =>
+	              val first = parExpr.exprs.headOption.getOrElse(null)
 	              for (alternative <- parExpr.exprs) {
-	                if (alternative eq assignStatement) {
-	                  actionItems += ((alternative.comment, drw(R.drawable.event_selected_disambiguate), () => ()))
+	                val comment = { val c = alternative.comment; if(c == "" || c == null) alternative.toString() else c}
+	                if (alternative eq first) {
+	                  actionItems += ((comment, drw(R.drawable.event_selected_disambiguate), () => ()))
 	                } else {
 	                  val action = { () =>
 	                    val newParExpr = alternative orElse parExpr
@@ -1108,9 +1047,8 @@ class GameView(val context: Context, attrs: AttributeSet)
 						            e => if (e eq parExpr) Some(newParExpr) else None
 						          }(rule)
 						          game.setRuleByIndex(newRule, indexRule)
-                      // TODO : Include the new expression in the tree.
 	                  }
-	                  actionItems += ((alternative.comment, drw(R.drawable.event_unselected_disambiguate), action))
+	                  actionItems += ((comment, drw(R.drawable.event_unselected_disambiguate), action))
 	                }
 	              }
 	            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
@@ -1194,9 +1132,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         case BeginContact(contact, objectA, objectB) =>
           if (!contactTaken((objectA.name.get, objectB.name.get))) {
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.collision_effect), Left(e)))
+              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_collision_effect), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw(R.drawable.collision_effect), Left(e)))
+              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw(R.drawable.bm_collision_effect), Left(e)))
             }
             contactTaken += ((objectA.name.get, objectB.name.get))
           }
@@ -1205,9 +1143,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           for (obj <- objs) {
             val e = (FingerUp(pos, Set(obj)), time)
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerup_button), Left(e)))
+              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerup_button), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw(R.drawable.fingerup_button), Left(e)))
+              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw(R.drawable.bm_fingerup_button), Left(e)))
             }
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
@@ -1219,9 +1157,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 for (obj <- objs) {
                   val e = (FingerMove(from, to, Set(obj)), time)
                   if (currentEventSelection contains e) {
-                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingermove_button), Left(e)))
+                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingermove_button), Left(e)))
                   } else {
-                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw(R.drawable.fingermove_button), Left(e)))
+                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw(R.drawable.bm_fingermove_button), Left(e)))
                   }
                 }
               }
@@ -1231,9 +1169,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           for (obj <- objs) {
             val e = (FingerDown(pos, Set(obj)), time)
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.fingerdown_button), Left(e)))
+              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerdown_button), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw(R.drawable.fingerdown_button), Left(e)))
+              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw(R.drawable.bm_fingerdown_button), Left(e)))
             }
           }
         case _ => // TODO : Add more actions to disambiguate (position, objects)

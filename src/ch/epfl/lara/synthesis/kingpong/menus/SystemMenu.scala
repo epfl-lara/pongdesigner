@@ -40,8 +40,8 @@ object TrashButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.trashcan ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.trashcan :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_trashcan ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_trashcan :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -61,10 +61,10 @@ object SetTimeButton extends MenuButton {
     hovered = false
   }
   
-  private val selected_hovered_icons = R.drawable.flat_button_selected_highlighted :: R.drawable.reload ::  Nil
-  private val selected_icons = R.drawable.flat_button_selected :: R.drawable.reload :: Nil
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.reload ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.reload :: Nil
+  private val selected_hovered_icons = R.drawable.bm_flat_button_selected_highlighted :: R.drawable.bm_reload ::  Nil
+  private val selected_icons = R.drawable.bm_flat_button_selected :: R.drawable.bm_reload :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_reload ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_reload :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = {
     val selected = selectedShape match { case s: SoundTTS => s.time.next == gameEngine.getGame().time case _ => false }
@@ -88,8 +88,8 @@ object FixButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.back_arrow ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.back_arrow :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_back_arrow ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_back_arrow :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -108,8 +108,8 @@ object CopyButton extends MenuButton {
     hovered = false
   }
   
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.copy_menu ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.copy_menu :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_copy_menu ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_copy_menu :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -127,10 +127,10 @@ object CutButton extends MenuButton {
               val cols = res int2OrElse 1
               if(rows != 1 || cols != 1) {
 	              val pieces = gameEngine.cutRectangle(rect, rows, cols)
-				        rect.deletionTime.set(gameEngine.getGame.time)
+				        rect.deletionTime.setPrevNext(gameEngine.getGame.time)
 				//        gameEngine.getGame.remove(rect)
 				        pieces foreach gameEngine.getGame.add
-				        pieces.foreach(_.creationTime.set(gameEngine.getGame.time))
+				        pieces.foreach(_.creationTime.setPrevNext(gameEngine.getGame.time))
               }
             }, () => {}, "3 x 3")
         
@@ -142,8 +142,8 @@ object CutButton extends MenuButton {
   }
 
   //TODO change the icon menu
-  private val hovered_icons = R.drawable.flat_button_highlighted :: R.drawable.shred ::  Nil
-  private val normal_icons = R.drawable.flat_button :: R.drawable.shred :: Nil
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_shred ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_shred :: Nil
 
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
 
