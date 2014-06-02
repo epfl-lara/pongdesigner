@@ -230,10 +230,6 @@ object Trees {
   
   case class MethodCall(name: String, l: Seq[Expr]) extends Expr
   
-  case class Count(category: Category) extends Expr with Terminal with FixedType {
-    val fixedType = TInt
-  }
-  
   /* Literals */
   sealed abstract class Literal[T] extends Expr with Terminal {
     def value: T

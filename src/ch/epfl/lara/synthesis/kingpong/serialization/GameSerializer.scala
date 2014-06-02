@@ -330,12 +330,6 @@ object GameSerializer {
     "body" <-> (_.body)
     unbuild(Find(_1, _2, _3))
   }
-
-  /** Count converter */
-  implicit case object CountConverter extends CustomConverter[Count]("Count") {
-    "category" <*> (_.category.name)
-    unbuild(Count(_1))
-  }
   
   /** Forall converter */
   implicit case object ForallConverter extends CustomConverter[Forall]("Forall") with SaveRestoreIdentifierContext[Forall] {
@@ -530,7 +524,6 @@ object GameSerializer {
 		case e:Choose => toJson(e)
 		case e:Column => toJson(e)
 		
-		case e:Count => toJson(e)
 		case e:Debug => toJson(e)
 		case e:Delete => toJson(e)
 		case e:Find => toJson(e)
@@ -592,7 +585,6 @@ object GameSerializer {
 		case ChooseConverter(e) => e
 		case ColumnConverter(e) => e
 		
-		case CountConverter(e) => e
 		case DebugConverter(e) => e
 		case DeleteConverter(e) => e
 		case FindConverter(e) => e

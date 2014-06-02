@@ -68,7 +68,7 @@ object Types {
       case _ => this
     }
 
-    def isTyped : Boolean = (getType != TUntyped)
+    def isTyped : Boolean = getType != TUntyped
   }
   
   class TypeErrorException(msg: String) extends Exception(msg)

@@ -7,7 +7,6 @@ import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
-import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.menus.MenuOptions
 
 abstract class Property[@specialized T : PongType]() { self => 
@@ -106,7 +105,7 @@ trait AssignableProperty[T] { self: RWProperty[T] =>
 
 trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
   
-  private var _setNext: T => self.type = setNextInternal _
+  private var _setNext: T => self.type = setNextInternal
   
   /** Validate the next value and replace the current value with it. 
    */
@@ -146,9 +145,9 @@ trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
    */
   def setInstant(activate: Boolean) = {
     if (activate) 
-      _setNext = set _
+      _setNext = set
     else 
-      _setNext = setNextInternal _
+      _setNext = setNextInternal
   }
   
   def assign(v: T): self.type = setNext(v)

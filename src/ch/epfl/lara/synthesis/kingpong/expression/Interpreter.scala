@@ -192,10 +192,7 @@ trait Interpreter {
     case TupleSelect(t, index) => 
       val Tuple(exprs) = eval(t)
       exprs(index - 1)
-        
-    case Count(c) => 
-      IntegerLiteral(c.objects.size)
-    
+
     case c: Choose =>
       eval(c.evaluatedProgram)
       
