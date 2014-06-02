@@ -402,11 +402,6 @@ object GameSerializer {
     unbuild(UnitLiteral)
   }
   
-  /** NOP converter */
-  implicit case object NOPConverter extends CustomConverter[NOP.type]("NOP") {
-    unbuild(NOP)
-  }
-  
   /** TupleSelect converter */
   implicit case object ObjectLiteralConverter extends CustomConverter[ObjectLiteral]("ObjectLiteral") {
     "value" <*> (_.value.name.get)
@@ -546,7 +541,6 @@ object GameSerializer {
 		
 		case e:IsFingerUpOver => toJson(e)
 		case e:MethodCall => toJson(e)
-		case e@NOP => toJson(e) 
 		case e:Not => toJson(e)
 		case e:ObjectLiteral => toJson(e)
 		case e:ParExpr => toJson(e)
@@ -609,7 +603,6 @@ object GameSerializer {
 		
 		case IsFingerUpOverConverter(e) => e
 		case MethodCallConverter(e) => e
-		case NOPConverter(e) => e 
 		case NotConverter(e) => e
 		case ObjectLiteralConverter(e) => e
 		case ParExprConverter(e) => e

@@ -349,12 +349,11 @@ trait PrettyPrinterExtendedTypical {
     case If(cond, s1, s2) =>
       val g = c +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = g + (s1, indent + INDENT)
-      val end = if(s2 != NOP) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
+      val end = if(s2 != UnitLiteral) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
       end +>
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
-    case NOP => c +< "NOP" +>
-    
+
     case Choose(vars, pred) => 
       val varsString = vars.mkString("(", ",", ")")
       c + indent +< "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
@@ -376,7 +375,7 @@ trait PrettyPrinterExtendedTypical {
     case Column(expr) => c + indent +< expr + ".column" +>
     case Apply(arr, col, row) => c + indent +< arr + "(" + col + "," + row + ")" +>
 
-    case FingerMoveOver(obj, _, NOP) => c + indent +< FINGER_MOVE_SYMBOL + " " + obj +>
+    case FingerMoveOver(obj, _, UnitLiteral) => c + indent +< FINGER_MOVE_SYMBOL + " " + obj +>
     case FingerMoveOver(obj, id, block) => c + indent +< FINGER_MOVE_SYMBOL + " " + obj + s":$LF" + (block, indent + INDENT) +>
     case FingerUpOver(obj, id, block) => c + indent +< FINGER_UP_SYMBOL + " " + obj + (block, indent + INDENT) +>
     case FingerDownOver(obj, id, block) => c + indent +< FINGER_DOWN_SYMBOL + " " + obj + (block, indent + INDENT) +>

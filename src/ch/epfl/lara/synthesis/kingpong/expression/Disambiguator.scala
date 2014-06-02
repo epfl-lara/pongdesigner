@@ -1,9 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
-import scala.collection.mutable.{HashMap => MMap}
 import ch.epfl.lara.synthesis.kingpong.objects._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.ListBuffer
 import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 
 /***
@@ -79,7 +76,7 @@ object Disambiguator {
             val (newAssigned, newDuplicates) = findDuplicatesMap(stat)
             (assigned union newAssigned, duplicates union (assigned intersect newAssigned))
         }
-      case If(cond, ifTrue, NOP) =>
+      case If(cond, ifTrue, UnitLiteral) =>
         findDuplicatesMap(ifTrue)
       case If(cond, ifTrue, ifFalse) =>
         val (trueAssigned, trueDuplicates) = findDuplicatesMap(ifTrue)
@@ -102,7 +99,7 @@ object Disambiguator {
       
       case Delete(_) =>
         (Map.empty, Map.empty)
-      case NOP =>
+      case UnitLiteral =>
         (Map.empty, Map.empty)
       //case Reset(prop) =>
       //  (Map.empty, Map.empty)
@@ -192,7 +189,7 @@ object Disambiguator {
     val (_, duplicates) = findDuplicates(t)
     (t /: duplicates) { case (tree, prop) =>
       val mergeMode = interface(prop)
-      modifyCode(tree, NOP, prop, mergeMode) // TODO : Replace NOP by the expression corresponding to prop
+      modifyCode(tree, UnitLiteral, prop, mergeMode) // TODO : Replace UnitLiteral by the expression corresponding to prop
     }
   }
   
@@ -247,7 +244,7 @@ object Disambiguator {
         case ParExpr(l) =>
           val pars = l map { a => rec(a, p, replaceAssigned, replaceEvaluated) } // Should all be the same
           pars match {
-            case Nil => (NOP, replaceAssigned, replaceEvaluated)
+            case Nil => (UnitLiteral, replaceAssigned, replaceEvaluated)
             case a::Nil => a
             case a::q => (ParExpr(pars.map(_._1)), a._2, a._3)
           }
@@ -257,11 +254,11 @@ object Disambiguator {
             (s::statList, rr1, rr2)
           }
           (Block(stats2), res1, res2)
-        case If(cond, ifTrue, NOP) =>
+        case If(cond, ifTrue, UnitLiteral) =>
           val (ifTrue2, itr, ite) = rec(ifTrue, p, replaceAssigned, replaceEvaluated)
-          val (ifFalse2, ifr, ife) = (NOP, replaceAssigned, replaceEvaluated)
+          val (ifFalse2, ifr, ife) = (UnitLiteral, replaceAssigned, replaceEvaluated)
           if(itr == ifr && ite == ife) { // Ifs are balanced.
-            (If(cond, ifTrue2, NOP), itr, ite)
+            (If(cond, ifTrue2, UnitLiteral), itr, ite)
           } else { // Need to introduce new variables
             val i = numProperty(itr._2)
             val j = numProperty(ifr._2)
@@ -365,7 +362,7 @@ object Disambiguator {
         
         case Delete(_) =>
           (t, replaceAssigned, replaceEvaluated)
-        case NOP =>
+        case UnitLiteral =>
           (t, replaceAssigned, replaceEvaluated)
         //case Reset(_) =>
          // (t, replaceAssigned, replaceEvaluated)

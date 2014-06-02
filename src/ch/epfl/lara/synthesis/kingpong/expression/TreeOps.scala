@@ -1,11 +1,9 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
 import ch.epfl.lara.synthesis.kingpong.objects._
-import scala.collection.mutable.ListBuffer
 
 object TreeOps {  
   import Trees._
-  import Types._
   import Extractors._
    
   /**
@@ -302,7 +300,7 @@ object TreeOps {
           case _ => Seq(expr)
         }
         flattenNOP(es.flatMap(flattenBlock)) match {
-          case Seq()  => Some(NOP)
+          case Seq()  => Some(UnitLiteral)
           case Seq(e) => Some(e)
           case exprs  => Some(Block(exprs))
         }
@@ -313,7 +311,7 @@ object TreeOps {
           case _ => List(expr)
         }
         flattenNOP(es.flatMap(flattenParallel).toSeq) match {
-          case Seq()  => Some(NOP)
+          case Seq()  => Some(UnitLiteral)
           case Seq(e) => Some(e)
           case exprs  => Some(ParExpr(exprs.toList))
         }
@@ -327,7 +325,7 @@ object TreeOps {
    * Remove NOP from a sequence of expressions.
    */
   def flattenNOP(exprs: Seq[Expr]): Seq[Expr] = {
-    exprs.filterNot(_ == NOP)
+    exprs.filterNot(_ == UnitLiteral)
   }
   
   def collectObjects(e: Expr): Set[GameObject] = {

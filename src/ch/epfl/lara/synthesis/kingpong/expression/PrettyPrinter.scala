@@ -126,12 +126,11 @@ trait PrettyPrinterTypical {
     case If(cond, s1, s2) => 
       val prem = s"$IF_SYMBOL " + print(NO_INDENT, cond) + ":" + LF
       val middle = print(indent + INDENT, s1)
-      val end = if(s2 != NOP) indent + "else:" + LF + print(indent + INDENT, s2) else ""
+      val end = if(s2 != UnitLiteral) indent + "else:" + LF + print(indent + INDENT, s2) else ""
       prem + middle + end
     case Copy(name, obj, b) =>
       indent + name + " = " + obj + ".copy" + LF + print(indent, b)
-    case NOP => "NOP"
-    
+
     case Choose(vars, pred) => 
       val varsString = vars.map(print(NO_INDENT, _)).mkString("(", ",", ")")
       indent + "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + print(NO_INDENT, pred) + ")"

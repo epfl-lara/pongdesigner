@@ -1,25 +1,15 @@
 package ch.epfl.lara.synthesis.kingpong.examples
 
-import scala.collection.mutable.{Set => MSet}
-import scala.math.Numeric$DoubleIsFractional$
-import scala.Dynamic
 import scala.language.dynamics
 
 import org.jbox2d.dynamics.BodyType
 
-import android.util.Log
-
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong._
-import ch.epfl.lara.synthesis.kingpong.expression._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
-import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 class SimplePong extends Game {
   val world = new PhysicalWorld(Vec2(0, 0f))
@@ -157,7 +147,7 @@ class SimplePong extends Game {
   }
   
   
-  val r8 = Block( NOP
+  val r8 = Block( UnitLiteral
 //     paddle1.x := Choose(List(paddle1.x),
 //                         (paddle1.left >= Border2.right) && // toRightOfAtMost
 //                         (paddle1.right <= Border3.left)),  // toLeftOfAtMost

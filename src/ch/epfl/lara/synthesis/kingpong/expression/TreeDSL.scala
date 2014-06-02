@@ -68,7 +68,7 @@ object TreeDSL {
   implicit def objectToProxyExpr(obj: GameObject): ProxyExpr = new ProxyExpr(obj.expr)
   implicit def propertyToExpr(prop: Property[_]): Expr = prop.expr
   implicit def seqStatToStat(stats: Seq[Expr]) = stats match {
-    case Seq()  => NOP
+    case Seq()  => UnitLiteral
     case Seq(s) => s
     case _      => Block(stats)
   }
@@ -269,7 +269,7 @@ object TreeDSL {
   
   def isFingerMoveOver(obj: Expr): Expr = {
     val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
-    FingerMoveOver(obj, id, NOP)
+    FingerMoveOver(obj, id, UnitLiteral)
   }
   
    def isFingerUpOver(obj: Expr): Expr = {

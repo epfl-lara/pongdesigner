@@ -1,6 +1,5 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
-import scala.Dynamic
 import scala.language.dynamics
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{ HashMap => MMap }

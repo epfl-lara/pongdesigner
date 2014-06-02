@@ -4,18 +4,12 @@ import scala.collection.mutable.{HashMap => MMap}
 
 import android.util.Log
 
-import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import ch.epfl.lara.synthesis.kingpong.rules.Events._
-import ch.epfl.lara.synthesis.kingpong.objects.Property
-import ch.epfl.lara.synthesis.kingpong.objects.AssignableProperty
-import ch.epfl.lara.synthesis.kingpong.objects.HistoricalProperty
 import ch.epfl.lara.synthesis.kingpong.objects.AssignableProperty
 
 case class InterpreterException(msg: String) extends Exception(msg)
@@ -38,8 +32,6 @@ trait Interpreter {
   
   /** Initialize the global context. */
   def initGC(): Context
-  
-  
   
   trait RecContext {
     def withNewVar(id: Identifier, e: Expr): RecContext
@@ -348,9 +340,9 @@ trait Interpreter {
       val moves = gctx.fingerMoves(_.objects.exists(_ == obj))
       val from = moves.headOption.map(_.from)
       if (from.isDefined) {
-        // The block is NOP if the expression is only used for its returned value.
+        // The block is UnitLiteral if the expression is only used for its returned value.
         // No need to instantiate a new RecContext.
-        if (block != NOP) {
+        if (block != UnitLiteral) {
           val to = moves.last.to
           eval(block)(gctx, rctx.withNewVar(id, Tuple(Seq(from.get, to))))
         }
@@ -364,9 +356,9 @@ trait Interpreter {
       val downs = gctx.fingerDowns(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
-        // The block is NOP if the expression is only used for its returned value.
+        // The block is UnitLiteral if the expression is only used for its returned value.
         // No need to instantiate a new RecContext.
-        if (block != NOP) {
+        if (block != UnitLiteral) {
           eval(block)(gctx, rctx.withNewVar(id, from.get))
         }
         booleanLiteralTrue
@@ -379,9 +371,9 @@ trait Interpreter {
       val downs = gctx.fingerUps(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
-        // The block is NOP if the expression is only used for its returned value.
+        // The block is UnitLiteral if the expression is only used for its returned value.
         // No need to instantiate a new RecContext.
-        if (block != NOP) {
+        if (block != UnitLiteral) {
           eval(block)(gctx, rctx.withNewVar(id, from.get))
         }
         booleanLiteralTrue
@@ -465,11 +457,6 @@ trait Interpreter {
         case _ => error(expr)
       }
 
-    case NOP => UnitLiteral
-      
-    case null =>
-      Log.d("kingpong", "Interpreter: Erreur while evaluating null")
-      error(expr)
   }
   
   private def error(expr: Expr): Nothing = {

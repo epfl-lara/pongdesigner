@@ -5,8 +5,6 @@ import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.rules.Context
 
 object Trees {
   
@@ -29,7 +27,7 @@ object Trees {
   }
 
   sealed trait Tree {
-    
+
     def copiedFrom(o: Tree): this.type = {
       (this, o) match {
         // do not force if already set
@@ -39,7 +37,7 @@ object Trees {
       }
       this
     }
-    
+
   }
   
   
@@ -133,12 +131,10 @@ object Trees {
   
   case class Delete(obj: Expr) extends UnitExpr
   
-  case object NOP extends UnitExpr with Terminal
-
   case class ParExpr(exprs: List[Expr]) extends UnitExpr
   
   object If {
-    def apply(cond: Expr, e: Expr): If = If(cond, e, NOP)
+    def apply(cond: Expr, e: Expr): If = If(cond, e, UnitLiteral)
   }
   
   case class If(cond: Expr, thenn: Expr, elze: Expr) extends Expr with FixedType {
@@ -215,7 +211,7 @@ object Trees {
 
     override def hashCode: Int = tuple.hashCode + index.hashCode
     
-    override def toString() = "TupleSelect(" + tuple + ", " + index + ")"
+    override def toString = "TupleSelect(" + tuple + ", " + index + ")"
   }
   
   /**
@@ -262,8 +258,7 @@ object Trees {
   case class BooleanLiteral(value: Boolean) extends Literal[Boolean] with FixedType {
     val fixedType = TBoolean
   }
-  case object UnitLiteral extends Literal[Unit] with FixedType {
-    val fixedType = TUnit
+  case object UnitLiteral extends Literal[Unit] with UnitExpr {
     val value = ()
   }
   

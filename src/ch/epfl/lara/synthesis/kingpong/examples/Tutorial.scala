@@ -3,7 +3,6 @@ package ch.epfl.lara.synthesis.kingpong.examples
 import org.jbox2d.dynamics.BodyType
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
-import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
@@ -23,7 +22,7 @@ class Tutorial extends Game {
   """
       
   val rudy_rule = whenever(isFingerDownOver(rudy) /*&& speech.isNotEmpty*/)(
-    NOP
+    UnitLiteral
   )
   
   val moving_objects = Category("Moving_objects")()
