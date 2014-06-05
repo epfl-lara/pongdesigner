@@ -27,7 +27,7 @@ class ProofConceptGame extends Game {
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
   val base2 = rectangle(cat2)("Base2", 0, -8.5, width = 20, height = 0.5, tpe = BodyType.STATIC)
-  val mushroom = rectangle(cat2)("mushroom", 5, 7, width = 1, height = 1, color = Color.RED, fixedRotation = true)
+  val mushroom = rectangle(cat2)("mushroom", 0, 1, width = 1, height = 1, color = Color.RED, fixedRotation = true)
 
   val arr = array(catArray)("MyArray", 0, 0, 5, 1)
   

@@ -1037,7 +1037,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 	            case parExpr: ParExpr =>
 	              val first = parExpr.exprs.headOption.getOrElse(null)
 	              for (alternative <- parExpr.exprs) {
-	                val comment = { val c = alternative.comment; if(c == "" || c == null) alternative.toString() else c}
+	                val comment = { val c = alternative.comment; if(c == "" || c == null) PrettyPrinter.print(alternative) else c}
 	                if (alternative eq first) {
 	                  actionItems += ((comment, drw(R.drawable.event_selected_disambiguate), () => ()))
 	                } else {

@@ -94,6 +94,8 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
   
 
   private def print(indent: String, s: Tree): CharSequence = s match {
+    case ParExpr(Nil) => ""
+    case ParExpr(a::l) => indent + a + "//" + l.size +" more"
     case Let(id, expr, body) =>
         indent + "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + print(indent, body)
     case Foreach(cat, id, body) =>
