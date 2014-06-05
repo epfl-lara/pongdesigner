@@ -5,6 +5,7 @@ import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
+import TreeDSL._
 
 object Trees {
   
@@ -217,13 +218,13 @@ object Trees {
   /**
    * Choose construct to choose some assignments given the constraint.
    */
-  case class Choose(vars: List[Identifier], constraint: Expr) extends Expr with FixedType {
+  case class Choose(vars: List[Expr], constraint: Expr, code: Expr) extends Expr with FixedType {
     
     assert(!vars.isEmpty)
     
     val fixedType = if (vars.size > 1) TTuple(vars.map(_.getType)) else vars.head.getType
     
-    var evaluatedProgram: Expr = null
+    def evaluatedProgram: Expr = code
     var expandedConstraint: Expr = null
     def getContraintForSolving = if(expandedConstraint == null) constraint else expandedConstraint
   }

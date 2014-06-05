@@ -85,7 +85,7 @@ object GameSerializer {
     var mapSeq = ListBuffer[(String, T => Seq[Expr])]()
     implicit class RichMap(s: String) {
       def <->(t: T => Expr): Unit = map += ((s, (t)))
-      def <++>(t: T => Seq[Expr]): Unit = mapSeq += ((s, t))
+      def <-->(t: T => Seq[Expr]): Unit = mapSeq += ((s, t))
     }
   }
   
@@ -286,14 +286,15 @@ object GameSerializer {
   
   /** Block converter */
   implicit case object BlockConverter extends ConverterBuilder[Block]("Block") {
-    "exprs" <++> (_.exprs)
+    "exprs" <--> (_.exprs)
   }
   
   /** Choose converter */
   implicit case object ChooseConverter extends CustomConverter[Choose]("Choose") {
-    "vars" <==> (_.vars)
+    "vars" <--> (_.vars.toSeq.asInstanceOf[Seq[Expr]])
     "constraint" <-> (_.constraint)
-    unbuild(Choose(__1, _2))
+    "code" <-> (_.code)
+    unbuild(Choose(__1, _2, _3))
   }
   
   /** Column converter */

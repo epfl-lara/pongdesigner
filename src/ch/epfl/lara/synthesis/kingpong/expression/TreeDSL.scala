@@ -173,6 +173,10 @@ object TreeDSL {
       case e =>
         ParExpr(expr::e::Nil)
     }
+    def Else(e: Expr): Expr = e match {
+      case If(cond, body, els) => If(cond, body, e)
+      case e => e
+    }
   }
   
   trait Proxy extends Any {
@@ -343,9 +347,11 @@ object TreeDSL {
     Find(category, id, body(ref))
   }
   
-  def whenever(cond: Expr)(actions: Expr*): Expr = {
+  def whenever(cond: Expr)(actions: Expr*): If = {
     If(cond, TreeOps.flatten(actions.toSeq))
   }
+  
+  def iif(cond: Expr)(actions: Expr*): If = If(cond, TreeOps.flatten(actions.toSeq))
   
   def debug(msg: String, args: Expr*): Expr = {
     Debug(msg, args.toSeq)
@@ -353,6 +359,11 @@ object TreeDSL {
 
   def isNull(expr: Expr): Expr  = expr =:= ObjectLiteral(null)
   def notNull(expr: Expr): Expr = expr =!= ObjectLiteral(null)
+  
+  def choose(exprs: Expr*)(body: Expr): Expr = {
+    val outputs = exprs.toList
+    Choose(outputs, body, ComfusySolver.solve(outputs, body))
+  }
 
   @tailrec
   def and(exprs: List[Expr]): Expr = exprs match {

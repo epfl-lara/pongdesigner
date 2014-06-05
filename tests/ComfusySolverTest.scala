@@ -12,7 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
-class ComfusySolvertest extends FlatSpec with Matchers {
+class ComfusySolvertest extends FlatSpec with ShouldMatchers {
   
   import ComfusySolver._
   

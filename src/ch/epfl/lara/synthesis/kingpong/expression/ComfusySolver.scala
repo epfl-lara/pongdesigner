@@ -2,6 +2,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import TreeDSL._
+import scala.collection.mutable.{HashMap => Map}
 
 object ComfusySolver {
   import ch.epfl.lara.synthesis.kingpong.common.Implicits._
@@ -103,16 +104,23 @@ object ComfusySolver {
     }
   }
   
+  def canonizeVarName(expr: Expr)(implicit context: Map[Name, Expr]): String = { val res = expr match {
+    case Variable(id: Identifier) => id.name
+    case Select(Variable(o), property: String) => o.name + "." + property
+    case Select(ObjectLiteral(o), property: String) => o.name.get + "." + property
+    case _ => throw new Error(s"$expr is not a valid identifier or variable.identifier")
+  }
+    context(res) = expr
+    res
+  }
+  
   /**
    * Put the input constraint into canonization form.
    * ... <= 0  and ... === 0 where variables are sorted alphabetically
    */
   def canonize(expr: Expr)(implicit context: Map[Name, Expr]): ComExpr = expr match {
     
-    //TODO right way ?
-    case Variable(id: Identifier) => Sum(0, List((id.name, 1)))
-    case Variable(id) => throw new Error(s"$expr cannot be canonized because the variable is not a property")
-  
+    //case Variable(id) => throw new Error(s"$expr cannot be canonized because the variable is not a property")
     case Plus(lhs: Expr, rhs: Expr)  => (canonize(lhs),canonize(rhs)) asSum (_ + _)
     case Minus(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ - _)
     case Times(lhs: Expr, rhs: Expr) => (canonize(lhs),canonize(rhs)) asSum (_ * _)
@@ -130,18 +138,10 @@ object ComfusySolver {
     
     case BooleanLiteral(true) => Conjunct(Nil, Nil)
     case BooleanLiteral(false) => Conjunct(Nil, List(Sum(1, Nil)))
-    case Choose(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Choose")
-    case Collision(_, _) => throw new Error(s"$expr cannot be canonized because it contains a Collision")
-    case _: FingerDownOver => throw new Error(s"$expr cannot be canonized because it contains a FingerDownOver")
-    case _: FingerMoveOver => throw new Error(s"$expr cannot be canonized because it contains a FingerMoveOver")
-    case _: FingerUpOver => throw new Error(s"$expr cannot be canonized because it contains a FingerUpOver")
-    case _: IsFingerDownOver => throw new Error(s"$expr cannot be canonized because it contains a IsFingerDownOver")
-    case _: IsFingerUpOver =>  throw new Error(s"$expr cannot be canonized because it contains a IsFingerUpOver")
-    case FloatLiteral(f) => Sum(f, Nil)
-    case IntegerLiteral(f) => Sum(f, Nil)
-    case StringLiteral(_) => throw new Error(s"$expr cannot be canonized because it contains a String")
-    case UnitLiteral => throw new Error(s"$expr cannot be canonized because it contains a UnitLiteral")
-    case Tuple(_) => throw new Error(s"$expr cannot be canonized because it contains a VecExpr")
+    case IntegerLiteral(i) => Sum(i, Nil)
+    case FloatLiteral(i) => Sum(i, Nil)
+    case e => Sum(0, List((canonizeVarName(e), 1)))
+    case _ => throw new Error(s"$expr cannot be canonized because it contains a " + expr.getClass().getName())
   }
   
   /**
@@ -232,14 +232,9 @@ object ComfusySolver {
     }
   }
   
-  def solve(o: Tuple, constraint: Expr): Expr = {
-    val output_variables = o.exprs.map{
-      //TODO
-//      case p:PropertyIndirect => p.name + "." + p.prop
-//      case p@PropertyRef(prop) => prop.parent.name.get + "." + prop.name
-      case e => e.toString
-    }
+  def solve(o: List[Expr], constraint: Expr): Expr = {
     implicit val context = Map[Name, Expr]()
+    val output_variables = o.map(canonizeVarName)
     canonize(constraint) match {
       case canonized:Conjunct =>
         val result = solveCanonized(output_variables.toList, canonized)

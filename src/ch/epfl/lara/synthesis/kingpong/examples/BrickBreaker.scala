@@ -11,7 +11,7 @@ import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 
-class SimplePong extends Game {
+class BrickBreaker extends Game {
   val world = new PhysicalWorld(Vec2(0, 0f))
 
   val borders = Category("Borders")(friction=0, restitution=1, fixedRotation=true, tpe=BodyType.STATIC)

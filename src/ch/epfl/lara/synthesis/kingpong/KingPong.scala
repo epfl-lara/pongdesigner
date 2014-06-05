@@ -34,7 +34,6 @@ import android.widget.SeekBar
 import android.widget.LinearLayout
 import android.widget.ImageView
 import net.londatiga.android._
-import ch.epfl.lara.synthesis.kingpong.examples.TestGame
 import ch.epfl.lara.synthesis.kingpong.common.Messages
 import ch.epfl.lara.synthesis.kingpong.serialization.GameSerializer
 import java.util.Locale
@@ -61,12 +60,12 @@ object KingPong {
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   final val PONGNAME_TESTGAME = "TestGame"
   private var mapgames: Map[String,()=>Game] = Map.empty
-  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.SimplePong()))
+  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.BrickBreaker()))
   mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
   mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
   mapgames += (PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()))
   mapgames += (PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()))
-  mapgames += (PONGNAME_TESTGAME -> (() => new examples.TestGame()))
+  mapgames += (PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame()))
   
   //def mapGame(s: String): Game = { s match {
       /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
@@ -227,7 +226,7 @@ class KingPong extends Activity
     }
     if(!mGameView.hasGame()) {
       if(task.game == null) {
-        task.game = new TestGame()
+        task.game = new examples.ProofConceptGame()
       }
       mGameView.setGame(task.game)
     }

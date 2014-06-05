@@ -86,7 +86,7 @@ trait PrettyPrinterTypical {
 
   private def print(indent: String, s: Tree): CharSequence = s match {
     case Foreach(cat, id, body) =>
-      indent + s"$FOR_SYMBOL " + id.toString+ s" $IN_SYMBOL " + cat + s":$LF" + print(NO_INDENT, body)
+      indent + s"$FOR_SYMBOL " + id.toString+ s" $IN_SYMBOL " + cat.name + s":$LF" + print(NO_INDENT, body)
     case Forall(category, id, body) =>
        category.name + ".forall{" + id + " => " + print(NO_INDENT, body) + "}"
     case Find(category, id, body) =>
@@ -131,7 +131,7 @@ trait PrettyPrinterTypical {
     case Copy(name, obj, b) =>
       indent + name + " = " + obj + ".copy" + LF + print(indent, b)
 
-    case Choose(vars, pred) => 
+    case Choose(vars, pred, body) => 
       val varsString = vars.map(print(NO_INDENT, _)).mkString("(", ",", ")")
       indent + "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + print(NO_INDENT, pred) + ")"
     

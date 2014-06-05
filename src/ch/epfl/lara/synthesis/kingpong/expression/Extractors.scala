@@ -15,7 +15,7 @@ object Extractors {
       case IsFingerDownOver(e) => Some((e, IsFingerDownOver))
       case IsFingerUpOver(e)   => Some((e, IsFingerUpOver))
       case TupleSelect(e, i) => Some((e, TupleSelect(_, i)))
-      case Choose(vars, e)   => Some((e, Choose(vars, _)))
+      case Choose(vars, e, b)   => Some((e, Choose(vars, _, b)))
       case Select(t1, p)   => Some((t1, Select(_, p)))
       
       case Foreach(cat, id, e) => Some((e, Foreach(cat, id, _)))

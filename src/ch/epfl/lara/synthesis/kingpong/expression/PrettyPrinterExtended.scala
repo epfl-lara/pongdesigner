@@ -354,7 +354,7 @@ trait PrettyPrinterExtendedTypical {
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
 
-    case Choose(vars, pred) => 
+    case Choose(vars, pred, body) => 
       val varsString = vars.mkString("(", ",", ")")
       c + indent +< "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
     
