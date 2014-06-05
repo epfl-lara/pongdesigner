@@ -410,6 +410,27 @@ trait Interpreter {
           Literal(isCollision)
         case _ => error(expr)
       }
+    case Colliding(lhs, rhs) =>
+       (eval(lhs), eval(rhs)) match {
+        case (ObjectLiteral(o1), ObjectLiteral(o2)) => 
+          val isCollision = gctx.existsContact { c =>
+            (c.objectA == o1 && c.objectB == o2) ||
+            (c.objectA == o2 && c.objectB == o1)
+          }
+          Literal(isCollision)
+        case _ => error(expr)
+      }
+    
+    case OutOfCollision(lhs, rhs) =>
+       (eval(lhs), eval(rhs)) match {
+        case (ObjectLiteral(o1), ObjectLiteral(o2)) => 
+          val isCollision = gctx.existsEndContact { c =>
+            (c.objectA == o1 && c.objectB == o2) ||
+            (c.objectA == o2 && c.objectB == o1)
+          }
+          Literal(isCollision)
+        case _ => error(expr)
+      }
       
     case Contains(lhs, rhs) =>
       (eval(lhs), eval(rhs)) match {

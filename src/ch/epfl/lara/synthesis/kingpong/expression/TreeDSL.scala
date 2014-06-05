@@ -170,10 +170,12 @@ object TreeDSL {
     def orElse(e: Expr): ParExpr = e match {
       case ParExpr(l) =>
         ParExpr(expr::l.filterNot(_ eq expr))
-      case e =>
-        ParExpr(expr::e::Nil)
+      case e => expr match {
+        case ParExpr(l) => ParExpr(l ++ List(e))
+        case expr => ParExpr(expr::e::Nil)
+      }
     }
-    def Else(e: Expr): Expr = e match {
+    def Else(e: Expr): Expr = expr match {
       case If(cond, body, els) => If(cond, body, e)
       case e => e
     }

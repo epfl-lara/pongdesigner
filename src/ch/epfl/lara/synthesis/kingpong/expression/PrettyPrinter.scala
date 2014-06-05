@@ -14,16 +14,16 @@ import android.text.style.ForegroundColorSpan
 object PrettyPrinter extends PrettyPrinterTypical {
   override val FOR_SYMBOL = "for"
   override val IN_SYMBOL = "in"
-  override val FINGER_MOVE_SYMBOL = "movedOn "
-  override val FINGER_DOWN_SYMBOL = "downOn "
-  override val FINGER_UP_SYMBOL = "upOn "
+  override val FINGER_MOVE_SYMBOL = "on movedOn "
+  override val FINGER_DOWN_SYMBOL = "on downOn "
+  override val FINGER_UP_SYMBOL = "on upOn "
   override val COLLIDES_SYMBOL = "collides"
+  override val COLLIDING_SYMBOL = "colliding"
+  override val OUTOFCOLLISION_SYMBOL = "not colliding anymore"
   override val IF_SYMBOL = "if"
 }
 
-trait PrettyPrinterTypical {
-  import Trees._
-  import Extractors._
+trait CommonPrettyPrintingConstants {
   
   final val NO_INDENT = ""
   final val INDENT = "  "
@@ -36,12 +36,21 @@ trait PrettyPrinterTypical {
   val LESSEQ_SYMBOL = "\u2264"
   val GREATEREQ_SYMBOL = "\u2265"
   val COLLIDES_SYMBOL = "\u2605"
+  val COLLIDING_SYMBOL = "during \u2605"
+  val OUTOFCOLLISION_SYMBOL = "\u00AC\u2605"
   val NOT_SYMBOL = "\u00AC"
   val FINGER_MOVE_SYMBOL = "\u21BA"
   val FINGER_DOWN_SYMBOL = "\u21E9"
   val FINGER_UP_SYMBOL = "\u21E7"
   val ARROW_FUNC_SYMBOL = "\u21D2"
+  val LET_ASSIGN_SYMBOL = "="
   val IF_SYMBOL = "if"
+}
+
+trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
+  import Trees._
+  import Extractors._
+  
   lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)
   
    def setSpanOnKeywords(text: CharSequence, keywords: Seq[String], cs: (()=>CharacterStyle)*): CharSequence = {
@@ -85,6 +94,8 @@ trait PrettyPrinterTypical {
   
 
   private def print(indent: String, s: Tree): CharSequence = s match {
+    case Let(id, expr, body) =>
+        indent + "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + print(indent, body)
     case Foreach(cat, id, body) =>
       indent + s"$FOR_SYMBOL " + id.toString+ s" $IN_SYMBOL " + cat.name + s":$LF" + print(NO_INDENT, body)
     case Forall(category, id, body) =>
@@ -111,6 +122,8 @@ trait PrettyPrinterTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
+        case _:Colliding => COLLIDING_SYMBOL
+        case _:OutOfCollision => OUTOFCOLLISION_SYMBOL
         case _:Contains => "contains"
         case _ => "["+b.getClass().getName()+"]"
       }

@@ -37,6 +37,12 @@ object Events {
       (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)
     }
   }
+  
+  sealed trait ContactEvent extends SelectableEvent {
+    def objectA: GameObject
+    def objectB: GameObject
+  }
+  
   object SelectableEvent {
     def unapply(e: Event): Option[(Float, Float)] = e match {
       case e: SelectableEvent => Some((e.p.x, e.p.y))
@@ -64,11 +70,11 @@ object Events {
     def p = from
   }
 
-  case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
+  case class BeginContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent with ContactEvent {
     def objects = Set(objectA, objectB)
     override def isContact = true
   }
-  case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent {
+  case class CurrentContact(p: Vec2, objectA: GameObject, objectB: GameObject) extends Event with SelectableEvent with ContactEvent {
     def objects = Set(objectA, objectB)
     override def isContact = true
   }

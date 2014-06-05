@@ -42,6 +42,9 @@ object Extractors {
   implicit val BuilderOr = new Builder[Or] { def apply(as: Seq[Expr]) = Or(as.head, as.tail.head)}
   
   implicit val BuilderCollision = new Builder[Collision] { def apply(as: Seq[Expr]) = Collision(as.head, as.tail.head)}
+  implicit val BuilderColliding = new Builder[Colliding] { def apply(as: Seq[Expr]) = Colliding(as.head, as.tail.head)}
+  implicit val BuilderOutOfCollision = new Builder[OutOfCollision] { def apply(as: Seq[Expr]) = OutOfCollision(as.head, as.tail.head)}
+  
   implicit val BuilderContains = new Builder[Contains] { def apply(as: Seq[Expr]) = Contains(as.head, as.tail.head)}
   //implicit val BuilderCopy = new Builder[Copy] { def apply(as: Seq[Expr]) = Copy(as.head, as.tail.head)}
   //implicit val BuilderApplyForce = new Builder[ApplyForce] { def apply(as: Seq[Expr]) = ApplyForce(as.head, as.tail.head)}
@@ -65,6 +68,8 @@ object Extractors {
       case Or(t1, t2)          => Some((t1, t2, Or))
       
       case Collision(t1, t2) => Some((t1, t2, Collision))
+      case Colliding(t1, t2) => Some((t1, t2, Colliding))
+      case OutOfCollision(t1, t2) => Some((t1, t2, OutOfCollision))
       case Contains(t1, t2)  => Some((t1, t2, Contains))
       case Let(id, t1, t2)   => Some((t1, t2, Let(id, _, _)))
       case Copy(t1, id, t2)  => Some((t1, t2, Copy(_, id, _)))

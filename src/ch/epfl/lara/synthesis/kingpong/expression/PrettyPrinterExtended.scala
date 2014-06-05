@@ -15,6 +15,8 @@ object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val FINGER_DOWN_SYMBOL = "on downOn "
   override val FINGER_UP_SYMBOL = "on upOn "
   override val COLLIDES_SYMBOL = "collides"
+    override val COLLIDING_SYMBOL = "colliding"
+  override val OUTOFCOLLISION_SYMBOL = "not colliding anymore"
   override val IF_SYMBOL = "if"
 }
 
@@ -137,31 +139,9 @@ object PrettyPrinterExtendedTypical {
   }
 }
 
-trait PrettyPrinterExtendedTypical {
+trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
   import PrettyPrinterExtendedTypical._
-  final val NO_INDENT = ""
-  final val INDENT = "  "
-  final val LF = "\n"
-  val FOR_SYMBOL = "\u2200"
-  val IN_SYMBOL = "\u2208"
-  val TIMES_SYMBOL = "*" // "\u2219"
-  val AND_SYMBOL = "\u2227"
-  val OR_SYMBOL = "\u2228"
-  val LESSEQ_SYMBOL = "\u2264"
-  val GREATEREQ_SYMBOL = "\u2265"
-  val COLLIDES_SYMBOL = "\u2605"
-  val NOT_SYMBOL = "\u00AC"
-  val FINGER_MOVE_SYMBOL = "\u21BA"
-  val FINGER_DOWN_SYMBOL = "\u21E9"
-  val FINGER_UP_SYMBOL = "\u21E7"
-  val ARROW_FUNC_SYMBOL = "\u21D2"
-  val LET_ASSIGN_SYMBOL = "\u2190" 
-  val IF_SYMBOL = "if"
   lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
-  
-  
-  
-  
   
   /**
    * Class holding the tree being rendered, with the mapping.
@@ -396,6 +376,8 @@ trait PrettyPrinterExtendedTypical {
         case _:GreaterThan => ">"
         case _:GreaterEq => GREATEREQ_SYMBOL
         case _:Collision => COLLIDES_SYMBOL
+        case _:Colliding => COLLIDING_SYMBOL
+        case _:OutOfCollision => OUTOFCOLLISION_SYMBOL
         case _:Contains => "contains"
         case _:ApplyForce => "apply force"
         case _ => "["+b.getClass().getName()+"]"

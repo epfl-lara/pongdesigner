@@ -141,7 +141,7 @@ object ComfusySolver {
     case IntegerLiteral(i) => Sum(i, Nil)
     case FloatLiteral(i) => Sum(i, Nil)
     case e => Sum(0, List((canonizeVarName(e), 1)))
-    case _ => throw new Error(s"$expr cannot be canonized because it contains a " + expr.getClass().getName())
+    //case _ => throw new Error(s"$expr cannot be canonized because it contains a " + expr.getClass().getName())
   }
   
   /**

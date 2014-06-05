@@ -289,7 +289,8 @@ object Trees {
 //    def collides(other: GameObjectRef) = Collision(this, other)
   
   case class Collision(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
-  
+  case class Colliding(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
+  case class OutOfCollision(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   /* Finger interactions */
   
   case class FingerMoveOver(obj: Expr, id: Identifier, block: Expr) extends Expr with FixedBooleanType

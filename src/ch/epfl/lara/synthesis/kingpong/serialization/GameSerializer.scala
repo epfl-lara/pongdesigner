@@ -178,6 +178,8 @@ object GameSerializer {
   implicit case object OrConverter extends ConverterBuilder[Or]("Or") with BinaryConverter[Or]
 
   implicit case object CollisionConverter extends ConverterBuilder[Collision]("Collision") with BinaryConverter[Collision]
+  implicit case object CollidingConverter extends ConverterBuilder[Colliding]("Colliding") with BinaryConverter[Colliding]
+  implicit case object OutOfCollisionConverter extends ConverterBuilder[OutOfCollision]("OutOfCollision") with BinaryConverter[OutOfCollision]
   implicit case object ContainsConverter extends ConverterBuilder[Contains]("Contains") with BinaryConverter[Contains]
   
   
@@ -510,6 +512,8 @@ object GameSerializer {
     case e:Or => toJson(e)
     
     case e:Collision => toJson(e)
+    case e:Colliding => toJson(e)
+    case e:OutOfCollision => toJson(e)
     case e:Contains => toJson(e)
     case e:Let => toJson(e)
     case e:Copy => toJson(e)
@@ -571,6 +575,8 @@ object GameSerializer {
     case OrConverter(e) => e
     
     case CollisionConverter(e) => e
+    case CollidingConverter(e) => e
+    case OutOfCollisionConverter(e) => e
     case ContainsConverter(e) => e
     case LetConverter(e) => e
     case CopyConverter(e) => e

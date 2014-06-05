@@ -131,7 +131,7 @@ trait Game extends RulesManager with Context { self =>
     aliveObjects foreach {_.postStep(this)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )
-    // TODO : Garbage collect objects that have been deleted for too much time.
+    // TODO : Garbage collect objects that have been deleted for too much time and which cannot be created at the beginning
   }
   
   def updateWorldGravity() {

@@ -34,8 +34,6 @@ class EventsHistory(val game: Game) {
     if (time >= 0 && time <= max_time) {
       recording_time = t + 1
       crtEvents.clear()
-      
-      // TODO : Add or remove objects
     }
   }
   

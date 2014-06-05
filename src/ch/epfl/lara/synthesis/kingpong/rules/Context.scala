@@ -48,6 +48,11 @@ trait Context extends Any {
     case e: BeginContact => f(e)
     case _ => false
   }
+  
+  def existsContact(f: ContactEvent => Boolean): Boolean = events exists {
+    case e: ContactEvent => f(e)
+    case _ => false
+  }
 
   def currentContacts(f: CurrentContact => Boolean): Iterable[CurrentContact] = events collect {
     case e: CurrentContact if f(e) => e

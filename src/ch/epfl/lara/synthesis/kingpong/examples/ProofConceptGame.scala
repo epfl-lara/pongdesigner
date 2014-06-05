@@ -13,7 +13,7 @@ import android.graphics.Color
 class ProofConceptGame extends Game {
   val world = new PhysicalWorld(Vec2(0, 3.5f))
 
-  val array_objects = Category("Array_objects")()
+  val array_objects = Category("falling_objects")()
   //val moving_objects2 = Category("Moving_objects2")()
 
   val rect1 = rectangle(array_objects)(name="Rect1", x=2, y= -2, width = 1, height = 1, fixedRotation = true)
@@ -26,8 +26,8 @@ class ProofConceptGame extends Game {
   val catArray = Category("Array objects")()
 
   val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
-  val base2 = rectangle(cat2)("Base2", 0, -10.5, width = 20, height = 0.5, tpe = BodyType.STATIC)
-  val mushroom = rectangle(cat2)("mushroom", 5, 7, width = 1, height = 1, color = Color.RED, tpe = BodyType.STATIC)
+  val base2 = rectangle(cat2)("Base2", 0, -8.5, width = 20, height = 0.5, tpe = BodyType.STATIC)
+  val mushroom = rectangle(cat2)("mushroom", 5, 7, width = 1, height = 1, color = Color.RED, fixedRotation = true)
 
   val arr = array(catArray)("MyArray", 0, 0, 5, 1)
   
@@ -55,7 +55,7 @@ class ProofConceptGame extends Game {
   
   // Rule to be corrected by providing a new example (e.g. selecting a collision, augmenting the score to 2 and accepting.)
   val r2 = foreach(array_objects) { b =>
-    whenever(isFingerDownOver(b) && b.color == Color.BLACK)(
+    whenever(isFingerDownOver(b) && b.color =:= Color.BLACK)(
         (score2.value := 1) orElse (score2.value := score2.value + 1),
         b.color := Color.GREEN
     )
@@ -70,21 +70,17 @@ class ProofConceptGame extends Game {
   }
   
   // A growing mushroom if it hits the floor. Then pops after growth.
-  val r4 = iif(mushroom.top < -6)(
-    let("t","y",  mushroom.top, mushroom.y) { (t, y) => 
-	    let("yh", choose(mushroom.y, mushroom.height)(mushroom.top =:= (t + 0) && mushroom.height =:= 1)){ yh =>
-	      Seq(mushroom.y := yh._1,
-	      mushroom.height := yh._2,
-	      mushroom.width := 1)
-	    }
-    }
+  val r4 = iif(mushroom.top < 0)(
+    mushroom.height := 1,
+	  mushroom.width := 1
   ) Else (
-    whenever(Collision(mushroom, base))(
+    whenever(Colliding(mushroom, base) && mushroom.bottom > base.top - 1 )(
 	    let("t", mushroom.top) { t =>
 	      let("yh", choose(mushroom.y, mushroom.height)(mushroom.bottom =:= base.top && mushroom.top =:= t - 0.05)){ yh =>
 	        Seq(mushroom.y := yh._1,
 	        mushroom.height := yh._2,
-	        mushroom.width := integerLiteralOne / mushroom.height)
+	        mushroom.width := integerLiteralOne / mushroom.height,
+	        mushroom.velocity := Vec2(0, -0.01f))
 	      }
 	    }
     )
