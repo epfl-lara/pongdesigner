@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/undo"
+          android:icon="@drawable/bm_menu_undo"
+          android:title="@string/undo"
+          android:showAsAction="ifRoom|withText">
+    <menu></menu></item>
+    <item android:id="@+id/redo"
+          android:icon="@drawable/bm_menu_redo"
+          android:title="@string/redo"
+          android:showAsAction="ifRoom|withText">
+    <menu></menu></item>
     <item android:id="@+id/save"
           android:icon="@android:drawable/ic_menu_save"
           android:title="@string/save"

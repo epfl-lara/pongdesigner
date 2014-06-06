@@ -7,9 +7,11 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 
 import ch.epfl.lara.synthesis.kingpong._
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.view.RenderConstants
+import common._
+import JBox2DInterface._
+import objects._
+import view.RenderConstants
+import UndoRedo._
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
@@ -20,13 +22,18 @@ object MenuOptions {
   case class Policy(value: Int) extends AnyVal {
     @inline def modifiesCurrent: Boolean = (value & 1) == 1
     @inline def modifiesNext: Boolean = (value & 2) == 2
+    @inline def undoableModification: Boolean = (value & 4) == 4
+    @inline def withNotUndoable: Policy = new Policy(value & ~4)
   }
 
-  final val MODIFY_CURRENT = Policy(1)
-  final val MODIFY_NEXT = Policy(2)
-  final val MODIFY_BOTH = Policy(3)
+  final val MODIFY_CURRENT_ERASE = Policy(1)
+  final val MODIFY_NEXT_ERASE = Policy(2)
+  final val MODIFY_BOTH_ERASE = Policy(2)
+  final val MODIFY_CURRENT_UNDOABLE = Policy(1 + 4)
+  final val MODIFY_NEXT_UNDOABLE = Policy(2 + 4)
+  final val MODIFY_BOTH_UNDOABLE = Policy(3 + 4)
   
-  implicit var modify_policy: Policy = MODIFY_BOTH // Not typed but performance is good.
+  implicit var modify_policy: Policy = MODIFY_BOTH_ERASE // Not typed but performance is good.
   
   /** Coordinates of the selected shape before moving. */
   var selected_shape_first_x = 0f

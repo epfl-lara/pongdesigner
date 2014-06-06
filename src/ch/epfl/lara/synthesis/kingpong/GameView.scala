@@ -60,6 +60,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.expression.PrettyPrinterExtendedTypical
 import ch.epfl.lara.synthesis.kingpong.view.BitmapUtils
+import common.UndoRedo
 
 object GameView {
   sealed trait GameState
@@ -345,13 +346,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   var mRuleState = STATE_MODIFYING_GAME
   def setModeSelectCategory() = {
     mRuleState = STATE_MODIFYING_CATEGORY
-    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
   }
 
   /** Switches the current mode to selecting effects */
   def setModeSelectEffects(): Unit = {
     mRuleState = STATE_SELECTING_EFFECTS
-    MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT
+    MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT_UNDOABLE
     game.setInstantProperties(false)
     Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
   }
@@ -360,7 +361,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeSelectEvents() = {
     mRuleState = STATE_SELECTING_EVENTS
     gameEngineEditors foreach (_.unselect())
-    MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT // irrelevant
+    MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT_UNDOABLE // irrelevant
     game.setInstantProperties(true)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_maker))
   }
@@ -368,7 +369,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** Switches the current mode to the global modification of the game */
   def setModeModifyGame(resetView: Boolean = true) {
     mRuleState = STATE_MODIFYING_GAME
-    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
     game.setInstantProperties(true)
     game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
@@ -378,6 +379,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /** The game model currently rendered. */
   private var game: Game = null
   def setGame(g: Game) = {
+    UndoRedo.clear()
     game = g
     game.setInstantProperties(state == Editing)
     shapeEditor.selectedShape = null
@@ -698,6 +700,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /** Change the current state to Running. */
   def toRunning(): Unit = if (state == Editing) {
+    UndoRedo.clearButKeepRules()
     Log.d("kingpong", "toRunning()")
     if(mRuleState == STATE_SELECTING_EFFECTS) {
       // First accept the rule.
@@ -705,7 +708,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
     // Remove objects that have been created after the date.
     mRuleState = STATE_MODIFYING_GAME
-    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH
+    MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT_ERASE
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
 
     eventEditor.unselect()

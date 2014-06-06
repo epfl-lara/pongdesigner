@@ -6,6 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeOps
 import ch.epfl.lara.synthesis.kingpong.objects._
+import common.UndoRedo
 
 /**
  * Manage rules for the game.
@@ -23,6 +24,7 @@ trait RulesManager {
   def setRuleByIndex(newRule: Expr, index: Int): Unit = {
     val oldRule = _rules(index)
     _rules(index) = newRule
+    UndoRedo.recordRuleUpdate(this, index, oldRule, newRule)
     for((obj, rules) <- _rulesByObject) {
       if(rules contains oldRule) {
         rules -= oldRule
@@ -38,7 +40,17 @@ trait RulesManager {
   def getRulesByObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List.empty)
   def getRulesByObject(objects: Traversable[GameObject]): Traversable[Expr] = objects flatMap getRulesByObject
   
-  def addRule(r: Expr): Unit = {
+  def removeRule(r: Expr): Unit = {
+    val i = _rules.indexOf(r)
+    removeRuleByIndex(i)
+  }
+  def removeRuleByIndex(i: Int): Unit = {
+    val oldRule = _rules.remove(i)
+    for(key <- _rulesByObject.keysIterator) {
+      _rulesByObject(key) -= oldRule
+    }
+  }
+  def addRule(r: Expr): Int = {
     def addToCategory(category: Category) = category.objects foreach { obj =>
       _rulesByObject.getOrElseUpdate(obj, MSet.empty) += r
     }
@@ -50,5 +62,8 @@ trait RulesManager {
       case _ => //do nothing
     }(r)
     _rules += r
+    val index = _rules.length - 1
+    UndoRedo.recordRuleAdd(this, index, r)
+    index
   }
 }

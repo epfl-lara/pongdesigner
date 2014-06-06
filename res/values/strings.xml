@@ -16,6 +16,8 @@
     <string name="rule_canceled">Rule design canceled</string>
     <string name="modify_state">Modify global state</string>
     <string name="rule_created_toast">Rule created</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
     <string name="save">Save</string>
     <string name="load">Load</string>
     <string name="reset">Reset</string>

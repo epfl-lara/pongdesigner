@@ -36,6 +36,7 @@ import android.widget.ImageView
 import net.londatiga.android._
 import ch.epfl.lara.synthesis.kingpong.common.Messages
 import ch.epfl.lara.synthesis.kingpong.serialization.GameSerializer
+import common.UndoRedo
 import java.util.Locale
 import java.io.OutputStreamWriter
 import android.os.Vibrator
@@ -342,14 +343,47 @@ class KingPong extends Activity
   
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
       val inflater = getMenuInflater()
-      inflater.inflate(R.menu.game_menu, menu);
-      return true;
+      inflater.inflate(R.menu.game_menu, menu)
+      return true
   }
+  final val UNDO_ACTION = 1
+  final val REDO_ACTION = 2
+  
+  override def onPrepareOptionsMenu(menu: Menu): Boolean = {
+    val undo_item = menu.findItem(R.id.undo)
+    val redo_item = menu.findItem(R.id.redo)
+    val undos = UndoRedo.getUndos()
+    val redos = UndoRedo.getRedos()
+    val undo_menu = undo_item.getSubMenu()
+    val redo_menu = redo_item.getSubMenu()
+    undo_menu.clear()
+    redo_menu.clear()
+    
+    var i = 1
+    for(undo <- undos) {
+      undo_menu.add(Menu.NONE, UNDO_ACTION, i, "True")
+      i += 1
+    }
+    i = 1
+    for(redo <- redos) {
+      redo_menu.add(Menu.NONE, REDO_ACTION, i, "True")
+      i += 1
+    }
+    return super.onPrepareOptionsMenu(menu)
+}
   
   override def onOptionsItemSelected(item: MenuItem): Boolean = {
     import common._
       // Handle item selection
       item.getItemId() match {
+          case UNDO_ACTION =>
+            val i = item.getOrder()
+            UndoRedo.undo(i)
+            true
+          case REDO_ACTION =>
+            val i = item.getOrder()
+            UndoRedo.redo(i)
+            true
           case R.id.save =>
             mGameView.saveGame(mHandler, false)
             true

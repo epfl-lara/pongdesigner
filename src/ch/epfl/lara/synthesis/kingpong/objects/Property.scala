@@ -1,9 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.objects
 
 import android.util.Log
-import ch.epfl.lara.synthesis.kingpong.common.History
-import ch.epfl.lara.synthesis.kingpong.common.Snap
-import ch.epfl.lara.synthesis.kingpong.common.RingBuffer
+import ch.epfl.lara.synthesis.kingpong.common._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.Interpreter
@@ -87,8 +85,9 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
   
   /** Depending on the argument, get the prev or the next */
   def setPrevNext(v: T)(implicit modify_policy: MenuOptions.Policy): self.type = {
-    if(modify_policy.modifiesCurrent) set(v)
+    if(modify_policy.undoableModification) UndoRedo.recordSetPrevNext(this, v)
     if(modify_policy.modifiesNext) setNext(v)
+    if(modify_policy.modifiesCurrent) set(v)
     self
   }
 }
