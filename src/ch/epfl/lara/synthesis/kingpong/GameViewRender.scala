@@ -382,7 +382,8 @@ class GameViewRender(val context: Context) extends ContextUtils {
           
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
-          val value = b.name.next + ":" + b.value.next.toString
+          val value = if (b.name.next.trim.isEmpty) b.value.next.toString
+                      else b.name.next + ":" + b.value.next.toString
           canvas.drawText(value, b.x.next, b.y.next, paint)
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
