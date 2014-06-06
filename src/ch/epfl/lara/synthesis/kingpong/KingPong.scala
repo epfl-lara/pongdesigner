@@ -349,26 +349,33 @@ class KingPong extends Activity
   final val UNDO_ACTION = 1
   final val REDO_ACTION = 2
   
+  def addUndoList(undo_item: MenuItem) = {
+    val undos = UndoRedo.getUndos()
+    val undo_menu = undo_item.getSubMenu()
+    undo_menu.clear()
+    var i = 1
+    for(undo <- undos) {
+      undo_menu.add(Menu.NONE, UNDO_ACTION, i, undo)
+      i += 1
+    }
+  }
+  
+  def addRedoList(redo_item: MenuItem) = {
+    val redos = UndoRedo.getRedos()
+    val redo_menu = redo_item.getSubMenu()
+    redo_menu.clear()
+    var i = 1
+    for(redo <- redos) {
+      redo_menu.add(Menu.NONE, REDO_ACTION, i, redo)
+      i += 1
+    }
+  }
+  
   override def onPrepareOptionsMenu(menu: Menu): Boolean = {
     val undo_item = menu.findItem(R.id.undo)
     val redo_item = menu.findItem(R.id.redo)
-    val undos = UndoRedo.getUndos()
-    val redos = UndoRedo.getRedos()
-    val undo_menu = undo_item.getSubMenu()
-    val redo_menu = redo_item.getSubMenu()
-    undo_menu.clear()
-    redo_menu.clear()
-    
-    var i = 1
-    for(undo <- undos) {
-      undo_menu.add(Menu.NONE, UNDO_ACTION, i, "True")
-      i += 1
-    }
-    i = 1
-    for(redo <- redos) {
-      redo_menu.add(Menu.NONE, REDO_ACTION, i, "True")
-      i += 1
-    }
+    addUndoList(undo_item)
+    addRedoList(redo_item)
     return super.onPrepareOptionsMenu(menu)
 }
   
@@ -376,6 +383,14 @@ class KingPong extends Activity
     import common._
       // Handle item selection
       item.getItemId() match {
+          case R.id.undo =>
+            addUndoList(item)
+            //UndoRedo.undo(1)
+            false
+          case R.id.redo =>
+            addRedoList(item)
+            //UndoRedo.redo(1)
+            false
           case UNDO_ACTION =>
             val i = item.getOrder()
             UndoRedo.undo(i)
