@@ -194,7 +194,9 @@ object TreeDSL {
     def radius = new PropertyProxySingleRef(expr, "radius").setType(TFloat)
     def width = new PropertyProxySingleRef(expr, "width").setType(TFloat)
     def height = new PropertyProxySingleRef(expr, "height").setType(TFloat)
-    
+    def row = new PropertyProxySingleRef(expr, "row").setType(TInt)
+    def column = new PropertyProxySingleRef(expr, "column").setType(TInt)
+
     //TODO handle Box[T] type...
     def value = new PropertyProxySingleRef(expr, "value").setType(TUntyped)
     

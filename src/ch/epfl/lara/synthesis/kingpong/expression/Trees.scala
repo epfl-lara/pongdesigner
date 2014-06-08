@@ -5,7 +5,6 @@ import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
-import TreeDSL._
 
 object Trees {
   
@@ -308,16 +307,6 @@ object Trees {
   
   case class ContainingCell(array: Expr, obj: Expr) extends Expr with FixedType {
     val fixedType = TObject
-  }
-  
-  /** Get the row of a cell. */
-  case class Row(obj: Expr) extends Expr with FixedType {
-    val fixedType = TInt
-  }
-  
-  /** Get the column of a cell. */
-  case class Column(obj: Expr) extends Expr with FixedType {
-    val fixedType = TInt
   }
   
   /** Get the cell at the specified position in the array. */

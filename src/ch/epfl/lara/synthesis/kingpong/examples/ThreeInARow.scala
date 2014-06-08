@@ -53,8 +53,8 @@ class ThreeInARow extends Game {
   val r2 = foreach(pieces) { piece =>
     let("cell", ContainingCell(gameboard, piece)) { cell =>
       whenever(notNull(cell) && 
-               ((Row(cell) =:= (gameboard.numRows - 1)) || 
-                (!forall(pieces)(p => !Contains(Apply(gameboard, Column(cell), Row(cell) + 1), p))
+               ((cell.row =:= (gameboard.numRows - 1)) ||
+                (!forall(pieces)(p => !Contains(Apply(gameboard, cell.column, cell.row + 1), p))
                ))) (
         piece.velocity := (cell.center - piece.center) * 10
       )
@@ -65,8 +65,8 @@ class ThreeInARow extends Game {
   val r3 = let("piece", find(pieces)(_.name =:= "piece")) { piece =>
     let("cell", ContainingCell(gameboard, piece)) { cell =>
       whenever(notNull(cell) && notNull(piece) &&
-               ((Row(cell) =:= (gameboard.numRows - 1)) || 
-                (!forall(pieces)(p => !Contains(Apply(gameboard, Column(cell), Row(cell) + 1), p))
+               ((cell.row =:= (gameboard.numRows - 1)) ||
+                (!forall(pieces)(p => !Contains(Apply(gameboard, cell.column, cell.row + 1), p))
                ))) (
         piece.name := "still",
         copy(piece) { clone => Seq(
@@ -83,9 +83,8 @@ class ThreeInARow extends Game {
         foreach(pieces) { centerPiece =>
           let("centerCell", ContainingCell(gameboard, centerPiece)) { centerCell =>
             let("leftCell", "rightCell", 
-                gameboard.cell(Column(centerCell) - 1, Row(centerCell)), gameboard.cell(Column(centerCell) + 1, Row(centerCell))) { (leftCell, rightCell) =>
-              let("leftPiece", "rightPiece", 
-                  find(pieces)(Contains(leftCell, _)), find(pieces)(Contains(rightCell, _))) { (leftPiece, rightPiece) =>
+                gameboard.cell(centerCell.column - 1, centerCell.row), gameboard.cell(centerCell.column + 1, centerCell.row)) { (leftCell, rightCell) =>
+              let("leftPiece", "rightPiece", find(pieces)(Contains(leftCell, _)), find(pieces)(Contains(rightCell, _))) { (leftPiece, rightPiece) =>
                 whenever(notNull(leftPiece) && notNull(rightPiece) && 
                          leftPiece.color =:= centerPiece.color && rightPiece.color =:= centerPiece.color) (
                   counter.value += 1,

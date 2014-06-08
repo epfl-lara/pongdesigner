@@ -10,8 +10,6 @@ object Extractors {
   object UnaryOperator {
     def unapply(expr: Expr): Option[(Expr, (Expr) => Expr)] = expr match {
       case Not(e) => Some((e, Not))
-      case Row(e) => Some((e, Row))
-      case Column(e) => Some((e, Column))
       case IsFingerDownOver(e) => Some((e, IsFingerDownOver))
       case IsFingerUpOver(e)   => Some((e, IsFingerUpOver))
       case TupleSelect(e, i) => Some((e, TupleSelect(_, i)))

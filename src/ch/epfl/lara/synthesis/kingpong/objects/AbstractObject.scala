@@ -383,7 +383,9 @@ case class Cell(
   
   val width = proxyProperty[Float]("width", array.cellWidth)
   val height = proxyProperty[Float]("height", array.cellHeight)
-  
+  val columnProp = constProperty[Int]("column", column)
+  val rowProp = constProperty[Int]("row", row)
+
   override val bottom = namedProperty[Float] (
     name  = "bottom", 
     getF  = () => array.top.get  + height.get  * (row + 1),

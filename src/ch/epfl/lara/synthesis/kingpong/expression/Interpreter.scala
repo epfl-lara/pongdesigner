@@ -82,7 +82,7 @@ trait Interpreter {
     case Variable(id) =>
       rctx.get(id) match {
         case Some(e) => e
-        case None => throw InterpreterException(s"No value for identifier ${id} in mapping.")
+        case None => throw InterpreterException(s"No value for identifier $id in mapping.")
       }
   
     case Let(id, value, body) =>
@@ -332,8 +332,8 @@ trait Interpreter {
         case _ => throw InterpreterException(s"A Not is not possible on $e.")
       }
 
-    case FingerMoveOver(expr, id, block) =>
-      val obj = eval(expr).as[GameObject]
+    case FingerMoveOver(e, id, block) =>
+      val obj = eval(e).as[GameObject]
       val moves = gctx.fingerMoves(_.objects.exists(_ == obj))
       val from = moves.headOption.map(_.from)
       if (from.isDefined) {
@@ -348,8 +348,8 @@ trait Interpreter {
         booleanLiteralFalse
       }
       
-    case FingerDownOver(expr, id, block) =>
-      val obj = eval(expr).as[GameObject]
+    case FingerDownOver(e, id, block) =>
+      val obj = eval(e).as[GameObject]
       val downs = gctx.fingerDowns(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
@@ -363,8 +363,8 @@ trait Interpreter {
         booleanLiteralFalse
       }
     
-    case FingerUpOver(expr, id, block) =>
-      val obj = eval(expr).as[GameObject]
+    case FingerUpOver(e, id, block) =>
+      val obj = eval(e).as[GameObject]
       val downs = gctx.fingerUps(_.objects.exists(_ == obj))
       val from = downs.headOption.map(_.p)
       if (from.isDefined) {
@@ -447,18 +447,6 @@ trait Interpreter {
       (eval(e1), eval(e2)) match {
         case (ObjectLiteral(array: Array2D), ObjectLiteral(obj: Positionable)) => 
           array.containingCell(obj)
-        case _ => error(expr)
-      } 
-      
-    case Row(e) =>
-      eval(e) match {
-        case ObjectLiteral(o: Cell) => IntegerLiteral(o.row)
-        case _ => error(expr)
-      }
-      
-    case Column(e) =>
-      eval(e) match {
-        case ObjectLiteral(o: Cell) => IntegerLiteral(o.column)
         case _ => error(expr)
       }
       

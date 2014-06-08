@@ -2,9 +2,7 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import Extractors._
-import ch.epfl.lara.synthesis.kingpong.objects.GameObject
 import ch.epfl.lara.synthesis.kingpong.objects._
-import ch.epfl.lara.synthesis.kingpong.common.StringDelimiter
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import scala.language.postfixOps
 
@@ -351,8 +349,6 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     case Not(expr: Expr) => c + indent +< NOT_SYMBOL + expr +>
     
     case ContainingCell(_, obj) => c + indent +< "cell(" + obj + ")" +>
-    case Row(expr) => c + indent +< expr + ".row" +>
-    case Column(expr) => c + indent +< expr + ".column" +>
     case Apply(arr, col, row) => c + indent +< arr + "(" + col + "," + row + ")" +>
 
     case FingerMoveOver(obj, _, UnitLiteral) => c + indent +< FINGER_MOVE_SYMBOL + " " + obj +>

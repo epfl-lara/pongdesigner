@@ -160,9 +160,6 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
     
     case Not(expr: Expr)  => indent + NOT_SYMBOL + print(NO_INDENT, expr)
     
-    case Row(expr) => indent + print(NO_INDENT, expr) + ".row"
-    case Column(expr) => indent + print(NO_INDENT, expr) + ".column"
-    
     case FingerMoveOver(obj, id, body) => indent + FINGER_MOVE_SYMBOL + print(NO_INDENT, obj) + ": " + id + " =>" +
       LF + print(indent, body)
     case FingerDownOver(obj, id, body) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, obj) + ": " + id + " =>" +

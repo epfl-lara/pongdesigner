@@ -6,7 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Extractors._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
-import org.json.{JSONArray, JSONException, JSONObject, JSONTokener}
+import org.json.{JSONObject, JSONTokener}
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{ArrayBuffer, HashMap => MMap}
 import org.jbox2d.dynamics.BodyType
@@ -299,20 +299,6 @@ object GameSerializer {
     unbuild(Choose(__1, _2, _3))
   }
   
-  /** Column converter */
-  implicit case object ColumnConverter extends CustomConverter[Column]("Column") {
-    "obj" <-> (_.obj)
-    unbuild(Column(_1))
-  }
-  
-  /** Row converter */
-  implicit case object RowConverter extends CustomConverter[Row]("Row") {
-    "obj" <-> (_.obj)
-    unbuild(Row(_1))
-  }
-
-  
-  
   /** Debug converter */
   implicit case object DebugConverter extends CustomConverter[Debug]("Debug") {
     "message" <*> (_.message)
@@ -527,8 +513,7 @@ object GameSerializer {
     
     case e:Apply => toJson(e)
 		case e:Choose => toJson(e)
-		case e:Column => toJson(e)
-		
+
 		case e:Debug => toJson(e)
 		case e:Delete => toJson(e)
 		case e:Find => toJson(e)
@@ -542,7 +527,6 @@ object GameSerializer {
 		case e:Not => toJson(e)
 		case e:ObjectLiteral => toJson(e)
 		case e:ParExpr => toJson(e)
-		case e:Row => toJson(e)
 		case e:Select => toJson(e)
 		case e:StringLiteral => toJson(e)
 		
@@ -590,8 +574,7 @@ object GameSerializer {
     
     case ApplyConverter(e) => e
 		case ChooseConverter(e) => e
-		case ColumnConverter(e) => e
-		
+
 		case DebugConverter(e) => e
 		case DeleteConverter(e) => e
 		case FindConverter(e) => e
@@ -605,7 +588,6 @@ object GameSerializer {
 		case NotConverter(e) => e
 		case ObjectLiteralConverter(e) => e
 		case ParExprConverter(e) => e
-		case RowConverter(e) => e
 		case SelectConverter(e) => e
 		case StringLiteralConverter(e) => e
 		
