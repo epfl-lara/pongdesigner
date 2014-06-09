@@ -541,7 +541,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Implements generalization option for rules.
    */
-  def codeViewOnLongPress(pos: Int): Unit = {
+  def codeViewOnLongPress(pos: Int, x: Float, y: Float): Unit = {
     
     // At this moment, pops up a menu with generalization, deletion, etc.
     if (cv_mapping_consts != null) {
@@ -571,8 +571,10 @@ class GameView(val context: Context, attrs: AttributeSet)
 			    }, { () => })
         case _ =>
           cv_mapping_trees.get(pos) match {
-            case Some((e@ParExpr(m))::l) =>
-              
+            case Some((e@ParExpr((a:AssignmentEvent)::q))::l) =>
+              val eventList = List((a, game.time))
+              val objectList = Nil
+              selectFix(Vec2(x, y), eventList, objectList)
             case _ => // Nothing to be done
           }
           

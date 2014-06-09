@@ -277,7 +277,7 @@ class KingPong extends Activity
         val y = event.getY()
         val closest_pos = retrieveTextPosition(x, y)
         mCodeView.setSelection(closest_pos)
-        mGameView.codeViewMotionEventListener(event)
+        mGameView.codeViewMotionEventListener(event, x, y)
         return true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {

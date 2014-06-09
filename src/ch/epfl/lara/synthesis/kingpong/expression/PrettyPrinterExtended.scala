@@ -332,9 +332,8 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     case Copy(obj, id, block) =>
       c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
 
-    case Choose(vars, pred, body) => 
-      val varsString = vars.mkString("(", ",", ")")
-      c + indent +< "choose(" + varsString + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
+    case Choose(a::q, pred, body) => 
+      (((c + indent +< "choose(" + a) /: q){ case (c, v) => c + "," + v}) + ")" + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
     
     case IntegerLiteral(value: Int) => c + indent +< value.toString +>
     case FloatLiteral(value: Float) => c + indent +< value.toString +>
