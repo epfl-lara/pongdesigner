@@ -1,7 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong
 
 import java.io.FileNotFoundException
-import java.util.Locale
 import scala.collection.mutable.ArrayBuffer
 import android.app.Activity
 import android.app.ProgressDialog
@@ -33,7 +32,6 @@ import android.widget.Toast
 import android.widget.SeekBar
 import android.widget.LinearLayout
 import android.widget.ImageView
-import net.londatiga.android._
 import ch.epfl.lara.synthesis.kingpong.common.Messages
 import ch.epfl.lara.synthesis.kingpong.serialization.GameSerializer
 import common.UndoRedo
@@ -264,33 +262,31 @@ class KingPong extends Activity
       }
       
       override def onLongPress(event: MotionEvent): Unit = {
-        Log.d("KingPong","onLongPress: " + event.toString());
-        val x = event.getX()
-        val y = event.getY()
+        Log.d("kingpong","onLongPress: " + event.toString)
+        val x = event.getX
+        val y = event.getY
         vibrate()
         val closest_pos = retrieveTextPosition(x, y)
-        mGameView.codeViewOnLongPress(closest_pos)
+        mGameView.codeViewOnLongPress(closest_pos, x, y)
       }
       override def onDown(event: MotionEvent): Boolean = { 
-        Log.d("KingPong","onDown: " + event.toString());
-        val x = event.getX()
-        val y = event.getY()
+        Log.d("kingpong","onDown: " + event.toString)
+        val x = event.getX
+        val y = event.getY
         val closest_pos = retrieveTextPosition(x, y)
         mCodeView.setSelection(closest_pos)
-        mGameView.codeViewMotionEventListener(event, x, y)
-        return true
+        mGameView.codeViewMotionEventListener(event)
+        true
       }
       override def onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float) = {
-        mGameView.codeViewMotionEventListener(e2);
+        mGameView.codeViewMotionEventListener(e2)
       }
     })
     mDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener {
-      def onDoubleTap(x$1: MotionEvent): Boolean = {
-        true
-      }
-      def onDoubleTapEvent(x$1: android.view.MotionEvent): Boolean = return true
-      def onSingleTapConfirmed(x$1: android.view.MotionEvent): Boolean  = return true
-    });
+      def onDoubleTap(x$1: MotionEvent): Boolean = true
+      def onDoubleTapEvent(x$1: android.view.MotionEvent): Boolean = true
+      def onSingleTapConfirmed(x$1: android.view.MotionEvent): Boolean  = true
+    })
     
     mCodeView.setOnTouchListener{ (v: View, event: MotionEvent) => mDetector.onTouchEvent(event) }
     
@@ -344,7 +340,7 @@ class KingPong extends Activity
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
       val inflater = getMenuInflater()
       inflater.inflate(R.menu.game_menu, menu)
-      return true
+      true
   }
   final val UNDO_ACTION = 1
   final val REDO_ACTION = 2
