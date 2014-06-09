@@ -134,7 +134,7 @@ object CodeGenerator extends CodeHandler {
     }
 
     arrayOpt map { array =>
-      val contains = objects.map(obj => Contains(array.containingCell(obj), obj)).toList
+      val contains = objects.map(obj => Contains(array.containingCellExpr(obj.center.get), obj)).toList
       and(contains)
     }
   }

@@ -58,7 +58,9 @@ abstract class AliasProperty[T : PongType](val name: String, val parent: GameObj
 class ConstProperty[T : PongType](val name: String, val parent: GameObject, value: T) extends ROProperty[T] {
   def get = value
   def next = value
-  def expr = tpe.toExpr(value)
+
+  // We need a Select here since template could need an indirect reference to this property.
+  val expr = Select(parent.expr, name).setType(getPongType)
 }
 
 /**

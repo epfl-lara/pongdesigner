@@ -348,15 +348,31 @@ class Array2D(
 
   /**
    * Find the cell that contains the given object.
+   */
+  def containingCell(pos: Vec2): Option[Cell] = {
+    if (!this.contains(pos)) {
+      None
+    } else {
+      Some(cellOf(pos))
+    }
+  }
+
+  /**
+   * Find the cell that contains the given object and return its expression.
    * The implementation should be as fast as possible.
    */
-  def containingCell(obj: Positionable): ObjectLiteral = {
-    val pos = obj.center.get
+  def containingCellExpr(pos: Vec2): ObjectLiteral = {
     if (!this.contains(pos)) {
       ObjectLiteral.empty
     } else {
-      cells(((pos.x - left.get) / cellWidth.get).toInt)(((pos.y - top.get) / cellHeight.get).toInt).expr
+      cellOf(pos).expr
     }
+  }
+
+  /** Return the cell at `dd`, does *not* test the bounds. */
+  @inline
+  private def cellOf(pos: Vec2) = {
+    cells(((pos.x - left.get) / cellWidth.get).toInt)(((pos.y - top.get) / cellHeight.get).toInt)
   }
   
   protected def rawCopy(f: HistoricalProperty[_] => Expr) = {

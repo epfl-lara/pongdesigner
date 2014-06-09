@@ -2,7 +2,6 @@ package ch.epfl.lara.synthesis.kingpong.common
 
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.menus._
-import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.RulesManager
@@ -61,7 +60,7 @@ object UndoRedo {
   private trait Action {
     def undo(): Unit
     def redo(): Unit
-    def comment(): String
+    def comment: String
   }
   
   /**
@@ -83,7 +82,7 @@ object UndoRedo {
   private case class SetRuleByIndex(game: RulesManager, index: Int, prevRule: Expr, newRule: Expr) extends Action {
     def undo() = { game.setRuleByIndex(prevRule, index) }
     def redo() = { game.setRuleByIndex(newRule, index) }
-    def comment() = "Replace rule"
+    def comment = "Replace rule"
   }
   
   /**
@@ -92,7 +91,7 @@ object UndoRedo {
   private case class AddRule(game: RulesManager, index: Int, newRule: Expr) extends Action {
     def undo() = { game.removeRule(newRule) }
     def redo() = { game.addRule(newRule) }
-    def comment () = "Create rule"
+    def comment = "Create rule"
   }
 
   /**

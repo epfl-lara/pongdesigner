@@ -446,7 +446,7 @@ trait Interpreter {
     case ContainingCell(e1, e2) =>
       (eval(e1), eval(e2)) match {
         case (ObjectLiteral(array: Array2D), ObjectLiteral(obj: Positionable)) => 
-          array.containingCell(obj)
+          array.containingCellExpr(obj.center.get)
         case _ => error(expr)
       }
       

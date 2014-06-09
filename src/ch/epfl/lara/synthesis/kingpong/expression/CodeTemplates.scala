@@ -674,26 +674,51 @@ object CodeTemplates extends CodeHandler {
       obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the force."
   }
 
-  object TXY_Cell_Move_Right extends TemplateOtherCell[Movable] with TemplateMovable {
-    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = other.rightCell match {
-      case Some(rightCell) if other.contains(obj.center.get) && rightCell.contains(obj.center.next) =>
-        val expr = whenever(Contains(other, obj)) (
-          let("rightCell", other.array.cell(other.column + 1, other.row)) { rightCellExpr =>
-            whenever(notNull(rightCellExpr)) (
-              obj.x := rightCellExpr.x,
-              obj.y := rightCellExpr.y
-            )
-          }
-        )
-        Some(expr.setPriority(16))
-      case _ =>
-        None
+  /** Move the object by a relative number of columns and rows inside a matrix. */
+  object TXY_Cell_Move_Relative extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
+      other.array.containingCell(obj.center.next) match {
+        case Some(destCell) if other.contains(obj.center.get) && other != destCell =>
+          val dx = destCell.column - other.column
+          val dy = destCell.row - other.row
+          val expr = whenever(Contains(other, obj)) (
+            let("destCell", other.array.cell(other.columnProp + dx, other.rowProp + dy)) { destCellExpr =>
+              whenever(notNull(destCellExpr)) (
+                obj.x := destCellExpr.x,
+                obj.y := destCellExpr.y
+              )
+            }
+          )
+          Some(expr.setPriority(16))
+
+        case _ =>
+          None
+      }
     }
 
     def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
-      s"Move ${obj.name.get} to the right cell."
+      s"Move ${obj.name.get} to another cell relatively to its original position."
   }
 
+  /** Move the object to an absolute cell. */
+  object TXY_Cell_Move_Absolute extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
+      other.array.containingCell(obj.center.next) match {
+        case Some(destCell) if other.contains(obj.center.get) && other != destCell =>
+          val expr = whenever(Contains(other, obj)) (
+            obj.x := destCell.x,
+            obj.y := destCell.y
+          )
+          Some(expr.setPriority(15))
+
+        case _ =>
+          None
+      }
+    }
+
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
+      s"Move ${obj.name.get} to another cell relatively to its original position."
+  }
   
   object TXY extends TemplateParallel[Movable] with TemplateMovable {
     def condition(obj: Movable)(implicit ctx: TemplateContext) = obj.x.get != obj.x.next || obj.y.get != obj.y.next
@@ -703,7 +728,8 @@ object CodeTemplates extends CodeHandler {
       TXY_Move_Force,
       TArraySnapWithVelocity,
       TArraySnapWithForce,
-      TXY_Cell_Move_Right,
+      TXY_Cell_Move_Relative,
+      TXY_Cell_Move_Absolute,
       TXY_Independent
     )
     //def comment = s"All x and y changes for ${shape.name.next}"
