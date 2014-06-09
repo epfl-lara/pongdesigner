@@ -14,30 +14,48 @@ class MatricesAlgorithms extends Game {
 
   val arrays = Category("arrays")()
   val labels = Category("labels")()
-  val pointers = Category("pointers")()
   val buttons = Category("buttons")(radius = 0.5, color = green, tpe = BodyType.STATIC)
-  val valuesMax = Category("values max")()
+  val values = Category("values")()
 
-  val arrayMax = array(arrays)("Array", 0, 0, 5, 1)
-  val crtMax = intbox(labels)("Maximum", -3, -1, value = 0)
-  val ptrMax = intbox(pointers)("Pointer", -3, 1.5, value = 0)
-  val btnMax = circle(buttons)("Button", arrayMax.left - 1, arrayMax.y)
+  val arr = array(arrays)("Array", 0, 0, 5, 2)
+  val ptr = intbox(labels)("Pointer", arr.left, arr.top - 0.5, value = 0)
+  val btn = circle(buttons)("Button", arr.left - 1, arr.y)
 
-  for(i <- 0 until arrayMax.numColumns.get) {
-    intbox(valuesMax)(" ", arrayMax.cells(i)(0).x, arrayMax.cells(i)(0).y, value = i%4)
+  val crtMax = intbox(labels)("Maximum", arr.right + 0.5, arr.cell(0, 0).y, value = 0)
+  val toFind = intbox(labels)("To find", arr.left, arr.bottom + 1, value = 2)
+  val crtFound = intbox(labels)("Found index", arr.right + 0.5, arr.cell(0, 1).y, value = -1)
+
+  for(i <- 0 until arr.numColumns.get) {
+    intbox(values)(" ", arr.cells(i)(0).x, arr.cells(i)(0).y, value = i%4)
+    intbox(values)(" ", arr.cells(i)(1).x, arr.cells(i)(1).y, value = 4-i%4)
   }
 
-  val r1 = whenever(isFingerDownOver(btnMax) && ptrMax.value < arrayMax.numColumns)(
-    let("cell", Apply(arrayMax, ptrMax.value, 0)) { cell =>
-      let("value", find(valuesMax) {Contains(cell, _)}) { value =>
+  val advancePointerRule = whenever(isFingerDownOver(btn) && ptr.value < arr.numColumns) (
+    ptr.value += 1
+  )
+
+  val findMaxRule = whenever(isFingerDownOver(btn)) (
+    let("cell", Apply(arr, ptr.value, 0)) { cell =>
+      let("value", find(values) {Contains(cell, _)}) { value =>
         whenever(notNull(value) && value.value > crtMax.value) (
           crtMax.value := value.value
         )
       }
-    },
-    ptrMax.value += 1
+    }
   )
-  
-  register(r1)
+
+  val searchRule = whenever(isFingerDownOver(btn)) (
+    let("cell", Apply(arr, ptr.value, 1)) { cell =>
+      let("value", find(values) {Contains(cell, _)}) { value =>
+        whenever(notNull(value) && value.value =:= toFind.value) (
+          crtFound.value := ptr.value
+        )
+      }
+    }
+  )
+
+  register(advancePointerRule)
+  register(findMaxRule)
+  register(searchRule)
 
 }
