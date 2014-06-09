@@ -1,7 +1,5 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
-import scala.collection.mutable.{Set => MSet}
-
 import ch.epfl.lara.synthesis.kingpong._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
@@ -20,7 +18,7 @@ object CodeTemplates extends CodeHandler {
     val isMovementHorizontal = Math.abs(dx) > 10 * Math.abs(dy)
     val isMovementVertical = Math.abs(dy) > 10 * Math.abs(dx)
     val isTouchMoveEvent = eventMove.nonEmpty
-    
+
     lazy val integers: Traversable[IntBox] = objects.collect{ case b: IntBox => b}
     lazy val texts: Traversable[ValueTextable] = objects.collect{ case b: ValueTextable => b}
     lazy val times: Traversable[Timeable] = objects.collect{ case b: Timeable => b}
@@ -249,7 +247,7 @@ object CodeTemplates extends CodeHandler {
   trait TemplateOtherObject[T <: GameObject] extends TemplateOther[T, GameObject] {
     def others(implicit ctx: TemplateContext) = ctx.objects
   }
-  
+
   trait TemplateOtherPositionable[T <: GameObject] extends TemplateOther[T, Positionable] {
     def others(implicit ctx: TemplateContext) = ctx.positionables
   }
@@ -676,6 +674,26 @@ object CodeTemplates extends CodeHandler {
       obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the force."
   }
 
+  object TXY_Cell_Move_Right extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = other.rightCell match {
+      case Some(rightCell) if other.contains(obj.center.get) && rightCell.contains(obj.center.next) =>
+        val expr = whenever(Contains(other, obj)) (
+          let("rightCell", other.array.cell(other.column + 1, other.row)) { rightCellExpr =>
+            whenever(notNull(rightCellExpr)) (
+              obj.x := rightCellExpr.x,
+              obj.y := rightCellExpr.y
+            )
+          }
+        )
+        Some(expr.setPriority(16))
+      case _ =>
+        None
+    }
+
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
+      s"Move ${obj.name.get} to the right cell."
+  }
+
   
   object TXY extends TemplateParallel[Movable] with TemplateMovable {
     def condition(obj: Movable)(implicit ctx: TemplateContext) = obj.x.get != obj.x.next || obj.y.get != obj.y.next
@@ -685,6 +703,7 @@ object CodeTemplates extends CodeHandler {
       TXY_Move_Force,
       TArraySnapWithVelocity,
       TArraySnapWithForce,
+      TXY_Cell_Move_Right,
       TXY_Independent
     )
     //def comment = s"All x and y changes for ${shape.name.next}"

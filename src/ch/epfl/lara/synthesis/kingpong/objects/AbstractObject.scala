@@ -306,7 +306,7 @@ class Array2D(
     //TODO set a category to these cells
     Cell(this, col, row)
   }
-  
+
   // Properties
   val numRows    = simpleProperty[Int]("numRows", init_numRows)
   val numColumns = simpleProperty[Int]("numColumns", init_numColumns)
@@ -326,6 +326,14 @@ class Array2D(
     nextF = () => numRows.next * cellHeight.next,
     exprF = () => numRows.expr * cellHeight.expr
   )
+
+  def getCell(column: Int, row: Int): Option[Cell] = {
+    if (column >= 0 && column < numColumns.get && row >= 0 && row < numRows.get) {
+      Some(cells(column)(row))
+    } else {
+      None
+    }
+  }
   
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
@@ -367,7 +375,15 @@ case class Cell(
   private val shape = new PolygonShape()
   def noVelocity_=(b: Boolean) = {}
   def game = array.game
-  
+
+  val width = proxyProperty[Float]("width", array.cellWidth)
+  val height = proxyProperty[Float]("height", array.cellHeight)
+  val columnProp = constProperty[Int]("column", column)
+  val rowProp = constProperty[Int]("row", row)
+  val angle = proxyProperty(array.angle)
+  val color = proxyProperty(array.color)
+  val visible = proxyProperty(array.visible)
+
   val x = namedProperty[Float] (
     name  = "x", 
     getF  = () => array.left.get  + width.get  * (column + 0.5f),
@@ -381,11 +397,6 @@ case class Cell(
     nextF = () => array.top.next + height.next * (row + 0.5f)
     //,    exprF = () => array.top.expr + height.expr * (row + 0.5f)
   )
-  
-  val width = proxyProperty[Float]("width", array.cellWidth)
-  val height = proxyProperty[Float]("height", array.cellHeight)
-  val columnProp = constProperty[Int]("column", column)
-  val rowProp = constProperty[Int]("row", row)
 
   override val bottom = namedProperty[Float] (
     name  = "bottom", 
@@ -414,11 +425,12 @@ case class Cell(
     nextF = () => array.left.next + width.next * (column + 1)
     //,    exprF = () => array.left.expr + width.expr * (column + 1)
   )
-  
-  val angle = proxyProperty(array.angle)
-  val color = proxyProperty(array.color)
-  val visible = proxyProperty(array.visible)
-  
+
+  def rightCell: Option[Cell] = array.getCell(column + 1, row)
+  def topCell: Option[Cell] = array.getCell(column, row - 1)
+  def bottomCell: Option[Cell] = array.getCell(column, row + 1)
+  def leftCell: Option[Cell] = array.getCell(column - 1, row)
+
   def getShape = {
     shape.setAsBox(width.get/2, height.get/2, Vec2(x.get, y.get), 0f)
     shape
