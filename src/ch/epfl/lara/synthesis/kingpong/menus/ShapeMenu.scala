@@ -11,7 +11,6 @@ import common._
 import JBox2DInterface._
 import objects._
 import view.RenderConstants
-import UndoRedo._
 
 object MenuOptions {
   /** Option indicating if the changes are on the shape and its previous state as well */
@@ -96,11 +95,16 @@ object ShapeMenu extends MenuCenter {
         0
     }
 
+    VisibilityButton.visible = selectedShape.isInstanceOf[Visiblable]
     ArraySizeButton.visible = selectedShape.isInstanceOf[Array2D]
     RotateButton.visible = selectedShape.isInstanceOf[Rotationable]
     PaintButton.visible  = selectedShape.isInstanceOf[Colorable]
     SpeedButton.visible  = selectedShape.isInstanceOf[PhysicalObject]
     PinButton.visible    = selectedShape.isInstanceOf[PhysicalObject]
+    MoveButton.visible   = selectedShape.isInstanceOf[Movable]
+    SizeButton.visible   = selectedShape.isInstanceOf[ResizableCircular] ||
+                           selectedShape.isInstanceOf[ResizableRectangular] ||
+                           selectedShape.isInstanceOf[Array2D]
 
     MoveButton.setPos(0, 0)
     SpeedButton.setPos(1, top_shift)

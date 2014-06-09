@@ -16,7 +16,9 @@ object SystemMenu extends MenuCenter {
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     SetTimeButton.visible = selectedShape.isInstanceOf[SoundTTS]
-    CutButton.visible = selectedShape.isInstanceOf[Rectangle]
+    CutButton.visible   = selectedShape.isInstanceOf[Rectangle]
+    TrashButton.visible = !selectedShape.isInstanceOf[Cell]
+    CopyButton.visible  = !selectedShape.isInstanceOf[Cell]
 
     Menus.spaceMenusOnCircle(canvas, cx, cy, menus)
     

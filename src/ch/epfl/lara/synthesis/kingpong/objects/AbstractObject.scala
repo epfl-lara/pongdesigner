@@ -290,6 +290,7 @@ class Array2D(
       with Rectangular
       with Movable
       with Colorable
+      with Visiblable
       with FixedRectangularContains { self =>
  
   private val shape = new PolygonShape()
