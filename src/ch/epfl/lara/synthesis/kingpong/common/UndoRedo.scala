@@ -114,13 +114,14 @@ object UndoRedo {
         case e:AddRule =>
         case _ =>
           undoRedoBuffer.remove(i)
-          i -= 1
-          if(pointer == i) {
+          if(pointer >= i) {
             pointer -= 1
           }
+          i -= 1
       }
       i += 1
     }
+    assert(pointer <= undoRedoBuffer.length - 1 && pointer >= -1) 
   }
   
   /**
@@ -143,12 +144,13 @@ object UndoRedo {
           a
       }
     } else a
-    undoRedoBuffer += a
+    undoRedoBuffer += action_to_add
     pointer = undoRedoBuffer.length - 1
   }
   
   def recordSetPrevNext[T](property: RWProperty[T], value: T)(implicit modify_policy: MenuOptions.Policy) = {
-    addAction(PropertySetPrevNext(property, property.get, property.next, value, modify_policy.withNotUndoable))
+    if((modify_policy.modifiesCurrent && value != property.get) || (modify_policy.modifiesNext && value != property.next))
+      addAction(PropertySetPrevNext(property, property.get, property.next, value, modify_policy.withNotUndoable))
   }
   def recordRuleUpdate(game: RulesManager, index: Int, prevRule: Expr, newRule: Expr) = {
     addAction(SetRuleByIndex(game, index, prevRule, newRule))

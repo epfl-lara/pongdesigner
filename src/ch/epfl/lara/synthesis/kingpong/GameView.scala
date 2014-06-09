@@ -569,7 +569,14 @@ class GameView(val context: Context, attrs: AttributeSet)
           CustomDialogs.launchChoiceDialog(getContext(), str(R.string.generalize_title, name), choices.toList.map(_._1), { (i: Int) =>
 			      choices(i)._2.apply()
 			    }, { () => })
-        case _ => // Nothing to be done
+        case _ =>
+          cv_mapping_trees.get(pos) match {
+            case Some((e@ParExpr(m))::l) =>
+              
+            case _ => // Nothing to be done
+          }
+          
+          
       }
     }
   }
@@ -749,6 +756,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     toEditing()
     setProgressBarTime(0)
     game.clear(from = 0)
+    UndoRedo.clearButKeepRules()
     layoutResize()
   }
 

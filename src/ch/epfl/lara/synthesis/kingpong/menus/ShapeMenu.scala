@@ -32,7 +32,7 @@ object MenuOptions {
   final val MODIFY_NEXT_UNDOABLE = Policy(2 + 4)
   final val MODIFY_BOTH_UNDOABLE = Policy(3 + 4)
   
-  implicit var modify_policy: Policy = MODIFY_BOTH_ERASE // Not typed but performance is good.
+  implicit var modify_policy: Policy = MODIFY_BOTH_UNDOABLE // Not typed but performance is good.
   
   /** Coordinates of the selected shape before moving. */
   var selected_shape_first_x = 0f

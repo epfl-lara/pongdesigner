@@ -384,13 +384,13 @@ class KingPong extends Activity
       // Handle item selection
       item.getItemId() match {
           case R.id.undo =>
-            addUndoList(item)
-            //UndoRedo.undo(1)
-            false
+            //addUndoList(item)
+            UndoRedo.undo(1)
+            true//false
           case R.id.redo =>
-            addRedoList(item)
-            //UndoRedo.redo(1)
-            false
+            //addRedoList(item)
+            UndoRedo.redo(1)
+            true//false
           case UNDO_ACTION =>
             val i = item.getOrder()
             UndoRedo.undo(i)
