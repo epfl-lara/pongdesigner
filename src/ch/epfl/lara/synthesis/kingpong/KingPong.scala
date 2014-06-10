@@ -138,7 +138,7 @@ object KingPong {
         
         activity ! Messages.TextProgressDialog(progress(0))
       }
-      //setProgressPercent(progress(0));
+      //setProgressPercent(progress(0))
     }
      
      override protected def onPostExecute(game: Game) {
@@ -189,12 +189,12 @@ class KingPong extends Activity
   private lazy val mLayoutcodevertical: LinearLayout = R.id.layoutcodevertical
   private lazy val mCodeViewResizer: ImageView = R.id.codeviewResizer
   private lazy val mActions: ExpandableListView = (R.id.actions : ListView).asInstanceOf[ExpandableListView]
-  private var mTts: TextToSpeech = null;
+  private var mTts: TextToSpeech = null
   private var mTtsListener: TextToSpeech.OnInitListener = new TextToSpeech.OnInitListener {
     override def onInit(status: Int) {       
         if (status == TextToSpeech.SUCCESS) {
-            //mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null);
-            //mTts.speak("Ceci est un deuxieme test !", TextToSpeech.QUEUE_ADD, null);
+            //mTts.speak("The test is working.", TextToSpeech.QUEUE_FLUSH, null)
+            //mTts.speak("Ceci est un deuxieme test !", TextToSpeech.QUEUE_ADD, null)
         }
     }
   }
@@ -208,7 +208,7 @@ class KingPong extends Activity
   private var task : LoadSaveGameTask = null
   Log.d("KingPong", "KingPong class creating")
 
-  private var mDetector: GestureDetectorCompat = null; 
+  private var mDetector: GestureDetectorCompat = null
   
   onCreate { savedInstanceState: Bundle =>
     setContentView(R.layout.main)
@@ -243,8 +243,8 @@ class KingPong extends Activity
       def retrieveTextPosition(x: Float, y: Float): Int = {
         var closest_pos = 0
         var distance = 1897865f
-        val layout = mCodeView.getLayout();
-        for(pos <- 0 to (mCodeView.getText().length()-1)) {
+        val layout = mCodeView.getLayout
+        for(pos <- 0 to (mCodeView.getText.length()-1)) {
           val line = layout.getLineForOffset(pos)
           val baseline = layout.getLineBaseline(line)
           val ascent = layout.getLineAscent(line)
@@ -664,15 +664,15 @@ class KingPong extends Activity
           //Tutorial.initialTooltip()
           
         case CancelTutorial() =>
-          val settings = getSharedPreferences(PREFS_NAME, 0);
-          val editor = settings.edit();
-          editor.putBoolean("startTutorial", false);
-          editor.commit();
+          val settings = getSharedPreferences(PREFS_NAME, 0)
+          val editor = settings.edit()
+          editor.putBoolean("startTutorial", false)
+          editor.commit()
 
         case PickImage() =>
-          val photoPickerIntent = new Intent(Intent.ACTION_PICK);
-          photoPickerIntent.setType("image/*");
-          startActivityForResult(photoPickerIntent, IMPORT_PICT);
+          val photoPickerIntent = new Intent(Intent.ACTION_PICK)
+          photoPickerIntent.setType("image/*")
+          startActivityForResult(photoPickerIntent, IMPORT_PICT)
         
         case ReadAloud(language, msg) =>
         	if(language != "") {
@@ -680,31 +680,31 @@ class KingPong extends Activity
             val isAvailable = mTts.isLanguageAvailable(locale)
             isAvailable match {
               case LANG_AVAILABLE | LANG_COUNTRY_AVAILABLE | LANG_COUNTRY_VAR_AVAILABLE =>
-                mTts.setLanguage(locale);
+                mTts.setLanguage(locale)
               case _ =>
             }
         	}
-          mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
+          mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null)
 
         case _ =>
-            Log.w("MyTag","Warning: message type \""+input_msg.what+"\" not supported");
+            Log.w("kingpong","Warning: message type \""+input_msg.what+"\" not supported")
         }
     }
   }
   
   override  protected def onActivityResult(requestCode: Int, resultCode: Int, imageReturnedIntent: Intent) { 
-        super.onActivityResult(requestCode, resultCode, imageReturnedIntent); 
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent)
         requestCode match { 
         case IMPORT_PICT =>
             if(resultCode == Activity.RESULT_OK){
                 try {
-                    val imageUri = imageReturnedIntent.getData();
-                    val imageStream = getContentResolver().openInputStream(imageUri);
-                    val selectedImage = BitmapFactory.decodeStream(imageStream);
+                    val imageUri = imageReturnedIntent.getData
+                    val imageStream = getContentResolver.openInputStream(imageUri)
+                    val selectedImage = BitmapFactory.decodeStream(imageStream)
                     mGameView.setImageSelectedShape(selectedImage)
                 } catch {
                   case e: FileNotFoundException =>
-                    e.printStackTrace();
+                    e.printStackTrace()
                 }
  
             }
@@ -712,14 +712,14 @@ class KingPong extends Activity
           if(resultCode == 1 /*TextToSpeech.Engine.CHECK_VOICE_DATA_PASS*/) {
             // Succes, au moins un moteur de TTS a ete trouve, on l'instancie
             mTts = new TextToSpeech(this, mTtsListener)
-            if (mTts.isLanguageAvailable(Locale.getDefault()) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-            	mTts.setLanguage(Locale.getDefault());
+            if (mTts.isLanguageAvailable(Locale.getDefault) == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+            	mTts.setLanguage(Locale.getDefault)
           	}
 	        } else {
             // Echec, aucun moteur n'a ete trouve, on propose e l'utilisateur d'en installer un depuis le Market
             val installIntent = new Intent()
-            installIntent.setAction("android.speech.tts.engine.INSTALL_TTS_DATA" /*TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA*/);
-            startActivity(installIntent);
+            installIntent.setAction("android.speech.tts.engine.INSTALL_TTS_DATA" /*TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA*/)
+            startActivity(installIntent)
 	        }
         }
     }
