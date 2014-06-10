@@ -405,7 +405,7 @@ class KingPong extends Activity
                 { _ =>
                   self ! Messages.FileLoad(PONGNAME_TESTGAME)
                   time_button.setImageDrawable(timeButtonPlay)
-                  mTts.stop()
+                  if(mTts != null) mTts.stop()
                   mGameView.backToBeginning()
                 },
                 { _ => }
@@ -474,7 +474,7 @@ class KingPong extends Activity
 
   private def onBackButtonClick() = {
     time_button.setImageDrawable(timeButtonPlay)
-    mTts.stop()
+    if(mTts != null) mTts.stop()
     mGameView.backToBeginning()
   }
   
@@ -520,7 +520,7 @@ class KingPong extends Activity
 	
 					case GameView.Running =>
 					  mGameView.toEditing()
-					  mTts.stop()
+					  if(mTts != null) mTts.stop()
 					  time_button.setImageDrawable(timeButtonPlay)
 				  }
 				true
@@ -675,16 +675,18 @@ class KingPong extends Activity
           startActivityForResult(photoPickerIntent, IMPORT_PICT)
         
         case ReadAloud(language, msg) =>
-        	if(language != "") {
-            val locale  = new Locale(language)
-            val isAvailable = mTts.isLanguageAvailable(locale)
-            isAvailable match {
-              case LANG_AVAILABLE | LANG_COUNTRY_AVAILABLE | LANG_COUNTRY_VAR_AVAILABLE =>
-                mTts.setLanguage(locale)
-              case _ =>
+          if(mTts != null) {
+            if(language != "") {
+              val locale  = new Locale(language)
+              val isAvailable = mTts.isLanguageAvailable(locale)
+              isAvailable match {
+                case LANG_AVAILABLE | LANG_COUNTRY_AVAILABLE | LANG_COUNTRY_VAR_AVAILABLE =>
+                  mTts.setLanguage(locale);
+                case _ =>
+              }
             }
-        	}
-          mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null)
+            mTts.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
+          }
 
         case _ =>
             Log.w("kingpong","Warning: message type \""+input_msg.what+"\" not supported")
