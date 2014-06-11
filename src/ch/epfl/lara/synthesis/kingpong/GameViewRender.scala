@@ -380,6 +380,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
         case b: IntBox => 
           paint.setTextSize(b.height.next)
           paint.setTextAlign(Paint.Align.LEFT)
+          paintSelected.setTextAlign(Paint.Align.LEFT)
 
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)

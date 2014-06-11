@@ -51,33 +51,24 @@ object KingPong {
   final val PONGGAMEPACMAN_FILE = "Pong Man"
   final val PONGGAMEMAZE_FILE = "Maze"
   final val PONGGAMETUTORIAL_FILE = "Tutorial"
-  
+
   final val PONGNAME_SIMPLEBRICKBREAKER = "BrickBreaker"
-  final val PONGNAME_SUPERMARIO = "Mario"  
+  final val PONGNAME_ALGORITHMS = "Algorithms"
+  final val PONGNAME_SUPERMARIO = "Mario"
   final val PONGNAME_SLIDING = "SlidingPuzzle"  
   final val PONGNAME_THREEINAROW = "ThreeInARow"  
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   final val PONGNAME_TESTGAME = "TestGame"
-  private var mapgames: Map[String,()=>Game] = Map.empty
-  mapgames += (PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.BrickBreaker()))
-  mapgames += (PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()))
-  mapgames += (PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()))
-  mapgames += (PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()))
-  mapgames += (PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()))
-  mapgames += (PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame()))
-  
-  //def mapGame(s: String): Game = { s match {
-      /*case PONGGAMECOMPLETE_FILE => new PongKingPong()
-      case PONGGAMESPACEINVADERS_FILE => new PongSpaceInvaders()
-      case PONGGAMEPACMAN_FILE => new PongGamePacman()
-      case PONGGAMEMAZE_FILE => new PongMaze2()
-      case PONGGAMETUTORIAL_FILE => new Pongtutorial()
-      */
- //     case PONGNAME_SIMPLEBRICKBREAKER => 
-  //    case _ => new EmptyGame()
-   // }
-  //}
-  
+  private val mapGames: Map[String,()=>Game] = Map(
+    PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.BrickBreaker()),
+    PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()),
+    PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()),
+    PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()),
+    PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()),
+    PONGNAME_ALGORITHMS -> (() => new examples.MatricesAlgorithms()),
+    PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame())
+  )
+
   final val PREFS_NAME = "MyPrefsFile"
     
   private def writeToFile(context: Context, s: String, filename: String): Unit = {
@@ -114,10 +105,10 @@ object KingPong {
           )
         }
       } else {
-        if(mapgames contains filename) {
-          mapgames(filename)
+        if(mapGames contains filename) {
+          mapGames(filename)
           publishProgress(("Loading " + filename, 0, 100))
-          game = mapgames(filename)()
+          game = mapGames(filename)()
           publishProgress(("Finished", 100, 100))
         } else {
           val file = new java.io.File(activity.getFilesDir(), filename)
@@ -422,6 +413,7 @@ class KingPong extends Activity
           case R.id.sliding =>        self ! Messages.FileLoad(PONGNAME_SLIDING)
           case R.id.three_in_a_row => self ! Messages.FileLoad(PONGNAME_THREEINAROW)
           case R.id.drawing_game =>   self ! Messages.FileLoad(PONGNAME_DRAWINGRECORDER)
+          case R.id.algorithms =>     self ! Messages.FileLoad(PONGNAME_ALGORITHMS)
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
             true

@@ -37,6 +37,9 @@
         <item android:id="@+id/three_in_a_row"
           android:title="@string/three_in_a_row"
           android:showAsAction="ifRoom"/>
+        <item android:id="@+id/algorithms"
+          android:title="@string/algorithms"
+          android:showAsAction="ifRoom"/>
 	    <item android:id="@+id/tutorial_game"
           android:title="@string/tutorial"
           android:showAsAction="ifRoom"/>

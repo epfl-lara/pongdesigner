@@ -37,8 +37,11 @@ class MatricesAlgorithms extends Game {
   val findMaxRule = whenever(isFingerDownOver(btn)) (
     let("cell", Apply(arr, ptr.value, 0)) { cell =>
       let("value", find(values) {Contains(cell, _)}) { value =>
-        whenever(notNull(value) && value.value > crtMax.value) (
-          crtMax.value := value.value
+        whenever(notNull(value)) (
+          value.color := redDark,
+          whenever(value.value > crtMax.value) (
+            crtMax.value := value.value
+          )
         )
       }
     }
@@ -47,8 +50,11 @@ class MatricesAlgorithms extends Game {
   val searchRule = whenever(isFingerDownOver(btn)) (
     let("cell", Apply(arr, ptr.value, 1)) { cell =>
       let("value", find(values) {Contains(cell, _)}) { value =>
-        whenever(notNull(value) && value.value =:= toFind.value) (
-          crtFound.value := ptr.value
+        whenever(notNull(value)) (
+          value.color := redDark,
+          whenever(value.value =:= toFind.value) (
+            crtFound.value := ptr.value
+          )
         )
       }
     }
