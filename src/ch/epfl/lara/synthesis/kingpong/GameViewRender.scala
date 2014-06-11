@@ -379,15 +379,25 @@ class GameViewRender(val context: Context) extends ContextUtils {
         
         case b: IntBox => 
           paint.setTextSize(b.height.next)
-          
+          paint.setTextAlign(Paint.Align.LEFT)
+
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
-          val value = if (b.name.next.trim.isEmpty) b.value.next.toString
-                      else b.name.next + ":" + b.value.next.toString
-          canvas.drawText(value, b.x.next, b.y.next, paint)
+          val value = if (b.name.next.trim.isEmpty) {
+            paint.setTextAlign(Paint.Align.CENTER)
+            paintSelected.setTextAlign(Paint.Align.CENTER)
+            b.value.next.toString
+          } else {
+            b.name.next + ":" + b.value.next.toString
+          }
+
+          val textHeight = paint.descent - paint.ascent
+          val textOffset = (textHeight / 2) - paint.descent
+
+          canvas.drawText(value, b.x.next, b.y.next + textOffset, paint)
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
-            canvas.drawText(value, b.x.next, b.y.next, paintSelected)
+            canvas.drawText(value, b.x.next, b.y.next + textOffset, paintSelected)
           }
           canvas.restore()
           
@@ -408,18 +418,21 @@ class GameViewRender(val context: Context) extends ContextUtils {
             b.value.next
           }
           paint.setTextSize(b.height.next)
+          paint.setTextAlign(Paint.Align.LEFT)
           
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paint)
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
+            paintSelected.setTextAlign(Paint.Align.LEFT)
             canvas.drawText(valueDisplayNext, b.x.next, b.y.next, paintSelected)
           }
           canvas.restore()
 
         case b: BooleanBox =>
           paint.setTextSize(b.height.next)
+          paint.setTextAlign(Paint.Align.LEFT)
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
           val c = b.value.next
@@ -429,6 +442,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
           canvas.drawText(b.name.next, x + h*3/2, y+h/4, paint)
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
+            paintSelected.setTextAlign(Paint.Align.LEFT)
             canvas.drawText(b.name.next, b.x.next, b.y.next, paintSelected)
           }
           
