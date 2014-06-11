@@ -9,11 +9,11 @@ import scala.language.postfixOps
 object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val FOR_SYMBOL = "for"
   override val IN_SYMBOL = "in"
-  override val FINGER_MOVE_SYMBOL = "on movedOn "
-  override val FINGER_DOWN_SYMBOL = "on downOn "
-  override val FINGER_UP_SYMBOL = "on upOn "
+  override val FINGER_MOVE_SYMBOL = "on movedOn"
+  override val FINGER_DOWN_SYMBOL = "on downOn"
+  override val FINGER_UP_SYMBOL = "on upOn"
   override val COLLIDES_SYMBOL = "collides"
-    override val COLLIDING_SYMBOL = "colliding"
+  override val COLLIDING_SYMBOL = "colliding"
   override val OUTOFCOLLISION_SYMBOL = "not colliding anymore"
   override val IF_SYMBOL = "if"
 }
@@ -139,7 +139,7 @@ object PrettyPrinterExtendedTypical {
 
 trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
   import PrettyPrinterExtendedTypical._
-  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)  
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL, LET_SYMBOL)
   
   /**
    * Class holding the tree being rendered, with the mapping.
@@ -290,7 +290,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     s match {
       case i: Identifier => c +< i.toString +>
       case Let(id, expr, body) =>
-        c + indent +< "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + (body, indent) +>
+        c + indent +< s"$LET_SYMBOL " + id + s" $LET_ASSIGN_SYMBOL " + expr + LF + (body, indent) +>
       
       case MethodCall(method, Nil) => c +< method + "()" +>
       case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>
@@ -325,7 +325,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
           ((c + indent + INDENT +< a) /: l) { case (c, stat) => c + LF + indent + INDENT + stat} +>
       }
     case If(cond, s1, s2) =>
-      val g = c +< s"$IF_SYMBOL " + cond + s":$LF"
+      val g = c + indent +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = g + (s1, indent + INDENT)
       val end = if(s2 != UnitLiteral) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
       end +>

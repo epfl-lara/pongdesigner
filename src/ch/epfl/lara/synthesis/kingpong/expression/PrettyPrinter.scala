@@ -1,9 +1,6 @@
 package ch.epfl.lara.synthesis.kingpong.expression
 
-import ch.epfl.lara.synthesis.kingpong.objects.GameObject
-import ch.epfl.lara.synthesis.kingpong.objects._
 import android.text.style.CharacterStyle
-import android.text.SpannableStringBuilder
 import android.text.Spannable
 import android.text.style.StyleSpan
 import android.graphics.Typeface
@@ -14,9 +11,9 @@ import android.text.style.ForegroundColorSpan
 object PrettyPrinter extends PrettyPrinterTypical {
   override val FOR_SYMBOL = "for"
   override val IN_SYMBOL = "in"
-  override val FINGER_MOVE_SYMBOL = "on movedOn "
-  override val FINGER_DOWN_SYMBOL = "on downOn "
-  override val FINGER_UP_SYMBOL = "on upOn "
+  override val FINGER_MOVE_SYMBOL = "on movedOn"
+  override val FINGER_DOWN_SYMBOL = "on downOn"
+  override val FINGER_UP_SYMBOL = "on upOn"
   override val COLLIDES_SYMBOL = "collides"
   override val COLLIDING_SYMBOL = "colliding"
   override val OUTOFCOLLISION_SYMBOL = "not colliding anymore"
@@ -45,13 +42,14 @@ trait CommonPrettyPrintingConstants {
   val ARROW_FUNC_SYMBOL = "\u21D2"
   val LET_ASSIGN_SYMBOL = "="
   val IF_SYMBOL = "if"
+  val LET_SYMBOL = "val"
 }
 
 trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
   import Trees._
   import Extractors._
   
-  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL)
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL, LET_SYMBOL)
   
    def setSpanOnKeywords(text: CharSequence, keywords: Seq[String], cs: (()=>CharacterStyle)*): CharSequence = {
       // Start and end refer to the points where the span will apply
@@ -97,7 +95,7 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
     case ParExpr(Nil) => ""
     case ParExpr(a::l) => indent + a + "//" + l.size +" more"
     case Let(id, expr, body) =>
-        indent + "val " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + print(indent, body)
+        indent + s"$LET_SYMBOL " + id + s" $LET_ASSIGN_SYMBOL " + expr + s":$LF" + print(indent, body)
     case Foreach(cat, id, body) =>
       indent + s"$FOR_SYMBOL " + id.toString+ s" $IN_SYMBOL " + cat.name + s":$LF" + print(NO_INDENT, body)
     case Forall(category, id, body) =>
