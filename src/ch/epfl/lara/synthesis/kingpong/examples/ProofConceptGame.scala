@@ -69,20 +69,18 @@ class ProofConceptGame extends Game {
   }
   
   // A growing mushroom if it hits the floor. Then pops after growth.
-  val r4 = iif(mushroom.top < 0)(
+  val r4 = whenever(mushroom.top < 0)(
     mushroom.height := 1,
-	  mushroom.width := 1
-  ) Else (
-    whenever(Colliding(mushroom, base) && mushroom.bottom > base.top - 1 )(
-	    let("t", mushroom.top) { t =>
-	      let("yh", choose(mushroom.y, mushroom.height)(mushroom.bottom =:= base.top && mushroom.top =:= t - 0.05)){ yh =>
-	        Seq(mushroom.y := yh._1,
-	        mushroom.height := yh._2,
-	        mushroom.width := integerLiteralOne / mushroom.height,
-	        mushroom.velocity := Vec2(0, -0.01f))
-	      }
-	    }
-    )
+    mushroom.width := 1
+  ) otherwise whenever(Colliding(mushroom, base) && mushroom.bottom > base.top - 1 )(
+    let("t", mushroom.top) { t =>
+      let("yh", choose(mushroom.y, mushroom.height)(mushroom.bottom =:= base.top && mushroom.top =:= t - 0.05)){ yh => Seq(
+        mushroom.y := yh._1,
+        mushroom.height := yh._2,
+        mushroom.width := integerLiteralOne / mushroom.height,
+        mushroom.velocity := Vec2(0, -0.01f))
+      }
+    }
   )
     
   

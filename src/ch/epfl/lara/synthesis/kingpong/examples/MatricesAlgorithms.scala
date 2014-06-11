@@ -25,7 +25,7 @@ class MatricesAlgorithms extends Game {
   val toFind = intbox(labels)("To find", arr.left, arr.bottom + 1, value = 2)
   val crtFound = intbox(labels)("Found index", arr.right + 0.5, arr.cell(0, 1).y, value = -1)
 
-  val arrSort = array(arrays)("Array", 4, -7, 10, 1)
+  val arrSort = array(arrays)("Array", 2.5, -7, 10, 1)
   val ptrSort = intbox(labels)(" ", arrSort.cell(0, 0).x, arrSort.top - 0.5, value = 0)
   val btnSort = circle(buttons)("Sort!", arrSort.left - 1, arrSort.y)
 

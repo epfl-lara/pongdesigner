@@ -67,6 +67,7 @@
     <string name="sliding">Sliding Puzzle</string>
     <string name="three_in_a_row">3 in a row</string>
     <string name="algorithms">Algorithms</string>
+    <string name="balanced_parentheses">Balanced parentheses</string>
     <string name="saveFileAs">Save game as:</string>
     <string name="exportFileAs">Save and export game as:</string>
     <string name="export">Export</string>

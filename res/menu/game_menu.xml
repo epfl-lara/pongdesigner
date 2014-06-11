@@ -40,6 +40,9 @@
         <item android:id="@+id/algorithms"
           android:title="@string/algorithms"
           android:showAsAction="ifRoom"/>
+        <item android:id="@+id/balanced_parentheses"
+          android:title="@string/balanced_parentheses"
+          android:showAsAction="ifRoom"/>
 	    <item android:id="@+id/tutorial_game"
           android:title="@string/tutorial"
           android:showAsAction="ifRoom"/>

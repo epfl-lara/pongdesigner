@@ -56,6 +56,7 @@ object KingPong {
 
   final val PONGNAME_SIMPLEBRICKBREAKER = "BrickBreaker"
   final val PONGNAME_ALGORITHMS = "Algorithms"
+  final val PONGNAME_BALANCED_PARENTHESES = "BalancedParentheses"
   final val PONGNAME_SUPERMARIO = "Mario"
   final val PONGNAME_SLIDING = "SlidingPuzzle"  
   final val PONGNAME_THREEINAROW = "ThreeInARow"  
@@ -68,6 +69,7 @@ object KingPong {
     PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()),
     PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()),
     PONGNAME_ALGORITHMS -> (() => new examples.MatricesAlgorithms()),
+    PONGNAME_BALANCED_PARENTHESES -> (() => new examples.BalancedParentheses()),
     PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame())
   )
 
@@ -425,6 +427,7 @@ class KingPong extends Activity
           case R.id.three_in_a_row => self ! Messages.FileLoad(PONGNAME_THREEINAROW)
           case R.id.drawing_game =>   self ! Messages.FileLoad(PONGNAME_DRAWINGRECORDER)
           case R.id.algorithms =>     self ! Messages.FileLoad(PONGNAME_ALGORITHMS)
+          case R.id.balanced_parentheses => self ! Messages.FileLoad(PONGNAME_BALANCED_PARENTHESES)
           case R.id.tutorial_game =>
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
             true

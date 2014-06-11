@@ -175,9 +175,9 @@ object TreeDSL {
         case expr => ParExpr(expr::e::Nil)
       }
     }
-    def Else(e: Expr): Expr = expr match {
-      case If(cond, body, els) => If(cond, body, e)
-      case e => e
+    def otherwise(e: Expr): Expr = expr match {
+      case If(cond, body, UnitLiteral) => If(cond, body, e)
+      case _ => throw new Exception(s"otherwise can only be used on a partial If expression, not $expr")
     }
   }
   
@@ -354,9 +354,7 @@ object TreeDSL {
   def whenever(cond: Expr)(actions: Expr*): If = {
     If(cond, TreeOps.flatten(actions.toSeq))
   }
-  
-  def iif(cond: Expr)(actions: Expr*): If = If(cond, TreeOps.flatten(actions.toSeq))
-  
+
   def debug(msg: String, args: Expr*): Expr = {
     Debug(msg, args.toSeq)
   }
