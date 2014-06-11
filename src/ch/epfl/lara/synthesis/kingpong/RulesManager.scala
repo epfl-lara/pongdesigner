@@ -21,10 +21,10 @@ trait RulesManager {
   /** All the rules in this game. */
   def rules: Traversable[Expr] = _rules
   
-  def setRuleByIndex(newRule: Expr, index: Int): Unit = {
+  def setRuleByIndex(newRule: Expr, index: Int, undoable: Boolean = true): Unit = {
     val oldRule = _rules(index)
     _rules(index) = newRule
-    UndoRedo.recordRuleUpdate(this, index, oldRule, newRule)
+    if(undoable) UndoRedo.recordRuleUpdate(this, index, oldRule, newRule)
     for((obj, rules) <- _rulesByObject) {
       if(rules contains oldRule) {
         rules -= oldRule
@@ -40,17 +40,18 @@ trait RulesManager {
   def getRulesByObject(o: GameObject): Traversable[Expr] = _rulesByObject.getOrElse(o, List.empty)
   def getRulesByObject(objects: Traversable[GameObject]): Traversable[Expr] = objects flatMap getRulesByObject
   
-  def removeRule(r: Expr): Unit = {
+  def removeRule(r: Expr, undoable: Boolean = true): Unit = {
     val i = _rules.indexOf(r)
-    removeRuleByIndex(i)
+    removeRuleByIndex(i, undoable)
   }
-  def removeRuleByIndex(i: Int): Unit = {
+  def removeRuleByIndex(i: Int, undoable: Boolean = true): Unit = {
     val oldRule = _rules.remove(i)
     for(key <- _rulesByObject.keysIterator) {
       _rulesByObject(key) -= oldRule
     }
+    if(undoable) UndoRedo.recordRuleRemove(this, i, oldRule)
   }
-  def addRule(r: Expr): Int = {
+  def insertRule(index: Int, r: Expr, undoable: Boolean = true): Int = {
     def addToCategory(category: Category) = category.objects foreach { obj =>
       _rulesByObject.getOrElseUpdate(obj, MSet.empty) += r
     }
@@ -61,9 +62,19 @@ trait RulesManager {
       case Find(category, _, _) => addToCategory(category)
       case _ => //do nothing
     }(r)
+    var oldRules = List[Expr]() // the insert method does not exist in the scala_min library.
+    while(_rules.length > index) {
+      oldRules = _rules.remove(_rules.length - 1)::oldRules
+    }
     _rules += r
-    val index = _rules.length - 1
-    UndoRedo.recordRuleAdd(this, index, r)
+    while(oldRules.size > 0) {
+      _rules += oldRules.head
+      oldRules = oldRules.tail
+    }
+    if(undoable) UndoRedo.recordRuleInsert(this, index, r)
     index
+  }
+  def addRule(r: Expr, undoable: Boolean = true): Int = {
+    insertRule(_rules.length, r, undoable)
   }
 }

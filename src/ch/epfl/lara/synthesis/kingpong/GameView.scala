@@ -129,6 +129,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   private var activity: Activity = null
   private var codeview: EditTextCursorWatcher = null
+  UndoRedo.undoRedoCallback = updateCodeViewBasedOnSelection
 
   private val gameViewRender = new GameViewRender(context)
   def grid = gameViewRender.grid
@@ -476,6 +477,8 @@ class GameView(val context: Context, attrs: AttributeSet)
   def cv_mapping = mCvMapping
   def cv_mapping_code = if (cv_mapping == null) Map[Int, List[Category]]() else cv_mapping.mPosCategories
   def cv_mapping_properties = if (cv_mapping == null) Map[Int, Property[_]]() else cv_mapping.mPropertyPos
+  
+  // The last element of the list is the smallest enclosing the position. The first one is the entire rule.
   def cv_mapping_trees = if (cv_mapping == null) Map[Int, List[Tree]]() else cv_mapping.mPos
   var cv_mapping_consts = Map[Int, (Literal[_], Expr)]()
 
@@ -571,10 +574,14 @@ class GameView(val context: Context, attrs: AttributeSet)
 			    }, { () => })
         case _ =>
           cv_mapping_trees.get(pos) match {
-            case Some((e@ParExpr((a:AssignmentEvent)::q))::l) =>
-              val eventList = List((a, game.time))
-              val objectList = Nil
-              selectFix(Vec2(x, y), eventList, objectList)
+            case Some(l) =>
+              l.lastOption match {
+                case Some(e@ParExpr((a:Assign)::q)) =>
+                  val assignList = List(a)
+		              val objectList = Nil
+		              selectFix(Vec2(x, y), assignList, objectList)
+                case _ =>
+              }
             case _ => // Nothing to be done
           }
           
@@ -638,8 +645,6 @@ class GameView(val context: Context, attrs: AttributeSet)
         case Some((constLiteral, mainTree)) =>
           // Find the tree in which this literal is
           println(s"Found const literal: $constLiteral")
-          val tree = cv_mapping_trees(start).lastOption
-          println(s"The rule is: $tree")
           cv_constToModify = Some(constLiteral)
           cv_constToModifyInitial = Some(constLiteral)
           cv_treeContainingConst = Some(mainTree)
@@ -986,7 +991,8 @@ class GameView(val context: Context, attrs: AttributeSet)
               case STATE_SELECTING_TO_FIX =>
                 // Filter out events and keep only assignment events.
                 val eventListFiltered = eventListSorted.collect({ case (a: AssignmentEvent, b: Int) => (a, b) })
-                selectFix(p, eventListFiltered, objectList)
+                val assignList = eventListFiltered.collect{ case (AssignmentEvent(_, _, assignStatement: Assign), _) => assignStatement }
+                selectFix(p, assignList, objectList)
             }
           case STATE_MODIFYING_CATEGORY =>
           //categoryEditor.onFingerUp(touchCoords(0), touchCoords(1))
@@ -1027,11 +1033,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   /**
    * Displays a tooltip to select the right parexpr if multiple executed at this time.
    */
-  def selectFix(p: Vec2, eventList: List[(AssignmentEvent, Int)], objectList: List[GameObject]) = {
+  def selectFix(p: Vec2, eventList: List[Assign], objectList: List[GameObject]) = {
     val mQuickAction = new QuickAction(activity, false)
     val actionItems = ListBuffer[(String, Drawable, () => Unit)]()
     var alreadyDone = Set[Expr]()
-    for (e @ (AssignmentEvent(pos, a, assignStatement), time) <- eventList) {
+    for (assignStatement <- eventList) {
       if(!alreadyDone(assignStatement)) {
 	      alreadyDone += assignStatement
 	      val indexRule = game.findRuleIndex { rule =>
@@ -1061,6 +1067,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 						            e => if (e eq parExpr) Some(newParExpr) else None
 						          }(rule)
 						          game.setRuleByIndex(newRule, indexRule)
+						          updateCodeViewBasedOnSelection()
 	                  }
 	                  actionItems += ((comment, drw(R.drawable.event_unselected_disambiguate), action))
 	                }

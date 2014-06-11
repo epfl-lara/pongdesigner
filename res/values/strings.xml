@@ -172,6 +172,9 @@
     <string name="rule_in_progress_msg">You are designing a rule. Keep it and play the game?</string>
     <string name="shredding_title">Shredding %1$s</string>
     
+    <string name="nothing_to_undo">[none]</string>
+    <string name="nothing_to_redo">[none]</string>
+    
     <string name="set_restitution_title">Set restitution</string>
     <string-array name="restitution_possibilities">
         <item>Custom&#8230;</item>

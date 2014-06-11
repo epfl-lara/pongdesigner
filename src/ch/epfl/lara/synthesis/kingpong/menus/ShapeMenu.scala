@@ -23,6 +23,8 @@ object MenuOptions {
     @inline def modifiesNext: Boolean = (value & 2) == 2
     @inline def undoableModification: Boolean = (value & 4) == 4
     @inline def withNotUndoable: Policy = new Policy(value & ~4)
+    @inline def groupsModifications: Boolean = (value & 8) == 8
+    @inline def withGroupModification: Policy = new Policy(value | 8)
   }
 
   final val MODIFY_CURRENT_ERASE = Policy(1)
@@ -237,8 +239,9 @@ object MoveButton extends MenuButton {
         case selectedShape: Movable =>
           selectedShape.x.setPrevNext(
               gameEngine.snapX(selected_shape_first_x + relativeX/*, selectedShape.left.getPrevNext + shiftX, selectedShape.right.getPrevNext + shiftX*/)(snap_i=selected_shape_first_x))
+          val policy = modify_policy.withGroupModification
           selectedShape.y.setPrevNext(
-              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevNext + shiftY, selectedShape.bottom.getPrevNext + shiftY*/)(snap_i=selected_shape_first_y))
+              gameEngine.snapY(selected_shape_first_y + relativeY/*, selectedShape.top.getPrevNext + shiftY, selectedShape.bottom.getPrevNext + shiftY*/)(snap_i=selected_shape_first_y))(policy)
         case _ =>
       }
     }

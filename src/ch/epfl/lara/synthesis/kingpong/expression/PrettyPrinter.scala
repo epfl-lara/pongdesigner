@@ -108,26 +108,6 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
     case Select(expr, property) =>print(indent, expr) + "." + property
     case Delete(obj) => indent + "Delete(" + print(NO_INDENT, obj) + ")"
     case Tuple(l) => indent + l.map(print(NO_INDENT, _)).toString.substring(4)
-    case b @ BinaryOperator(lhs, rhs, _)=> val op = b match {
-        case _:Plus => "+"
-        case _:Minus => "-"
-        case _:Times => TIMES_SYMBOL
-        case _:Div => "/"
-        case _:Mod => "%"
-        case _:And => AND_SYMBOL
-        case _:Or => OR_SYMBOL
-        case _:Equals => "="
-        case _:LessThan => "<"
-        case _:LessEq => LESSEQ_SYMBOL
-        case _:GreaterThan => ">"
-        case _:GreaterEq => GREATEREQ_SYMBOL
-        case _:Collision => COLLIDES_SYMBOL
-        case _:Colliding => COLLIDING_SYMBOL
-        case _:OutOfCollision => OUTOFCOLLISION_SYMBOL
-        case _:Contains => "contains"
-        case _ => "["+b.getClass().getName()+"]"
-      }
-      print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
     case Assign((e, prop), rhs) =>
       indent + print(NO_INDENT, e) + "." + prop + "' = " + print(NO_INDENT, rhs)
     case Block(exprs) =>
@@ -166,7 +146,26 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
       LF + print(indent, body)
     case IsFingerDownOver(o) => indent + FINGER_DOWN_SYMBOL + print(NO_INDENT, o)
     case IsFingerUpOver(o) => indent + FINGER_UP_SYMBOL + print(NO_INDENT, o)
-    
+    case b @ BinaryOperator(lhs, rhs, _)=> val op = b match {
+        case _:Plus => "+"
+        case _:Minus => "-"
+        case _:Times => TIMES_SYMBOL
+        case _:Div => "/"
+        case _:Mod => "%"
+        case _:And => AND_SYMBOL
+        case _:Or => OR_SYMBOL
+        case _:Equals => "="
+        case _:LessThan => "<"
+        case _:LessEq => LESSEQ_SYMBOL
+        case _:GreaterThan => ">"
+        case _:GreaterEq => GREATEREQ_SYMBOL
+        case _:Collision => COLLIDES_SYMBOL
+        case _:Colliding => COLLIDING_SYMBOL
+        case _:OutOfCollision => OUTOFCOLLISION_SYMBOL
+        case _:Contains => "contains"
+        case _ => "["+b.getClass().getName()+"]"
+      }
+      print(indent, lhs) + " " + op + " " + print(NO_INDENT, rhs) // TODO : parenthesis
     case s => s.toString
   }
 }

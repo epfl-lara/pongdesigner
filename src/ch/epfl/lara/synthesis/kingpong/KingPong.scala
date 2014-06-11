@@ -38,6 +38,8 @@ import common.UndoRedo
 import java.util.Locale
 import java.io.OutputStreamWriter
 import android.os.Vibrator
+import scala.util.parsing.combinator.testing.Str
+import ch.epfl.lara.synthesis.kingpong.common.ContextUtils
 
 object KingPong {
   final val TTS_CHECK = 1
@@ -165,12 +167,12 @@ object KingPong {
 }
 
 class KingPong extends Activity 
-               with ActivityUtil with SensorEventListener { self =>
+               with ActivityUtil with SensorEventListener with ContextUtils { self =>
   import R.id._
   import R.layout._
   import R.drawable._
   import KingPong._
-
+ 
   // prove: task == null || mGameView == null || mGameView.game == task.game
   private lazy val mGameView: GameView = R.id.gameview
   private lazy val mCodeView: EditTextCursorWatcher = (code: TextView).asInstanceOf[EditTextCursorWatcher]
@@ -336,7 +338,7 @@ class KingPong extends Activity
   final val UNDO_ACTION = 1
   final val REDO_ACTION = 2
   
-  def addUndoList(undo_item: MenuItem) = {
+  def addUndoList(undo_item: MenuItem, expand: Boolean = false) = {
     val undos = UndoRedo.getUndos()
     val undo_menu = undo_item.getSubMenu()
     undo_menu.clear()
@@ -345,9 +347,13 @@ class KingPong extends Activity
       undo_menu.add(Menu.NONE, UNDO_ACTION, i, undo)
       i += 1
     }
+    if(undos.size == 0) {
+      undo_menu.add(Menu.NONE, REDO_ACTION, 0, Str(R.string.nothing_to_undo))
+    }
+    if(expand) undo_item.expandActionView()
   }
   
-  def addRedoList(redo_item: MenuItem) = {
+  def addRedoList(redo_item: MenuItem, expand: Boolean = false) = {
     val redos = UndoRedo.getRedos()
     val redo_menu = redo_item.getSubMenu()
     redo_menu.clear()
@@ -356,6 +362,10 @@ class KingPong extends Activity
       redo_menu.add(Menu.NONE, REDO_ACTION, i, redo)
       i += 1
     }
+    if(redos.size == 0) {
+      redo_menu.add(Menu.NONE, REDO_ACTION, 0, Str(R.string.nothing_to_redo))
+    }
+    if(expand) redo_item.expandActionView()
   }
   
   override def onPrepareOptionsMenu(menu: Menu): Boolean = {
@@ -371,20 +381,21 @@ class KingPong extends Activity
       // Handle item selection
       item.getItemId() match {
           case R.id.undo =>
-            //addUndoList(item)
-            UndoRedo.undo(1)
+            addUndoList(item, expand=true)
+            //UndoRedo.undo(1)
+            
             true//false
           case R.id.redo =>
-            //addRedoList(item)
-            UndoRedo.redo(1)
+            addRedoList(item, expand=true)
+            //UndoRedo.redo(1)
             true//false
           case UNDO_ACTION =>
             val i = item.getOrder()
-            UndoRedo.undo(i)
+            if(i > 0) UndoRedo.undo(i)
             true
           case REDO_ACTION =>
             val i = item.getOrder()
-            UndoRedo.redo(i)
+            if(i > 0) UndoRedo.redo(i)
             true
           case R.id.save =>
             mGameView.saveGame(mHandler, false)
@@ -717,4 +728,6 @@ class KingPong extends Activity
 	        }
         }
     }
+  
+  def context = this
 }

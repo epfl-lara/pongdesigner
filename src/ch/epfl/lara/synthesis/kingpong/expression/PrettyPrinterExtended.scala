@@ -174,7 +174,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     }
     def +(other: Tree, newIndentation: String = NO_INDENT): StringMaker = { // Care about this new expression by storing its position.
       val result = print(this, newIndentation, other)
-      StringMaker(result.c, result.size, result.map.add(other, size, result.size), result.mOpen, result.mCommentOpen)
+      StringMaker(result.c, result.size, result.map.add(other, size, result.size - 1), result.mOpen, result.mCommentOpen)
     }
     def open(implicit start: Tree): StringMaker = {
       StringMaker(c, size, map, mOpen + (start -> size), mCommentOpen)
@@ -203,15 +203,15 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     }
     def +#> : StringMaker = {
       val (comment, start) = mCommentOpen.head
-      StringMaker(c, size, map.add(comment, start, size), mOpen, mCommentOpen.tail)
+      StringMaker(c, size, map.add(comment, start, size - 1), mOpen, mCommentOpen.tail)
     }
     def +>(implicit t: Tree): StringMaker = {
       val start = mOpen.getOrElse(t, size)
-      StringMaker(c, size, map.add(t, start, size), mOpen - t, mCommentOpen)
+      StringMaker(c, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen)
     }
     def +>(t: Property[_]): StringMaker = {
       val start = mOpen.getOrElse(t, size)
-      StringMaker(c, size, map.add(t, start, size), mOpen - t, mCommentOpen)
+      StringMaker(c, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen)
     }
     /*def +(other: Rule): StringMaker = {
       print(this, other)
