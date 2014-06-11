@@ -25,9 +25,17 @@ class MatricesAlgorithms extends Game {
   val toFind = intbox(labels)("To find", arr.left, arr.bottom + 1, value = 2)
   val crtFound = intbox(labels)("Found index", arr.right + 0.5, arr.cell(0, 1).y, value = -1)
 
+  val arrSort = array(arrays)("Array", 4, -7, 10, 1)
+  val ptrSort = intbox(labels)(" ", arrSort.cell(0, 0).x, arrSort.top - 0.5, value = 0)
+  val btnSort = circle(buttons)("Sort!", arrSort.left - 1, arrSort.y)
+
   for(i <- 0 until arr.numColumns.get) {
     intbox(values)(" ", arr.cells(i)(0).x, arr.cells(i)(0).y, value = i%4)
     intbox(values)(" ", arr.cells(i)(1).x, arr.cells(i)(1).y, value = 4-i%4)
+  }
+
+  for(i <- 0 until arrSort.numColumns.get) {
+    intbox(values)(" ", arrSort.cells(i)(0).x, arrSort.cells(i)(0).y, value = (Math.random() * 10).toInt)
   }
 
   val advancePointerRule = whenever(isFingerDownOver(btn) && ptr.value < arr.numColumns) (
@@ -60,8 +68,28 @@ class MatricesAlgorithms extends Game {
     }
   )
 
+  val advancePointerSortRule = whenever(isFingerDownOver(btnSort)) (
+    let("ptr", If(ptrSort.value < (arrSort.numColumns - 1), ptrSort.value + 1, 0)) { ptr => Seq(
+      ptrSort.x := arrSort.cell(ptr, 0).x,
+      ptrSort.value := ptr
+    )}
+  )
+
+  val sortRule = whenever(isFingerDownOver(btnSort)) (
+    let("cell", "rightCell", Apply(arrSort, ptrSort.value, 0), Apply(arrSort, ptrSort.value + 1, 0)) { (cell, rightCell) =>
+      let("value", "rightValue", find(values) {Contains(cell, _)}, find(values) {Contains(rightCell, _)}) { (value, rightValue) =>
+        whenever(notNull(value) && notNull(rightValue) && value.value > rightValue.value) (
+          value.x := rightCell.x,
+          rightValue.x := cell.x
+        )
+      }
+    }
+  )
+
   register(advancePointerRule)
+  register(advancePointerSortRule)
   register(findMaxRule)
   register(searchRule)
+  register(sortRule)
 
 }
