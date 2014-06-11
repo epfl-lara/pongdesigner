@@ -191,6 +191,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
       
 
       o match {
+
+        // If there is a bitmap, only draw it
+        case e: Positionable with Directionable if bitmaps contains e.color.next =>
+          drawBitmapInGame(canvas, matrix, e, bitmaps(e.color.next), 0xFF)
+
         case o: Gravity =>
           if(o.visible.get || o.visible.next || state == Editing) {
             drawVelocity(o, o.x.next, o. y.next, o.vectorNext, velocityPaint)
@@ -475,15 +480,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
           if(obj_to_highlight contains r) canvas.drawRect(r.x.next - r.width.next/2, r.y.next - r.height.next/2, r.x.next + r.width.next/2, r.y.next + r.height.next/2, paintSelected)
           canvas.restore()
       }
-      
-      o match {
-        case e: Positionable with Directionable =>
-          val c = e.color.next
-          if(c >>> 24 == 0 && (bitmaps contains c))  { // It's a picture
-            drawBitmapInGame(canvas, matrix, e, bitmaps(c), 0xFF)
-          }
-        case _ =>
-      }
+
     }
   
     /** Draw a velocity vector from the given point */
@@ -510,7 +507,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
       //}
     }
     
-    if(game == null) return;
+    if(game == null) return
     game.pixelsByUnit = mapRadius(matrix, 1)
 
     game.aliveObjects foreach drawObject
