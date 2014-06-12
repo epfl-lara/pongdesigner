@@ -32,6 +32,17 @@ You can debug a running instance with `ADB`. The keywork `kingpong` is used as a
 To see full exceptions trace, run the command without any filter:
 
     adb logcat
+    
+Screencast
+----------
+
+If using *KitKat* (android 4.4), you can directly record your screen.
+
+    adb shell screenrecord --bit-rate 2000000 /sdcard/pong.mp4
+    adb pull /sdcard/pong.mp4
+    
+Other options are available (size, time limit, ...).
+
 
 Authors
 -------
