@@ -58,7 +58,7 @@ object MenuOptions {
 object ShapeMenu extends MenuCenter {
   menus = List(MoveButton, PaintButton, PinButton, SizeButton, ArraySizeButton, SpeedButton, VisibilityButton,
                IncrementButton, DecrementButton, ModifyTextButton, RenameButton, SystemButton, RotateButton,
-               ModifyLanguageButton, BooleanButton)
+               ModifyLanguageButton, BooleanButton, IntNameButton)
 
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float) = {
     for(m <- menus) { m.visible = true }
@@ -67,12 +67,15 @@ object ShapeMenu extends MenuCenter {
     DecrementButton.visible = false
     ModifyTextButton.visible = false
     BooleanButton.visible = false
+    IntNameButton.visible = false
     val top_shift = selectedShape match {
       case d: IntBox =>
         IncrementButton.setPos(0, -1)
         DecrementButton.setPos(0, 1)
         IncrementButton.visible = true
         DecrementButton.visible = true
+        IntNameButton.visible = true
+        IntNameButton.setPos(-1, -1)
         -1
       case d: Booleanable =>
         BooleanButton.setPos(0, -1)
@@ -566,6 +569,36 @@ object IncrementButton extends MenuButton {
   
   def hint_id = R.string.change_increment_hint
 }
+
+/** Button to increment a boolean */
+object IntNameButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape match {
+        case d: IntBox =>
+          d.displayName setPrevNext !d.displayName.getPrevNext
+        case _ =>
+    }
+    hovered = false
+  }
+  
+  private val hovered_icons_on = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_int_named ::  Nil
+  private val hovered_icons_off = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_int_unnamed ::  Nil
+  private val normal_icons_on = R.drawable.bm_flat_button :: R.drawable.bm_int_named :: Nil
+  private val normal_icons_off = R.drawable.bm_flat_button :: R.drawable.bm_int_unnamed :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) = {
+    val on = selectedShape match {
+      case selectedShape: IntBox => 
+        selectedShape.displayName.getPrevNext
+      case _ => false
+    }
+    if(hovered) (if(on) hovered_icons_on else hovered_icons_off)  else (if(on) normal_icons_on else normal_icons_off)
+  }
+  
+  def hint_id = R.string.change_intname_hint
+}
+
 
 /** Button to increment a boolean */
 object BooleanButton extends MenuButton {

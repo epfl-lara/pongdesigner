@@ -47,7 +47,7 @@ sealed abstract class Box[T : PongType](
     init_visible: Expr,
     init_color: Expr
    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
-     with Rectangular
+     with ResizableRectangular
      with Movable
      with Rotationable
      with Visiblable
@@ -83,12 +83,14 @@ class IntBox(
     init_height: Expr, 
     init_value: Expr,
     init_visible: Expr,
-    init_color: Expr
+    init_color: Expr,
+    init_displayName: Expr
    ) extends Box[Int](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
                       init_value, init_visible, init_color) {
   
+  val displayName = simpleProperty[Boolean]("displayName", init_displayName)
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new IntBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
+    new IntBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color), f(displayName))
   }
 }
 
@@ -124,7 +126,7 @@ class BooleanBox(
     init_color: Expr
    ) extends Box[Boolean](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
                          init_value, init_visible, init_color) with Booleanable {
-  
+  def booleanvalue = value
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
     new BooleanBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
   }

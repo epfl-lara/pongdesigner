@@ -256,7 +256,7 @@ object CodeTemplates extends CodeHandler {
     def others(implicit ctx: TemplateContext) = ctx.rotationables
   }
   
-  trait TemplateOtherValue[T <: GameObject] extends TemplateOther[T, IntBox] {
+  trait TemplateOtherInt[T <: GameObject] extends TemplateOther[T, IntBox] {
     def others(implicit ctx: TemplateContext) = ctx.integers
   }
   
@@ -1034,7 +1034,7 @@ object CodeTemplates extends CodeHandler {
   }
   
   
-  object TValueCombine1_absolute extends TemplateOtherValue[IntBox] with TemplateValue {
+  object TValueCombine1_absolute extends TemplateOtherInt[IntBox] with TemplateValue {
     def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
       if (obj.value.next == other.value.get) {
         val expr = obj.value := other.value
@@ -1049,7 +1049,7 @@ object CodeTemplates extends CodeHandler {
       s"Copies the value of ${obj.name.next} to ${obj.name.next}"
   }
   
-  object TValueCombine1_relativeMultCopy extends TemplateOtherValue[IntBox] with TemplateValue {
+  object TValueCombine1_relativeMultCopy extends TemplateOtherInt[IntBox] with TemplateValue {
     def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
       if (other.value.get != 0 && obj.value.next % other.value.get == 0 && obj.value.next != other.value.get && obj.value.next != 0) {
         val expr = obj.value := other.value * (obj.value.next / other.value.get)
@@ -1064,7 +1064,7 @@ object CodeTemplates extends CodeHandler {
       s"Stores in ${obj.name.next} the value of ${other.name.next} multiplied by" + (obj.value.next / other.value.get)
   }
   
-  object TValueCombine1_relativeModulo extends TemplateOtherValue[IntBox] with TemplateValue {
+  object TValueCombine1_relativeModulo extends TemplateOtherInt[IntBox] with TemplateValue {
     def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
       if (other.value.get > 1 && obj.value.next == obj.value.get % other.value.get) {
         val expr = obj.value := obj.value % other.value
@@ -1140,6 +1140,22 @@ object CodeTemplates extends CodeHandler {
     def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
       s"Stores in ${obj.name.next} the division between ${other1.name.next} and ${other2.name}"
   }
+  
+  object TValueCombine2_mod extends TemplateOtherPairValue[IntBox] with TemplateValue {
+    override def otherOrder = false
+    def result(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = {
+      if (other2.value.get != 0 && obj.value.next == other1.value.get % other2.value.get) {
+        val expr = obj.value := other1.value % other2.value
+        val priority = if(other2.value.get == 0) 0 else if(other1.value.get % other2.value.get == 0) 2 else 10
+        Some(expr.setPriority(priority))
+      } else {
+        None
+      }
+    }
+      
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
+      s"Stores in ${obj.name.next} the remainder of the division between ${other1.name.next} and ${other2.name}"
+  }
 
   object TValue extends TemplateParallel[IntBox] with TemplateValue {
     def condition(obj: IntBox)(implicit ctx: TemplateContext) = obj.value.get != obj.value.next
@@ -1156,6 +1172,7 @@ object CodeTemplates extends CodeHandler {
       TValueCombine2_minus,
       TValueCombine2_times,
       TValueCombine2_div,
+      TValueCombine2_mod,
       TValueRelative2
     )
 //    def comment   = s"Possible value changes for ${shape.name.next}"

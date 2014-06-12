@@ -709,6 +709,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     state = Editing
     game.setInstantProperties(true)
     layoutResize()
+    MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
     gameViewRender.stopRecording(game)
   }
 

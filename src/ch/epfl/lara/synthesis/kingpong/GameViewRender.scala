@@ -389,7 +389,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
 
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
-          val value = if (b.name.next.trim.isEmpty) {
+          val value = if (!b.displayName.next) {
             paint.setTextAlign(Paint.Align.CENTER)
             paintSelected.setTextAlign(Paint.Align.CENTER)
             b.value.next.toString

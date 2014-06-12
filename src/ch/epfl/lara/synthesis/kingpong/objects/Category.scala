@@ -37,10 +37,11 @@ object Category {
       recording: Expr = true,
       language: Expr = "en",
       text: Expr = "Custom text",
-      time: Expr = 1)(implicit game: Game): CategoryObject = {
+      time: Expr = 1,
+      displayName: Expr = true)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, cellWidth, cellHeight, radius, value, randomMinValue, randomMaxValue,
         visible, velocity, angularVelocity, density, friction, restitution, linearDamping, fixedRotation,
-        color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time)
+        color, sensor, tpe, stroke_width, color_drawing, recording, language, text, time, displayName)
   }
 }
 
@@ -78,7 +79,8 @@ class CategoryObject(
     val recording: Expr,
     val language: Expr,
     val text: Expr,
-    val time: Expr)
+    val time: Expr,
+    val displayName: Expr)
     extends NotNull with Category { self =>
 
   private val _children = MSet.empty[GameObject]

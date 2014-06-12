@@ -661,7 +661,9 @@ object GameSerializer {
 				jsonToExpr(json.getJSONObject("recording")),
 				jsonToExpr(json.getJSONObject("language")),
 				jsonToExpr(json.getJSONObject("text")),
-				jsonToExpr(json.getJSONObject("time")))}
+				jsonToExpr(json.getJSONObject("time")),
+				jsonToExpr(json.getJSONObject("displayName"))
+				)}
     )
     if(created) {
       ctx.categories += name -> category

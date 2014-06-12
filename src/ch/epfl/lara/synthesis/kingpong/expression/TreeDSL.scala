@@ -536,8 +536,9 @@ object TreeDSL {
       width: Expr = category.width,
       height: Expr = category.height,
       visible: Expr = category.visible,
-      color: Expr = category.color)(implicit game: Game): Box[Int] = {
-    val obj = new IntBox(game, name, x, y, angle, width, height, value, visible, color)
+      color: Expr = category.color,
+      displayName: Expr = category.displayName)(implicit game: Game): Box[Int] = {
+    val obj = new IntBox(game, name, x, y, angle, width, height, value, visible, color, displayName)
     obj.setCategory(category)
     game.add(obj)
     obj

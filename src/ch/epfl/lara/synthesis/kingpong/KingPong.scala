@@ -62,6 +62,7 @@ object KingPong {
   final val PONGNAME_THREEINAROW = "ThreeInARow"  
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   final val PONGNAME_TESTGAME = "TestGame"
+  final val PONGNAME_EMPTY = "empty game"
   private val mapGames: Map[String,()=>Game] = Map(
     PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.BrickBreaker()),
     PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()),
@@ -70,7 +71,8 @@ object KingPong {
     PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()),
     PONGNAME_ALGORITHMS -> (() => new examples.MatricesAlgorithms()),
     PONGNAME_BALANCED_PARENTHESES -> (() => new examples.BalancedParentheses()),
-    PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame())
+    PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame()),
+    PONGNAME_EMPTY -> (() => new examples.EmptyGame())
   )
 
   final val PREFS_NAME = "MyPrefsFile"
@@ -332,6 +334,16 @@ class KingPong extends Activity
 		startActivityForResult(checkIntent, TTS_CHECK)
   }
   
+  def showActionBar() = {
+    mCodeViewResizer.setVisibility(View.VISIBLE)
+    mActions.setVisibility(View.VISIBLE)
+  }
+  
+  def hideActionBar() = {
+    mCodeViewResizer.setVisibility(View.GONE)
+    mActions.setVisibility(View.GONE)
+  }
+  
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
       val inflater = getMenuInflater()
       inflater.inflate(R.menu.game_menu, menu)
@@ -407,7 +419,7 @@ class KingPong extends Activity
             val res = context.getResources()
             CustomDialogs.launchOKCancelDialog(context, res.getString(R.string.confirm_reset_title), res.getString(R.string.confirm_reset_message), false, 
                 { _ =>
-                  self ! Messages.FileLoad(PONGNAME_TESTGAME)
+                  self ! Messages.FileLoad(PONGNAME_EMPTY)
                   time_button.setImageDrawable(timeButtonPlay)
                   if(mTts != null) mTts.stop()
                   mGameView.backToBeginning()
@@ -428,7 +440,7 @@ class KingPong extends Activity
           case R.id.drawing_game =>   self ! Messages.FileLoad(PONGNAME_DRAWINGRECORDER)
           case R.id.algorithms =>     self ! Messages.FileLoad(PONGNAME_ALGORITHMS)
           case R.id.balanced_parentheses => self ! Messages.FileLoad(PONGNAME_BALANCED_PARENTHESES)
-          case R.id.tutorial_game =>
+          case R.id.tutorial_game =>  self ! Messages.FileLoad(PONGNAME_TESTGAME)
             //if(Tutorial.mActions != Nil) Tutorial.executeNextAction() else Tutorial.launch()
             true
           case R.id.optionsButton =>
@@ -482,15 +494,23 @@ class KingPong extends Activity
     time_button.setImageDrawable(timeButtonPlay)
     if(mTts != null) mTts.stop()
     mGameView.backToBeginning()
+    showActionBar()
   }
   
   private var vibratorInstance: Vibrator = null
-  def vibrate(): Unit = {
+  def vibrate(vibrations: Array[Long] = null): Unit = {
     if(vibratorInstance == null) {
       vibratorInstance = this.getSystemService(Context.VIBRATOR_SERVICE).asInstanceOf[Vibrator]
       if(vibratorInstance == null) return
     }
-    vibratorInstance.vibrate(50)
+    if(vibrations == null) {
+      vibratorInstance.vibrate(50)
+    } else {
+      vibratorInstance.vibrate(vibrations, -1)
+    }
+  }
+  def vibrateCancel(): Unit = {
+    if(vibratorInstance != null) vibratorInstance.cancel()
   }
   
   private var startTouchDown = 0L
@@ -503,8 +523,10 @@ class KingPong extends Activity
 				case GameView.Running =>
 				  if(mGameView.editWhileRunning) {
 				    mGameView.editWhileRunning = false
+				    hideActionBar()
 				  } else {
 			      mGameView.editWhileRunning = true 
+			      vibrate(Array(MAX_MS_EDITWHILERUNNING, 100))
 				  }
 				case GameView.Editing =>
 		  }
@@ -512,7 +534,9 @@ class KingPong extends Activity
 		case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
 		  if(System.currentTimeMillis() - startTouchDown > MAX_MS_EDITWHILERUNNING) {
 		    // Do nothing, just keep going !
-		    vibrate()
+		    //vibrate()
+		    showActionBar()
+		    vibrateCancel()
 		    if(mGameView.editWhileRunning) Toast.makeText(this, R.string.editwhilerunningon, Toast.LENGTH_SHORT).show() else {
 		      Toast.makeText(this, R.string.editwhilerunningoff, Toast.LENGTH_SHORT).show()
 		    }
@@ -522,10 +546,12 @@ class KingPong extends Activity
 				mGameView.state match {
 					case GameView.Editing =>
 					  mGameView.toRunning()
+					  hideActionBar()
 					  time_button.setImageDrawable(timeButtonPause)
 	
 					case GameView.Running =>
 					  mGameView.toEditing()
+					  showActionBar()
 					  if(mTts != null) mTts.stop()
 					  time_button.setImageDrawable(timeButtonPlay)
 				  }
