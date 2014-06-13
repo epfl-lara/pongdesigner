@@ -300,7 +300,7 @@ class Array2D(
   val cellsCategory = new Category {
     def game = self.game
     def name = self.name.get + " cells"
-    def objects = self.cells.view.flatten
+    def objects = self.cells.flatten
   }
     
   //TODO for the moment the array size is constant

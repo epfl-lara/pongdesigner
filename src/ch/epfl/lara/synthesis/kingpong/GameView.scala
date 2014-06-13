@@ -590,76 +590,59 @@ class GameView(val context: Context, attrs: AttributeSet)
     }
   }
   
-  def onCodeSelectionChanged(start: Int, end: Int) = {
+  def onCodeSelectionChanged(start: Int, end: Int): Unit = {
     if (cv_mapping_code != null && start != 0 && end != 0) {
       cv_mapping_code.get(start) match {
-        case Some(category) if category != null =>
-          setObjsToHighlight(category.flatMap(_.objects).toSet)
-        case Some(_) =>
-          setObjsToHighlight(Set.empty)
-        case None =>
+        case Some(categories) if categories != null =>
+          setObjsToHighlight(categories.flatMap(_.objects).toSet)
+        case _ =>
           setObjsToHighlight(Set.empty)
       }
-      cv_mapping_properties.get(start) match {
-        case Some(prop) =>
-          prop.name match {
-            case "color" => // TODO : Invoke color picker
-            case "restitution" =>
-              prop match {
-                case prop: RWProperty[Float] =>
-                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
-	                  Str(R.string.set_restitution_title), R.array.restitution_possibilities,
-	                  (res: String) => prop.setPrevNext(res floatOrElse prop.getPrevNext)
-	                  , { () => 
-	                  }, prop.getPrevNext.toString)
-                case _ =>
-              }
-             
-            case "friction" =>
-              prop match {
-                case prop: RWProperty[Float] =>
-                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
-	                  Str(R.string.set_friction_title), R.array.friction_possibilities,
-	                  (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext)
-	                  , { () => 
-	                  }, prop.getPrevNext.toString)
-                case _ =>
-              }
-            case "linear-damping" =>
-              prop match {
-                case prop: RWProperty[Float] =>
-                   CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
-	                  Str(R.string.set_linear_damping_title), R.array.linear_damping_possibilities,
-	                  (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext)
-	                  , { () => 
-	                  }, prop.getPrevNext.toString)
-                case _ =>
-              }
-            case _ =>
-          }
-        case None =>
+
+      //TODO find a way to make this pattern matching type-safe
+      cv_mapping_properties.get(start) foreach {
+        case prop: RWProperty[Int] @unchecked if prop.name == "color" =>
+          //TODO : Invoke color picker
+
+        case prop: RWProperty[Float] @unchecked if prop.name == "restitution" =>
+          CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+            Str(R.string.set_restitution_title), R.array.restitution_possibilities,
+            (res: String) => prop.setPrevNext(res floatOrElse prop.getPrevNext),
+            () => (),
+            prop.getPrevNext.toString
+          )
+
+        case prop: RWProperty[Float] @unchecked if prop.name == "friction" =>
+          CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+            Str(R.string.set_friction_title), R.array.friction_possibilities,
+            (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext),
+            () => (),
+            prop.getPrevNext.toString
+          )
+
+        case prop: RWProperty[Float] @unchecked if prop.name == "linear-damping" =>
+          CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
+            Str(R.string.set_linear_damping_title), R.array.linear_damping_possibilities,
+            (res: String)  => prop.setPrevNext(res floatOrElse prop.getPrevNext),
+            () => (),
+            prop.getPrevNext.toString
+          )
+
+        case _ => //do nothing
       }
     }
     if (cv_mapping_consts != null) {
-      cv_mapping_consts.get(start) match {
-        case Some((constLiteral, mainTree)) =>
-          // Find the tree in which this literal is
-          println(s"Found const literal: $constLiteral")
-          cv_constToModify = Some(constLiteral)
-          cv_constToModifyInitial = Some(constLiteral)
-          cv_treeContainingConst = Some(mainTree)
-          cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
-          mCvMapping.mConstantsPos.get(start) match {
-            case Some((a, b)) =>
-              cv_constToModifyStart = a
-              cv_constToModifyEnd = b
-            case None =>
-          }
-        case None =>
-
+      cv_mapping_consts.get(start) foreach { case (constLiteral, mainTree) =>
+        cv_constToModify = Some(constLiteral)
+        cv_constToModifyInitial = Some(constLiteral)
+        cv_treeContainingConst = Some(mainTree)
+        cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
+        mCvMapping.mConstantsPos.get(start) foreach { case (a, b) =>
+          cv_constToModifyStart = a
+          cv_constToModifyEnd = b
+        }
       }
     }
-    
   }
   
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
