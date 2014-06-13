@@ -726,6 +726,7 @@ object CodeTemplates extends CodeHandler {
     val templates = List(
       //TXY_CenterMirror,
       TXY_Move_Force,
+      TArraySnapWithCoordinates,
       TArraySnapWithVelocity,
       TArraySnapWithForce,
       TXY_Cell_Move_Relative,
@@ -1423,19 +1424,34 @@ object CodeTemplates extends CodeHandler {
     )
   }
   
-  /* Array templates */
-  
+  /* Snapping templates */
+
+  object TArraySnapWithCoordinates extends TemplateOtherCell[Movable] with TemplateMovable {
+    def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
+      if (other.contains(obj.center.get) &&
+        almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
+        almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
+        val expr = Seq(
+          obj.x := other.x,
+          obj.y := other.y
+        )
+        Some(expr.setPriority(14))
+      } else {
+        None
+      }
+    }
+
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
+      s"Snap ${obj.name.get} to the center of the cell using its velocity."
+  }
+
   object TArraySnapWithVelocity extends TemplateOtherCell[Movable] with TemplateMovable {
     def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
       if (other.contains(obj.center.get) &&
           almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
           almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
-//        val expr = whenever(Contains(other, obj)) (
-//          obj.velocity := (other.center - obj.center) * 10
-//        )
-        //TODO This template should return the condition. But for the moment there is a conflit with state conditions.
         val expr = obj.velocity := (other.center - obj.center) * 10
-        Some(expr.setPriority(14))
+        Some(expr.setPriority(13))
       } else {
         None
       }
@@ -1448,12 +1464,8 @@ object CodeTemplates extends CodeHandler {
   object TArraySnapWithForce extends TemplateOtherCell[Movable] with TemplateMovable {
     def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
       if (other.contains(obj.center.get) &&
-        almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
-        almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
-//        val expr = whenever(Contains(other, obj)) (
-//          ApplyForce(obj, (other.center - obj.center) * 10)
-//        )
-        //TODO This template should return the condition. But for the moment there is a conflit with state conditions.
+          almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
+          almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
         val expr = ApplyForce(obj, (other.center - obj.center) * 10)
         Some(expr.setPriority(15))
       } else {
