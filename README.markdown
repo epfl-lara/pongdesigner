@@ -33,8 +33,8 @@ To see full exceptions trace, run the command without any filter:
 
     adb logcat
     
-Screencast
-----------
+Screencast / Screenshot
+-----------------------
 
 If using *KitKat* (android 4.4), you can directly record your screen.
 
@@ -42,6 +42,11 @@ If using *KitKat* (android 4.4), you can directly record your screen.
     adb pull /sdcard/pong.mp4
     
 Other options are available (size, time limit, ...).
+
+For a simple screenshot, the following command is available.
+
+    adb shell screencap -p /sdcard/capture.png
+    adb pull /sdcard/capture.png
 
 
 Authors
