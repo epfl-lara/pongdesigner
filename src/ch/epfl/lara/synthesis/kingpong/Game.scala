@@ -14,8 +14,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 trait Game extends RulesManager with Context { self => 
   protected implicit val selfImplicit = self
-  private implicit val worldManifold = new WorldManifold()
-  
+
   val world: PhysicalWorld
   var worldgravityangle = 0.0f
   var worldgravityradius = 0.0f
@@ -110,24 +109,14 @@ trait Game extends RulesManager with Context { self =>
         scheduledRestoreTime = None
       case None =>
     }
-    // save contacts
-    world.beginContacts foreach { contact => 
-      eventsHistory addEvent (BeginContact(contact.point, contact.objectA, contact.objectB))
-    }
-    world.currentContacts foreach { contact => 
-      eventsHistory addEvent (CurrentContact(contact.point, contact.objectA, contact.objectB))
-    }
-    world.endContacts foreach { contact => 
-      eventsHistory addEvent (EndContact(contact.point, contact.objectA, contact.objectB))
-    }
-    
-    eventsHistory.step()                                /// Opens saving for new coordinates
-    
-    rules foreach {interpreter.evaluate}               /// Evaluate all rules using the previous events
+
+    eventsHistory.step()                               /// Opens saving for new coordinates
+    rules foreach interpreter.evaluate                 /// Evaluate all rules using the previous events
     addAssignmentEvents()
     aliveObjects foreach {_.preStep(this)}
-    updateWorldGravity()
+    updateWorldGravity()                               /// Update the gravity
     world.step()                                       /// One step forward in the world
+    world.contactEvents foreach eventsHistory.addEvent /// Save contacts
     aliveObjects foreach {_.postStep(this)}
     
     //_objects.filter(o => o.creation_time.get <= time && time <= o.deletion_time.get )

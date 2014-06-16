@@ -1,24 +1,16 @@
 package ch.epfl.lara.synthesis.kingpong
 
+import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import org.jbox2d.callbacks.{ContactFilter => JBox2DContactFilter, ContactImpulse, ContactListener => JBox2DContactListener}
+import org.jbox2d.collision.{WorldManifold, Manifold}
+import org.jbox2d.dynamics.{Fixture, World}
+
 import scala.collection.mutable.{Set => MSet}
 
-import org.jbox2d.dynamics.World
-import org.jbox2d.callbacks.{ContactListener => JBox2DContactListener}
-import org.jbox2d.collision.{Manifold => JBox2DManifold}
-import org.jbox2d.callbacks.{ContactImpulse => JBox2DContactImpulse}
-import org.jbox2d.callbacks.{ContactFilter => JBox2DContactFilter}
-import org.jbox2d.dynamics.Fixture
-import org.jbox2d.callbacks.{ContactFilter => JBox2DContactFilter}
-import org.jbox2d.callbacks.{ContactImpulse => JBox2DContactImpulse}
-import org.jbox2d.callbacks.{ContactListener => JBox2DContactListener}
-import org.jbox2d.collision.{Manifold => JBox2DManifold}
-import org.jbox2d.dynamics.contacts.{Contact => JBox2DContact}
-
-import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
-import ch.epfl.lara.synthesis.kingpong.objects._
-
 class PhysicalWorld(g: Vec2) {
-  
+  private implicit val worldManifold = new WorldManifold()
+
   val world = new World(g)
   world.setContactFilter(ContactFilter)
   world.setContactListener(ContactListener)
@@ -26,7 +18,7 @@ class PhysicalWorld(g: Vec2) {
   private val begin_contacts = MSet.empty[Contact]
   private val current_contacts = MSet.empty[Contact]
   private val end_contacts = MSet.empty[Contact]
-  
+
   def step() = {
     begin_contacts.clear()
     end_contacts.clear()
@@ -43,6 +35,13 @@ class PhysicalWorld(g: Vec2) {
     end_contacts.clear()
   }
 
+  val contactEvents: Traversable[Event] = {
+    val begin = begin_contacts.view.map(c => BeginContact(c.point, c.objectA, c.objectB))
+    val current = current_contacts.view.map(c => CurrentContact(c.point, c.objectA, c.objectB))
+    val end = end_contacts.view.map(c => EndContact(c.point, c.objectA, c.objectB))
+    begin ++ current ++ end
+  }
+
   def beginContacts = begin_contacts.iterator
   
   def currentContacts = current_contacts.iterator
@@ -51,7 +50,7 @@ class PhysicalWorld(g: Vec2) {
   
   def setGravity(g: Vec2) = world.setGravity(g)
   
-  def getGravity = world.getGravity()
+  def getGravity = world.getGravity
   
   object ContactListener extends JBox2DContactListener {
     
@@ -69,11 +68,11 @@ class PhysicalWorld(g: Vec2) {
       current_contacts -= c
     }
     
-    def preSolve(c: Contact, m: JBox2DManifold) = {
+    def preSolve(c: Contact, m: Manifold) = {
       // nothing ?
     }
     
-    def postSolve(c: Contact, i: JBox2DContactImpulse) = {
+    def postSolve(c: Contact, i: ContactImpulse) = {
       // nothing ?
     }
   }
