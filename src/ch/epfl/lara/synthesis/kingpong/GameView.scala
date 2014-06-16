@@ -354,7 +354,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeSelectEffects(): Unit = {
     mRuleState = STATE_SELECTING_EFFECTS
     MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT_UNDOABLE
-    game.setInstantProperties(false)
     Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
   }
 
@@ -363,7 +362,6 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_SELECTING_EVENTS
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT_UNDOABLE // irrelevant
-    game.setInstantProperties(true)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_maker))
   }
 
@@ -371,7 +369,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeModifyGame(resetView: Boolean = true) {
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
-    game.setInstantProperties(true)
     game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
     eventEditor.unselect()
@@ -382,7 +379,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setGame(g: Game) = {
     UndoRedo.clear()
     game = g
-    game.setInstantProperties(state == Editing)
     shapeEditor.selectedShape = null
   }
   def getGame() = game
@@ -690,7 +686,6 @@ class GameView(val context: Context, attrs: AttributeSet)
   def toEditing(): Unit = if (state == Running) {
     Log.d("kingpong", "toEditing()")
     state = Editing
-    game.setInstantProperties(true)
     layoutResize()
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
     gameViewRender.stopRecording(game)
@@ -725,7 +720,6 @@ class GameView(val context: Context, attrs: AttributeSet)
 		    }
       }
     }
-    game.setInstantProperties(false)
 
     // clear the future history if we went in the past during the pause
     if (game.time < game.maxTime) {

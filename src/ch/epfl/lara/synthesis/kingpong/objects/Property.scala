@@ -80,12 +80,15 @@ abstract class RWProperty[T : PongType]() extends Property[T] with AssignablePro
    *  The next value is also set.
    */
   def set(v: T): self.type
-  def set(e: Expr): self.type = set(tpe.toScalaValue(e)) 
-  
+  def set(e: Expr): self.type = set(tpe.toScalaValue(e))
+
+  /** Set the next value to `v`.
+    *  Call `validate()` to push this value to the current state.
+    */
   def setNext(v: T): self.type
   def setNext(e: Expr): self.type = setNext(tpe.toScalaValue(e))
   
-  /** Depending on the argument, get the prev or the next */
+  /** Depending on the argument, set the prev or the next */
   def setPrevNext(v: T)(implicit modify_policy: MenuOptions.Policy): self.type = {
     if(modify_policy.undoableModification) UndoRedo.recordSetPrevNext(this, v)
     if(modify_policy.modifiesNext) setNext(v)
@@ -105,9 +108,7 @@ trait AssignableProperty[T] { self: RWProperty[T] =>
 }
 
 trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
-  
-  private var _setNext: T => self.type = setNextInternal
-  
+
   /** Validate the next value and replace the current value with it. 
    */
   def validate(): self.type
@@ -119,14 +120,7 @@ trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
   
   /** Get the initial expression of this property. */
   def init: Expr
-  
-  /** Set the next value to `v`.
-   *  Call `validate()` to push this value to the current state.
-   */
-  def setNext(v: T): self.type = _setNext(v)
-  
-  protected def setNextInternal(v: T): self.type
-  
+
   /** Write the current value to the underlying structure. The common case
    *  is to force this value to the physical world, but it could also do
    *  nothing.
@@ -140,16 +134,6 @@ trait HistoricalProperty[T] extends RWProperty[T] with History { self =>
   /** Interpret the initial expression and set the current value.
    */
   def reset(interpreter: Interpreter): self.type
-  
-  /** If activated, a call to `setNext` will set the current value instead
-   *  of the next value. 
-   */
-  def setInstant(activate: Boolean) = {
-    if (activate) 
-      _setNext = set
-    else 
-      _setNext = setNextInternal
-  }
   
   def assign(v: T): self.type = setNext(v)
 }
@@ -214,7 +198,7 @@ abstract class HistoricalRWProperty[T : PongType](val name: String, private var 
     this
   }
   
-  protected def setNextInternal(v: T): self.type = {
+  def setNext(v: T): self.type = {
     _next = v
     this
   }

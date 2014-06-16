@@ -148,17 +148,6 @@ trait Game extends RulesManager with Context { self =>
       
     }
   }
-  
-  /**
-   * setInstantProperties sets all properties to instant mode.
-   * If true, this means that when calling setNext() on properties, it will also set up current()
-   * if false, it is deactivated.
-   */
-  def setInstantProperties(activate: Boolean) = {
-    for (o <- objects; prop <- o.historicalProperties) {
-      prop.setInstant(activate)
-    }
-  }
 
   def add(o: GameObject) = {
     o.creationTime.setInit(time)
