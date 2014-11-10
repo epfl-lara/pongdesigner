@@ -50,11 +50,35 @@ class SlidingPuzzle extends Game {
   }
   
   // Snapping pieces rule
-  val r2 = foreach(gameboard.cellsCategory, pieces) { (cell, piece) => 
+  /*val r2 = foreach(gameboard.cellsCategory, pieces) { (cell, piece) => 
     whenever(Contains(cell, piece) && !isFingerMoveOver(piece)) (
-      ApplyForce(piece, (cell.center - piece.center) * 10)
+        let("force",  (cell.center - piece.center)) { force => 
+        let("norm2", call("norm2", force)) { norm2 =>
+          ApplyForce(piece,  force * 10 * 0.01 / (norm2 + 0.01))
+        } }
       //piece.velocity := (cell.center - piece.center) * 4
     )
+  }*/
+  
+  // Snap the cells to the center of the cells.
+  val r2bix = foreach(gameboard.cellsCategory, pieces) { (cell, piece) =>
+    whenever((ContainsTotally(cell, piece) || (call("norm", piece.velocity) =:= 0 && Contains(cell, piece))) && !isFingerMoveOver(piece)) { Seq(
+      piece.x := cell.x,
+      piece.y := cell.y
+    )}
+  }
+  
+  // Snap the speed to the axis.
+  val r2ter = foreach(pieces) { piece =>
+    let("vx", call("abs", TupleSelect(piece.velocity, 1))) { vx =>
+    let("vy", call("abs", TupleSelect(piece.velocity, 2))) { vy =>
+      Seq(whenever(vx > vy) {
+        piece.velocity *= Tuple(Seq(1, 0))
+      } otherwise whenever(vy > vx) {
+        piece.velocity *= Tuple(Seq(0, 1))
+      })
+    }
+    }
   }
   
   // Winning condition rule
@@ -72,7 +96,9 @@ class SlidingPuzzle extends Game {
   )
  
   register(r1)
-  register(r2)
+  //register(r2)
+  register(r2bix)
+  register(r2ter)
   register(r3)
 
 }

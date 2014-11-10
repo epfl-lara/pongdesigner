@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.test
 
 import org.scalatest._
+import matchers._
 
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.expression._
@@ -15,7 +16,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.EmptyContext
 import ch.epfl.lara.synthesis.kingpong.Game
 import ch.epfl.lara.synthesis.kingpong.PhysicalWorld
 
-class ExpressionSuite extends FlatSpec with Matchers {
+class ExpressionSuite extends FlatSpec with ShouldMatchers with Matchers {
 
   val i1 = IntegerLiteral(1)
   val i2 = IntegerLiteral(2)
@@ -179,17 +180,23 @@ class ExpressionSuite extends FlatSpec with Matchers {
     val e1 = foreach(game.arr.cellsCategory) { cell =>
       cell.x := 2
     }
-    an [InterpreterException] should be thrownBy interpreter.evaluate(e1)
+    try{
+      interpreter.evaluate(e1)
+      fail("An InterpreterException should have been thrown")
+    } catch {
+      case e: InterpreterException =>
+      // OK
+    }
   }
   
   "TreeOps" should "correctly flatten a Block" in {
-    val e = Block(i1, NOP, Block(NOP, i2, Block(i3)), NOP, i4, Block(Nil))
+    val e = Block(i1, Block(i2, Block(i3)), i4, Block(Nil))
     val flat = flatten(e)
     flat should be (Block(i1, i2, i3, i4))
   }
   
   it should "correctly flatten a ParExpr" in {
-    val e = ParExpr(List(i1, NOP, ParExpr(List(NOP, i2, Block(i3), ParExpr(List(i1)))), NOP, i4, Block(Nil)))
+    val e = ParExpr(List(i1, UnitLiteral, ParExpr(List(UnitLiteral, i2, Block(i3), ParExpr(List(i1)))), UnitLiteral, i4, Block(Nil)))
     val flat = flatten(e)
     flat should be (ParExpr(List(i1, i2, i3, i1, i4)))
   }
@@ -210,7 +217,7 @@ class ExpressionSuite extends FlatSpec with Matchers {
     generalized should be (Foreach(obj.category, id, 
       If(And(Select(Variable(id), "visible"), Select(ObjectLiteral(game.block1), "visible")), 
         Assign((Variable(id), "x"), Plus(Select(Variable(id), "x"), Select(ObjectLiteral(game.block1), "y"))),
-        NOP)
+        UnitLiteral)
       )
     )
   }
@@ -237,9 +244,9 @@ class ExpressionSuite extends FlatSpec with Matchers {
       IntegerLiteral(1)
     ))
 
-    val e3 = If(i2, Block(List(i1)), NOP)
+    val e3 = If(i2, Block(List(i1)), UnitLiteral)
     TreeOps.getAncestors(e3, i1) should equal(List(
-      If(IntegerLiteral(2),Block(List(IntegerLiteral(1))), NOP),
+      If(IntegerLiteral(2),Block(List(IntegerLiteral(1))), UnitLiteral),
       Block(List(IntegerLiteral(1))),
       IntegerLiteral(1)
     ))

@@ -185,39 +185,40 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   def menuCallBacks: String => Boolean = { s =>
     var shape: GameObject = null
+    implicit val planned = GameObject.PLANNED_SINCE_BEGINNING
     val res = s match {
       case Str(R.string.add_rectangle_hint) =>
-        shape = rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)(game)
+        shape = rectangle(DefaultCategory("rectangle", game))(name="rectangle", x=0, y=0, width=2*grid.step, height=grid.step)(game, planned)
         true
       case Str(R.string.add_circle_hint) =>
-        shape = circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)(game)
+        shape = circle(DefaultCategory("circle", game))(name="circle", x=0, y=0, radius=grid.step)(game, planned)
         true
       case Str(R.string.add_drawing_object_hint) =>
-        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game)
+        val d = drawingObject(DefaultCategory("drawingobjects", game))(name="drawingZone", x=0, y=0, width=4*grid.step, height=4*grid.step)(game, planned)
         shape = d
         true
       case Str(R.string.add_sound_recorder_hint) =>
-        val d = soundRecorder(DefaultCategory("soundobjects", game))(name="soundrecorder", x=0, y=0, width=2*grid.step, height=2*grid.step)(game)
+        val d = soundRecorder(DefaultCategory("soundobjects", game))(name="soundrecorder", x=0, y=0, width=2*grid.step, height=2*grid.step)(game, planned)
         shape = d
         true
       case Str(R.string.add_arraybox_hint) =>
-        val d = array(DefaultCategory("arrays", game))("Array", x=0, y=0, columns=2, rows=3)(game)
+        val d = array(DefaultCategory("arrays", game))("Array", x=0, y=0, columns=2, rows=3)(game, planned)
         shape = d
         true
       case Str(R.string.add_boolbox_hint) =>
-        val d = booleanbox(DefaultCategory("trigger", game))(name="condition", x=0, y=0, value=true)(game)
+        val d = booleanbox(DefaultCategory("trigger", game))(name="condition", x=0, y=0, value=true)(game, planned)
         shape = d
         true
       case Str(R.string.add_textbox_hint) =>
-        val d = stringbox(DefaultCategory("label", game))("Score", x=0, y=0, value = "custom text")(game)
+        val d = stringbox(DefaultCategory("label", game))("Score", x=0, y=0, value = "custom text")(game, planned)
         shape = d
         true
       case Str(R.string.add_soundtts_hint) =>
-        val d = soundTTS(DefaultCategory("soundtts", game))("tts", x=0, y=0, language="en", text="Your speech here", time=game.time)(game)
+        val d = soundTTS(DefaultCategory("soundtts", game))("tts", x=0, y=0, language="en", text="Your speech here", time=game.time)(game, planned)
         shape = d
         true
       case Str(R.string.add_integerbox_hint) =>
-        val d = intbox(DefaultCategory("score", game))("Score", x=0, y=0, value = 0)(game)
+        val d = intbox(DefaultCategory("score", game))("Score", x=0, y=0, value = 0)(game, planned)
         shape = d
         true
       case Str(R.string.select_gravity2d_hint) =>
@@ -253,9 +254,10 @@ class GameView(val context: Context, attrs: AttributeSet)
             CodeGenerator.createRule(getGame(), eventEditor.selectedEventTime, conditionObjects, actionObjects)
             updateCodeViewBasedOnSelection()
             setModeModifyGame()
-            true
           case STATE_MODIFYING_CATEGORY =>
-          //hovered = false
+            //hovered = false
+          case STATE_SELECTING_TO_FIX =>
+            
         }
         menuSelected
       case Str(R.string.menu_fix_hint) =>
@@ -354,6 +356,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeSelectEffects(): Unit = {
     mRuleState = STATE_SELECTING_EFFECTS
     MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT_UNDOABLE
+    game.setCopyingPlanned(GameObject.RULE_DEMONSTRATION_PLANNING)
     Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
   }
 
@@ -362,6 +365,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_SELECTING_EVENTS
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT_UNDOABLE // irrelevant
+    game.setCopyingPlanned(GameObject.RULE_DEMONSTRATION_PLANNING) // irrelevant
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_maker))
   }
 
@@ -369,6 +373,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def setModeModifyGame(resetView: Boolean = true) {
     mRuleState = STATE_MODIFYING_GAME
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
+    game.setCopyingPlanned(GameObject.PLANNED_SINCE_BEGINNING)
     game.restore(game.time)
     changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_editor))
     eventEditor.unselect()
@@ -376,10 +381,16 @@ class GameView(val context: Context, attrs: AttributeSet)
 
   /** The game model currently rendered. */
   private var game: Game = null
-  def setGame(g: Game) = {
+  def setGame(g: Game, bitmapsToRemove: List[Int] = Nil) = {
     UndoRedo.clear()
     game = g
     shapeEditor.selectedShape = null
+    for(b <- bitmapsToRemove) {
+      bitmaps.remove(b) match {
+        case Some(drawable) => recycleBitmap(drawable)
+        case None =>
+      }
+    }
   }
   def getGame() = game
   def hasGame(): Boolean = game != null
@@ -596,10 +607,11 @@ class GameView(val context: Context, attrs: AttributeSet)
       }
 
       //TODO find a way to make this pattern matching type-safe
-      cv_mapping_properties.get(start) foreach {
+      val res = cv_mapping_properties.get(start)
+      res foreach {
         case prop: RWProperty[Int] @unchecked if prop.name == "color" =>
           //TODO : Invoke color picker
-
+          this.codeview.setSelection(0);
         case prop: RWProperty[Float] @unchecked if prop.name == "restitution" =>
           CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
             Str(R.string.set_restitution_title), R.array.restitution_possibilities,
@@ -607,7 +619,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             () => (),
             prop.getPrevNext.toString
           )
-
+          this.codeview.setSelection(0);
         case prop: RWProperty[Float] @unchecked if prop.name == "friction" =>
           CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
             Str(R.string.set_friction_title), R.array.friction_possibilities,
@@ -615,7 +627,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             () => (),
             prop.getPrevNext.toString
           )
-
+          this.codeview.setSelection(0);
         case prop: RWProperty[Float] @unchecked if prop.name == "linear-damping" =>
           CustomDialogs.launchChoiceDialogWithCustomchoice(activity,
             Str(R.string.set_linear_damping_title), R.array.linear_damping_possibilities,
@@ -623,22 +635,24 @@ class GameView(val context: Context, attrs: AttributeSet)
             () => (),
             prop.getPrevNext.toString
           )
-
-        case _ => //do nothing
+          this.codeview.setSelection(0);
+        case prop => println("Unknown property "+prop.name+": " + prop)//do nothing
+          this.codeview.setSelection(0);
       }
+      if (cv_mapping_consts != null) {
+	      cv_mapping_consts.get(start) foreach { case (constLiteral, mainTree) =>
+	        cv_constToModify = Some(constLiteral)
+	        cv_constToModifyInitial = Some(constLiteral)
+	        cv_treeContainingConst = Some(mainTree)
+	        cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
+	        mCvMapping.mConstantsPos.get(start) foreach { case (a, b) =>
+	          cv_constToModifyStart = a
+	          cv_constToModifyEnd = b
+	        }
+	      }
+	    }
     }
-    if (cv_mapping_consts != null) {
-      cv_mapping_consts.get(start) foreach { case (constLiteral, mainTree) =>
-        cv_constToModify = Some(constLiteral)
-        cv_constToModifyInitial = Some(constLiteral)
-        cv_treeContainingConst = Some(mainTree)
-        cv_indexOfTree = { val p = game.findRuleIndex(_ == mainTree); if (p == -1) None else Some(p) }
-        mCvMapping.mConstantsPos.get(start) foreach { case (a, b) =>
-          cv_constToModifyStart = a
-          cv_constToModifyEnd = b
-        }
-      }
-    }
+    
   }
   
   def setCodeDisplay(code: EditTextCursorWatcher): Unit = {
@@ -707,24 +721,15 @@ class GameView(val context: Context, attrs: AttributeSet)
     eventEditor.unselect()
 
     //TODO Mikael, do we really need this loop ? 
-    // It result in a crash when reseting after a physical object deletion.
-    game.objects.foreach { obj =>
-      obj.validate()
-      obj.save(game.time)
-      if (obj.setExistenceAt(game.time)) {
-        obj.flush()
-      }
-      if(obj.creationTime.get == game.time) { // We push the object to the beginning.
-        obj.historicalProperties foreach { p =>
-		      p.setInit(p.getExpr)
-		    }
-      }
-    }
+    // It results in a crash when reseting after a physical object deletion.
+    game.saveObjectsIfStart();
 
     // clear the future history if we went in the past during the pause
     if (game.time < game.maxTime) {
       Log.d("kingpong", s"Clearing future from time+1 = ${game.time + 1}, maxTime = ${game.maxTime}")
       game.clear(from = game.time + 1)
+    } else {
+      game.gc()
     }
 
     gameEngineEditors foreach (_.onExitEditMode())
@@ -766,6 +771,41 @@ class GameView(val context: Context, attrs: AttributeSet)
     bitmaps(id) = new BitmapDrawable(res, bitmap)
     id
   }
+  
+  /**
+   * Recycles the bitmap of the drawable if it contains one.
+   */
+  private def recycleBitmap(prevDrawable: Drawable) = {
+    if (prevDrawable.isInstanceOf[BitmapDrawable]) {
+	    val bitmapDrawable =  prevDrawable.asInstanceOf[BitmapDrawable];
+	    val bitmap = bitmapDrawable.getBitmap();
+	    bitmap.recycle();
+		}
+  }
+  
+  /**
+   * Loads a set of bitmaps.
+   * Returns the list of custom bitmaps that were not overriden (and thus need to be removed)
+   */
+  def loadBitmapSet(bitmapSet: List[(Int, Bitmap)]): List[Int] = {
+    for((key, bitmap) <- bitmapSet) {
+	     val prev = if(bitmaps.contains(key)) {
+	       Some(bitmaps(key))
+	     } else None
+	     bitmaps(key) = new BitmapDrawable(res, bitmap)
+	     prev.foreach(recycleBitmap)
+	   }
+    for(key <- (bitmaps.keys.toSet -- bitmapSet.map(_._1)).toList if key < R.drawable.bm_aaaa && key >= 128) yield key
+  }
+  
+  /**
+   * Retrieves the set of used bitmaps in this session.
+   */
+  def getBitmaps(): List[(Int, Bitmap)] = {
+    (for((key, bitmap) <- bitmaps
+        if key >= 128 && key <= 0x07000000
+        && bitmap.isInstanceOf[BitmapDrawable]) yield (key, bitmap.asInstanceOf[BitmapDrawable].getBitmap())).toList
+  } // TODO : When reloading a new game, erase old bitmaps not used anymore.
 
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int): Unit = {
     Log.d("kingpong", "surfaceChanged()")
@@ -1379,7 +1419,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def push(m: Matrix) = {
     m.invert(matrixI)
 
-    gameViewRender.grid = Grid(matrixI, width = mWidth, numSteps = 30, stroke_width = 1, color = 0x88000000)
+    gameViewRender.grid = Grid(matrixI, width = mWidth, numSteps = 64, stroke_width = 1, color = 0x88000000)
     if (game != null) game.FINGER_SIZE = matrixI.mapRadius(35)
   }
 
@@ -1482,11 +1522,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
 
   /** meters to pixels */
-  //  def mapVectorToGame(p: Vec2V): Vec2V = {
-  //    val toMap = Array(p.x, p.y)
-  //    matrixI.mapPoints(toMap)
-  //    Vec2V(toMap(0), toMap(1))
-  //  }
+  def mapVectorToGame(p: Array[Float]): Unit = {
+    matrixI.mapPoints(p)
+  }
 
   /** meters to pixels */
   def mapRadius(r: Float): Float = matrix.mapRadius(r)

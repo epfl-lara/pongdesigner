@@ -10,10 +10,12 @@ import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.common.History
+import scala.collection.mutable.DoubleLinkedList
 
 trait Game extends RulesManager with Context { self => 
   protected implicit val selfImplicit = self
-
+  protected implicit val startIsPlanned = GameObject.PLANNED_SINCE_BEGINNING
   val world: PhysicalWorld
   var worldgravityangle = 0.0f
   var worldgravityradius = 0.0f
@@ -26,7 +28,7 @@ trait Game extends RulesManager with Context { self =>
 
   private[kingpong] val eventsHistory = new EventsHistory(this)
   
-  private val _objects = ArrayBuffer.empty[GameObject]
+  private var _objects = DoubleLinkedList.empty[GameObject]
   
   var name: String = "untitled"
   
@@ -94,7 +96,7 @@ trait Game extends RulesManager with Context { self =>
       }
       obj.clear(from)
     }
-    gc()
+    gc() // TODO: Call this method also to remove old objects.
     world.clear()
     eventsHistory.clear(from)
   }
@@ -141,7 +143,7 @@ trait Game extends RulesManager with Context { self =>
     o.creationTime.setInit(time)
     o.reset(interpreter)
     o.flush()
-    _objects += o
+    _objects = _objects append (new DoubleLinkedList(o, DoubleLinkedList.empty[GameObject]))
     o match {
       case o:Gravity =>
         gravity = Some(o)
@@ -150,7 +152,7 @@ trait Game extends RulesManager with Context { self =>
   }
   
   def remove(o: GameObject) = {
-    _objects -= o
+    _objects = _objects.filter(g => g == o)
   }
   
   def rename(o: GameObject, newName: String) = {
@@ -166,15 +168,24 @@ trait Game extends RulesManager with Context { self =>
     interpreter.evaluate(e).as[T]
   }
 
-  private def gc() = {
-    //TODO performance...
-    val toDelete = _objects.filter { obj =>
-      obj.creationTime.get > time
+  /** Garbage collection of objects not planned since the beginning*/
+  private[kingpong] def gc() = {
+    //TODO performance... Use a double linked list for deleting objects.
+    var firstObject = _objects;
+    var current = _objects;
+    while(current != null && current.nonEmpty) {
+      val obj = current.head
+      if(obj.plannedFromBeginning != GameObject.PLANNED_SINCE_BEGINNING &&
+        (obj.creationTime.get > time || obj.deletionTime.get < maxTime - History.MAX_HISTORY_SIZE))  {
+        obj.setExistenceAt(time);
+        val tmp = current
+        current = current.next
+        if(tmp.prev eq null) _objects = current;
+        tmp.remove()
+      } else {
+        current = current.next
+      }
     }
-    // Remove objects from world and categories
-    toDelete foreach (_.setExistenceAt(time)) 
-    _objects --= toDelete
-    // TODO: remove those who are too old to be resurrected and also rules applying to them.
   }
   
   var FINGER_SIZE = 20f
@@ -206,6 +217,24 @@ trait Game extends RulesManager with Context { self =>
   }
   
   /**
+   * Flush the object state and save them to init state if they are just created.
+   */
+  def saveObjectsIfStart() {
+    objects.foreach { obj =>
+      obj.validate()
+      obj.save(time)
+      if (obj.setExistenceAt(time)) {
+        obj.flush()
+      }
+      if(obj.creationTime.get == time) { // We push the object to the beginning.
+        obj.historicalProperties foreach { p =>
+		      p.setInit(p.getExpr)
+		    }
+      }
+    }
+  }
+  
+  /**
    * Returns the set of objects containing at this position.
    */
   def abstractObjectFingerAt(pos: Vec2): Traversable[GameObject] = {
@@ -228,7 +257,7 @@ trait Game extends RulesManager with Context { self =>
     eventsHistory.addEvent(FingerMove(from, to, null))
   }
   
-  private val interpreter = new Interpreter {
+  private[kingpong] val interpreter = new Interpreter {
     /** Initialize the global context used during evaluation. */
     def initGC() = Game.this
     
@@ -262,4 +291,7 @@ trait Game extends RulesManager with Context { self =>
     prefix + postFix
   }
   
+  protected var mIsCopyingPlanned: GameObject.IsPlanned = GameObject.PLANNED_SINCE_BEGINNING
+  def setCopyingPlanned(b: GameObject.IsPlanned) = mIsCopyingPlanned = b
+  def isCopyingPlanned(): GameObject.IsPlanned = mIsCopyingPlanned
 }

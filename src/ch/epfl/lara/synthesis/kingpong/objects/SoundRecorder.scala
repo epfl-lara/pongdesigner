@@ -18,7 +18,7 @@ case class SoundRecorded(var recorder: SoundRecorder,
     number: Int,
     startTime: Int,
     endTime: Int,
-    uri: String) extends GameObject(recorder.name.get + "[" + number + "]") 
+    uri: String) extends GameObject(recorder.name.get + "[" + number + "]", GameObject.PLANNED_SINCE_BEGINNING) 
       with Rectangular with Positionable with Directionable with FixedRectangularContains {
   
   private val shape = new PolygonShape()
@@ -69,7 +69,7 @@ case class SoundRecorded(var recorder: SoundRecorder,
     new org.jbox2d.collision.AABB(bottomLeft, upperRight)
   }
     
-  //TODO we cannot copy a cell!!!
+  //TODO we cannot copy a recorded sound
   protected def rawCopy(f: HistoricalProperty[_] => Expr) = ???
 }
 
@@ -83,8 +83,9 @@ class SoundRecorder (
     init_height: Expr,
     init_visible: Expr,
     init_color: Expr,
-    init_recording: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+    init_recording: Expr,
+    planned: GameObject.IsPlanned
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, planned)
       with ResizableRectangular
       with Movable
       with Visiblable
@@ -117,6 +118,6 @@ class SoundRecorder (
   }
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new SoundRecorder(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(recording))
+    new SoundRecorder(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(recording), game.isCopyingPlanned())
   }
 }

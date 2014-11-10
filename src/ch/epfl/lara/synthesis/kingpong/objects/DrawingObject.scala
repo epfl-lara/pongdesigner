@@ -35,8 +35,9 @@ class DrawingObject(
     init_visible: Expr,
     init_color: Expr,
     init_stroke_width: Expr,
-    init_color_drawing: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+    init_color_drawing: Expr,
+    planned: GameObject.IsPlanned
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, planned)
       with ResizableRectangular
       with Movable
       with Visiblable
@@ -133,6 +134,6 @@ class DrawingObject(
   }
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new DrawingObject(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(stroke_width), f(color_drawing))
+    new DrawingObject(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(stroke_width), f(color_drawing), game.isCopyingPlanned())
   }
 }

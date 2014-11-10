@@ -104,9 +104,15 @@ object FixButton extends MenuButton {
 object CopyButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     val freshName = gameEngine.getGame.getNewName(selectedShape.name.get)
+    val oldCopyingPlanned = gameEngine.getGame().isCopyingPlanned();
+    if(oldCopyingPlanned == GameObject.RULE_DEMONSTRATION_PLANNING) { // If being demonstrating, then we store the origin of the copy for learning.
+      gameEngine.getGame.setCopyingPlanned(GameObject.PLANNED_COPY(selectedShape))
+    }
     val fresh = selectedShape.getCopy(freshName)
+    gameEngine.getGame.setCopyingPlanned(oldCopyingPlanned)
     gameEngine.getGame.add(fresh)
-      
+    gameEngine.shapeEditor.select(fresh)
+    gameEngine.updateCodeViewBasedOnSelection()
     hovered = false
   }
   

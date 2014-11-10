@@ -48,7 +48,7 @@ object Menus {
       val menu = lm.head
       val angle = (2*Math.PI * i) / 6 + offsetAngle;
       val dx = radius.toFloat * Math.cos(angle).toFloat
-      val dy = radius.toFloat * Math.sin(angle).toFloat
+      val dy = radius.toFloat * Math.sin(-angle).toFloat
       menu.setPos(dx, dy)
       val x_final = menu.x_final(cx)
       val y_final = menu.y_final(cy)

@@ -294,9 +294,10 @@ object SizeButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     hovered = false
   }
+  val coords = Array(0f, 0f)
   
   override def onFingerMove(gameEngine: GameView, selectedShape: GameObject, relativeX: Float, relativeY: Float, shiftX: Float, shiftY: Float, toX: Float, toY: Float) = {
-    selectedShape match {
+    selectedShape match { //TODO: Move depending on the position of the button. Do not suppose that the button is on the bottom right.
       case c: ResizableCircular =>
         val dx1 = toX - relativeX - selected_shape_first_x
         val dy1 = toY - relativeY - selected_shape_first_y
@@ -309,8 +310,14 @@ object SizeButton extends MenuButton {
         c.radius.setPrevNext(Math.max(smallest_size, gameEngine.snapX(rx+newRadius, rx+newRadius-selected_shape_first_radius)(snap_i=rx+c.radius.getPrevNext)-rx))
 
       case r: ResizableRectangular =>
-        val newWidth = selected_shape_first_width + relativeX*2
-        val newHeight = selected_shape_first_height + relativeY*2
+        coords(0) = x
+        coords(1) = y
+        gameEngine.mapVectorToGame(coords)
+        val flipX = if(coords(0) < r.x.getPrevNext) -1 else 1
+        val flipY = if(coords(1) < r.y.getPrevNext) -1 else 1
+        
+        val newWidth = selected_shape_first_width + flipX*relativeX*2
+        val newHeight = selected_shape_first_height + flipY*relativeY*2
         val rx = r.x.getPrevNext
         val ry = r.y.getPrevNext
         r.width.setPrevNext(Math.max(smallest_size, 2*(gameEngine.snapX(rx+newWidth/2, rx+newWidth/2 - selected_shape_first_width)(snap_i=rx+selected_shape_first_width/2)-rx)))

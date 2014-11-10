@@ -20,7 +20,7 @@ class BalancedParentheses extends Game {
   val arrays = Category("arrays")()
   val labels = Category("labels")()
   val values = Category("values")(color = R.drawable.bm_banana, width = 0.8, height = 0.6, linearDamping = 0.5)
-
+  
   val arr = array(arrays)("array", 0, 0, 10, 1, cellHeight = 2)
   val ptr = rectangle(labels)("ptr", arr.cell(0, 0).x, arr.cell(0, 0).top + 0.5, width = 0.7, height = 0.7,
     velocity = Vec2(2f, 0f), color = R.drawable.bm_arrow_down)

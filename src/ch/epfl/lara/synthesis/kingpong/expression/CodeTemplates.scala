@@ -9,7 +9,7 @@ import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object CodeTemplates extends CodeHandler {
   
-  class TemplateContext(val events: Seq[(Event, Int)], val objects: Traversable[GameObject], val minSnapDetect: Float) {
+  class TemplateContext(val game: Game, val events: Seq[(Event, Int)], val objects: Traversable[GameObject], val minSnapDetect: Float) {
     val eventMove = events.collect{ case (e: FingerMove, _) => e }.headOption
     val (dx, dy, eventObjects) = eventMove match {
       case Some(FingerMove(from, to, objs)) => (to.x - from.x, to.y - from.y, objs)
@@ -32,7 +32,7 @@ object CodeTemplates extends CodeHandler {
   
   def inferStatements(game: Game, events: Seq[(Event, Int)], objects: Traversable[GameObject]): Seq[Expr] = {
     val minSnapAmount = 20/game.pixelsByUnit
-    implicit val ctx = new TemplateContext(events, objects, minSnapAmount)
+    implicit val ctx = new TemplateContext(game, events, objects, minSnapAmount)
     val exprs = objects.flatMap(TShape.applyForObject).toList
     flattenNOP(exprs.map(flatten))
   }
@@ -184,9 +184,42 @@ object CodeTemplates extends CodeHandler {
     
     def apply(obj: T)(implicit ctx: TemplateContext): Option[Expr] = {
       if (condition(obj)) {
-        templates.flatMap(_.applyForObject(obj)).toSeq match {
+        var isCreated = false
+        var initialObject: Expr = null
+        var copyId: Identifier = null
+        var isDeleted = false
+        templates.flatMap(template => {
+          if(!isDeleted) {
+	          val res = template.applyForObject(obj);
+	          if(template == TCreate) {
+	            res match {
+	              case Some(Copy(obj, id, _)) =>
+			            // All remaining templates should abstract
+			            isCreated = true
+			            initialObject = obj
+			            copyId = id
+			            Nil
+	              case _ => Nil
+	            }
+	          } else if(template == TDelete && res.nonEmpty)  {
+	            // Stop reading other properties.
+	            isDeleted = true
+	            res;
+	          } else {
+	            if(isCreated && res.nonEmpty) { // Abstraction
+	              var v = Variable(copyId: Identifier): Expr
+	              Some(TreeOps.preMap(
+	                node => (if(node == ObjectLiteral(obj)) Some(v) else None): Option[Expr]
+	              )(res.get))
+	            } else res
+	          }
+          } else Nil
+        }).toSeq match {
           case Seq()   => None
-          case results => Some(Block(results).setPriority(priority(obj)))
+          case results => 
+            if(isCreated) {
+              Some(Copy(initialObject, copyId, Block(results)).setPriority(priority(obj)))
+            } else Some(Block(results).setPriority(priority(obj)))
         }
       } else None
     }
@@ -202,6 +235,10 @@ object CodeTemplates extends CodeHandler {
   
   trait TemplateRotationable extends Template[Rotationable] {
     protected def typeCondition(obj: GameObject) = obj.isInstanceOf[Rotationable]
+  }
+  
+  trait TemplateSpeedable extends Template[SpeedSettable with Rotationable] {
+    protected def typeCondition(obj: GameObject) = obj.isInstanceOf[SpeedSettable] && obj.isInstanceOf[Rotationable]
   }
   
   trait TemplateColorable extends Template[Colorable] {
@@ -797,14 +834,14 @@ object CodeTemplates extends CodeHandler {
     //def comment = s"Possible direction changes for ${shape.name.next}"
   }
   
-  object TVelocityAbsolute extends TemplateSimple[PhysicalObject] with TemplatePhysicalObject {
-    def result(obj: PhysicalObject)(implicit ctx: TemplateContext) = {
+  object TVelocityAbsolute extends TemplateSimple[SpeedSettable with Rotationable] with TemplateSpeedable {
+    def result(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = {
       val expr = obj.velocity := obj.velocity.next
       Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
-    def comment(obj: PhysicalObject)(implicit ctx: TemplateContext) =
-       s"Velocity of ${obj.name.next} is set absolutely to ${obj.velocity.next}."
+    def comment(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) =
+       s"Velocity of ${obj.name.next} is set to ${obj.velocity.next}."
   }
   
   
@@ -820,12 +857,17 @@ object CodeTemplates extends CodeHandler {
       if()
   }*/
   
-  /*object TVelocity extends TemplateParallel[PhysicalObject] {
-    def condition = shape.velocity.get != shape.velocity.next && (Math.round(Math.abs(shape.angle.next - shape.angle.get)/15)*15 == 0 || shape.velocity.get == 0 || shape.velocity.next == 0 || shape.velocity.next / shape.velocity.get > 2 || shape.velocity.get / shape.velocity.next > 2)
-    val templates: Traversable[Template[PhysicalObject]] = List(TVelocityAbsolute)
-    def priority = 10
-    def comment = s"Possible velocity changes for ${shape.name.next}"
-  }*/
+  object TVelocity extends TemplateParallel[SpeedSettable with Rotationable] with TemplateSpeedable {
+    def condition(shape: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = {
+      val vp = shape.velocity.get
+      val vn = shape.velocity.next
+      (vp.x != vn.x || vp.y != vn.y)
+      //shape.velocity.get != shape.velocity.next && (Math.round(Math.abs(shape.angle.next - shape.angle.get)/15)*15 == 0 || shape.velocity.get == 0 || shape.velocity.next == 0 || shape.velocity.next / shape.velocity.get > 2 || shape.velocity.get / shape.velocity.next > 2)
+    }
+    def priority(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = 10
+    def comment(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = s"Velocity changes for ${obj.name.next}"
+    val templates: Traversable[Template[SpeedSettable with Rotationable]] = List(TVelocityAbsolute)
+  }
   
   object TColorAbsolute extends TemplateSimple[Colorable] with TemplateColorable {
     def result(obj: Colorable)(implicit ctx: TemplateContext) = {
@@ -1477,14 +1519,52 @@ object CodeTemplates extends CodeHandler {
       s"Snap ${obj.name.get} to the center of the cell using its velocity."
   }
   
+  object TCreate extends Template[GameObject] {
+    /**
+     * Compute an expression if the given object applies to this template.
+     */
+    def apply(obj: GameObject)(implicit ctx: TemplateContext): Option[Expr] = {
+      if(obj.creationTime.next == ctx.game.time) {
+        obj.plannedFromBeginning match { // TODO: Maybe take into account, if true, that creationTime was infinite before.
+          case GameObject.PLANNED_COPY(original) =>
+		        Some(copy(ObjectLiteral(original)) { copyId =>
+		          copyId
+		        });
+          case _ => None
+        }
+      } else {
+        None
+      }
+    }
+    
+    protected def typeCondition(obj: GameObject): Boolean = true
+  }
+  
+  object TDelete extends Template[GameObject] {
+    /**
+     * Compute an expression if the given object applies to this template.
+     */
+    def apply(obj: GameObject)(implicit ctx: TemplateContext): Option[Expr] = {
+      if(obj.deletionTime.next == ctx.game.time && obj.deletionTime.get < obj.deletionTime.next) {
+        Some(delete(obj))
+      } else {
+        None
+      }
+    }
+    
+    protected def typeCondition(obj: GameObject): Boolean = true
+  }
+
   /** Top template */
   object TShape extends TemplateBlock[GameObject] with TemplateObject {
     def condition(obj: GameObject)(implicit ctx: TemplateContext) = true
     def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
     val templates = List(
+      TCreate,
+      TDelete,
       TXY,
       TAngle,
-      //TVelocity,
+      TVelocity,
       TColor,
       TVisible,
       //IfWidth(TWidth),

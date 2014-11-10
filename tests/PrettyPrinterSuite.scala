@@ -1,6 +1,7 @@
 package ch.epfl.lara.synthesis.kingpong.test
 
 import org.scalatest._
+import matchers._
 
 import org.jbox2d.dynamics.BodyType
 

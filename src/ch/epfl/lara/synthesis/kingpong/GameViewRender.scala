@@ -449,17 +449,22 @@ class GameViewRender(val context: Context) extends ContextUtils {
           if(obj_to_highlight contains b) {
             paintSelected.setTextSize(b.height.next)
             paintSelected.setTextAlign(Paint.Align.LEFT)
-            canvas.drawText(b.name.next, b.x.next, b.y.next, paintSelected)
+            canvas.drawText(b.name.next,x + h*3/2, y+h/4, paintSelected)
           }
           
           canvas.drawRect(x, y - h/2, x + h, y + h/2, paint)
-          if(c) {
-            paint.setColor(0xFFBBBBBB)
+          val bm = if(c) {
+            bitmaps(R.drawable.bm_boolean_on)
+            //paint.setColor(0xFFBBBBBB)
           } else {
-            paint.setColor(0xFF333333)
+            bitmaps(R.drawable.bm_boolean_off)
+            //paint.setColor(0xFF333333)
           }
-          canvas.drawCircle(x + h/2, y, h/2, paint)
+          //bm.setBounds(x, y - h/2, x + h, y + h/2)
+          //bm.draw(canvas)
+          //canvas.drawCircle(x + h/2, y, h/2, paint)
           canvas.restore()
+          this.drawBitmapInGame(canvas, matrix, x + h / 2, y, b.angle.next, x, y - h/2, x + h, y + h/2, bm, 255)
           
         case r: RandomGenerator =>
           paint.setTextSize(r.height.get)
@@ -568,22 +573,26 @@ class GameViewRender(val context: Context) extends ContextUtils {
     canvas.drawText(value, 5 * screenDensity, 10 * screenDensity, paint)
   }
   
-  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable, alpha: Int) = {
+  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, e: Positionable with Directionable, bitmap: Drawable, alpha: Int): Unit = {
+    drawBitmapInGame(canvas, matrix, e.x.next, e.y.next, e.angle.next, e.left.next, e.top.next, e.right.next, e.bottom.next, bitmap, alpha)
+  }
+  
+  def drawBitmapInGame(canvas: Canvas, matrix: Matrix, x: Float, y: Float, angle: Float, left: Float, top: Float, right: Float, bottom: Float, bitmap: Drawable, alpha: Int): Unit = {
     canvas.restore()
     canvas.save()
     val center = render_out_vec
-    render_in_array(0) = e.x.next
-    render_in_array(1) = e.y.next
+    render_in_array(0) = x
+    render_in_array(1) = y
     mapVectorFromGame(matrix, render_in_array, center)
-    canvas.rotate(radToDegree(e.angle.next), center.x, center.y)
+    canvas.rotate(radToDegree(angle), center.x, center.y)
     val d = bitmap
     val leftTop = render_out_vec2
-    render_in_array(0) = e.left.next
-    render_in_array(1) = e.top.next
+    render_in_array(0) = left
+    render_in_array(1) = top
     mapVectorFromGame(matrix, render_in_array, leftTop)
     val rightBottom = render_out_vec3
-    render_in_array(0) = e.right.next
-    render_in_array(1) = e.bottom.next
+    render_in_array(0) = right
+    render_in_array(1) = bottom
     mapVectorFromGame(matrix, render_in_array, rightBottom)
     d.setBounds(leftTop.x.toInt, leftTop.y.toInt, rightBottom.x.toInt, rightBottom.y.toInt)
     d.setAlpha(alpha)

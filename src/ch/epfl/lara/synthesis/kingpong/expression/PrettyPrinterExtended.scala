@@ -107,7 +107,7 @@ object PrettyPrinterExtendedTypical {
         case _ => mm
       }
     }
-    def mPropertyPos: Map[Int, Property[_]] = {
+    lazy val mPropertyPos: Map[Int, Property[_]] = {
       Map[Int, Property[_]]() ++ mProperties.flatMap{
         case (p, l) => l flatMap { case (start, end) => (start to end) map { case i => i -> p }}
       }
@@ -330,7 +330,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
       val end = if(s2 != UnitLiteral) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
       end +>
     case Copy(obj, id, block) =>
-      c + indent +< s"$id = $obj.copy$LF" + (block, indent + INDENT) +>
+      c + indent +< s"$id = " + obj + s".copy$LF" + (block, indent + INDENT) +>
 
     case Choose(a::q, pred, body) => 
       (((c + indent +< "choose(" + a) /: q){ case (c, v) => c + "," + v}) + ")" + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>

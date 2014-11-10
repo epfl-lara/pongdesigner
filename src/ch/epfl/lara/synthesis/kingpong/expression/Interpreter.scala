@@ -182,6 +182,23 @@ trait Interpreter {
           FloatLiteral(Math.cos(Math.toRadians(angrad)).toFloat)
         case ("sinDeg", NumericLiteral(angrad)) =>
           FloatLiteral(Math.sin(Math.toRadians(angrad)).toFloat)
+        case ("norm", expr::Nil) =>
+          eval(expr) match {
+            case Tuple(Seq(NumericLiteral(x), NumericLiteral(y))) =>
+              FloatLiteral(Math.sqrt(x*x+y*y).toFloat)
+            case _ => FloatLiteral(0)
+          }
+        case ("norm2", expr::Nil) =>
+          eval(expr) match {
+            case Tuple(Seq(NumericLiteral(x), NumericLiteral(y))) =>
+              FloatLiteral((x*x+y*y).toFloat)
+            case _ => FloatLiteral(0)
+          }
+        case ("abs", expr::Nil) =>
+          eval(expr) match {
+            case NumericLiteral(a) => FloatLiteral(Math.abs(a))
+            case _ => error(expr, "Not a number as argument")
+          }
         case _ =>
           error(expr)
       }
@@ -254,9 +271,15 @@ trait Interpreter {
         case Tuple(exprs) => Tuple(exprs.map(e => eval(Times(num, e))))
         case _ => error(expr)
       }
+      
       case Tuple(exprs) => eval(rhs) match {
+        case Tuple(exprs2) if exprs.size == exprs2.size => 
+          val l = (exprs zip exprs2) map { case (e1, e2) => 
+            eval(Times(e1, e2))
+          }
+          Tuple(l)
         case num @ NumericLiteral(_) => Tuple(exprs.map(e => eval(Times(num, e))))
-        case _ => error(expr)
+        case _ => error(expr, "Not compatible multiplication.")
       }
       case _ => error(expr)
     }
@@ -269,6 +292,15 @@ trait Interpreter {
       case FloatLiteral(v1) => eval(rhs) match {
         case NumericLiteral(v2) => FloatLiteral(v1 / v2)
         case _ => error(expr)
+      }
+      case Tuple(exprs) => eval(rhs) match {
+        case Tuple(exprs2) if exprs.size == exprs2.size => 
+          val l = (exprs zip exprs2) map { case (e1, e2) => 
+            eval(Div(e1, e2))
+          }
+          Tuple(l)
+        case denum @ NumericLiteral(_) => Tuple(exprs.map(e => eval(Div(e, denum))))
+        case _ => error(expr, "Not compatible division")
       }
       case _ => error(expr)
     }
@@ -395,7 +427,12 @@ trait Interpreter {
     case ApplyForce(e, force) =>
       eval(e) match {
         case ObjectLiteral(obj: PhysicalObject) =>
-          obj.applyForce(eval(force).as[Vec2])
+          val res = eval(force).as[Vec2];
+          if(res.x.isInfinite() || res.y.isInfinite()) {
+            error(expr, "Obtained infinity")
+          } else {
+            obj.applyForce(res)
+          }
         case _ => error(expr)
       }
       UnitLiteral
@@ -443,6 +480,21 @@ trait Interpreter {
         case _ => error(expr)
       }
       
+    case ContainsTotally(lhs, rhs) =>
+      (eval(lhs), eval(rhs)) match {
+        case (ObjectLiteral(null), _) => booleanLiteralFalse
+        case (ObjectLiteral(o1), ObjectLiteral(o2: Positionable)) =>
+          Literal(o1.left.get <= o2.left.get && 
+              o2.right.get <= o1.right.get && 
+              o1.top.get <= o2.top.get && 
+              o2.bottom.get <= o1.bottom.get)
+        case (ObjectLiteral(o1), Tuple(Seq(NumericLiteral(x), NumericLiteral(y)))) =>
+          eval_vec2.x = x
+          eval_vec2.y = y
+          Literal(o1.contains(eval_vec2))
+        case _ => error(expr)
+      }
+      
     case ContainingCell(e1, e2) =>
       (eval(e1), eval(e2)) match {
         case (ObjectLiteral(array: Array2D), ObjectLiteral(obj: Positionable)) => 
@@ -465,7 +517,7 @@ trait Interpreter {
 
   }
   
-  private def error(expr: Expr): Nothing = {
-    throw InterpreterException(s"A TypeCheck error occurs during interpretation of $expr.")
+  private def error(expr: Expr, msg: String = ""): Nothing = {
+    throw InterpreterException(s"An interpreter error occurs during interpretation of $expr. $msg")
   }
 }

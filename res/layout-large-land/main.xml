@@ -6,7 +6,7 @@
 
     <LinearLayout
         android:id="@+id/layoutcodehorizontal"
-        android:layout_width="200dp"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
@@ -73,7 +73,7 @@
         android:layout_height="63dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="200dp"
+        android:layout_marginRight="0dp"
         android:contentDescription="@string/dummy"
         android:scaleType="fitXY"
         android:src="@drawable/scrollbar_handle_accelerated_anim_horizontal2" />
@@ -81,7 +81,7 @@
     <ExpandableListView
         android:id="@+id/actions"
         android:layout_width="80dp"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_alignBottom="@+id/gameview"
         android:layout_alignLeft="@+id/codeviewResizer"
         android:layout_alignRight="@+id/codeviewResizer"

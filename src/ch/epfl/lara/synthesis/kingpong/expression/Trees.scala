@@ -302,8 +302,10 @@ object Trees {
 
   /* Array operations */
   
-  /** Test if the left object contains the right one. */
+  /** Test if the left object contains the center of the right one. */
   case class Contains(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
+  /** Test if the object on the left contains the right one. */
+  case class ContainsTotally(lhs: Expr, rhs: Expr) extends Expr with FixedBooleanType
   
   case class ContainingCell(array: Expr, obj: Expr) extends Expr with FixedType {
     val fixedType = TObject

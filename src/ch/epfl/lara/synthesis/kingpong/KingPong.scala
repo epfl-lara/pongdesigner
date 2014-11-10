@@ -40,6 +40,9 @@ import java.io.OutputStreamWriter
 import android.os.Vibrator
 import scala.util.parsing.combinator.testing.Str
 import ch.epfl.lara.synthesis.kingpong.common.ContextUtils
+import android.provider.MediaStore
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 
 object KingPong {
   final val TTS_CHECK = 1
@@ -83,7 +86,7 @@ object KingPong {
     o.close()
   }
     
-  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: Game = null) extends MyAsyncTask[String, (String, Int, Int), Game] with common.AutoShutOff {
+  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: (Game, List[(Int, Bitmap)]) = null) extends MyAsyncTask[String, (String, Int, Int), (Game, List[(Int, Bitmap)])] with common.AutoShutOff {
     var max=100
     var prog =0
     var filename: String = ""
@@ -93,7 +96,7 @@ object KingPong {
       game = previous.game
     }
     
-    protected def doInBackground1(names: ArrayBuffer[String]): Game = {
+    protected def doInBackground1(names: ArrayBuffer[String]): (Game, List[(Int, Bitmap)]) = {
       filename = names(0)
       prog = 0
       if(saving) {
@@ -101,7 +104,7 @@ object KingPong {
         if(scala_file) { //cannot do anything
           
         } else { // Assume the pd2 extension
-          GameSerializer.saveGame(game,
+          GameSerializer.saveGame(activity.mGameView.getGame(), activity.mGameView.getBitmaps(),
               output => {
                 writeToFile(activity, output, filename)
               },
@@ -114,14 +117,14 @@ object KingPong {
         if(mapGames contains filename) {
           mapGames(filename)
           publishProgress(("Loading " + filename, 0, 100))
-          game = mapGames(filename)()
+          game = (mapGames(filename)(), Nil)
           publishProgress(("Finished", 100, 100))
         } else {
           val file = new java.io.File(activity.getFilesDir(), filename)
           val content: String = scala.io.Source.fromFile(file).mkString
           game = GameSerializer.loadGame(content,
-              (i, j) =>
-                publishProgress(("Loading from "+filename, i, j)))
+              (i, j, s) =>
+                publishProgress(("Loading from "+filename + ". " + s, i, j)))
           
         }
       }
@@ -138,10 +141,12 @@ object KingPong {
       //setProgressPercent(progress(0))
     }
      
-     override protected def onPostExecute(game: Game) {
+     override protected def onPostExecute(game: (Game, List[(Int, Bitmap)])) {
        if(activity != null && activity.mGameView != null && !saving) {
          //game.setGameEngine(activity.mGameView)
-         activity.mGameView.setGame(game)
+         var toRemove = activity.mGameView.loadBitmapSet(game._2)
+         activity.mGameView.setGame(game._1, toRemove)
+         
          activity.mGameView.initialize()
        }
        if(activity != null) {
@@ -222,9 +227,10 @@ class KingPong extends Activity
     }
     if(!mGameView.hasGame()) {
       if(task.game == null) {
-        task.game = new examples.ProofConceptGame()
+        task.game = (new examples.ProofConceptGame(), Nil)
       }
-      mGameView.setGame(task.game)
+      mGameView.loadBitmapSet(task.game._2)
+      mGameView.setGame(task.game._1)
     }
     //mGameView.enterEditMode()
     mGameView.setKeepScreenOn(true)
@@ -454,7 +460,7 @@ class KingPong extends Activity
 
   onPause {
     mGameView.onPause()
-    task.game = mGameView.getGame()
+    task.game = (mGameView.getGame(), mGameView.getBitmaps())
     time_button.setImageDrawable(timeButtonPlay)
   }
   
@@ -474,7 +480,11 @@ class KingPong extends Activity
       } else {
         // Resume the dialog task if needed.
         task.attach(this)
-        mGameView.setGame(task.game)
+        if(mGameView.getGame() != task.game._1) {
+          mGameView.loadBitmapSet(task.game._2)
+          mGameView.setGame(task.game._1)
+        }
+        
         
         /*if(task.record != null) {
           if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFF0000)
@@ -566,7 +576,9 @@ class KingPong extends Activity
 
   configurationObject {
     if(task != null) {
-      if(mGameView != null) task.game = mGameView.getGame
+      if(mGameView != null) {
+        task.game = (mGameView.getGame, mGameView.getBitmaps())
+      }
       //TODO Mikael, what is the purpose of this?
       //task.game.storeInitialState(false)
       task.detach()
@@ -668,18 +680,19 @@ class KingPong extends Activity
         case FileLoad(tempName) =>
           //new LoadFileTask().execute(input_msg.getData().getString(FILENAME_TAG))
           this ! ShowProgressDialog()
-          task = new LoadSaveGameTask(self, saving=false, exporting=false,game=mGameView.getGame)
+          task = new LoadSaveGameTask(self, saving=false, exporting=false,game=(mGameView.getGame, Nil))
           task.execute(tempName)
           
         case FileSave(tempName) =>
-          ShowProgressDialogSave()
           this ! ShowProgressDialogSave()
-          task = new LoadSaveGameTask(self, saving=true, exporting=false, game=mGameView.getGame)
+          mGameView.getGame().saveObjectsIfStart()
+          task = new LoadSaveGameTask(self, saving=true, exporting=false, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           
         case FileSaveAndExport(tempName) =>
           this ! ShowProgressDialogSave()
-          task = new LoadSaveGameTask(self, saving=true, exporting=true, game=mGameView.getGame)
+          mGameView.getGame().saveObjectsIfStart()
+          task = new LoadSaveGameTask(self, saving=true, exporting=true, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           
         case FileExport(tempName) =>
@@ -702,9 +715,17 @@ class KingPong extends Activity
           editor.commit()
 
         case PickImage() =>
-          val photoPickerIntent = new Intent(Intent.ACTION_PICK)
-          photoPickerIntent.setType("image/*")
-          startActivityForResult(photoPickerIntent, IMPORT_PICT)
+          val pickIntent = new Intent()
+          pickIntent.setType("image/*")
+          pickIntent.setAction(Intent.ACTION_GET_CONTENT)
+          var photoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+          
+          val pickTitle = getResources().getString(R.string.select_or_take_picture)
+          val chooserIntent = Intent.createChooser(pickIntent, pickTitle)
+          chooserIntent.putExtra(
+              Intent.EXTRA_INITIAL_INTENTS,
+              Array[Intent](photoIntent))
+          startActivityForResult(chooserIntent, IMPORT_PICT)
         
         case ReadAloud(language, msg) =>
           if(mTts != null) {
@@ -733,9 +754,11 @@ class KingPong extends Activity
             if(resultCode == Activity.RESULT_OK){
                 try {
                     val imageUri = imageReturnedIntent.getData
-                    val imageStream = getContentResolver.openInputStream(imageUri)
-                    val selectedImage = BitmapFactory.decodeStream(imageStream)
-                    mGameView.setImageSelectedShape(selectedImage)
+                    if(imageUri != null) {
+	                    val imageStream = getContentResolver.openInputStream(imageUri)
+	                    val selectedImage = BitmapFactory.decodeStream(imageStream)
+	                    mGameView.setImageSelectedShape(selectedImage)
+                    }
                 } catch {
                   case e: FileNotFoundException =>
                     e.printStackTrace()

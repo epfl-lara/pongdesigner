@@ -20,8 +20,9 @@ class SoundTTS (
     init_color: Expr,
     init_language: Expr,
     init_text: Expr,
-    init_time: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+    init_time: Expr,
+    planned: GameObject.IsPlanned
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, planned)
       with ResizableRectangular
       with Movable
       with Visiblable
@@ -55,6 +56,6 @@ class SoundTTS (
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
     new SoundTTS(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(color), f(language),
-                 f(value), f(time))
+                 f(value), f(time), game.isCopyingPlanned)
   }
 }

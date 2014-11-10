@@ -10,7 +10,45 @@ import android.widget.Toast
 import android.content.Context
 import ch.epfl.lara.synthesis.kingpong.expression.CodeGenerator
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import android.view.Gravity
+import android.util.Log
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.view.LayoutInflater
 
+object GameEngineEditor {
+  var currentToast: Toast = null
+  var lastText: String = null
+  def showToolTip(context: Context, hint: String): Unit = {
+    Log.d("Selectors", "Firing tooltip " + hint)
+    if(currentToast != null && lastText == hint) {return;}
+    if(currentToast == null) {
+      currentToast = new Toast(context)
+	    currentToast.setGravity(Gravity.TOP, 0, 0)
+	    currentToast.setDuration(Toast.LENGTH_SHORT)
+	    
+	    val inflater = context.getSystemService( Context.LAYOUT_INFLATER_SERVICE ).asInstanceOf[LayoutInflater];
+			val layout = inflater.inflate(R.layout.toast_layout, null);
+			
+			val text = layout.findViewById(R.id.text).asInstanceOf[TextView];
+	    
+	    currentToast.setView(layout)
+	    currentToast.show()
+    } else if(currentToast != null) {
+      currentToast.getView() match {
+        case linearLayout: LinearLayout =>
+          linearLayout.getChildAt(0) match {
+            case textView: TextView =>
+              textView.setText(hint)
+              currentToast.show()
+            case _ =>
+          }
+        case _ =>
+      }
+    }
+    
+  }
+}
 
 /**
  * GameEngineEditor
@@ -38,7 +76,7 @@ abstract class GameEngineEditor(gameEngineView: GameView) {
       menu =>
         val hint = menu.hint(context.getResources())
         if(menu.hovered && Options.Access.showTooltips) {
-          Toast.makeText(context, hint, Toast.LENGTH_SHORT).show()
+          GameEngineEditor.showToolTip(context, hint)
         }
     }
   }
@@ -300,18 +338,3 @@ class SystemEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngine
   
   def menus: List[CustomMenu] = SystemMenu.menus
 }
-/**
- * GameEditor
- * 
- * Wrapper to the static values of the game like the layout size.
- */
-/*class GameEditor(gameEngineView: GameView) extends GameEngineEditor(gameEngineView) {
-  def unselect() = {
-  }
-  
-  def isVisible() = gameEngineView.getGame().currentTime == 0
-  
-  def testHovering(x: Float, y: Float, button_size: Float): Boolean = GameMenu.testHovering(x, y, button_size)
-  
-  def menus: List[CustomMenu] = GameMenu.menus
-}*/

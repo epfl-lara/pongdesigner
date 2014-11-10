@@ -32,8 +32,9 @@ abstract class PhysicalObject(
     init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr,
-    init_tpe: BodyType
-    ) extends GameObject(init_name)
+    init_tpe: BodyType,
+    planned: GameObject.IsPlanned
+    ) extends GameObject(init_name, planned)
       with Movable with SpeedSettable with Visiblable with Colorable with Rotationable { self =>
 
   tpe = init_tpe
@@ -100,6 +101,8 @@ abstract class PhysicalObject(
     val exists = super.setExistenceAt(time)
     if(bodyRemovedFromWorld && exists) {
       addToWorld()
+      velocity.reset(game.interpreter)
+      velocity.flush()
     }
     if(!bodyRemovedFromWorld && !exists) {
       removeFromWorld()
@@ -220,10 +223,11 @@ class Rectangle (
     init_fixedRotation: Expr,
     init_color: Expr,
     init_sensor: Expr,
-    init_tpe: BodyType = BodyType.DYNAMIC
+    init_tpe: BodyType = BodyType.DYNAMIC,
+    planned: GameObject.IsPlanned
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                              init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
-                             init_color, init_tpe)
+                             init_color, init_tpe, planned)
       with ResizableRectangular
       with AngularRectangularContains {
 
@@ -262,7 +266,7 @@ class Rectangle (
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
     new Rectangle(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(velocity), f(angularVelocity),
-                  f(density), f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe)
+                  f(density), f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe, game.isCopyingPlanned())
   }
   
   override def contains(pos: Vec2) = super[AngularRectangularContains].contains(pos)
@@ -285,10 +289,11 @@ class Character (
     init_linearDamping: Expr,
     init_fixedRotation: Expr,
     init_color: Expr,
-    init_tpe: BodyType = BodyType.DYNAMIC
+    init_tpe: BodyType = BodyType.DYNAMIC,
+    planned: GameObject.IsPlanned
     ) extends PhysicalObject(init_name, init_x, init_y, init_angle, init_visible, init_velocity, init_angularVelocity,
                              init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
-                             init_color, init_tpe)
+                             init_color, init_tpe, planned)
       with ResizableRectangular 
       with InputManager {
   
@@ -358,7 +363,7 @@ class Character (
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
     new Character(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(visible), f(velocity), f(angularVelocity),
-                  f(density), f(friction),  f(restitution), f(linearDamping), f(fixedRotation), f(color), tpe)
+                  f(density), f(friction),  f(restitution), f(linearDamping), f(fixedRotation), f(color), tpe, game.isCopyingPlanned())
   }
 }
 
@@ -378,10 +383,11 @@ class Circle(
     init_fixedRotation: Expr,
     init_color: Expr,
     init_sensor: Expr,
-    init_tpe: BodyType = BodyType.DYNAMIC
+    init_tpe: BodyType = BodyType.DYNAMIC,
+    planned: GameObject.IsPlanned
     ) extends PhysicalObject(init_name, init_x, init_y, 0, init_visible, init_velocity, init_angularVelocity,
                              init_density, init_friction, init_restitution, init_linearDamping, init_fixedRotation,
-                             init_color, init_tpe)
+                             init_color, init_tpe, planned)
       with ResizableCircular {
   
   protected def fixtureDef = {
@@ -410,6 +416,6 @@ class Circle(
 
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
     new Circle(game, f(name), f(x), f(y), f(radius), f(visible), f(velocity), f(angularVelocity), f(density),
-               f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe)
+               f(friction), f(restitution), f(linearDamping), f(fixedRotation), f(color), f(sensor), tpe, game.isCopyingPlanned())
   }
 }

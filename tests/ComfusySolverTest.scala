@@ -12,6 +12,8 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
 
+import collection.mutable.{HashMap => Map}
+
 class ComfusySolvertest extends FlatSpec with ShouldMatchers {
   
   import ComfusySolver._

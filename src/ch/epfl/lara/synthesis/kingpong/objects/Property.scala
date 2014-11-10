@@ -43,7 +43,7 @@ abstract class Property[@specialized T : PongType]() { self =>
 }
 
 /** All properties that are only readable. */
-trait ROProperty[T] extends Property[T]
+sealed trait ROProperty[T] extends Property[T]
 
 /**
  * Property that references other ones. 

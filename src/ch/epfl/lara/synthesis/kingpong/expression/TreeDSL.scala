@@ -302,6 +302,10 @@ object TreeDSL {
     Let(id1, expr1, Let(id2, expr2, body(ref1, ref2)))
   }
   
+  def call(name: String, args: Expr*): MethodCall = {
+    MethodCall(name, args.toList)
+  }
+  
   def foreach(category: Category)(body: Proxy => Expr): Expr = {
     val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
@@ -337,6 +341,10 @@ object TreeDSL {
     val id = FreshIdentifier("copy").setType(TObject)
     val ref = new IdentifierProxy(id)
     Copy(obj, id, body(ref))
+  }
+  
+  def delete(obj: Expr): Expr = {
+    Delete(obj)
   }
   
   def forall(category: Category)(body: Proxy => Expr): Expr = {
@@ -396,9 +404,9 @@ object TreeDSL {
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
       sensor: Expr = category.sensor,
-      tpe: BodyType = category.tpe)(implicit game: Game): Circle = {
+      tpe: BodyType = category.tpe)(implicit game: Game, planned: GameObject.IsPlanned): Circle = {
     val obj = new Circle(game, name, x, y, radius, visible, velocity, angularVelocity, 
-                         density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe)
+                         density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe, planned)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -421,9 +429,9 @@ object TreeDSL {
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
       sensor: Expr = category.sensor,
-      tpe: BodyType = category.tpe)(implicit game: Game): Rectangle = {
+      tpe: BodyType = category.tpe)(implicit game: Game, planned: GameObject.IsPlanned): Rectangle = {
     val obj = new Rectangle(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                            density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe)
+                            density, friction, restitution, linearDamping, fixedRotation, color, sensor, tpe, planned)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -439,7 +447,7 @@ object TreeDSL {
       minValue: Expr = category.randomMinValue,
       maxValue: Expr = category.randomMaxValue,
       visible: Expr = category.visible,
-      color: Expr = category.color)(implicit game: Game): RandomGenerator = {
+      color: Expr = category.color)(implicit game: Game, planned: GameObject.IsPlanned): RandomGenerator = {
     val obj = new RandomGenerator(game, name, x, y, angle, width, height, minValue, maxValue, visible, color)
     obj.setCategory(category)
     game.add(obj)
@@ -456,8 +464,8 @@ object TreeDSL {
       visible: Expr = category.visible,
       color: Expr = category.color,
       stroke_width: Expr = category.stroke_width,
-      color_drawing: Expr = category.color_drawing)(implicit game: Game): DrawingObject = {
-    val obj = new DrawingObject(game, name, x, y, angle, width, height, visible, color, stroke_width, color_drawing)
+      color_drawing: Expr = category.color_drawing)(implicit game: Game, planned: GameObject.IsPlanned): DrawingObject = {
+    val obj = new DrawingObject(game, name, x, y, angle, width, height, visible, color, stroke_width, color_drawing, planned)
     obj.setCategory(category)
     game.addRule(obj.defaultRule(game))
     game.add(obj)
@@ -473,8 +481,8 @@ object TreeDSL {
       height: Expr = category.height,
       visible: Expr = category.visible,
       color: Expr = category.color,
-      recording: Expr = category.recording)(implicit game: Game): SoundRecorder = {
-    val obj = new SoundRecorder(game, name, x, y, angle, width, height, visible, color, recording)
+      recording: Expr = category.recording)(implicit game: Game, planned: GameObject.IsPlanned): SoundRecorder = {
+    val obj = new SoundRecorder(game, name, x, y, angle, width, height, visible, color, recording, planned)
     obj.setCategory(category)
     //game.addRule(obj.defaultRule(game))
     game.add(obj)
@@ -493,8 +501,8 @@ object TreeDSL {
       language: Expr = category.language,
       text: Expr = "",
       time: Expr = category.time
-      )(implicit game: Game): SoundTTS = {
-    val obj = new SoundTTS(game, name, x, y, angle, width, height, visible, color, language, text, time)
+      )(implicit game: Game, planned: GameObject.IsPlanned): SoundTTS = {
+    val obj = new SoundTTS(game, name, x, y, angle, width, height, visible, color, language, text, time, planned)
     obj.setCategory(category)
     //game.addRule(obj.defaultRule(game))
     game.add(obj)
@@ -511,8 +519,8 @@ object TreeDSL {
       cellHeight: Expr = category.cellHeight,
       angle: Expr = category.angle,
       visible: Expr = category.visible,
-      color: Expr = category.color)(implicit game: Game): Array2D = {
-    val obj = new Array2D(game, name, x, y, visible, color, cellWidth, cellHeight, columns, rows)
+      color: Expr = category.color)(implicit game: Game, planned: GameObject.IsPlanned): Array2D = {
+    val obj = new Array2D(game, name, x, y, visible, color, cellWidth, cellHeight, columns, rows, planned)
     obj.setCategory(category)
     val categoryName = name match {
       case StringLiteral(s) => "Cells of " + s
@@ -537,8 +545,8 @@ object TreeDSL {
       height: Expr = category.height,
       visible: Expr = category.visible,
       color: Expr = category.color,
-      displayName: Expr = category.displayName)(implicit game: Game): Box[Int] = {
-    val obj = new IntBox(game, name, x, y, angle, width, height, value, visible, color, displayName)
+      displayName: Expr = category.displayName)(implicit game: Game, planned: GameObject.IsPlanned): Box[Int] = {
+    val obj = new IntBox(game, name, x, y, angle, width, height, value, visible, color, displayName, planned)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -553,8 +561,8 @@ object TreeDSL {
       width: Expr = category.width,
       height: Expr = category.height,
       visible: Expr = category.visible,
-      color: Expr = category.color)(implicit game: Game): Box[Boolean] = {
-    val obj = new BooleanBox(game, name, x, y, angle, width, height, value, visible, color)
+      color: Expr = category.color)(implicit game: Game, planned: GameObject.IsPlanned): Box[Boolean] = {
+    val obj = new BooleanBox(game, name, x, y, angle, width, height, value, visible, color, planned)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -569,8 +577,8 @@ object TreeDSL {
       width: Expr = category.width,
       height: Expr = category.height,
       visible: Expr = category.visible,
-      color: Expr = category.color)(implicit game: Game): Box[String] = {
-    val obj = new StringBox(game, name, x, y, angle, width, height, value, visible, color)
+      color: Expr = category.color)(implicit game: Game, planned: GameObject.IsPlanned): Box[String] = {
+    val obj = new StringBox(game, name, x, y, angle, width, height, value, visible, color, planned)
     obj.setCategory(category)
     game.add(obj)
     obj
@@ -606,9 +614,9 @@ object TreeDSL {
       linearDamping: Expr = category.linearDamping,
       fixedRotation: Expr = category.fixedRotation,
       color: Expr = category.color,
-      tpe: BodyType = category.tpe)(implicit game: Game): Character = {
+      tpe: BodyType = category.tpe)(implicit game: Game, planned: GameObject.IsPlanned): Character = {
     val obj = new Character(game, name, x, y, angle, width, height, visible, velocity, angularVelocity, 
-                            density, friction, restitution, linearDamping, fixedRotation, color, tpe)
+                            density, friction, restitution, linearDamping, fixedRotation, color, tpe, planned)
     obj.setCategory(category)
     game.add(obj)
     obj

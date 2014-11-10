@@ -10,6 +10,17 @@ import org.json.{JSONObject, JSONTokener}
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{ArrayBuffer, HashMap => MMap}
 import org.jbox2d.dynamics.BodyType
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.io.ObjectInputStream
+import android.graphics.BitmapFactory
+import ch.epfl.lara.synthesis.kingpong.GameView
+import android.util.Base64
+import android.graphics.drawable.Drawable
 
 object GameSerializer {
   private val CLASS_TAG = "__class__"
@@ -181,6 +192,7 @@ object GameSerializer {
   implicit case object CollidingConverter extends ConverterBuilder[Colliding]("Colliding") with BinaryConverter[Colliding]
   implicit case object OutOfCollisionConverter extends ConverterBuilder[OutOfCollision]("OutOfCollision") with BinaryConverter[OutOfCollision]
   implicit case object ContainsConverter extends ConverterBuilder[Contains]("Contains") with BinaryConverter[Contains]
+  implicit case object ContainsTotallyConverter extends ConverterBuilder[ContainsTotally]("ContainsTotally") with BinaryConverter[ContainsTotally]
   
   
    
@@ -501,6 +513,7 @@ object GameSerializer {
     case e:Colliding => toJson(e)
     case e:OutOfCollision => toJson(e)
     case e:Contains => toJson(e)
+    case e:ContainsTotally => toJson(e)
     case e:Let => toJson(e)
     case e:Copy => toJson(e)
     case e:ApplyForce => toJson(e)
@@ -562,6 +575,7 @@ object GameSerializer {
     case CollidingConverter(e) => e
     case OutOfCollisionConverter(e) => e
     case ContainsConverter(e) => e
+    case ContainsTotallyConverter(e) => e
     case LetConverter(e) => e
     case CopyConverter(e) => e
     case ApplyForceConverter(e) => e
@@ -600,69 +614,78 @@ object GameSerializer {
  
   def categoryToJson(category: CategoryObject): JSONObject = {
     val json = new JSONObject().put(CLASS_TAG, "category")
+    def jsonPutSimple(json: JSONObject, name: String, e: Expr) = e match {
+      case FloatLiteral(f) => json.put(name, f)
+      case IntegerLiteral(i) => json.put(name, i)
+      case BooleanLiteral(b) => json.put(name, b)
+      case _ => json.put(name, exprToJson(e))
+    }
+    
     json.put("name", category.name)
-    json.put("angle", exprToJson(category.angle))
-		json.put("width", exprToJson(category.width))
-		json.put("height", exprToJson(category.height))
-		json.put("cellWidth", exprToJson(category.cellWidth))
-		json.put("cellHeight", exprToJson(category.cellHeight))
-		json.put("radius", exprToJson(category.radius))
-		json.put("value", exprToJson(category.value))
-		json.put("randomMinValue", exprToJson(category.randomMinValue))
-		json.put("randomMaxValue", exprToJson(category.randomMaxValue))
-		json.put("visible", exprToJson(category.visible))
-		json.put("velocity", exprToJson(category.velocity))
-		json.put("angularVelocity", exprToJson(category.angularVelocity))
-		json.put("density", exprToJson(category.density))
-		json.put("friction", exprToJson(category.friction))
-		json.put("restitution", exprToJson(category.restitution))
-		json.put("linearDamping", exprToJson(category.linearDamping))
-		json.put("fixedRotation", exprToJson(category.fixedRotation))
-		json.put("color", exprToJson(category.color))
-		json.put("sensor", exprToJson(category.sensor))
-		json.put("tpe", if(category.tpe == BodyType.STATIC) "STATIC" else if(category.tpe == BodyType.DYNAMIC) "DYNAMIC" else "KINEMATIC" )
-		json.put("stroke_width", exprToJson(category.stroke_width))
-		json.put("color_drawing", exprToJson(category.color_drawing))
-		json.put("recording", exprToJson(category.recording))
-		json.put("language", exprToJson(category.language))
-		json.put("text", exprToJson(category.text))
-		json.put("time", exprToJson(category.time))
+    jsonPutSimple(json, "angle", category.angle)
+		jsonPutSimple(json, "width", category.width)
+		jsonPutSimple(json, "height", category.height)
+		jsonPutSimple(json, "cellWidth", category.cellWidth)
+		jsonPutSimple(json, "cellHeight", category.cellHeight)
+		jsonPutSimple(json, "radius", category.radius)
+		jsonPutSimple(json, "value", category.value)
+		jsonPutSimple(json, "randomMinValue", category.randomMinValue)
+		jsonPutSimple(json, "randomMaxValue", category.randomMaxValue)
+		jsonPutSimple(json, "visible", category.visible)
+		jsonPutSimple(json, "velocity", category.velocity)
+		jsonPutSimple(json, "angularVelocity", category.angularVelocity)
+		jsonPutSimple(json, "density", category.density)
+		jsonPutSimple(json, "friction", category.friction)
+		jsonPutSimple(json, "restitution", category.restitution)
+		jsonPutSimple(json, "linearDamping", category.linearDamping)
+		jsonPutSimple(json, "fixedRotation", category.fixedRotation)
+		jsonPutSimple(json, "color", category.color)
+		jsonPutSimple(json, "sensor", category.sensor)
+		json.put("type", if(category.tpe == BodyType.STATIC) "STATIC" else if(category.tpe == BodyType.DYNAMIC) "DYNAMIC" else "KINEMATIC" )
+		jsonPutSimple(json, "stroke_width", category.stroke_width)
+		jsonPutSimple(json, "color_drawing", category.color_drawing)
+		jsonPutSimple(json, "recording", category.recording)
+		jsonPutSimple(json, "language", category.language)
+		jsonPutSimple(json, "text", category.text)
+		jsonPutSimple(json, "time", category.time)
+		jsonPutSimple(json, "displayName", category.displayName)
 		json
   }
   
   def jsonToCategory(json: JSONObject, game: Game)(implicit ctx: SerializerContext): CategoryObject = {
     val name = json.getString("name")
     var created = false
+    val jexpr = (str: String) => jsonToExprWithShortcut(json, str)
     val category = ctx.categories.getOrElse(name, { created = true; new CategoryObject(
         game,
         name,
-        jsonToExpr(json.getJSONObject("angle")),
-				jsonToExpr(json.getJSONObject("width")),
-				jsonToExpr(json.getJSONObject("height")),
-				jsonToExpr(json.getJSONObject("cellWidth")),
-				jsonToExpr(json.getJSONObject("cellHeight")),
-				jsonToExpr(json.getJSONObject("radius")),
-				jsonToExpr(json.getJSONObject("value")),
-				jsonToExpr(json.getJSONObject("randomMinValue")),
-				jsonToExpr(json.getJSONObject("randomMaxValue")),
-				jsonToExpr(json.getJSONObject("visible")),
-				jsonToExpr(json.getJSONObject("velocity")),
-				jsonToExpr(json.getJSONObject("angularVelocity")),
-				jsonToExpr(json.getJSONObject("density")),
-				jsonToExpr(json.getJSONObject("friction")),
-				jsonToExpr(json.getJSONObject("restitution")),
-				jsonToExpr(json.getJSONObject("linearDamping")),
-				jsonToExpr(json.getJSONObject("fixedRotation")),
-				jsonToExpr(json.getJSONObject("color")),
-				jsonToExpr(json.getJSONObject("sensor")),
-				{ val s = json.getString("tpe"); if(s == "STATIC") BodyType.STATIC else if(s == "DYNAMIC") BodyType.DYNAMIC else BodyType.KINEMATIC},
-				jsonToExpr(json.getJSONObject("stroke_width")),
-				jsonToExpr(json.getJSONObject("color_drawing")),
-				jsonToExpr(json.getJSONObject("recording")),
-				jsonToExpr(json.getJSONObject("language")),
-				jsonToExpr(json.getJSONObject("text")),
-				jsonToExpr(json.getJSONObject("time")),
-				jsonToExpr(json.getJSONObject("displayName"))
+        jexpr("angle"),
+				jexpr("width"),
+				jexpr("height"),
+				jexpr("cellWidth"),
+				jexpr("cellHeight"),
+				jexpr("radius"),
+				jexpr("value"),
+				jexpr("randomMinValue"),
+				jexpr("randomMaxValue"),
+				jexpr("visible"),
+				jexpr("velocity"),
+				jexpr("angularVelocity"),
+				jexpr("density"),
+				jexpr("friction"),
+				jexpr("restitution"),
+				jexpr("linearDamping"),
+				jexpr("fixedRotation"),
+				jexpr("color"),
+				jexpr("sensor"),
+				{ val s = json.optString("type", json.optString("tpe")); if(s == "STATIC") BodyType.STATIC else if(s == "DYNAMIC") BodyType.DYNAMIC else BodyType.KINEMATIC},
+				jexpr("stroke_width"),
+				jexpr("color_drawing"),
+				jexpr("recording"),
+				jexpr("language"),
+				jexpr("text"),
+				jexpr("time"),
+				if(json.has("displayName")) jexpr("displayName") else name
 				)}
     )
     if(created) {
@@ -673,6 +696,30 @@ object GameSerializer {
     }
   }
   
+    
+  // Returns the value as an Expr. Can handle unambiguous basic types.
+  def jsonToExprWithShortcut(json: JSONObject, name: String)(implicit ctx: SerializerContext): Expr = {
+    val maybeString = json.optString(name, null)
+    val initValue = try {
+      if(maybeString != null && maybeString.length() > 0) {
+        if(maybeString.indexOf('.') >= 0) {
+          FloatLiteral(maybeString.toFloat)
+        } else if(maybeString.indexOf("a") >= 0 || maybeString.indexOf("u") >= 0){
+          BooleanLiteral(maybeString.toBoolean)
+        } else {
+          IntegerLiteral(maybeString.toInt)
+        }
+      } else {
+        jsonToExpr(json.getJSONObject(name))
+      }
+    } catch {
+      case e: Exception =>
+        jsonToExpr(json.getJSONObject(name))
+    }
+    initValue
+  }
+  
+  // Transforms a game object to a JSON object
   def gameObjectToJson(g: GameObject): JSONObject = {
     val cl = g.getClass().getName()
     val json = new JSONObject().put(CLASS_TAG, cl)
@@ -681,9 +728,25 @@ object GameSerializer {
       p match {
         case p:AliasProperty[_] => // Store nothing
         case p:ConstProperty[_] => //json.put(p.name, exprToJson(p.expr))
-        case p:HistoricalProperty[_] => json.put(p.name, exprToJson(p.init))
+        case p:NamedProperty[_] => //json.put(p.name, exprToJson(p.expr))
+        case p:HistoricalProperty[_] =>
+          p.init match {
+            case IntegerLiteral(i) =>
+              json.put(p.name, i)
+            case FloatLiteral(f) =>
+              json.put(p.name, f)
+            case BooleanLiteral(b) =>
+              json.put(p.name, b)
+            case _ =>
+              json.put(p.name, exprToJson(p.init))
+          }
         case _ => println(s"Unknown property not stored : $p")
       }
+    }
+    g match {
+      case p: PhysicalObject =>
+        json.put("type", if(p.tpe == BodyType.STATIC) "STATIC" else if(p.tpe == BodyType.DYNAMIC) "DYNAMIC" else "KINEMATIC" )
+      case _ =>
     }
     g match {
       case g: DrawingObject =>
@@ -703,28 +766,30 @@ object GameSerializer {
     }
     json
   }
-  
-  def jsonToGameObject(json: JSONObject, game: Game)(implicit ctx: SerializerContext): Option[GameObject] = {
+
+  // Converts JSON to a game object.
+  def jsonToGameObject(json: JSONObject)(implicit game: Game, ctx: SerializerContext): Option[GameObject] = {
     val cl = json.get(CLASS_TAG)
     println("Loading as game object:" + json)
+    implicit val planned = GameObject.PLANNED_SINCE_BEGINNING;
     val category: CategoryObject = ctx.categories.getOrElse(if(json has "category") json getString "category" else "", DefaultCategory("", game))
     val obj: GameObject =
-           if(cl == classOf[Rectangle].getName()) { rectangle(category)("", 0, 0)(game)
-    } else if(cl == classOf[Circle].getName()) {    circle(category)("", 0, 0)(game)
-    } else if(cl == classOf[Character].getName()) { character(category)("", 0, 0)(game)
-    } else if(cl == classOf[IntBox].getName()) { intbox(category)("", 0, 0)(game)
-    } else if(cl == classOf[StringBox].getName()) { stringbox(category)("", 0, 0)(game)
-    } else if(cl == classOf[BooleanBox].getName()) { booleanbox(category)("", 0, 0)(game)
-    } else if(cl == classOf[Joystick].getName()) { joystick(category)("", 0, 0)(game)
-    } else if(cl == classOf[RandomGenerator].getName()) { randomGenerator(category)("", 0, 0)(game)
+           if(cl == classOf[Rectangle].getName()) { rectangle(category)("", 0, 0)
+    } else if(cl == classOf[Circle].getName()) {    circle(category)("", 0, 0)
+    } else if(cl == classOf[Character].getName()) { character(category)("", 0, 0)
+    } else if(cl == classOf[IntBox].getName()) { intbox(category)("", 0, 0)
+    } else if(cl == classOf[StringBox].getName()) { stringbox(category)("", 0, 0)
+    } else if(cl == classOf[BooleanBox].getName()) { booleanbox(category)("", 0, 0)
+    } else if(cl == classOf[Joystick].getName()) { joystick(category)("", 0, 0)
+    } else if(cl == classOf[RandomGenerator].getName()) { randomGenerator(category)("", 0, 0)
     } else if(cl == classOf[Array2D].getName()) {
       val numRows =jsonToExpr(json.getJSONObject("numRows"))
       val numCols = jsonToExpr(json.getJSONObject("numColumns"))
-      array(category)("", 0, 0, numCols, numRows)(game)
-    } else if(cl == classOf[SoundTTS].getName()) { soundTTS(category)("", 0, 0)(game)
-    } else if(cl == classOf[DrawingObject].getName()) { drawingObject(category)("", 0, 0)(game)
-    //} else if(cl == classOf[SoundRecorded].getName()) { soundrecorded(category)("", 0, 0)(game)
-    } else if(cl == classOf[SoundRecorder].getName()) { soundRecorder(category)("", 0, 0)(game)
+      array(category)("", 0, 0, numCols, numRows)
+    } else if(cl == classOf[SoundTTS].getName()) { soundTTS(category)("", 0, 0)
+    } else if(cl == classOf[DrawingObject].getName()) { drawingObject(category)("", 0, 0)
+    //} else if(cl == classOf[SoundRecorded].getName()) { soundrecorded(category)("", 0, 0)
+    } else if(cl == classOf[SoundRecorder].getName()) { soundRecorder(category)("", 0, 0)
     } else null
     if(category.name == "" && obj != null) {
       val category = DefaultCategory(obj)
@@ -735,9 +800,16 @@ object GameSerializer {
 	      p match {
 	        case p:AliasProperty[_] => // Store nothing
 	        case p:ConstProperty[_] => // p.jsonToInt(json.get(p.name))
-	        case p:HistoricalProperty[_] => p.setInit(jsonToExpr(json.getJSONObject(p.name)))
+	        case p:HistoricalProperty[_] => 
+            val initValue = jsonToExprWithShortcut(json, p.name)
+            p.setInit(initValue)
 	        case _ => println(s"Unknown property not stored : $p")
 	      }
+	    }
+	    obj match {
+	      case p: PhysicalObject =>
+	        p.tpe = { val s = json.optString("type", json.optString("tpe")); if(s == "STATIC") BodyType.STATIC else if(s == "DYNAMIC") BodyType.DYNAMIC else BodyType.KINEMATIC}
+	      case _ =>
 	    }
 	    obj match {
 	      case obj: DrawingObject =>
@@ -755,15 +827,31 @@ object GameSerializer {
 	    Some(obj)
     } else None
   }
+  
+  def bitmapToJson(key: Int, bitmap: Bitmap): JSONObject = {
+    val json = new JSONObject().put(CLASS_TAG, "bitmap")
+    json.put("id", key)
+    json.put("content", BitMapToString(bitmap))
+    json
+  }
+  
+  def jsonToBitmap(json: JSONObject): Option[(Int, Bitmap)] = {
+    val c = json.get(CLASS_TAG)
+    if(!json.has("id") || !json.has("content")) return None
+    Some((json.getInt("id"), StringToBitMap(json.getString("content"))))
+  }
 
   /**
    * Converts a game to JSON
    */
-  def gameToJson(game: Game): JSONObject = {
+  def gameToJson(game: Game, bitmaps: List[(Int, Bitmap)]): JSONObject = {
     val json = new JSONObject().put(CLASS_TAG, "Game")
     
-    for(obj <- game.objects) {
+    for(obj <- game.objects if obj.plannedFromBeginning == GameObject.PLANNED_SINCE_BEGINNING) {
       json.accumulate("objects", gameObjectToJson(obj))
+    }
+    for((key, bitmap) <- bitmaps if bitmap != null) {
+      json.accumulate("bitmaps", bitmapToJson(key, bitmap))
     }
     for(cat <- game.objects.map(_.category).toList.distinct if cat.name != null) {
       json.accumulate("categories", categoryToJson(cat))
@@ -773,67 +861,104 @@ object GameSerializer {
     }
     json
   }
-  
+    
   /**
    * Converts a json to a game
    */
-  def jsonToGame(json: JSONObject): Option[Game] = {
+  def jsonToGame(json: JSONObject): Option[(Game, List[(Int, Bitmap)])] = {
     if(json.get(CLASS_TAG) != "Game") return None;
-    val game = new Game { val world = new PhysicalWorld(new org.jbox2d.common.Vec2(0, 0f)) }
-    
+    implicit val game = new Game { val world = new PhysicalWorld(new org.jbox2d.common.Vec2(0, 0f)) }
     implicit val ctx = new SerializerContext
-    for(j <- json.getJSONObjectSeq("categories");
-        cat = jsonToCategory(j, game)) {
-      ctx.add(cat)
+    if(json.has("categories")) {
+	    for(j <- json.getJSONObjectSeq("categories");
+	        cat = jsonToCategory(j, game)) {
+	      ctx.add(cat)
+	    }
     }
-    for(j <- json.getJSONObjectSeq("objects");
-        someobj = jsonToGameObject(j, game);
-        obj <- someobj) {
-      game.add(obj)
-      ctx.add(obj)
+    if(json.has("objects")) {
+	    for(j <- json.getJSONObjectSeq("objects");
+	        someobj = jsonToGameObject(j);
+	        obj <- someobj) {
+	      ctx.add(obj)
+	    }
     }
-    for(j <- json.getJSONObjectSeq("rules")) {
-      game.addRule(jsonToExpr(j))
+    if(json.has("rules")) {
+	    for(j <- json.getJSONObjectSeq("rules")) {
+	      game.addRule(jsonToExpr(j))
+	    }
     }
-    Some(game)
+    val snd = if(json.has("bitmaps")) {
+      (for(json <- json.getJSONObjectSeq("bitmaps"); res <- jsonToBitmap(json)) yield res).toList
+    } else Nil
+    Some((game, snd))
   }
 
   private implicit class RichJSONObject(val obj: JSONObject) extends AnyVal {
     def getJSONObjectSeq(name: String): Seq[JSONObject] = {
-      val array = obj.getJSONArray(name)
-      for (i <- 0 until array.length) yield array.getJSONObject(i)
+      if(obj.optJSONArray(name) != null) {
+        val array = obj.optJSONArray(name)
+        for (i <- 0 until array.length) yield array.getJSONObject(i)
+      } else if(obj.optJSONObject(name) != null) {
+        List(obj.optJSONObject(name))
+      } else Nil
     }
   }
   
   /**
    * Parses a game from a file.
    */
-  def loadGame(content: String, callbackProgress: (Int, Int) => Unit = null): Game = {
-    if(callbackProgress != null) callbackProgress(10, 100)
+  def loadGame(content: String, callbackProgress: (Int, Int, String) => Unit = null): (Game, List[(Int, Bitmap)]) = {
+    if(callbackProgress != null) callbackProgress(10, 100, "Parsing json...")
     val json = new JSONTokener(content).nextValue().asInstanceOf[JSONObject]
-    if(callbackProgress != null) callbackProgress(50, 100)
+    if(callbackProgress != null) callbackProgress(50, 100, "Recreating game...")
     val game = jsonToGame(json)
-    if(callbackProgress != null) callbackProgress(100, 100)
+    if(callbackProgress != null) callbackProgress(100, 100, "Finish!")
     game.getOrElse(null)
   }
   
   /**
    * Writes a game to a file.
    */
-  def saveGame(game: Game, writer: String => Unit, callbackProgress: (Int, Int) => Unit = null): Unit = {
+  def saveGame(game: Game, bitmaps: List[(Int, Bitmap)], writer: String => Unit, callbackProgress: (Int, Int) => Unit = null): Unit = {
     if(callbackProgress != null) callbackProgress(10, 100)
-    val json = gameToJson(game)
+    val json = gameToJson(game, bitmaps)
     if(callbackProgress != null) callbackProgress(50, 100)
     val content = json.toString
     if(callbackProgress != null) callbackProgress(80, 100)
     writer(content)
     if(callbackProgress != null) callbackProgress(100, 100)
   }
-
-//  private implicit class RichJSONArray(array: JSONArray) extends AnyVal {
-//    def toJSONObjectSeq: Seq[JSONObject] = {
-//      for (i <- 0 to array.length) yield array.getJSONObject(i)
-//    }
-//  }
-
+  
+  /**
+   * @param bitmap
+   * @return converting bitmap and return a string
+   */
+  def BitMapToString(bitmap: Bitmap): String = {
+    val baos=new  ByteArrayOutputStream();
+    val w = bitmap.getWidth()
+    val h = bitmap.getHeight()
+    val r = Math.sqrt(w * h / 10000).toFloat // 10k pixels images max (1k in memory)
+    val newBitmap = Bitmap.createScaledBitmap(bitmap, (w/r).toInt, (h/r).toInt, true)
+    newBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+    newBitmap.recycle();
+    val b=baos.toByteArray();
+    val temp=Base64.encodeToString(b, Base64.DEFAULT);
+    return temp;
+  }
+  
+  /**
+   * @param encodedString
+   * @return bitmap (from given string)
+   */
+  def StringToBitMap(encodedString: String): Bitmap = {
+	  try{
+	    val encodeByte = Base64.decode(encodedString,Base64.DEFAULT)
+	    val bitmap=BitmapFactory.decodeByteArray(encodeByte, 0, encodeByte.length)
+	    bitmap
+	  } catch {
+	  case e: Exception =>
+	    println(e.getMessage());
+	    null
+	  }
+  }
 }

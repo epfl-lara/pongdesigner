@@ -21,8 +21,9 @@ abstract class AbstractObject(init_name: Expr,
                               init_y: Expr,
                               init_angle: Expr,
                               init_visible: Expr, 
-                              init_color: Expr
-                             ) extends GameObject(init_name) {
+                              init_color: Expr,
+                              init_planned: GameObject.IsPlanned
+                             ) extends GameObject(init_name, init_planned) {
   
   def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)
@@ -45,8 +46,9 @@ sealed abstract class Box[T : PongType](
     init_height: Expr, 
     init_value: Expr,
     init_visible: Expr,
-    init_color: Expr
-   ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color)
+    init_color: Expr,
+    planned: GameObject.IsPlanned
+   ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, planned)
      with ResizableRectangular
      with Movable
      with Rotationable
@@ -84,13 +86,14 @@ class IntBox(
     init_value: Expr,
     init_visible: Expr,
     init_color: Expr,
-    init_displayName: Expr
+    init_displayName: Expr,
+    planned: GameObject.IsPlanned
    ) extends Box[Int](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
-                      init_value, init_visible, init_color) {
+                      init_value, init_visible, init_color, planned) {
   
   val displayName = simpleProperty[Boolean]("displayName", init_displayName)
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new IntBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color), f(displayName))
+    new IntBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color), f(displayName), game.isCopyingPlanned())
   }
 }
 
@@ -104,12 +107,13 @@ class StringBox(
     init_height: Expr, 
     init_value: Expr,
     init_visible: Expr,
-    init_color: Expr
+    init_color: Expr,
+    planned: GameObject.IsPlanned
    ) extends Box[String](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
-                      init_value, init_visible, init_color) with ValueTextable {
+                      init_value, init_visible, init_color, planned) with ValueTextable {
   
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new StringBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
+    new StringBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color), game.isCopyingPlanned())
   }
 }
 
@@ -123,12 +127,13 @@ class BooleanBox(
     init_height: Expr, 
     init_value: Expr,
     init_visible: Expr,
-    init_color: Expr
+    init_color: Expr,
+    planned: GameObject.IsPlanned
    ) extends Box[Boolean](game, init_name, init_x, init_y, init_angle, init_width, init_height, 
-                         init_value, init_visible, init_color) with Booleanable {
+                         init_value, init_visible, init_color, planned) with Booleanable {
   def booleanvalue = value
   def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new BooleanBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color))
+    new BooleanBox(game, f(name), f(x), f(y), f(angle), f(width), f(height), f(value), f(visible), f(color), game.isCopyingPlanned())
   }
 }
 
@@ -156,7 +161,7 @@ class Joystick(
     init_radius: Expr, 
     init_visible: Expr,
     init_color: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, GameObject.PLANNED_SINCE_BEGINNING) 
       with Circular
       with Movable
       with InputManager
@@ -225,7 +230,7 @@ class RandomGenerator(
     init_maxValue: Expr, 
     init_visible: Expr,
     init_color: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color) 
+    ) extends AbstractObject(init_name, init_x, init_y, init_angle, init_visible, init_color, GameObject.PLANNED_SINCE_BEGINNING) 
       with ResizableRectangular
       with Movable
       with Rotationable
@@ -287,8 +292,9 @@ class Array2D(
     init_cellWidth: Expr,
     init_cellHeight: Expr,
     init_numColumns: Expr,
-    init_numRows: Expr
-    ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color) 
+    init_numRows: Expr,
+    planned: GameObject.IsPlanned
+    ) extends AbstractObject(init_name, init_x, init_y, 0, init_visible, init_color, planned) 
       with Rectangular
       with Movable
       with Colorable
@@ -378,7 +384,7 @@ class Array2D(
   }
   
   protected def rawCopy(f: HistoricalProperty[_] => Expr) = {
-    new Array2D(game, f(name), f(x), f(y), f(visible), f(color), f(cellWidth), f(cellHeight), f(numColumns), f(numRows))
+    new Array2D(game, f(name), f(x), f(y), f(visible), f(color), f(cellWidth), f(cellHeight), f(numColumns), f(numRows), game.isCopyingPlanned())
   }
 }
 
@@ -386,7 +392,7 @@ case class Cell(
     array: Array2D,
     column: Int,
     row: Int
-    ) extends GameObject(array.name.get + "[" + row + "," + column + "]") 
+    ) extends GameObject(array.name.get + "[" + row + "," + column + "]", array.plannedFromBeginning) 
       with Rectangular
       with FixedRectangularContains {
 
@@ -476,7 +482,7 @@ class Gravity(
     init_radius: Expr,
 	  init_visible: Expr, 
 	  init_color: Expr
-	 ) extends GameObject(init_name) with Movable with Rotationable with ResizableCircular with FixedRectangularContains with Visiblable with Colorable with Booleanable {
+	 ) extends GameObject(init_name, GameObject.PLANNED_SINCE_BEGINNING) with Movable with Rotationable with ResizableCircular with FixedRectangularContains with Visiblable with Colorable with Booleanable {
   
   def noVelocity_=(b: Boolean): Unit = {}
   val x = simpleProperty[Float]("x", init_x)

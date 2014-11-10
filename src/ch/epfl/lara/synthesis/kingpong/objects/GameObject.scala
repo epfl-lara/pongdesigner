@@ -20,9 +20,14 @@ import ch.epfl.lara.synthesis.kingpong.Options.Event._
 
 object GameObject {
   final val EphemeralEndings = "([a-zA-Z0-9_]*[^0-9])([0-9]+)$".r
+  trait IsPlanned
+  object PLANNED_SINCE_BEGINNING extends IsPlanned
+  object RULE_BASED_PLANNING extends IsPlanned
+  object RULE_DEMONSTRATION_PLANNING extends IsPlanned
+  case class PLANNED_COPY(obj: GameObject) extends IsPlanned
 }
 
-abstract class GameObject(init_name: Expr) extends History with Snap { self =>
+abstract class GameObject(init_name: Expr, _plannedFromBeginning: GameObject.IsPlanned) extends History with Snap { self =>
   def game: Game
   
   /** All properties mapped from their name. */
@@ -72,6 +77,11 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   
   val creationTime = simpleProperty[Int]("creation time", -1)
   val deletionTime = simpleProperty[Int]("deletion time", Int.MaxValue)
+  
+  // If this object exists in the array from the beginning. If yes, we cannot garbage collect it.
+  // If no, we can garbage collect it once it gets out of history.
+  // TODO: Map to boolean for saving/exporting, but allows other values?
+  var plannedFromBeginning = _plannedFromBeginning
   
   /** Checks whether this object exists at the given time. */
   def existsAt(time: Int) = creationTime.get <= time && time < deletionTime.get
@@ -310,7 +320,7 @@ abstract class GameObject(init_name: Expr) extends History with Snap { self =>
   }
 
   def getCopy(name: String): GameObject = {
-    val copy = rawCopy(_.getExpr) //TODO change this
+    val copy = rawCopy(_.getExpr)
     copy.setCategory(this.category)
     copy.name.setInit(name)
     copy.name.set(name)
