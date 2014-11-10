@@ -1545,7 +1545,7 @@ object CodeTemplates extends CodeHandler {
      * Compute an expression if the given object applies to this template.
      */
     def apply(obj: GameObject)(implicit ctx: TemplateContext): Option[Expr] = {
-      if(obj.deletionTime.next == ctx.game.time && obj.deletionTime.get < obj.deletionTime.next) {
+      if(obj.deletionTime.next == ctx.game.time && obj.deletionTime.get != obj.deletionTime.next) {
         Some(delete(obj))
       } else {
         None

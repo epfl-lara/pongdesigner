@@ -702,6 +702,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     state = Editing
     layoutResize()
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
+    game.setCopyingPlanned(GameObject.PLANNED_SINCE_BEGINNING)
     gameViewRender.stopRecording(game)
   }
 
@@ -720,9 +721,10 @@ class GameView(val context: Context, attrs: AttributeSet)
 
     eventEditor.unselect()
 
+    game.setCopyingPlanned(GameObject.RULE_BASED_PLANNING)
     //TODO Mikael, do we really need this loop ? 
     // It results in a crash when reseting after a physical object deletion.
-    game.saveObjectsIfStart();
+    game.validateNextToCurrent();
 
     // clear the future history if we went in the past during the pause
     if (game.time < game.maxTime) {

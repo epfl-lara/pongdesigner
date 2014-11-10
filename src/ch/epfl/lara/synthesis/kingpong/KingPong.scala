@@ -685,13 +685,13 @@ class KingPong extends Activity
           
         case FileSave(tempName) =>
           this ! ShowProgressDialogSave()
-          mGameView.getGame().saveObjectsIfStart()
+          mGameView.getGame().validateNextToCurrent()
           task = new LoadSaveGameTask(self, saving=true, exporting=false, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           
         case FileSaveAndExport(tempName) =>
           this ! ShowProgressDialogSave()
-          mGameView.getGame().saveObjectsIfStart()
+          mGameView.getGame().validateNextToCurrent()
           task = new LoadSaveGameTask(self, saving=true, exporting=true, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           

@@ -104,6 +104,8 @@ object CodeGenerator extends CodeHandler {
 //    ) ) )
 
     game.addRule(rule)
+    game.validateNextToCurrent()
+    //Apply the rule body and stores each next statement to the prev
   }
 
   /**

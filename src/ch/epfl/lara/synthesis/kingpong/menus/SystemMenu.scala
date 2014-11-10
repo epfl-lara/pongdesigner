@@ -12,7 +12,7 @@ import ch.epfl.lara.synthesis.kingpong.objects._
 object SystemMenu extends MenuCenter {
   var activated = false
   
-  menus = List(TrashButton, FixButton, SetTimeButton, CopyButton, CutButton)
+  menus = List(TrashButton, CreateButton, FixButton, SetTimeButton, CopyButton, CutButton)
   
   def draw(canvas: Canvas, gameEngine: GameView, selectedShape: GameObject, bitmaps: HashMap[Int, Drawable], cx: Float, cy: Float): Unit = {
     SetTimeButton.visible = selectedShape.isInstanceOf[SoundTTS]
@@ -32,8 +32,7 @@ object SystemMenu extends MenuCenter {
   }
 }
 
-/** Sends a shape to trash
- *  TODO : This should demonstrate advanced functionality (aka: deletion is a property)
+/** Sends a shape to trash. Effectively sets the deletion time to the current time.
  **/
 object TrashButton extends MenuButton {
   import MenuOptions._
@@ -44,6 +43,23 @@ object TrashButton extends MenuButton {
   
   private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_trashcan ::  Nil
   private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_trashcan :: Nil
+  
+  def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
+  
+  def hint_id = R.string.change_trash_hint
+}
+
+/** Sends a shape to trash. Effectively sets the creation time to the current time.
+ **/
+object CreateButton extends MenuButton {
+  import MenuOptions._
+  override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
+    selectedShape.creationTime setPrevNext gameEngine.getGame().time
+    hovered = false
+  }
+  
+  private val hovered_icons = R.drawable.bm_flat_button_highlighted :: R.drawable.bm_freshcan ::  Nil
+  private val normal_icons = R.drawable.bm_flat_button :: R.drawable.bm_freshcan :: Nil
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
@@ -81,6 +97,7 @@ object SetTimeButton extends MenuButton {
 }
 
 /** Puts shape properties to the init state.
+ *  Does not touch the Creation Time.
  **/
 object FixButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
@@ -99,7 +116,6 @@ object FixButton extends MenuButton {
 }
 
 /** Copy an object
- *  TODO : This should demonstrate advanced functionality (aka: creation/duplication)
  **/
 object CopyButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
@@ -124,6 +140,9 @@ object CopyButton extends MenuButton {
   def hint_id = R.string.change_copy_hint
 }
 
+/**
+ *  Cuts a rectangle into multiple pieces. Not rule-based.
+ */
 object CutButton extends MenuButton {
   import common.Implicits._
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {

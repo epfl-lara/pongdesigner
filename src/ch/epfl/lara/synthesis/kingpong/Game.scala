@@ -219,7 +219,7 @@ trait Game extends RulesManager with Context { self =>
   /**
    * Flush the object state and save them to init state if they are just created.
    */
-  def saveObjectsIfStart() {
+  def validateNextToCurrent() {
     objects.foreach { obj =>
       obj.validate()
       obj.save(time)

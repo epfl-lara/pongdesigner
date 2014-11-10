@@ -176,12 +176,20 @@ class GameViewRender(val context: Context) extends ContextUtils {
             }
           } else {
             paint.setShader(null)
-            paint.setColor(colorPrev)
-            if (!visible_prev) {
+            paint.setColor(colorNext)
+            paintPrev.setColor(colorPrev)
+            if (!visible_next) {
               if(state == Editing) {
                 paint.setAlpha(paint.getAlpha()/2)
               } else {
                 paint.setAlpha(0x00)
+              }
+            }
+            if (!visible_prev) {
+              if(state == Editing) {
+                paintPrev.setAlpha(paintPrev.getAlpha()/2)
+              } else {
+                paintPrev.setAlpha(0x00)
               }
             }
           }
