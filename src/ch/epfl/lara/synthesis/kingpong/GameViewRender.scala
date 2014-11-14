@@ -635,7 +635,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
       render_in_array(0) = x
       render_in_array(1) = y
       mapVectorFromGame(matrix, render_in_array, p)
-      val selectionx = Math.min(Math.max(p.x, button_size), canvas.getWidth() - button_size*3.5f)
+      val selectionx = Math.min(Math.max(p.x, button_size), canvas.getWidth() - button_size*4.5f) // TODO: Do not hardcode the max width. Compute? Rearrange menus?
       val selectiony = Math.min(Math.max(p.y, button_size*1.5f), canvas.getHeight() - button_size*1.5f)
       
       val cx = selectionx

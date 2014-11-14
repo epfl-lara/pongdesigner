@@ -134,7 +134,8 @@
     <string name="change_paint_hint">Drag to select the paint</string>
     <string name="change_nail_hint">Switches between a static and a dynamic shape</string>
     <string name="change_visible_hint">Change the visibility (and physical interaction) of the shape</string>
-    <string name="change_trash_hint">Delete this shape</string>
+    <string name="change_trash_hint">Sets the shape as now deleted</string>
+    <string name="change_fresh_hint">Sets the shape as now created</string>
     <string name="event_collide_hint">Condition that the shapes collide</string>
     <string name="event_overlap_hint">Condition that the shapes overlap without collision</string>
     <string name="event_nocollide_hint">Removes overlapping or collision detection</string>
@@ -176,6 +177,8 @@
     
     <string name="nothing_to_undo">[none]</string>
     <string name="nothing_to_redo">[none]</string>
+    
+    <string name="cancel">Cancel</string>
     
     <string name="select_or_take_picture">Select or take a new picture</string>
     <string name="set_restitution_title">Set restitution</string>

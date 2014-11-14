@@ -5,6 +5,8 @@ import Extractors._
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import scala.language.postfixOps
+import java.util.IdentityHashMap;
+import scala.collection.JavaConversions._
 
 object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val FOR_SYMBOL = "for"
@@ -18,7 +20,7 @@ object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
   override val IF_SYMBOL = "if"
 }
 
-object PrettyPrinterExtendedTypical {
+object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
   object Mappings {
     def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, (Int, Int)](), Map[Int, String]())
   }
@@ -125,21 +127,49 @@ object PrettyPrinterExtendedTypical {
           mComment.map{ case (k, v) => (map(k), v)}
        )
     }
-    // TODO : This function replaces only top-level trees, not low-level ones.
-    def replace(oldTree: Tree, newTree: Tree): Mappings = {
+    // TODO : This function replaces HUGE maps, and multiple times the same expressions. Optimize.
+    // TODO : Perform translation once, and then reuse the transformation. Or recompute it?
+    def replace(oldTree: Tree, newTree: Tree, start: Int, oldEnd: Int, newEnd: Int): Mappings = {
+      
+      val newMPos = if(oldTree.isInstanceOf[Expr] && newTree.isInstanceOf[Expr]) {
+        val mapCache = new IdentityHashMap[Expr, Expr]()
+        mapCache(oldTree.asInstanceOf[Expr]) = newTree.asInstanceOf[Expr];
+        mPos.map{ case (k, v) => (k, { // The most general tree is at the beginning.
+          if(v.isEmpty) v else {
+            v.head match {
+              case head: Expr =>
+		            var found = false
+		            TreeOps.preTraversal(t => found ||= t eq oldTree)(head)
+		            if(!found) v else { // If not found, we do not perform any replacement.
+		              v.map{
+				            case expr: Expr => 
+				              if(mapCache.containsKey(expr)) {
+				                mapCache(expr)
+				              } else {
+				                TreeOps.postMap((exBefore, exAfter) => {
+				                  if(mapCache.containsKey(exBefore)) {
+				                    Some(mapCache(exBefore))
+				                  } else if(exBefore ne exAfter) {
+				                    mapCache(exBefore) = exAfter;
+				                    Some(exAfter)
+				                  } else None
+				                })(expr) 
+				              }
+				            case f => f
+		            } }
+              case _ => v
+            } }
+        })}
+      } else mPos
+      
       this.copy(mObjects: Map[Category, List[(Int, Int)]],
       mPosCategories: Map[Int, List[Category]],
-      mPos.map{ case (k, v) => (k, v.map{ case e if e eq oldTree => newTree case f => f})},
+      newMPos,
       mProperties: Map[Property[_], List[(Int, Int)]],
       mConstantsPos: Map[Int, (Int, Int)],
-      mComment: Map[Int, String])
+      mComment: Map[Int, String]).insertPositions(Math.min(oldEnd, newEnd), newEnd - oldEnd)
     }
   }
-}
-
-trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
-  import PrettyPrinterExtendedTypical._
-  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL, LET_SYMBOL)
   
   /**
    * Class holding the tree being rendered, with the mapping.
@@ -149,83 +179,93 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
    * mOpen: Mapping from any object to its starting position, for temporary purposes
    * mCommentOpen: stack of comments and their starting position
    */
-  object StringMaker { def apply(): StringMaker = StringMaker(new StringBuilder, 0, Mappings(), Map[Any, Int](), Nil)}
-  case class StringMaker(c: StringBuilder, size: Int, map: Mappings, mOpen: Map[Any, Int], mCommentOpen: List[(String, Int)]) {
-    def +(other: String): StringMaker = { // Simple add
-      if(other == "" || other == null) {
-        this
-      } else {
-        StringMaker(c append other, size + other.size, map, mOpen, mCommentOpen)
-      }
-    }
-    /*def +<>(other: String)(implicit s: Tree): StringMaker = {
-      StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
-    }*/
-    def +!(other: String, s: Category): StringMaker = {
-      StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
-    }
-    def +(other: Tree): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
-      print(this, NO_INDENT, other)
-    }
-    def +(other: Category): StringMaker = {
-      if(other.name != null) {
-        +!(other.name, other)
-      } else this
-    }
-    def +(other: Tree, newIndentation: String = NO_INDENT): StringMaker = { // Care about this new expression by storing its position.
-      val result = print(this, newIndentation, other)
-      StringMaker(result.c, result.size, result.map.add(other, size, result.size - 1), result.mOpen, result.mCommentOpen)
-    }
-    def open(implicit start: Tree): StringMaker = {
-      StringMaker(c, size, map, mOpen + (start -> size), mCommentOpen)
-    }
-    def open[T](implicit start: Property[T]): StringMaker = {
-      StringMaker(c, size, map, mOpen + (start -> size), mCommentOpen)
-    }
-    def open(comment: String): StringMaker = {
-      StringMaker(c, size, map, mOpen, (comment -> size)::mCommentOpen)
-    }
-    def +<(other: Tree)(implicit start: Tree): StringMaker = {
-      (this open start) + other
-    }
-    def +<(other: String)(implicit start: Tree): StringMaker = {
-      (this open start) + other
-    }
-    def +<(other: String, start: =>Tree): StringMaker = {
-      +<(other)(start)
-    }
-    def +<(other: String, start: Property[_]): StringMaker = {
-      (this open start) + other
-    }
-    /** Add a comment to the code, to be colored in another color. */
-    def +#<(comment: String): StringMaker = {
-      (this open comment)
-    }
-    def +#> : StringMaker = {
-      val (comment, start) = mCommentOpen.head
-      StringMaker(c, size, map.add(comment, start, size - 1), mOpen, mCommentOpen.tail)
-    }
-    def +>(implicit t: Tree): StringMaker = {
-      val start = mOpen.getOrElse(t, size)
-      StringMaker(c, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen)
-    }
-    def +>(t: Property[_]): StringMaker = {
-      val start = mOpen.getOrElse(t, size)
-      StringMaker(c, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen)
-    }
-    /*def +(other: Rule): StringMaker = {
-      print(this, other)
-    }*/
-    def +(other: Expr): StringMaker = {
-      print(this, other)
-    }
+  object StringMaker { def apply(self: PrettyPrinterExtendedTypical): StringMaker = new StringMaker(new StringBuilder, self, 0, Mappings(), Map[Any, Int](), Nil, true)}
+  
+
+	case class StringMaker(c: StringBuilder, printer: PrettyPrinterExtendedTypical, size: Int, map: Mappings, mOpen: Map[Any, Int], mCommentOpen: List[(String, Int)], displayComments: Boolean) {
+	  def +(other: String): StringMaker = { // Simple add
+	    if(other == "" || other == null) {
+	      this
+	    } else {
+	      StringMaker(c append other, printer, size + other.size, map, mOpen, mCommentOpen, displayComments)
+	    }
+	  }
+	  /*def +<>(other: String)(implicit s: Tree): StringMaker = {
+	    StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
+	  }*/
+	  def +!(other: String, s: Category): StringMaker = {
+	    StringMaker(c append other, printer, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen, displayComments)
+	  }
+	  def +(other: Tree): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
+	    printer.print(this, NO_INDENT, other)
+	  }
+	  def +(other: Category): StringMaker = {
+	    if(other.name != null) {
+	      +!(other.name, other)
+	    } else this
+	  }
+	  def +(other: Tree, newIndentation: String = NO_INDENT): StringMaker = { // Care about this new expression by storing its position.
+	    val result = printer.print(this, newIndentation, other)
+	    StringMaker(result.c, printer, result.size, result.map.add(other, size, result.size - 1), result.mOpen, result.mCommentOpen, displayComments)
+	  }
+	  def open(implicit start: Tree): StringMaker = {
+	    StringMaker(c, printer, size, map, mOpen + (start -> size), mCommentOpen, displayComments)
+	  }
+	  def open[T](implicit start: Property[T]): StringMaker = {
+	    StringMaker(c, printer, size, map, mOpen + (start -> size), mCommentOpen, displayComments)
+	  }
+	  def open(comment: String): StringMaker = {
+	    StringMaker(c, printer, size, map, mOpen, (comment -> size)::mCommentOpen, displayComments)
+	  }
+	  def +<(other: Tree)(implicit start: Tree): StringMaker = {
+	    (this open start) + other
+	  }
+	  def +<(other: String)(implicit start: Tree): StringMaker = {
+	    (this open start) + other
+	  }
+	  def +<(other: String, start: =>Tree): StringMaker = {
+	    +<(other)(start)
+	  }
+	  def +<(other: String, start: Property[_]): StringMaker = {
+	    (this open start) + other
+	  }
+	  /** Add a comment to the code, to be colored in another color. */
+	  def +#<(comment: String): StringMaker = {
+	    (this open comment)
+	  }
+	  def +#> : StringMaker = {
+	    val (comment, start) = mCommentOpen.head
+	    StringMaker(c, printer, size, map.add(comment, start, size - 1), mOpen, mCommentOpen.tail, displayComments)
+	  }
+	  def +>(implicit t: Tree): StringMaker = {
+	    val start = mOpen.getOrElse(t, size)
+	    StringMaker(c, printer, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen, displayComments)
+	  }
+	  def +>(t: Property[_]): StringMaker = {
+	    val start = mOpen.getOrElse(t, size)
+	    StringMaker(c, printer, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen, displayComments)
+	  }
+	}
+
+}
+
+trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self =>
+  import PrettyPrinterExtendedTypical._
+  lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL, LET_SYMBOL)
+  
+  /**
+   * External printing function
+   */
+  def print(s: Traversable[Expr], c: StringMaker = StringMaker(self)): StringMaker = {
+    val res = printIterable[Expr](c, s, print)
+    res
   }
   
   /**
    * External printing function
    */
-  def print(s: Traversable[Expr], c: StringMaker = StringMaker()): StringMaker = {
-    val res = printIterable[Expr](c, s, print)
+  def print(s: Tree): StringMaker = {
+    val res = print(StringMaker(self), s)
     res
   }
   
@@ -233,7 +273,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
    * Print the definition of a set of game objects.
    */
   val accepted_properties = List("x", "y", "radius", "width", "height", "velocity", "color", "visible", "friction", "restitution", "linear-damping", "value", "language", "text", "time")
-  def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker()) = {
+  def printGameObjectDef(objects: Iterable[GameObject], c: StringMaker = StringMaker(self)) = {
     val ending = printIterable[GameObject](c, objects, { case (c, obj) =>
       val name = obj.name.get
       val e = c + "val " + name + "=" + obj.getClass.getName.replaceAll(""".*\.""", "") + LF + "  category=" + obj.category + LF
@@ -287,7 +327,9 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     implicit val s_implicit = s
     //def augment(res: String) = (res, Map[Tree, (Int, Int)]() + (s -> (startIndex, startIndex + res.length)))
     //def mark
+
     s match {
+      case e: Tree with Commented if c.displayComments && e.comment != null => e.comment(c.open(s)) +>
       case i: Identifier => c +< i.toString +>
       case Let(id, expr, body) =>
         c + indent +< s"$LET_SYMBOL " + id + s" $LET_ASSIGN_SYMBOL " + expr + LF + (body, indent) +>

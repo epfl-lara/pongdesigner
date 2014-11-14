@@ -5,6 +5,7 @@ import language.existentials
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.expression.TypeOps._
+import PrettyPrinterExtendedTypical._
 
 object Trees {
   
@@ -21,8 +22,8 @@ object Trees {
   }
   
   sealed trait Commented { self: Tree =>
-    private var _comment: String = ""
-    def setComment(c: String): self.type = { _comment = c; self}
+    private var _comment: StringMaker => StringMaker = null
+    def setComment(c: StringMaker => StringMaker): self.type = { _comment = c; self}
     def comment = _comment
   }
 

@@ -12,6 +12,9 @@ import ch.epfl.lara.synthesis.kingpong.rules.Context
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.common.History
 import scala.collection.mutable.DoubleLinkedList
+import scala.collection.mutable.Undoable
+import scala.collection.mutable.Undoable
+import common._
 
 trait Game extends RulesManager with Context { self => 
   protected implicit val selfImplicit = self
@@ -139,7 +142,7 @@ trait Game extends RulesManager with Context { self =>
     }
   }
 
-  def add(o: GameObject) = {
+  def add(o: GameObject, undoable: Boolean = true) = {
     o.creationTime.setInit(time)
     o.reset(interpreter)
     o.flush()
@@ -149,13 +152,24 @@ trait Game extends RulesManager with Context { self =>
         gravity = Some(o)
       case _ =>
     }
+    if(undoable && isCopyingPlanned() != GameObject.RULE_BASED_PLANNING) {
+      UndoRedo.recordObjectAdd(this, o);
+    }
   }
   
-  def remove(o: GameObject) = {
-    _objects = _objects.filter(g => g == o)
+  def remove(o: GameObject, undoable: Boolean = true) = {
+    o match {
+      case o: Gravity => gravity = None
+      case _ =>
+    }
+    _objects = _objects.filter(g => g != o)
+    if(undoable  && isCopyingPlanned() != GameObject.RULE_BASED_PLANNING) {
+      UndoRedo.recordObjectRemove(this, o);
+    }
   }
   
   def rename(o: GameObject, newName: String) = {
+    UndoRedo.recordObjectRename(this, o, o.name.get, newName);
     o.name set newName
   }
 

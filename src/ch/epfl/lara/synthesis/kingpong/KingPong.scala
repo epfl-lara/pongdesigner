@@ -268,7 +268,7 @@ class KingPong extends Activity
         Log.d("kingpong","onLongPress: " + event.toString)
         val x = event.getX
         val y = event.getY
-        vibrate()
+        //vibrate()
         val closest_pos = retrieveTextPosition(x, y)
         mGameView.codeViewOnLongPress(closest_pos, x, y)
       }
@@ -277,6 +277,7 @@ class KingPong extends Activity
         val x = event.getX
         val y = event.getY
         val closest_pos = retrieveTextPosition(x, y)
+        mGameView.setCodeViewMenuCoords(x, y)
         mCodeView.setSelection(closest_pos)
         mGameView.codeViewMotionEventListener(event)
         true

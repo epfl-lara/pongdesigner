@@ -196,6 +196,48 @@ object TreeOps {
   }
   
   /**
+   * Same transformation, but allows the function to have the previous expression before.
+   */
+  def postMap(f: (Expr, Expr) => Option[Expr])(e: Expr): Expr = {
+    val rec = postMap(f) _
+
+    val newV = e match {
+      case u @ UnaryOperator(e, builder) =>
+        val newE = rec(e)
+
+        if (newE ne e) {
+          builder(newE).copiedFrom(u)
+        } else {
+          u
+        }
+
+      case b @ BinaryOperator(e1, e2, builder) =>
+        val newE1 = rec(e1)
+        val newE2 = rec(e2)
+
+        if ((newE1 ne e1) || (newE2 ne e2)) {
+          builder(newE1, newE2).copiedFrom(b)
+        } else {
+          b
+        }
+
+      case n @ NAryOperator(es, builder) =>
+        val newEs = es.map(rec)
+
+        if ((newEs zip es).exists { case (bef, aft) => aft ne bef }) {
+          builder(newEs).copiedFrom(n)
+        } else {
+          n
+        }
+
+      case t: Terminal =>
+        t
+    }
+
+    f(e, newV).getOrElse(newV)
+  }
+  
+  /**
    * pre-collection of the tree, takes a function which looks for a particular terminal
    *
    * e.g.

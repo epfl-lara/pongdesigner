@@ -37,7 +37,7 @@ object Category {
       recording: Expr = true,
       language: Expr = "en",
       text: Expr = "Custom text",
-      time: Expr = 1,
+      time: Expr = Int.MaxValue,
       displayName: Expr = true)(implicit game: Game): CategoryObject = {
     new CategoryObject(game, name, angle, width, height, cellWidth, cellHeight, radius, value, randomMinValue, randomMaxValue,
         visible, velocity, angularVelocity, density, friction, restitution, linearDamping, fixedRotation,

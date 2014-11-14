@@ -103,7 +103,19 @@ object CodeGenerator extends CodeHandler {
 //      Assign((ObjectLiteral(Rectangle 2), x), Plus(Select(ObjectLiteral(Rectangle 2), x), FloatLiteral(3.3262281)) )
 //    ) ) )
 
-    game.addRule(rule)
+    // If the rule contains objects not planed from the beginning, generalize on them directly.
+    var toGeneralize = Set[GameObject]()
+    TreeOps.preTraversal(expr => {
+      expr match {
+        case ObjectLiteral(o) if o != null && o.plannedFromBeginning != GameObject.PLANNED_SINCE_BEGINNING =>
+          toGeneralize += o;
+        case _ =>
+      }
+    })(rule)
+    val generalizedRule = toGeneralize.foldLeft(rule)((rule, obj) => {
+      TreeOps.generalizeToCategory(rule, obj)
+    })
+    game.addRule(generalizedRule)
     game.validateNextToCurrent()
     //Apply the rule body and stores each next statement to the prev
   }

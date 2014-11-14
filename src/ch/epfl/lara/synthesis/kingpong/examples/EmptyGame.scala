@@ -14,6 +14,6 @@ class EmptyGame extends Game {
   val cat2 = Category("Static objects")()
   val catArray = Category("Array objects")()
 
-  val base = rectangle(cat2)("Base", 0, 8, width = 20, height = 0.5, tpe = BodyType.STATIC)
-  val base2 = rectangle(cat2)("Base2", 0, -8.5, width = 20, height = 0.5, tpe = BodyType.STATIC)
+  val base = rectangle(cat2)("Base", 0, 8.25, width = 20, height = 0.5, tpe = BodyType.STATIC)
+  val base2 = rectangle(cat2)("Base2", 0, -8.25, width = 20, height = 0.5, tpe = BodyType.STATIC)
 }

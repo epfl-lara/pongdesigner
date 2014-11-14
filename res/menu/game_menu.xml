@@ -13,11 +13,11 @@
     <item android:id="@+id/save"
           android:icon="@android:drawable/ic_menu_save"
           android:title="@string/save"
-          android:showAsAction="ifRoom|withText"/>
+          android:showAsAction="ifRoom"/>
     <item android:id="@+id/load"
           android:icon="@drawable/ic_menu_archive"
           android:title="@string/load"
-          android:showAsAction="ifRoom|withText">
+          android:showAsAction="ifRoom">
         <menu>
         <item android:id="@+id/load_external"
           android:title="@string/loadExternal"
@@ -51,15 +51,15 @@
     <item android:id="@+id/exportbutton"
           android:icon="@android:drawable/ic_menu_share"
           android:title="@string/export"
-          android:showAsAction="ifRoom|withText"/>
+          android:showAsAction="ifRoom"/>
     <item android:id="@+id/reset"
           android:icon="@android:drawable/ic_menu_delete"
           android:title="@string/reset"
-          android:showAsAction="ifRoom|withText"/>
+          android:showAsAction="always|collapseActionView"/>
     <item android:id="@+id/optionsButton"
           android:icon="@android:drawable/ic_menu_preferences"
           android:title="@string/options"
-          android:showAsAction="never|withText"/>
+          android:showAsAction="never"/>
     
     
 </menu>

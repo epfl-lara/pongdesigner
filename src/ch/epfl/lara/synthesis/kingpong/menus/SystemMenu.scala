@@ -63,7 +63,7 @@ object CreateButton extends MenuButton {
   
   def icons(gameEngine: GameView, selectedShape: GameObject) = if(hovered) hovered_icons else normal_icons
   
-  def hint_id = R.string.change_trash_hint
+  def hint_id = R.string.change_fresh_hint
 }
 
 /** Sets the time of a SoundTTS.
@@ -156,7 +156,7 @@ object CutButton extends MenuButton {
 	              val pieces = gameEngine.cutRectangle(rect, rows, cols)
 				        rect.deletionTime.setPrevNext(gameEngine.getGame.time)
 				//        gameEngine.getGame.remove(rect)
-				        pieces foreach gameEngine.getGame.add
+				        pieces foreach (gameEngine.getGame.add(_, true))
 				        pieces.foreach(_.creationTime.setPrevNext(gameEngine.getGame.time))
               }
             }, () => {}, "3 x 3")

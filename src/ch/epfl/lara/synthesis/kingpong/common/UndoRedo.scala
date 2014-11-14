@@ -5,6 +5,7 @@ import ch.epfl.lara.synthesis.kingpong.menus._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import scala.collection.mutable.ArrayBuffer
 import ch.epfl.lara.synthesis.kingpong.RulesManager
+import ch.epfl.lara.synthesis.kingpong.Game
 
 /**
  * Actions which can be undone.
@@ -111,6 +112,38 @@ object UndoRedo {
     def comment = "Delete rule"
     def isAboutRule: Boolean = true
   }
+  
+   /**
+    * An addition of an object in the game
+    */
+	  private case class AddObject(game: Game, obj: GameObject) extends Action {
+	    def undo() = { game.remove(obj, undoable = false) }
+	    def redo() = { game.add(obj, undoable = false) }
+	    def comment = "Add "+obj.name.get
+	    def isAboutRule: Boolean = false
+	  }
+	  
+	  /**
+    * A removal of an object in the game
+    */
+	  private case class RemoveObject(game: Game, obj: GameObject) extends Action {
+	    def undo() = { game.add(obj, undoable = false) }
+	    def redo() = { game.remove(obj, undoable = false) }
+	    def comment = "Delete "+obj.name.get 
+	    def isAboutRule: Boolean = false
+	  }
+	  
+	  /**
+    * A renaming of an object in the game
+    */
+	  private case class RenameObject(game: Game, obj: GameObject, oldName: String, newName: String) extends Action {
+	    def undo() = { obj.name set oldName }
+	    def redo() = { obj.name set newName }
+	    def comment = "Rename "+obj.name.get 
+	    def isAboutRule: Boolean = false
+	  }
+	  
+	  
 
   /**
    * Clears the undo/redo buffer
@@ -195,5 +228,14 @@ object UndoRedo {
   }
   def recordRuleRemove(game: RulesManager, index: Int, oldRule: Expr) = {
     addAction(RemoveRule(game, index, oldRule))
+  }
+  def recordObjectAdd(game: Game, obj: GameObject) = {
+    addAction(AddObject(game, obj))
+  }
+  def recordObjectRemove(game: Game, obj: GameObject) = {
+    addAction(RemoveObject(game, obj))
+  }
+  def recordObjectRename(game: Game, obj: GameObject, oldName: String, newName: String) = {
+    addAction(RenameObject(game, obj, oldName: String, newName: String))
   }
 }

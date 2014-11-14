@@ -53,7 +53,7 @@ object Menus {
       val x_final = menu.x_final(cx)
       val y_final = menu.y_final(cy)
       
-      if((x_final >= button_size/2 && x_final <= canvas.getWidth() - button_size/2
+      if((x_final >= button_size/2 && x_final <= canvas.getWidth() - 3*button_size/2
        && y_final >= button_size/2 && y_final <= canvas.getHeight() - button_size/2)
        || i>=36) {
         lm = lm.tail

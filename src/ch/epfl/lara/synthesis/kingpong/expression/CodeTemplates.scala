@@ -6,6 +6,7 @@ import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeOps._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import PrettyPrinterExtendedTypical._
 
 object CodeTemplates extends CodeHandler {
   
@@ -61,7 +62,7 @@ object CodeTemplates extends CodeHandler {
   }
   
   trait TemplateSimple[T <: GameObject] extends Template[T] {
-    def comment(obj: T)(implicit ctx: TemplateContext): String
+    //def comment(obj: T)(implicit ctx: TemplateContext): String
     
     /** 
      * The statement this template can return.
@@ -76,7 +77,7 @@ object CodeTemplates extends CodeHandler {
   }
   
   trait TemplateOther[T <: GameObject, U] extends Template[T] {
-    def comment(obj: T, other: U)(implicit ctx: TemplateContext): String
+    //def comment(obj: T, other: U)(implicit ctx: TemplateContext): String
     
     /** 
      * The statement this template can return.
@@ -108,7 +109,7 @@ object CodeTemplates extends CodeHandler {
    * The two shapes of type U are provided in order and are different.
    */
   trait TemplateOtherPair[T <: GameObject, U] extends Template[T] {
-    def comment(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): String
+    //def comment(obj: T, other1: U, other2: U)(implicit ctx: TemplateContext): String
     
     /** 
      * The statement this template can return.
@@ -352,7 +353,7 @@ object CodeTemplates extends CodeHandler {
 //    }
 //    
 //    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-//      s"If the finger goes upwards, ${obj.name.next} moves horizontally to the right."
+//      s"If the finger goes upwards, " + obj + " moves horizontally to the right"
 //  }
 //  
 //  object TX_DY2 extends TemplateSimple[Movable] with TemplateMovable {
@@ -366,27 +367,29 @@ object CodeTemplates extends CodeHandler {
 //    }
 //    
 //    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-//      s"If the finger goes downwards, ${obj.name.next} moves horizontally to the right."
+//      s"If the finger goes downwards, " + obj + " moves horizontally to the right"
 //  }
   
   object TX_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      val expr = obj.x += obj.x.next - obj.x.get
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val deltax: Expr = obj.x.next - obj.x.get
+      val expr = obj.x += deltax
+      Some(expr.setPriority(5).setComment(comment(obj, deltax)))
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"Relative movement of ${obj.name.next} by (" + (obj.x.next.toInt - obj.x.get.toInt) + ", 0)"
+    def comment(obj: Movable, deltax: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " by (" + deltax + ", 0)"
   }
   
   object TX_absolute extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      val expr = obj.x := obj.x.next
-      Some(expr.setPriority(6).setComment(comment(obj)))
+      val tox: Expr = obj.x.next
+      val expr = obj.x := tox
+      Some(expr.setPriority(6).setComment(comment(obj, tox)))
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"Absolute positionning of ${obj.name.next} to x = ${obj.x.next.toInt}."
+    def comment(obj: Movable, tox: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " to x = " + tox;
   }
   
   object TX_MoveInvertedDX extends TemplateSimple[Movable] with TemplateMovable {
@@ -399,8 +402,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes to the left, ${obj.name.next} moves horizontally to the right."
+    def comment(obj: Movable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " by the opposite of the horizontal finger movement"
   }
   
   object TX_MoveDX_Pos extends TemplateSimple[Movable] with TemplateMovable {
@@ -415,8 +418,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"${obj.name.next} moves horizontally in the same direction as the finger using the object position."
+    def comment(obj: Movable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "If finger on " + obj + ", move " + obj + " by the horizontal finger movement"
   }
   
 //  object TX_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
@@ -430,7 +433,7 @@ object CodeTemplates extends CodeHandler {
 //    }
 //    
 //    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) = 
-//      s"${obj.name.next} aligns its x side to the x side of ${other.name.next}"
+//      s"" + obj + " aligns its x side to the x side of " + other
 //  }
   
   /*object TX_AlignLeft2 extends TemplateOtherRectangular {
@@ -518,7 +521,7 @@ object CodeTemplates extends CodeHandler {
 //    }
 //    
 //    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-//      s"If the finger goes to the left, ${obj.name.next} moves vertically to the bottom."
+//      s"If the finger goes to the left, " + obj + " moves vertically to the bottom"
 //  }
 //  
 //  object TY_DX2 extends TemplateSimple[Movable] with TemplateMovable {
@@ -532,27 +535,29 @@ object CodeTemplates extends CodeHandler {
 //    }
 //    
 //    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-//      s"If the finger goes to the left, ${obj.name.next} moves vertically to the top."
+//      s"If the finger goes to the left, " + obj + " moves vertically to the top"
 //  }
   
   object TY_relative extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      val expr = obj.y += obj.y.next - obj.y.get
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val deltay: Expr = obj.y.next - obj.y.get
+      val expr = obj.y += deltay
+      Some(expr.setPriority(5).setComment(comment(obj, deltay)))
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"Relative movement of ${obj.name.next} by (0, " + (obj.y.next.toInt - obj.y.get.toInt) + ")"
+    def comment(obj: Movable, deltay: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " by (0, " + deltay + ")"
   }
   
   object TY_absolute extends TemplateSimple[Movable] with TemplateMovable {
     def result(obj: Movable)(implicit ctx: TemplateContext) = {
-      val expr = obj.y := obj.y.next
-      Some(expr.setPriority(6).setComment(comment(obj)))
+      val toy: Expr = obj.y.next
+      val expr = obj.y := toy
+      Some(expr.setPriority(6).setComment(comment(obj, toy)))
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"Absolute positionning of ${obj.name.next} to y = " + obj.y.next.toInt
+    def comment(obj: Movable, toy: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " to y = " + toy
   }
   
   object TY_MoveInvertedDY extends TemplateSimple[Movable] with TemplateMovable {
@@ -565,8 +570,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      s"If the finger goes to the bottom, ${obj.name.next} moves vertically to the top."
+    def comment(obj: Movable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " by the opposite of the vertical finger movement"
   }
   
   object TY_MoveDY_Pos extends TemplateSimple[Movable] with TemplateMovable {
@@ -581,8 +586,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: Movable)(implicit ctx: TemplateContext) = 
-      obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the object position."
+    def comment(obj: Movable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+     c + "Move " + obj + " by the vertical finger movement"
   }
   
 //  object TY_AlignLeft1 extends TemplateOtherPositionable[Movable] with TemplateMovable {
@@ -596,7 +601,7 @@ object CodeTemplates extends CodeHandler {
 //    }
 //
 //    def comment(obj: Movable, other: Positionable)(implicit ctx: TemplateContext) =
-//      s"${obj.name.next} aligns its y side to the y side of ${other.name.next}"
+//      s"" + obj + " aligns its y side to the y side of " + other
 //  }
   
   /*object TY_AlignLeft2 extends TemplateOtherRectangular {
@@ -707,8 +712,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: Movable)(implicit ctx: TemplateContext) =
-      obj.name.next + s"${obj.name.next} moves vertically in the same direction as the finger using the force."
+    def comment(obj: Movable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+     c + "Accelerate " + obj + " following the finger"
   }
 
   /** Move the object by a relative number of columns and rows inside a matrix. */
@@ -716,8 +721,8 @@ object CodeTemplates extends CodeHandler {
     def result(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = {
       other.array.containingCell(obj.center.next) match {
         case Some(destCell) if other.contains(obj.center.get) && other != destCell =>
-          val dx = destCell.column - other.column
-          val dy = destCell.row - other.row
+          val dx: Expr = destCell.column - other.column
+          val dy: Expr = destCell.row - other.row
           val expr = whenever(Contains(other, obj)) (
             let("destCell", other.array.cell(other.columnProp + dx, other.rowProp + dy)) { destCellExpr =>
               whenever(notNull(destCellExpr)) (
@@ -726,15 +731,15 @@ object CodeTemplates extends CodeHandler {
               )
             }
           )
-          Some(expr.setPriority(16))
+          Some(expr.setPriority(16).setComment(comment(obj, other.array, dx, dy)))
 
         case _ =>
           None
       }
     }
-
-    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
-      s"Move ${obj.name.get} to another cell relatively to its original position."
+    
+    def comment(obj: Movable, array: Array2D, dx: Expr, dy: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " on array  " + array + " by (" + dx + "," + dy + ")"
   }
 
   /** Move the object to an absolute cell. */
@@ -746,15 +751,15 @@ object CodeTemplates extends CodeHandler {
             obj.x := destCell.x,
             obj.y := destCell.y
           )
-          Some(expr.setPriority(15))
+          Some(expr.setPriority(15).setComment(comment(obj, destCell)))
 
         case _ =>
           None
       }
     }
 
-    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
-      s"Move ${obj.name.get} to another cell relatively to its original position."
+    def comment(obj: Movable, destCell: Cell)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Move " + obj + " to cell " + destCell
   }
   
   object TXY extends TemplateParallel[Movable] with TemplateMovable {
@@ -775,24 +780,26 @@ object CodeTemplates extends CodeHandler {
     
   object TAngleRelative extends TemplateSimple[Rotationable] with TemplateRotationable {
     def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
-      val expr = obj.angle -= shiftAngle(obj)
-      Some(expr.setPriority(8).setComment(comment(obj)))
+      val angle: Expr = shiftAngle(obj)
+      val expr = obj.angle -= angle
+      Some(expr.setPriority(8).setComment(comment(obj, angle)))
     }
     
-    def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
-      s"Change the speed direction of ${obj.name.next} by " + shiftAngle(obj) + "°"
+    def comment(obj: Rotationable, angle: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Change the speed direction of " + obj + " by " + angle + "°"
       
     def shiftAngle(obj: Rotationable) = Math.round((obj.angle.next - obj.angle.get) / 15) * 15
   }
   
   object TAngleAbsolute extends TemplateSimple[Rotationable] with TemplateRotationable {
     def result(obj: Rotationable)(implicit ctx: TemplateContext) = {
-      val expr = obj.angle := roundedAngle(obj)
-      Some(expr.setPriority(9).setComment(comment(obj)))
+      val angle: Expr = roundedAngle(obj)
+      val expr = obj.angle := angle
+      Some(expr.setPriority(9).setComment(comment(obj, angle)))
     }
     
-    def comment(obj: Rotationable)(implicit ctx: TemplateContext) =
-      s"Change the speed direction of ${obj.name.next} to " + roundedAngle(obj) + "°"
+    def comment(obj: Rotationable, angle: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Change the speed direction of " + obj + " to " + angle + "°"
       
     def roundedAngle(obj: Rotationable) = Math.round(obj.angle.next / 15) * 15
   }
@@ -808,15 +815,16 @@ object CodeTemplates extends CodeHandler {
   object TAngleCopy extends TemplateOtherRotationable[Rotationable] with TemplateRotationable {
     def result(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = {
       if (almostTheSame(obj.angle.next, other.angle.get, 15)) {
-        val expr = obj.angle := other.angle
+        val otherangle = other.angle.expr
+        val expr = obj.angle := otherangle
         Some(expr.setPriority(10).setComment(comment(obj, other)))
       } else {
         None
       }
     }
     
-    def comment(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = 
-      s"Copy the speed direction of " + other.name.next + s" to ${obj.name.next}"
+    def comment(obj: Rotationable, other: Rotationable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Copy the speed direction of " + other + " to " + obj
   }
     
   object TAngle extends TemplateParallel[Rotationable] with TemplateRotationable {
@@ -836,12 +844,13 @@ object CodeTemplates extends CodeHandler {
   
   object TVelocityAbsolute extends TemplateSimple[SpeedSettable with Rotationable] with TemplateSpeedable {
     def result(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = {
-      val expr = obj.velocity := obj.velocity.next
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      val newV: Expr = obj.velocity.next
+      val expr = obj.velocity := newV
+      Some(expr.setPriority(10).setComment(comment(obj, newV)))
     }
     
-    def comment(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) =
-       s"Velocity of ${obj.name.next} is set to ${obj.velocity.next}."
+    def comment(obj: SpeedSettable with Rotationable, newV: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Set velocity of " + obj + " to " + newV
   }
   
   
@@ -865,36 +874,36 @@ object CodeTemplates extends CodeHandler {
       //shape.velocity.get != shape.velocity.next && (Math.round(Math.abs(shape.angle.next - shape.angle.get)/15)*15 == 0 || shape.velocity.get == 0 || shape.velocity.next == 0 || shape.velocity.next / shape.velocity.get > 2 || shape.velocity.get / shape.velocity.next > 2)
     }
     def priority(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = 10
-    def comment(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = s"Velocity changes for ${obj.name.next}"
+    def comment(obj: SpeedSettable with Rotationable)(implicit ctx: TemplateContext) = s"Velocity changes for " + obj
     val templates: Traversable[Template[SpeedSettable with Rotationable]] = List(TVelocityAbsolute)
   }
   
   object TColorAbsolute extends TemplateSimple[Colorable] with TemplateColorable {
     def result(obj: Colorable)(implicit ctx: TemplateContext) = {
-      val expr = obj.color := obj.color.next
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      val newColor: Expr = obj.color.next
+      val expr = obj.color := newColor
+      Some(expr.setPriority(10).setComment(comment(obj, newColor)))
     }
     
-    def comment(obj: Colorable)(implicit ctx: TemplateContext) = 
-      s"The color of ${obj.name.next} is set to " + obj.color.next
+    def comment(obj: Colorable, newColor: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + s"Set the color of " + obj + " to " + newColor
   }
   
   object TColor extends TemplateParallel[GameObject] with TemplateObject {
     def condition(obj: GameObject)(implicit ctx: TemplateContext) = obj.color.get != obj.color.next
     def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
     val templates = List(TColorAbsolute)
-
-    // def comment = s"Possible color changes for ${shape.name.next}"
   }
   
   object TVisibleAbsolute extends TemplateSimple[Visiblable] with TemplateVisiblable {
     def result(obj: Visiblable)(implicit ctx: TemplateContext) = {
-      val expr = obj.visible := BooleanLiteral(obj.visible.next)
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      val boolb = BooleanLiteral(obj.visible.next)
+      val expr = obj.visible := boolb
+      Some(expr.setPriority(10).setComment(comment(obj, boolb)))
     }
     
-    def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
-      s"The visibility of ${obj.name.next} is set to " + obj.visible.next
+    def comment(obj: Visiblable, boolb: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Set the visibility of " + obj + " to " + boolb
   }
   
   object TVisibleToggle extends TemplateSimple[Visiblable] with TemplateVisiblable {
@@ -903,14 +912,14 @@ object CodeTemplates extends CodeHandler {
       Some(expr.setPriority(10).setComment(comment(obj)))
     }
     
-    def comment(obj: Visiblable)(implicit ctx: TemplateContext) = 
-      s"The visibility of ${obj.name.next} is toggled"
+    def comment(obj: Visiblable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Toggle the visibility of " + obj
   }
   
   object TVisible extends TemplateParallel[GameObject] with TemplateObject {
     def condition(obj: GameObject)(implicit ctx: TemplateContext) = obj.visible.get != obj.visible.next
     def priority(obj: GameObject)(implicit ctx: TemplateContext) = 10
-    val templates = List(TVisibleAbsolute)
+    val templates = List(TVisibleAbsolute, TVisibleToggle)
     //def comment = s"Possible visibility changes for ${shape.name.next}"
   }
   
@@ -1010,70 +1019,75 @@ object CodeTemplates extends CodeHandler {
   
   object TValueAbsolute extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
-      val expr = obj.value := obj.value.next
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val value: Expr = obj.value.next
+      val expr = obj.value := value
+      Some(expr.setPriority(5).setComment(comment(obj, value)))
     }
     
-    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
-      s"Always change the value of ${obj.name.next} to " + obj.value.next
+    def comment(obj: IntBox, value: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Change the value of " + obj + " to " + value
   }
   
   object TValueRelative extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       val diff = obj.value.next - obj.value.get
       if (Math.abs(diff) > 1) {
-        val expr = obj.value += diff
-        Some(expr.setPriority(6).setComment(comment(obj)))
+        val diffe: Expr = diff;
+        val expr = obj.value += diffe
+        Some(expr.setPriority(6).setComment(comment(obj, diffe)))
       } else {
         None
       }
     }
     
-    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
-      s"Change the value of ${obj.name.next} by " + obj.value.next
+    def comment(obj: IntBox, value: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Change the value of " + obj + " by " + value
   }
   
   object TValueRelative2 extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       val diff = obj.value.next - obj.value.get
       if (Math.abs(diff) == 1) {
+        val diffe: Expr = diff;
         val expr = obj.value += diff
-        Some(expr.setPriority(12).setComment(comment(obj)))
+        Some(expr.setPriority(12).setComment(comment(obj, diffe)))
       } else {
         None
       }
     }
     
-    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
-      s"Adds to ${obj.name.next} the number ${obj.value.next - obj.value.get}"
+    def comment(obj: IntBox, number: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Adds "+ number +" to the value of " + obj
   }
   
   object TValueDiv2 extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       if (obj.value.next == obj.value.get / 2) {
-        val expr = obj.value /= 2
-        Some(expr.setPriority(7).setComment(comment(obj)))
+        val two: Expr = 2
+        val expr = obj.value /= two
+        Some(expr.setPriority(7).setComment(comment(obj, two)))
       } else {
         None
       }
     }
     
-    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
-      s"Divides the value of ${obj.name.next} by 2"
+    def comment(obj: IntBox, two: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Divide the value of " + obj + " by " + two
   }
   
   object TValueTimes extends TemplateSimple[IntBox] with TemplateValue {
     def result(obj: IntBox)(implicit ctx: TemplateContext) = {
       if (obj.value.get != 0 && obj.value.next % obj.value.get == 0 && obj.value.next / obj.value.get != 0) {
-        val expr = obj.value *= obj.value.next / obj.value.get
-        Some(expr.setPriority(8).setComment(comment(obj)))
+        val factor: Expr = obj.value.next / obj.value.get
+        val expr = obj.value *= factor
+        Some(expr.setPriority(8).setComment(comment(obj, factor)))
       } else {
         None
       }
     }
     
-    def comment(obj: IntBox)(implicit ctx: TemplateContext) = 
-      s"Multiplies the value of ${obj.name.next} by " + (obj.value.next / obj.value.get)
+    def comment(obj: IntBox, factor: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Multiply the value of " + obj + " by " + factor
   }
   
   
@@ -1088,14 +1102,15 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
-      s"Copies the value of ${obj.name.next} to ${obj.name.next}"
+    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Copy the value of " + obj + " to " + obj
   }
   
   object TValueCombine1_relativeMultCopy extends TemplateOtherInt[IntBox] with TemplateValue {
     def result(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = {
       if (other.value.get != 0 && obj.value.next % other.value.get == 0 && obj.value.next != other.value.get && obj.value.next != 0) {
-        val expr = obj.value := other.value * (obj.value.next / other.value.get)
+        val factor: Expr = obj.value.next / other.value.get
+        val expr = obj.value := other.value * factor
         val priority = if(obj.value.next / other.value.get == 2) 8 else 10
         Some(expr.setPriority(priority))
       } else {
@@ -1103,8 +1118,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the value of ${other.name.next} multiplied by" + (obj.value.next / other.value.get)
+    def comment(obj: IntBox, other: IntBox, factor: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Stors in " + obj + " the value of " + other + " multiplied by" + factor
   }
   
   object TValueCombine1_relativeModulo extends TemplateOtherInt[IntBox] with TemplateValue {
@@ -1117,8 +1132,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
     
-    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} its previous value modulo ${other.name.next}"
+    def comment(obj: IntBox, other: IntBox)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Store in " + obj + " its previous value modulo " + other
   }
   
   object TValueCombine2_plus extends TemplateOtherPairValue[IntBox] with TemplateValue {
@@ -1126,14 +1141,14 @@ object CodeTemplates extends CodeHandler {
       if (obj.value.next == other1.value.get + other2.value.get) {
         val expr = obj.value := other1.value + other2.value
         val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else 10
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other1, other2)))
       } else {
         None
       }
     }
       
-    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the sum of ${other1.name.next} and ${other2.name}"
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Store in " + obj + " the sum of "+other1+" and "+other2
   }
   
   object TValueCombine2_minus extends TemplateOtherPairValue[IntBox] with TemplateValue {
@@ -1142,14 +1157,14 @@ object CodeTemplates extends CodeHandler {
       if (obj.value.next == other1.value.get - other2.value.get) {
         val expr = obj.value := other1.value - other2.value
         val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else if(obj.value.next == 0) 1 else 10
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other1, other2)))
       } else {
         None
       }
     }
       
-    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the difference between ${other1.name.next} and ${other2.name}"
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Store in " + obj + " the difference between " + other1 + " and " + other2
   }
   
   object TValueCombine2_times extends TemplateOtherPairValue[IntBox] with TemplateValue {
@@ -1158,14 +1173,14 @@ object CodeTemplates extends CodeHandler {
       if (obj.value.next == other1.value.get * other2.value.get) {
         val expr = obj.value := other1.value * other2.value
         val priority = if(other1.value.get == 0 || other2.value.get == 0) 0 else if(other1.value.get == 1 || other2.value.get == 1) 2 else 10
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other1, other2)))
       } else {
         None
       }
     }
       
-    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the multiplication between ${other1.name.next} and ${other2.name}"
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Store in " + obj + " the multiplication between " + other1 + " and " + other2
   }
   
   object TValueCombine2_div extends TemplateOtherPairValue[IntBox] with TemplateValue {
@@ -1174,14 +1189,14 @@ object CodeTemplates extends CodeHandler {
       if (other2.value.get != 0 && obj.value.next == other1.value.get / other2.value.get) {
         val expr = obj.value := other1.value / other2.value
         val priority = if(other2.value.get == 0) 0 else if(other1.value.get % other2.value.get != 0) 2 else 10
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other1, other2)))
       } else {
         None
       }
     }
       
-    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the division between ${other1.name.next} and ${other2.name}"
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Store in " + obj + " the division between " + other1 + " and " + other2
   }
   
   object TValueCombine2_mod extends TemplateOtherPairValue[IntBox] with TemplateValue {
@@ -1190,14 +1205,14 @@ object CodeTemplates extends CodeHandler {
       if (other2.value.get != 0 && obj.value.next == other1.value.get % other2.value.get) {
         val expr = obj.value := other1.value % other2.value
         val priority = if(other2.value.get == 0) 0 else if(other1.value.get % other2.value.get == 0) 2 else 10
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other1, other2)))
       } else {
         None
       }
     }
       
-    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) = 
-      s"Stores in ${obj.name.next} the remainder of the division between ${other1.name.next} and ${other2.name}"
+    def comment(obj: IntBox, other1: IntBox, other2: IntBox)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Store in " + obj + " the remainder of the division between " + other1 + " and " + other2
   }
 
   object TValue extends TemplateParallel[IntBox] with TemplateValue {
@@ -1223,12 +1238,13 @@ object CodeTemplates extends CodeHandler {
   
   object TTextAbsolute extends TemplateSimple[ValueTextable] with TemplateText {
     def result(obj: ValueTextable)(implicit ctx: TemplateContext) = {
-      val expr = obj.value := obj.value.next
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val texpr: Expr = obj.value.next
+      val expr = obj.value := texpr
+      Some(expr.setPriority(5).setComment(comment(obj, texpr)))
     }
     
-    def comment(obj: ValueTextable)(implicit ctx: TemplateContext) = 
-      s"Change the text of ${obj.name.next} to "+'"' + obj.value.next +'"'
+    def comment(obj: ValueTextable, texpr: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Change the text of " + obj + " to \"" + texpr + "\""
   }
   
   object TTextCopy extends TemplateOtherText[ValueTextable] with TemplateText {
@@ -1236,14 +1252,14 @@ object CodeTemplates extends CodeHandler {
       if (obj.value.next == other.value.get) {
         val expr = obj.value := other.value
         val priority = if (other.value.get != "") 10 else 0
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, other)))
       } else {
         None
       }
     }
     
-    def comment(obj: ValueTextable, other: ValueTextable)(implicit ctx: TemplateContext) = 
-      s"Copy the text of " + other.name.next + s" to ${obj.name.next}"
+    def comment(obj: ValueTextable, other: ValueTextable)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Copy the text of " + other + s" to " + obj
   }
   
   object TTextConcatenate extends TemplateOtherPairText[ValueTextable] with TemplateText {
@@ -1251,7 +1267,8 @@ object CodeTemplates extends CodeHandler {
     
     def result(obj: ValueTextable, other1: ValueTextable, other2: ValueTextable)(implicit ctx: TemplateContext) = {
       if (obj.value.next == other1.value.get + other2.value.get) {
-        val expr = obj.value := other1.value + other2.value
+        val texpr: Expr =  other1.value + other2.value
+        val expr = obj.value := texpr
         val priority = if(other1.value.get == "" || other2.value.get == "") 0 else 10
         Some(expr.setPriority(priority))
       } else {
@@ -1259,8 +1276,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
       
-    def comment(obj: ValueTextable, other1: ValueTextable, other2: ValueTextable)(implicit ctx: TemplateContext) = 
-      s"Concatenate the texts of ${other1.name.next} and ${other2.name} to ${obj.name.next}"
+    def comment(obj: ValueTextable, other1: ValueTextable, other2: ValueTextable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Concatenate the texts of " + other1 + " and " + other2 + " to " + obj
   }
   
   // TODO: convert integers to text boxes if detected.
@@ -1278,22 +1295,24 @@ object CodeTemplates extends CodeHandler {
   
   object TTimeAbsolute extends TemplateSimple[Timeable] with TemplateTimeable {
     def result(obj: Timeable)(implicit ctx: TemplateContext) = {
-      val expr = obj.time := obj.time.next
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val texpr: Expr = obj.time.next;
+      val expr = obj.time := texpr
+      Some(expr.setPriority(5).setComment(comment(obj, texpr)))
     }
     
-    def comment(obj: Timeable)(implicit ctx: TemplateContext) = 
-      s"Change the time of ${obj.name.next} to " + obj.time.next
+    def comment(obj: Timeable, texpr: Expr)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Change the time of " + obj.asInstanceOf[GameObject] + " to " + texpr
   }
 
   object TTimeRepeat extends TemplateSimple[Timeable] with TemplateTimeable {
     def result(obj: Timeable)(implicit ctx: TemplateContext) = {
-      val expr = obj.time := obj.time + (obj.time.next - obj.time.get)
-      Some(expr.setPriority(5).setComment(comment(obj)))
+      val texpr: Expr = obj.time + (obj.time.next - obj.time.get)
+      val expr = obj.time := texpr
+      Some(expr.setPriority(5).setComment(comment(obj, texpr)))
     }
     
-    def comment(obj: Timeable)(implicit ctx: TemplateContext) = 
-      s"Change the time of ${obj.name.next} by " + obj.time.next
+    def comment(obj: Timeable, texpr: Expr)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Change the time of " + obj  + " by " + texpr
   }
   
   object TTime extends TemplateParallel[Timeable] with TemplateTimeable {
@@ -1307,37 +1326,40 @@ object CodeTemplates extends CodeHandler {
   
   object TRadiusRelativePlus extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
-      val expr = obj.radius += obj.radius.next - obj.radius.get
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      val constant: Expr = obj.radius.next - obj.radius.get
+      val expr = obj.radius += constant
+      Some(expr.setPriority(10).setComment(comment(obj, constant)))
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-      s"Add a constant to the radius of ${obj.name.next}."
+    def comment(obj: ResizableCircular, constant: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Add " + constant + " to the radius of " + obj.asInstanceOf[GameObject]
   }
   
   object TRadiusRelativeTimes extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
       if (obj.radius.get != 0) {
-        val expr = obj.radius *= obj.radius.next / obj.radius.get
+        val constant: Expr = obj.radius.next / obj.radius.get
+        val expr = obj.radius *= constant
         val priority = if (obj.radius.next / obj.radius.get < 1) 8 else 0
-        Some(expr.setPriority(priority))
+        Some(expr.setPriority(priority).setComment(comment(obj, constant)))
       } else {
         None
       }
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-      s"Multiply the radius of ${obj.name.next} by a factor."
+    def comment(obj: ResizableCircular, constant: Expr)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Multiply the radius of " + obj + " by " + constant
   }
   
   object TRadiusAbsolute extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
     def result(obj: ResizableCircular)(implicit ctx: TemplateContext) = {
-      val expr = obj.radius := obj.radius.next
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      val constant: Expr = obj.radius.next
+      val expr = obj.radius := constant
+      Some(expr.setPriority(10).setComment(comment(obj, constant)))
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-       s"Change the radius of ${obj.name.next} absolutely."
+    def comment(obj: ResizableCircular, constant: Expr)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+       c + "Change the radius of " + obj + " to " + constant
   }
   
   //TODO MIKAEL je ne comprend pas ce template
@@ -1358,8 +1380,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-       s"Augment the radius of ${obj.name.next} when the finger moves to the right."
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+       c + "Augment the radius of " + obj + " when the finger moves to the right"
   }
   
   object TRadiusMoveX_rev extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
@@ -1372,8 +1394,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-       s"Augment the radius of ${obj.name.next} when the finger moves to the left."
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+       c + "Augment the radius of " + obj + " when the finger moves to the left"
   }
   
   object TRadiusMoveY extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
@@ -1386,8 +1408,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-       s"Augment the radius of ${obj.name.next} when the finger moves to the bottom."
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Augment the radius of " + obj + " when the finger moves to the bottom"
   }
   
   object TRadiusMoveY_rev extends TemplateSimple[ResizableCircular] with TemplateResizableCircular {
@@ -1400,8 +1422,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) = 
-       s"Augment the radius of ${obj.name.next} when the finger moves to the top."
+    def comment(obj: ResizableCircular)(implicit ctx: TemplateContext) =  (c: StringMaker) => 
+      c + "Augment the radius of " + obj + " when the finger moves to the top"
   }
   
   object TRadius extends TemplateParallel[Circular] with TemplateCircular {
@@ -1423,12 +1445,13 @@ object CodeTemplates extends CodeHandler {
 
   object TBooleanAbsolute extends TemplateSimple[Booleanable] with TemplateBooleanable {
     def result(obj: Booleanable)(implicit ctx: TemplateContext) = {
+      val constant: Expr = obj.value.next
       val expr = obj.value := obj.value.next
-      Some(expr.setPriority(10).setComment(comment(obj)))
+      Some(expr.setPriority(10).setComment(comment(obj, constant)))
     }
 
-    def comment(obj: Booleanable)(implicit ctx: TemplateContext) =
-      s"Change the boolean value of ${obj.name.next} absolutely."
+    def comment(obj: Booleanable, constant: Expr)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Set the value of " + obj + " to " + constant
   }
 
   object TBooleanToggle extends TemplateSimple[Booleanable] with TemplateBooleanable {
@@ -1437,8 +1460,8 @@ object CodeTemplates extends CodeHandler {
       Some(expr.setPriority(9).setComment(comment(obj)))
     }
 
-    def comment(obj: Booleanable)(implicit ctx: TemplateContext) =
-      s"Toggle the boolean value of ${obj.name.next}."
+    def comment(obj: Booleanable)(implicit ctx: TemplateContext) =(c: StringMaker) => 
+      c + "Toggle the boolean value of " + obj
   }
 
   object TBooleanCopy extends TemplateOtherBooleanable[Booleanable] with TemplateBooleanable {
@@ -1451,8 +1474,8 @@ object CodeTemplates extends CodeHandler {
       }
     }
 
-    def comment(obj: Booleanable, other: Booleanable)(implicit ctx: TemplateContext) =
-      s"Copy the boolean value of ${other.name.next} in ${obj.name.next}."
+    def comment(obj: Booleanable, other: Booleanable)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Copy the boolean value of " + other + " to " + obj
   }
 
 
@@ -1477,14 +1500,14 @@ object CodeTemplates extends CodeHandler {
           obj.x := other.x,
           obj.y := other.y
         )
-        Some(expr.setPriority(14))
+        Some(expr.setPriority(14).setComment(comment(obj, other)))
       } else {
         None
       }
     }
 
-    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
-      s"Snap ${obj.name.get} to the center of the cell using its velocity."
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Snap " + obj + " to the center of cell "+ other
   }
 
   object TArraySnapWithVelocity extends TemplateOtherCell[Movable] with TemplateMovable {
@@ -1493,14 +1516,14 @@ object CodeTemplates extends CodeHandler {
           almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
           almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
         val expr = obj.velocity := (other.center - obj.center) * 10
-        Some(expr.setPriority(13))
+        Some(expr.setPriority(13).setComment(comment(obj, other)))
       } else {
         None
       }
     }
     
-    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = 
-      s"Snap ${obj.name.get} to the center of the cell using its velocity."
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Snap " + obj + " to the center of cell " + other + " by modifying velocity"
   }
 
   object TArraySnapWithForce extends TemplateOtherCell[Movable] with TemplateMovable {
@@ -1509,14 +1532,14 @@ object CodeTemplates extends CodeHandler {
           almostTheSame(obj.x.next, other.x.get, other.width.get / 5) &&
           almostTheSame(obj.y.next, other.y.get, other.height.get / 5)) {
         val expr = ApplyForce(obj, (other.center - obj.center) * 10)
-        Some(expr.setPriority(15))
+        Some(expr.setPriority(15).setComment(comment(obj, other)))
       } else {
         None
       }
     }
 
-    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) =
-      s"Snap ${obj.name.get} to the center of the cell using its velocity."
+    def comment(obj: Movable, other: Cell)(implicit ctx: TemplateContext) = (c: StringMaker) => 
+      c + "Snap " + obj + " to the center of cell " + other + " my modifying acceleration"
   }
   
   object TCreate extends Template[GameObject] {

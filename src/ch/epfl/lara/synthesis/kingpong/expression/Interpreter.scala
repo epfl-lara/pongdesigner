@@ -155,7 +155,7 @@ trait Interpreter {
       val o = eval(obj).as[GameObject]
       val freshName = gctx.getNewName(id.name)
       val fresh = o.getCopy(freshName)
-      gctx.add(fresh)
+      gctx.add(fresh, true)
       
       eval(block)(gctx, rctx.withNewVar(id, fresh.expr))
       UnitLiteral

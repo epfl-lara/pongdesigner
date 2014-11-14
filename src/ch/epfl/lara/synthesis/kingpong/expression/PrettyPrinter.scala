@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.text.style
 
 object PrettyPrinter extends PrettyPrinterTypical {
   override val FOR_SYMBOL = "for"

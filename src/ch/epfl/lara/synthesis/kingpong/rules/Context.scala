@@ -9,7 +9,7 @@ trait Context extends Any {
   def events: Iterable[Event]
   def time: Int  
   def getNewName(s: String): String
-  def add(c: GameObject)
+  def add(c: GameObject, undoable: Boolean)
   
   def addAssignmentHistory(p: Positionable, a: AssignableProperty[_], path: Expr): Unit
   
