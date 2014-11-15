@@ -15,6 +15,7 @@ import android.util.Log
 object Options {
   object Access {
     var showTooltips = true
+    var showContextMenus = true
   }
   object Event {
     var selectableAreaRadius = 30.0f

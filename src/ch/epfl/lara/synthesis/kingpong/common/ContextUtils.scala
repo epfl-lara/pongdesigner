@@ -32,10 +32,21 @@ trait ContextUtils {
   def getArray(id: Int): TypedArray = context.getResources().obtainTypedArray(id)
   object Str{
     var map = MMap[String, Int]()
-    def apply(id: Int) = {
-      val res = context.getResources().getString(id)
-      map += res -> id
-      res
+    var imap = MMap[Int, String]()
+    def apply(id: Int, j: String*) = {
+      val str: String = if(imap.contains(id)) {
+        imap(id)
+      } else {
+        val res = context.getResources().getString(id)
+	      map += res -> id
+	      imap += id -> res
+	      res
+      }
+      if(j.length > 0) {
+        String.format(str, j: _*)
+      } else {
+        str
+      }
     }
     def unapply(str: String): Option[Int] = map.get(str)
   }

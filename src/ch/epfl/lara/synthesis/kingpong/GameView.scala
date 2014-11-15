@@ -43,7 +43,6 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.widget.ExpandableListView
-import android.widget.Toast
 import net.londatiga.android.ActionItem
 import net.londatiga.android.QuickAction
 import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
@@ -95,7 +94,7 @@ trait ActionBarHandler extends common.ContextUtils {
       val bitmaps: MMap[String, Drawable] = MMap()
       bitmaps ++= ((menuLabels ++ submenusLabels.flatten) zip (menuDrawables ++ submenusDrawables.flatten))
       val callbacks: String => Boolean = menuCallBacks
-      actionBarAdapter = new adapters.ActionsAdapter(context, actions, actionsCollection, bitmaps, callbacks)
+      actionBarAdapter = new adapters.ActionsAdapter(context, actionBar, actions, actionsCollection, bitmaps, callbacks)
       actionBar.setAdapter(actionBarAdapter)
 
       actionBar.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
@@ -110,6 +109,27 @@ trait ActionBarHandler extends common.ContextUtils {
   def changeMenuIcon(position: String, drawable: Drawable) = {
     actionBarAdapter.bitmaps(position) = drawable
     actionBarAdapter.notifyDataSetChanged()
+  }
+  
+  def openGroup(position: String) {
+    val groupPos = actionBarAdapter.actions.indexOf(position)
+    if(groupPos != -1) {
+      var flatAbsPosition: Int = 0
+      for(i <- 0 until groupPos) {
+        if(actionBar.isGroupExpanded(i)) {
+          flatAbsPosition += 1 + actionBarAdapter.actionsCollection(actionBarAdapter.actions(i)).length
+        } else {
+          flatAbsPosition += 1
+        }
+      }
+      actionBar.smoothScrollToPosition(flatAbsPosition)
+      actionBar.performItemClick(actionBarAdapter.getGroupView(groupPos, true, null, null), flatAbsPosition, actionBarAdapter.getGroupId(groupPos))
+    }
+  }
+  def closeAllGroups() {
+    for(i <- 0 until actionBarAdapter.getGroupCount()) {
+      actionBar.collapseGroup(i)
+    }
   }
 }
 
@@ -237,14 +257,14 @@ class GameView(val context: Context, attrs: AttributeSet)
             eventEditor.unselect()
             setModeSelectEvents()
             menuSelected = true
-            //mAddRuleButton.text = res.getString(R.string.select_event)
-            Toast.makeText(context, res.getString(R.string.select_event_toast), 2000).show()
+            //mAddRuleButton.text = Str(R.string.select_event)
+            GameEngineEditor.showToolTip(context, Str(R.string.select_event_toast))
           case STATE_SELECTING_EVENTS =>
             if (eventEditor.selectedEventTime.nonEmpty || eventEditor.selectedObjects.nonEmpty) {
-              Toast.makeText(context, res.getString(R.string.select_effects_toast), 2000).show()
+              GameEngineEditor.showToolTip(context, Str(R.string.select_effects_toast))
               setModeSelectEffects()
             } else {
-              Toast.makeText(context, res.getString(R.string.rule_canceled), 2000).show()
+              GameEngineEditor.showToolTip(context, Str(R.string.rule_canceled))
               setModeModifyGame()
             }
           case STATE_SELECTING_EFFECTS =>
@@ -265,9 +285,11 @@ class GameView(val context: Context, attrs: AttributeSet)
         mRuleState match {
           case STATE_MODIFYING_GAME =>
             changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.bm_wrench_selected))
+            GameEngineEditor.showToolTip(this.context, Str(R.string.menu_fix_hint))
             mRuleState = STATE_SELECTING_TO_FIX
           case STATE_SELECTING_TO_FIX =>
             changeMenuIcon(Str(R.string.menu_fix_hint), bitmaps(R.drawable.bm_wrench))
+            GameEngineEditor.showToolTip(this.context, Str(R.string.menu_fix_hint_cancel))
             mRuleState = STATE_MODIFYING_GAME
           case _ => 
         }
@@ -357,7 +379,8 @@ class GameView(val context: Context, attrs: AttributeSet)
     mRuleState = STATE_SELECTING_EFFECTS
     MenuOptions.modify_policy = MenuOptions.MODIFY_NEXT_UNDOABLE
     game.setCopyingPlanned(GameObject.RULE_DEMONSTRATION_PLANNING)
-    Toast.makeText(context, Str(R.string.select_effects_toast), 2000).show()
+    GameEngineEditor.showToolTip(context, Str(R.string.select_effects_toast))
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), drw2(R.drawable.bm_selected, R.drawable.bm_menu_rule_maker))
   }
 
   /** Switches the current mode to selecting events. */
@@ -366,7 +389,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     gameEngineEditors foreach (_.unselect())
     MenuOptions.modify_policy = MenuOptions.MODIFY_CURRENT_UNDOABLE // irrelevant
     game.setCopyingPlanned(GameObject.RULE_DEMONSTRATION_PLANNING) // irrelevant
-    changeMenuIcon(Str(R.string.menu_add_constraint_hint), bitmaps(R.drawable.bm_menu_rule_maker))
+    changeMenuIcon(Str(R.string.menu_add_constraint_hint), drw2(R.drawable.bm_selected, R.drawable.bm_menu_rule_editor_event_ok))
   }
 
   /** Switches the current mode to the global modification of the game */
@@ -499,6 +522,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   var cv_treeContainingConst: Option[Expr] = None
   var cv_indexOfTree: Option[Int] = None
   var cv_oldValue = 0f
+  var cv_startValue = 0f
   def codeViewMotionEventListener(event: MotionEvent): Boolean = {
     (cv_constToModifyInitial, cv_treeContainingConst, cv_indexOfTree) match {
       case (/*Some(const),*/ Some(init), Some(tree), Some(index)) =>
@@ -513,6 +537,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               case NumericLiteral(number_value) => number_value
               case _ => 0
             }
+            cv_startValue = cv_oldValue
             true
 
           // A finger moves
@@ -523,7 +548,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 
             init match {
               case IntegerLiteral(initial_value) =>
-                val newValue = Math.round(initial_value + Math.abs(dx) * dx / (48 * 48f)).toInt
+                val newValue = Math.round(cv_startValue + Math.abs(dx) * dx / (48 * 48f)).toInt
                 if (newValue != cv_oldValue) {
                   val newConst = IntegerLiteral(newValue)
                   cv_constToModifyInitial = Some(newConst)
@@ -538,7 +563,7 @@ class GameView(val context: Context, attrs: AttributeSet)
                   }
                 }
               case FloatLiteral(initial_value) =>
-                val newValue = (initial_value + (Math.signum(dx)*0.001f*Math.pow(2, Math.abs(dx)/48)/Math.E)).toFloat
+                val newValue = (cv_startValue + (Math.signum(dx)*0.001f*Math.pow(2, Math.abs(dx)/48)/Math.E)).toFloat
                 if (newValue != cv_oldValue) {
                   val newConst = FloatLiteral(newValue)
                   cv_constToModifyInitial = Some(newConst)
@@ -550,6 +575,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 		                  cv_treeContainingConst = Some(newTree)
 		                  game.setRuleByIndex(newTree, index) // TODO: Problem if we want to recover the rule by content.
 	                  case _ =>
+	                    Log.d("GameView", "A problem while finding the new tree")
                   }
                 }
               case _ =>
@@ -629,7 +655,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 	          val isGeneralizable: Boolean = true // If we can generalize the rule.
 	          
 	          val actionItems = ListBuffer[(String, Drawable, () => Unit)]()
-	          if(isGeneralizable) actionItems += ((str(R.string.generalize_global, name), bitmaps(R.drawable.bm_ok), { () =>
+	          if(isGeneralizable) actionItems += ((Str(R.string.generalize_global, name), bitmaps(R.drawable.menu_ok), { () =>
 	            // Invoke global
 	            val index = game.getIndexByRule(rule) 
 	            if(index != -1) {
@@ -641,11 +667,11 @@ class GameView(val context: Context, attrs: AttributeSet)
 	          }))
 	          
 	          if(actionItems.length > 0) {
-	            actionItems += ((str(R.string.cancel), bitmaps(R.drawable.bm_not_ok), () => {}));
+	            actionItems += ((Str(R.string.cancel), bitmaps(R.drawable.menu_cancel), () => {}));
 	            showPossibilities(actionItems, codeViewMenuCoords);
 	          }
 	          
-	          /*CustomDialogs.launchChoiceDialog(getContext(), str(R.string.generalize_title, name), actionItems.toList.map(_._1), { (i: Int) =>
+	          /*CustomDialogs.launchChoiceDialog(getContext(), Str(R.string.generalize_title, name), actionItems.toList.map(_._1), { (i: Int) =>
 				      actionItems(i)._2.apply()
 				    }, { () => })*/
 	        case _ =>
@@ -801,6 +827,21 @@ class GameView(val context: Context, attrs: AttributeSet)
     MenuOptions.modify_policy = MenuOptions.MODIFY_BOTH_UNDOABLE
     game.setCopyingPlanned(GameObject.PLANNED_SINCE_BEGINNING)
     gameViewRender.stopRecording(game)
+    
+    if(Options.Access.showContextMenus) {
+	    val actionItems = new ListBuffer[(String, Drawable, () => Unit)]()
+	    actionItems += ((Str(R.string.letmeedit), drw(R.drawable.menu_add_object), () => {} ))
+	    actionItems += ((Str(R.string.letmerestart), drw(R.drawable.back), () => {
+	      this.backToBeginning()
+	    }))
+	    actionItems += ((Str(R.string.letmecreaterule), drw(R.drawable.bm_menu_rule_editor), () => {
+	      this.openGroup(Str(R.string.menu_add_constraint_hint))
+	    }))
+	    actionItems += ((Str(R.string.letmefixwrong), drw(R.drawable.bm_wrench), () => {
+	      this.openGroup(Str(R.string.menu_fix_hint))
+	    }))
+	    showPossibilities(actionItems, Vec2(0, 0))
+    }
   }
 
   /** Change the current state to Running. */
@@ -1103,6 +1144,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                         eventEditor.selectedEventTime = eventListSelected
                         eventEditor.selectedObjects = objectListSelected
                         setObjsToHighlight(objectListSelected.toSet)
+                        if(Options.Access.showContextMenus) {
+                          showEventMenu()
+                        }
                     }
                 }
               case STATE_SELECTING_TO_FIX =>
@@ -1122,6 +1166,21 @@ class GameView(val context: Context, attrs: AttributeSet)
       //super.onFingerUp(pos)
     }
   }
+  
+  def showEventMenu() {
+    val allObjectEvents = ("" /: (eventEditor.selectedEventTime.map(e => EventToString(e._1)) ++ eventEditor.selectedObjects.map(obj => EventObjectToString(obj))))(_ + _)
+    
+    val actionItems = new ListBuffer[(String, Drawable, () => Unit)]()
+    actionItems += ((Str(R.string.eventmenu_demonstraterule, allObjectEvents), drw(R.drawable.bm_menu_rule_editor_event_ok), () => {
+      this.openGroup(Str(R.string.menu_add_constraint_hint))
+    } ))
+    actionItems += ((Str(R.string.eventmenu_addeventobject), drw(R.drawable.bm_menu_rule_editor), () => {} ))
+    actionItems += ((Str(R.string.eventmenu_cancel), drw(R.drawable.menu_cancel), () => {
+      GameEngineEditor.showToolTip(context, Str(R.string.rule_canceled))
+      setModeModifyGame()
+    }))
+    showPossibilities(actionItems, Vec2(0, 0))
+  }
 
   /**
    * Type of actions when selecting/deselecting events or objects.
@@ -1132,7 +1191,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     implicit def convert(i: ActionType): Int = i.id
   }
   import ActionType._
-  def str(i: Int, j: String*) = String.format(res.getString(i), j: _*)
+  
   lazy val drw = (i: Int) => res.getDrawable(i)
   lazy val drw2 = (i: Int, j: Int) => {
     val d1 = res.getDrawable(i)
@@ -1145,7 +1204,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     d2.draw(canvas)
     new BitmapDrawable(getResources(), big)
   }
-  //lazy val continueItem = new ActionItem(ID_CONTINUE, str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
+  //lazy val continueItem = new ActionItem(ID_CONTINUE, Str(R.string.tutorial_continue), drw(R.drawable.menu_right_arrow))
 
   /**
    * Displays a tooltip to select the right parexpr if multiple executed at this time.
@@ -1244,6 +1303,27 @@ class GameView(val context: Context, attrs: AttributeSet)
 
     mQuickAction.show(rectd, this)
   }
+  
+  /** Converts an event to a string */
+  def EventToString(event: Event): String = {
+    event match {
+        case BeginContact(contact, objectA, objectB) =>
+          Str(R.string.when_collision, objectA.name.get, objectB.name.get)
+        case FingerUp(pos, objs) =>
+          ("" /: (for (obj <- objs) yield {Str(R.string.when_finger_up, obj.name.get)}))(_ + _)
+        case FingerMove(from, to, objs) => // Display only the relevant one.
+          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_move, obj.name.get)}))(_ + _)
+        case FingerDown(pos, objs) =>
+          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_down, obj.name.get)}))(_ + _)
+        case _ => // TODO : Add more actions to disambiguate (position, objects)
+          "<unknown event>"
+      }
+  }
+  
+  /** Converts an object for event to a string */
+  def EventObjectToString(o: GameObject): String = {
+    Str(R.string.when_object, o.name.get)
+  }
 
   /**
    * Displays a tooltip if there are multiple items to check.
@@ -1260,9 +1340,9 @@ class GameView(val context: Context, attrs: AttributeSet)
     // TODO : Add object graphics
     for (o <- objectList) {
       if (currentObjectSelection contains o) {
-        actionItems += ((str(R.string.when_object, o.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.menu_add_object), Right(o)))
+        actionItems += ((EventObjectToString(o), drw2(R.drawable.event_selected_disambiguate, R.drawable.menu_add_object), Right(o)))
       } else {
-        actionItems += ((str(R.string.when_object, o.name.get), drw(R.drawable.menu_add_object), Right(o)))
+        actionItems += ((EventObjectToString(o), drw(R.drawable.menu_add_object), Right(o)))
       }
     }
     for (e @ (event, time) <- eventList) {
@@ -1270,9 +1350,9 @@ class GameView(val context: Context, attrs: AttributeSet)
         case BeginContact(contact, objectA, objectB) =>
           if (!contactTaken((objectA.name.get, objectB.name.get))) {
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_collision_effect), Left(e)))
+              actionItems += ((EventToString(event), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_collision_effect), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_collision, objectA.name.get, objectB.name.get), drw(R.drawable.bm_collision_effect), Left(e)))
+              actionItems += ((EventToString(event), drw(R.drawable.bm_collision_effect), Left(e)))
             }
             contactTaken += ((objectA.name.get, objectB.name.get))
           }
@@ -1281,9 +1361,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           for (obj <- objs) {
             val e = (FingerUp(pos, Set(obj)), time)
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerup_button), Left(e)))
+              actionItems += ((EventToString(e._1), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerup_button), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_finger_up, obj.name.get), drw(R.drawable.bm_fingerup_button), Left(e)))
+              actionItems += ((EventToString(e._1), drw(R.drawable.bm_fingerup_button), Left(e)))
             }
           }
         case FingerMove(_, _, _) => // Display only the relevant one.
@@ -1295,9 +1375,9 @@ class GameView(val context: Context, attrs: AttributeSet)
                 for (obj <- objs) {
                   val e = (FingerMove(from, to, Set(obj)), time)
                   if (currentEventSelection contains e) {
-                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingermove_button), Left(e)))
+                    actionItems += ((EventToString(e._1), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingermove_button), Left(e)))
                   } else {
-                    actionItems += ((str(R.string.when_finger_move, obj.name.get), drw(R.drawable.bm_fingermove_button), Left(e)))
+                    actionItems += ((EventToString(e._1), drw(R.drawable.bm_fingermove_button), Left(e)))
                   }
                 }
               }
@@ -1307,9 +1387,9 @@ class GameView(val context: Context, attrs: AttributeSet)
           for (obj <- objs) {
             val e = (FingerDown(pos, Set(obj)), time)
             if (currentEventSelection contains e) {
-              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerdown_button), Left(e)))
+              actionItems += ((EventToString(e._1), drw2(R.drawable.event_selected_disambiguate, R.drawable.bm_fingerdown_button), Left(e)))
             } else {
-              actionItems += ((str(R.string.when_finger_down, obj.name.get), drw(R.drawable.bm_fingerdown_button), Left(e)))
+              actionItems += ((EventToString(e._1), drw(R.drawable.bm_fingerdown_button), Left(e)))
             }
           }
         case _ => // TODO : Add more actions to disambiguate (position, objects)
@@ -1508,7 +1588,10 @@ class GameView(val context: Context, attrs: AttributeSet)
     val newEnd = end + newLength - oldLength
     text = colorCodeView(text, all.map, Nil)
     cv_mapping = cv_mapping.replace(oldConst, newConst, start, end, newEnd)
-    codeview.getText().replace(start, end, text)
+    // Remove any listeners from the codeView.
+    codeview.deactivatingSelectionChangedListener(() => {
+      codeview.getText().replace(start, end, text)
+    })
     newEnd
   }
 

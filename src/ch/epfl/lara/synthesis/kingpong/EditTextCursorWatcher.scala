@@ -22,4 +22,11 @@ class EditTextCursorWatcher(context: Context, attrs: AttributeSet,
    override protected def onSelectionChanged(selStart: Int, selEnd: Int) { 
      if(mSelectionChangedListener!=null) mSelectionChangedListener(selStart, selEnd)
    }
+   private var mTmp: (Int, Int) => Unit = null
+   def deactivatingSelectionChangedListener(fn: () => Unit) {
+     mTmp = mSelectionChangedListener
+     mSelectionChangedListener = null
+     fn()
+     mSelectionChangedListener = mTmp
+   }
 }

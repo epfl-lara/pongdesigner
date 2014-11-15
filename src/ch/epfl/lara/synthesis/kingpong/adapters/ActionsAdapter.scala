@@ -17,10 +17,11 @@ import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.BaseExpandableListAdapter
 import android.widget.ImageView
+import android.widget.ExpandableListView
 import android.widget.TextView;
 import android.graphics.drawable.Drawable
 
-class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[String]], val bitmaps: MMap[String, Drawable], val callbacks: String => Boolean) extends BaseExpandableListAdapter with Implicits {
+class ActionsAdapter(val context: Context, val listView: ExpandableListView, val actions: IndexedSeq[String], val actionsCollection: Map[String, IndexedSeq[String]], val bitmaps: MMap[String, Drawable], val callbacks: String => Boolean) extends BaseExpandableListAdapter with Implicits {
 
   def getChild(groupPosition: Int, childPosition: Int) = {
     actionsCollection(actions(groupPosition))(childPosition);
@@ -92,5 +93,16 @@ class ActionsAdapter(val context: Context, val actions: IndexedSeq[String], val 
 
   def isChildSelectable(groupPosition: Int, childPosition: Int): Boolean = {
     true
+  }
+  var lastExpandedGroupPosition = -1
+  override def onGroupExpanded(groupPosition: Int) {
+      //collapse the old expanded group, if not the same
+      //as new group to expand
+      if(groupPosition != lastExpandedGroupPosition && lastExpandedGroupPosition != -1){
+          listView.collapseGroup(lastExpandedGroupPosition);
+      }
+
+      super.onGroupExpanded(groupPosition);           
+      lastExpandedGroupPosition = groupPosition;
   }
 }

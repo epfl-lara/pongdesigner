@@ -148,7 +148,7 @@ object CutButton extends MenuButton {
   override def onFingerUp(gameEngine: GameView, selectedShape: GameObject, x: Float, y: Float) = {
     selectedShape match {
       case rect: Rectangle =>
-        CustomDialogs.launchChoiceDialogWithCustomchoice(gameEngine.context, gameEngine.str(R.string.shredding_title, selectedShape.name.get), R.array.shredding_values,
+        CustomDialogs.launchChoiceDialogWithCustomchoice(gameEngine.context, gameEngine.Str(R.string.shredding_title, selectedShape.name.get), R.array.shredding_values,
             { (res: String) =>
               val rows = res intOrElse 1
               val cols = res int2OrElse 1

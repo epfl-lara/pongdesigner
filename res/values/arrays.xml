@@ -15,7 +15,7 @@
     </array>
     <array name="menu_arrays_hint">
         <item>@string/menu_add_shape_hint</item>
-        <item>@string/menu_add_category_hint</item>
+        <item>@string/menu_add_force_hint</item>
         <item>@string/menu_add_constraint_hint</item>
         <item>@string/menu_fix_hint</item>
     </array>

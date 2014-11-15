@@ -114,27 +114,36 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
         case (p, l) => l flatMap { case (start, end) => (start to end) map { case i => i -> p }}
       }
     }
-    def insertPositions(start: Int, amount: Int): Mappings = {
+    def insertPositions(start: Int, oldEnd: Int, newEnd: Int): Mappings = {
+      if(oldEnd == newEnd) return this;
+      val amount = newEnd - oldEnd
+      val lowerBound = Math.min(newEnd, oldEnd)
+      val isLower = newEnd < oldEnd;
       @inline def map(i: Int): Int = {
-        if(i >= start) i + amount else i
+        if(i >= oldEnd) i + amount else if(isLower && newEnd <= i) newEnd else i
+      }
+      val newMPosRaw = mPos.map{ case (k, v) => (map(k), v)}
+      val newMPos = if(!isLower && mPos.containsKey(oldEnd)) {
+        val newElem = mPos(oldEnd)
+        newMPosRaw ++ (for(i <- (oldEnd until newEnd)) yield (i -> newElem))
+      } else {
+        newMPosRaw
       }
       this.copy(
           mObjects.mapValues(_.map{case (i,j) => (map(i), map(j))}).view.force,
           mPosCategories.map{ case (k, v) => (map(k), v)},
-          mPos.map{ case (k, v) => (map(k), v)},
+          newMPos,
           mProperties.mapValues(_.map{case (i,j) => (map(i), map(j))}).view.force,
           mConstantsPos.map{ case (k, (v1, v2)) => (map(k), (map(v1), map(v2)))},
           mComment.map{ case (k, v) => (map(k), v)}
        )
     }
-    // TODO : This function replaces HUGE maps, and multiple times the same expressions. Optimize.
-    // TODO : Perform translation once, and then reuse the transformation. Or recompute it?
     def replace(oldTree: Tree, newTree: Tree, start: Int, oldEnd: Int, newEnd: Int): Mappings = {
       
       val newMPos = if(oldTree.isInstanceOf[Expr] && newTree.isInstanceOf[Expr]) {
         val mapCache = new IdentityHashMap[Expr, Expr]()
         mapCache(oldTree.asInstanceOf[Expr]) = newTree.asInstanceOf[Expr];
-        mPos.map{ case (k, v) => (k, { // The most general tree is at the beginning.
+        val res = mPos.map{ case (k, v) => (k, { // The most general tree is at the beginning.
           if(v.isEmpty) v else {
             v.head match {
               case head: Expr =>
@@ -160,6 +169,7 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
               case _ => v
             } }
         })}
+        res
       } else mPos
       
       this.copy(mObjects: Map[Category, List[(Int, Int)]],
@@ -167,7 +177,7 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
       newMPos,
       mProperties: Map[Property[_], List[(Int, Int)]],
       mConstantsPos: Map[Int, (Int, Int)],
-      mComment: Map[Int, String]).insertPositions(Math.min(oldEnd, newEnd), newEnd - oldEnd)
+      mComment: Map[Int, String]).insertPositions(start, oldEnd, newEnd)
     }
   }
   

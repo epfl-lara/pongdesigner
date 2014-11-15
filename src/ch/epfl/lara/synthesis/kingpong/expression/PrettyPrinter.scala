@@ -8,6 +8,7 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style
+import ch.epfl.lara.synthesis.kingpong.rules.Events._
 
 object PrettyPrinter extends PrettyPrinterTypical {
   override val FOR_SYMBOL = "for"
@@ -89,8 +90,7 @@ trait PrettyPrinterTypical extends CommonPrettyPrintingConstants {
    */
   def print(s: Expr): CharSequence = {
     print(NO_INDENT, s)
-  }.makeStyle
-  
+  }.makeStyle  
 
   private def print(indent: String, s: Tree): CharSequence = s match {
     case ParExpr(Nil) => ""

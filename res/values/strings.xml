@@ -99,8 +99,10 @@
 
     <string name="menu_add_shape_hint">Adds a shape to the game</string>
     <string name="menu_add_constraint_hint">Add or edit a constraint/rule to the game</string>
-    <string name="menu_add_category_hint">Add or modify a category to the game</string>
+    <string name="menu_add_force_hint">Add or modify force field</string>
     <string name="menu_fix_hint">Fix a rule which went wrong</string>
+    
+    <string name="menu_fix_hint_cancel">Cancelled rule fix</string>
 
     <string name="add_rectangle_hint">Adds a rectangle to the game</string>
     <string name="add_circle_hint">Adds a circle to the game</string>
@@ -179,6 +181,15 @@
     <string name="nothing_to_redo">[none]</string>
     
     <string name="cancel">Cancel</string>
+    
+    <string name="letmeedit">Temporary edit the game at the given time (default)</string>
+    <string name="letmerestart">Edit the start position of the game</string>
+    <string name="letmecreaterule">Add a global rule</string>
+    <string name="letmefixwrong">Fix something wrong</string>
+    
+    <string name="eventmenu_demonstraterule">Demonstrate the effects of %1$s.</string>
+    <string name="eventmenu_addeventobject">Add other objects and events participating to the rule trigger (default)</string>
+    <string name="eventmenu_cancel">Cancel rule creation</string>
     
     <string name="select_or_take_picture">Select or take a new picture</string>
     <string name="set_restitution_title">Set restitution</string>
