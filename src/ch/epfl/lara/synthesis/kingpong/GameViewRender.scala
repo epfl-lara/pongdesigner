@@ -875,8 +875,11 @@ class GameViewRender(val context: Context) extends ContextUtils {
 	        val record = new MediaRecorder
 					record.setAudioSource(0 /*MediaRecorder.AudioSource.MIC*/)  // Default = microphone
 					record.setOutputFormat(2/*MediaRecorder.OutputFormat.MPEG_4*/) // mpg4
-					val sampleDir = Environment.getExternalStorageDirectory();
-			    val audiofile = File.createTempFile(soundRecorder.name.get + soundRecorder.numRecords, ".mp4", sampleDir);
+					//val sampleDir = Environment.getExternalStorageDirectory();
+	        val filename = soundRecorder.name.get + soundRecorder.numRecords;
+	        val filePath = context.getFilesDir().getPath().toString() + "/" + filename + ".mp4";
+	        
+			    val audiofile = new File(filePath);
 			    val uri = Uri.fromFile(audiofile)
 					record.setOutputFile(audiofile.getAbsolutePath())
 					record.setAudioEncoder(1/*MediaRecorder.AudioEncoder.AMR_NB*/) // AMR_NB

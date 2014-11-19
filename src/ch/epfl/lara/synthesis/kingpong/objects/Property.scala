@@ -151,7 +151,7 @@ trait SnappableProperty[T] extends Snap { self: RWProperty[T] =>
 class EphemeralProperty[T: PongType](val name: String, val parent: GameObject) 
   extends RWProperty[T]
   with SnappableProperty[T] { self =>
-    
+  parent.addEphemeralProperty(this)
   private var value: T = _
   def get: T = value
   def next: T = value

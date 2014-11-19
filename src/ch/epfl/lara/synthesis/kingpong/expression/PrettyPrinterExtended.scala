@@ -2,22 +2,24 @@ package ch.epfl.lara.synthesis.kingpong.expression
 
 import Trees._
 import Extractors._
+import ch.epfl.lara.synthesis.kingpong.R
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.common.Implicits._
 import scala.language.postfixOps
 import java.util.IdentityHashMap;
 import scala.collection.JavaConversions._
+import scala.util.matching._
 
-object PrettyPrinterExtended extends PrettyPrinterExtendedTypical {
-  override val FOR_SYMBOL = "for"
-  override val IN_SYMBOL = "in"
-  override val FINGER_MOVE_SYMBOL = "on movedOn"
-  override val FINGER_DOWN_SYMBOL = "on downOn"
-  override val FINGER_UP_SYMBOL = "on upOn"
-  override val COLLIDES_SYMBOL = "collides"
-  override val COLLIDING_SYMBOL = "colliding"
-  override val OUTOFCOLLISION_SYMBOL = "not colliding anymore"
-  override val IF_SYMBOL = "if"
+case class PrettyPrinterExtended(ctx: Int => String) extends PrettyPrinterExtendedTypical {
+  override val FOR_SYMBOL = ctx(R.string.FOR_SYMBOL)
+  override val IN_SYMBOL = ctx(R.string.IN_SYMBOL)
+  override val FINGER_MOVE_SYMBOL = ctx(R.string.FINGER_MOVE_SYMBOL)
+  override val FINGER_DOWN_SYMBOL = ctx(R.string.FINGER_DOWN_SYMBOL)
+  override val FINGER_UP_SYMBOL = ctx(R.string.FINGER_UP_SYMBOL)
+  override val COLLIDES_SYMBOL = ctx(R.string.COLLIDES_SYMBOL)
+  override val COLLIDING_SYMBOL = ctx(R.string.COLLIDING_SYMBOL)
+  override val OUTOFCOLLISION_SYMBOL = ctx(R.string.OUTOFCOLLISION_SYMBOL)
+  override val IF_SYMBOL = ctx(R.string.IF_SYMBOL)
 }
 
 object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
@@ -191,7 +193,9 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
    */
   object StringMaker { def apply(self: PrettyPrinterExtendedTypical): StringMaker = new StringMaker(new StringBuilder, self, 0, Mappings(), Map[Any, Int](), Nil, true)}
   
-
+  val FormatReg = new Regex("(?:%(\\d{1,2}))?\\$s")
+  val splitReg = new Regex("(?<=(%\\d{1,2})?\\$s)|(%\\d{1,2})?\\$s")
+  
 	case class StringMaker(c: StringBuilder, printer: PrettyPrinterExtendedTypical, size: Int, map: Mappings, mOpen: Map[Any, Int], mCommentOpen: List[(String, Int)], displayComments: Boolean) {
 	  def +(other: String): StringMaker = { // Simple add
 	    if(other == "" || other == null) {
@@ -255,11 +259,52 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
 	    val start = mOpen.getOrElse(t, size)
 	    StringMaker(c, printer, size, map.add(t, start, size - 1), mOpen - t, mCommentOpen, displayComments)
 	  }
+	  /**
+	   * Formats a given template with the given arguments Possible formatting are:
+	   * $s : index-based
+	   * %d$s where d is a number : Position-based.
+	   */
+	  def format(template: String, arguments: Any*): StringMaker = {
+	    val itemsSep = 0::splitReg.findAllMatchIn(template).map(m => m.start).toList;
+	    val items = (itemsSep.foldRight((template, Nil: List[String])){case (itemSep, (template, list)) => {
+	      val (newTemplate, newItem) = template.splitAt(itemSep)
+	      (newTemplate, newItem::list)
+	    }})._2
+	    val args = arguments.toArray
+	    var currentIndex = 0
+	    (this /: items)((c, item) => {
+	      item match {
+	        case FormatReg(sd) =>
+	          val d = if(sd == "" || sd == null) {
+	            val res = currentIndex
+	            currentIndex+=1;
+	            res
+	          } else {
+	            currentIndex+=1;
+	            sd.toInt - 1
+	          }
+	          if(d < args.length) {
+	            args(d) match {
+	              case o: GameObject => c + ObjectLiteral(o)
+	              case t: Tree => c + t
+	              case ct: Category => c + ct
+	              case s: String => c + s
+	              case r => c + r.toString()
+	            }
+	          } else {
+	            c
+	          }
+	        case s: String => c + s
+	      }
+	    })
+	  }
 	}
 
 }
 
 trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self =>
+  def ctx: Int => String
+  
   import PrettyPrinterExtendedTypical._
   lazy val LANGUAGE_SYMBOLS = List(IF_SYMBOL, FOR_SYMBOL, IN_SYMBOL, COLLIDES_SYMBOL, FINGER_DOWN_SYMBOL, FINGER_MOVE_SYMBOL, FINGER_UP_SYMBOL, LET_SYMBOL)
   
@@ -347,7 +392,7 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self 
       case MethodCall(method, Nil) => c +< method + "()" +>
       case MethodCall(method, args) => ((c +< method + "(" + args.head) /: args.tail) { case (c, arg) => c + ", " +  arg } + ")" +>
       case ParExpr(Nil) => c
-      case ParExpr(a::l) => c +< a + ("//" + l.size +" more") +>
+      case ParExpr(a::l) => c +< a + ("//" + l.size + ctx(R.string.parexpr_more)) +>
       case TupleSelect(expr, index) =>
         //TODO this only applies to pair of coordinates...
         c + indent + expr + "." + (if(index == 1) "x" else "y")
@@ -355,11 +400,11 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self 
       case Foreach(cat, id, body) =>
         c + indent +< s"$FOR_SYMBOL " +! (id.toString, cat) + s" $IN_SYMBOL " + cat + s":$LF" + body +>
       case Forall(category, id, body) =>
-        c +! (category.name, category) +< ".forall{" + id + " => " + body + "}" +>
+        c +! (category.name, category) +< ("."+ctx(R.string.tree_forall)+"{") + id + " => " + body + "}" +>
       case Find(category, id, body) =>
-        c +! (category.name, category) +< ".find{" + id + " => " + body + "}" +>
+        c +! (category.name, category) +< ("."+ctx(R.string.tree_find)+"{") + id + " => " + body + "}" +>
         
-    case Delete(obj) => c + indent +< "Delete(" + obj + ")" +>
+    case Delete(obj) => c + indent +< (ctx(R.string.tree_delete) + "(") + obj + ")" +>
     case Tuple(exprs) => 
       exprs match {
         case Seq() => c + indent +< "()" +>
@@ -379,13 +424,13 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self 
     case If(cond, s1, s2) =>
       val g = c + indent +< s"$IF_SYMBOL " + cond + s":$LF"
       val h = g + (s1, indent + INDENT)
-      val end = if(s2 != UnitLiteral) h + LF + indent + s"else:$LF" + (s2, indent + INDENT) else h
+      val end = if(s2 != UnitLiteral) h + LF + indent + (ctx(R.string.tree_else)+":"+LF) + (s2, indent + INDENT) else h
       end +>
     case Copy(obj, id, block) =>
-      c + indent +< s"$id = " + obj + s".copy$LF" + (block, indent + INDENT) +>
+      c + indent +< s"$id = " + obj + ("."+ctx(R.string.tree_copy)+LF) + (block, indent + INDENT) +>
 
     case Choose(a::q, pred, body) => 
-      (((c + indent +< "choose(" + a) /: q){ case (c, v) => c + "," + v}) + ")" + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
+      (((c + indent +< (ctx(R.string.tree_choose) + "(") + a) /: q){ case (c, v) => c + "," + v}) + ")" + s" $ARROW_FUNC_SYMBOL " + pred + ")" +>
     
     case IntegerLiteral(value: Int) => c + indent +< value.toString +>
     case FloatLiteral(value: Float) => c + indent +< value.toString +>
@@ -425,8 +470,8 @@ trait PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants { self 
         case _:Collision => COLLIDES_SYMBOL
         case _:Colliding => COLLIDING_SYMBOL
         case _:OutOfCollision => OUTOFCOLLISION_SYMBOL
-        case _:Contains => "contains"
-        case _:ApplyForce => "apply force"
+        case _:Contains => ctx(R.string.tree_contains)
+        case _:ApplyForce => ctx(R.string.tree_applyforce)
         case _ => "["+b.getClass().getName()+"]"
       }
       c + indent +< lhs + s" $op " + rhs +>

@@ -199,6 +199,12 @@ trait Interpreter {
             case NumericLiteral(a) => FloatLiteral(Math.abs(a))
             case _ => error(expr, "Not a number as argument")
           }
+        case ("Translate", expr::Nil) =>
+          eval(expr) match {
+            case StringLiteral(s) =>
+              gctx.Str(s)
+            case _ => error(expr, "Not a string as argument")
+          }
         case _ =>
           error(expr)
       }

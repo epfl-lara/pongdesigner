@@ -6,8 +6,13 @@
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.VIBRATE" />
-	<uses-permission android:name="android.permission.RECORD_AUDIO" />
- 
+	  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <supports-screens
+		android:smallScreens="true"
+		android:normalScreens="true"
+		android:largeScreens="true"
+		android:anyDensity="true"
+		/>
     <uses-sdk
         android:minSdkVersion="13"
         android:targetSdkVersion="19" />
@@ -23,7 +28,6 @@
             android:label="@string/title_activity_game_designer" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -36,13 +40,23 @@
             android:label="@string/pick_graphics"
             android:theme="@android:style/Theme.Dialog">
 		    <intent-filter>
-		        <action android:name="android.intent.action.PICK"/>
+		        <action android:name="android.intent.action.GET_CONTENT"/>
 		        <category android:name="android.intent.category.DEFAULT"/>
 		        <data android:mimeType="image/*"/>
 		    </intent-filter>
-		</activity>
-		<activity android:name="UserPreferences" android:configChanges="locale">
-
+        </activity>
+        <activity android:name="ch.epfl.lara.synthesis.kingpong.UserPreferences"
+                  android:label="@string/prefs_general_title"
+                  android:theme="@android:style/Theme.Dialog"
+                  android:configChanges="locale"
+                  android:parentActivityName="ch.epfl.lara.synthesis.kingpong.KingPong" >
+		    <intent-filter>
+               <action android:name="android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS" />
+               <category android:name="android.intent.category.DEFAULT" />
+           </intent-filter>
+          <meta-data
+              android:name="android.support.PARENT_ACTIVITY"
+              android:value="ch.epfl.lara.synthesis.kingpong.KingPong" />
         </activity>
     </application>
 

@@ -154,9 +154,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   private val gameViewRender = new GameViewRender(context)
   def grid = gameViewRender.grid
   
+  private val prettyPrinterExtended = PrettyPrinterExtended(i => this.Str(i))
+  
   def saveGame(handler: Handler, and_export: Boolean = false): Unit = {
     val f = getContext().getFilesDir()
-    val file_array = "Custom..." :: (f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
+    val file_array = Str(R.string.first_custom_choice) :: (f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
       if(name.endsWith(EXTENSION)) List(name.substring(0, name.length-4)) else {
         if(name.endsWith(".scala")) List(name) else Nil
       }
@@ -178,7 +180,7 @@ class GameView(val context: Context, attrs: AttributeSet)
   def loadGame(handler: Handler): Unit = {
     val f = getContext().getFilesDir()
     val file_array = f.listFiles().toList.flatMap { (f: File) => val name = f.getName()
-      if(name.endsWith(EXTENSION)) List(name.substring(0, name.length-4)) else List(name)
+      if(name.endsWith(EXTENSION)) List(name.substring(0, name.length-4)) else Nil //List(name)
     }
     CustomDialogs.launchChoiceDialog(getContext(), getContext().getResources().getString(R.string.loadFileAs), file_array, { (fileid: Int) =>
       var name = file_array(fileid)
@@ -208,44 +210,44 @@ class GameView(val context: Context, attrs: AttributeSet)
     implicit val planned = GameObject.PLANNED_SINCE_BEGINNING
     val res = s match {
       case Str(R.string.add_rectangle_hint) =>
-        shape = rectangle(DefaultCategory("rectangle", game))(name=game.getNewName("rectangle"), x=0, y=0, width=2*grid.step, height=grid.step)(game, planned)
+        shape = rectangle(DefaultCategory("rectangle", game))(name=game.getNewName(Str(R.string.rectangle_defaultname)), x=0, y=0, width=2*grid.step, height=grid.step)(game, planned)
         true
       case Str(R.string.add_circle_hint) =>
-        shape = circle(DefaultCategory("circle", game))(name=game.getNewName("circle"), x=0, y=0, radius=grid.step)(game, planned)
+        shape = circle(DefaultCategory("circle", game))(name=game.getNewName(Str(R.string.circle_defaultname)), x=0, y=0, radius=grid.step)(game, planned)
         true
       case Str(R.string.add_drawing_object_hint) =>
-        val d = drawingObject(DefaultCategory("drawingobjects", game))(name=game.getNewName("drawingZone"), x=0, y=0, width=4*grid.step, height=4*grid.step)(game, planned)
+        val d = drawingObject(DefaultCategory("drawingobjects", game))(name=game.getNewName(Str(R.string.drawingZone_defaultname)), x=0, y=0, width=4*grid.step, height=4*grid.step)(game, planned)
         shape = d
         true
       case Str(R.string.add_sound_recorder_hint) =>
-        val d = soundRecorder(DefaultCategory("soundobjects", game))(name=game.getNewName("soundrecorder"), x=0, y=0, width=2*grid.step, height=2*grid.step)(game, planned)
+        val d = soundRecorder(DefaultCategory("soundobjects", game))(name=game.getNewName(Str(R.string.soundrecorder_defaultname)), x=0, y=0, width=2*grid.step, height=2*grid.step)(game, planned)
         shape = d
         true
       case Str(R.string.add_arraybox_hint) =>
-        val d = array(DefaultCategory("arrays", game))(game.getNewName("Array"), x=0, y=0, columns=2, rows=3)(game, planned)
+        val d = array(DefaultCategory("arrays", game))(game.getNewName(Str(R.string.array_defaultname)), x=0, y=0, columns=2, rows=3)(game, planned)
         shape = d
         true
       case Str(R.string.add_boolbox_hint) =>
-        val d = booleanbox(DefaultCategory("trigger", game))(name=game.getNewName("condition"), x=0, y=0, value=true)(game, planned)
+        val d = booleanbox(DefaultCategory("trigger", game))(name=game.getNewName(Str(R.string.boolbox_defaultname)), x=0, y=0, value=true)(game, planned)
         shape = d
         true
       case Str(R.string.add_textbox_hint) =>
-        val d = stringbox(DefaultCategory("label", game))(game.getNewName("Score"), x=0, y=0, value = "custom text")(game, planned)
+        val d = stringbox(DefaultCategory("label", game))(game.getNewName(Str(R.string.textbox_defaultname)), x=0, y=0, value = Str(R.string.textbox_defaulttext))(game, planned)
         shape = d
         true
       case Str(R.string.add_soundtts_hint) =>
-        val d = soundTTS(DefaultCategory("soundtts", game))(game.getNewName("tts"), x=0, y=0, language="en", text="Your speech here", time=game.time)(game, planned)
+        val d = soundTTS(DefaultCategory("soundtts", game))(game.getNewName(Str(R.string.tts_defaultname)), x=0, y=0, language=Str(R.string.tts_defaultlang), text=Str(R.string.tts_defaulttext), time=game.time)(game, planned)
         shape = d
         true
       case Str(R.string.add_integerbox_hint) =>
-        val d = intbox(DefaultCategory("score", game))(game.getNewName("Score"), x=0, y=0, value = 0)(game, planned)
+        val d = intbox(DefaultCategory("score", game))(game.getNewName(Str(R.string.integerbox_defaultname)), x=0, y=0, value = 0)(game, planned)
         shape = d
         true
       case Str(R.string.select_gravity2d_hint) =>
         game.gravity match {
           case Some(g) => shape = g
           case _ =>
-            val d = gravity(DefaultCategory("gravity", game))("gravity", x=0, y=0)(game)
+            val d = gravity(DefaultCategory(Str(R.string.gravity_defaultname), game))(Str(R.string.gravity_defaultname), x=0, y=0)(game)
             shape = d
         } 
         true
@@ -271,7 +273,7 @@ class GameView(val context: Context, attrs: AttributeSet)
             val conditionObjects = eventEditor.selectedObjects.toSet
             //TODO in the future the user should be able to select the action objects during the second phase of the inference process.
             val actionObjects = getGame().aliveObjects.toSet
-            CodeGenerator.createRule(getGame(), eventEditor.selectedEventTime, conditionObjects, actionObjects)
+            CodeGenerator.createRule(this, getGame(), eventEditor.selectedEventTime, conditionObjects, actionObjects)
             updateCodeViewBasedOnSelection()
             setModeModifyGame()
           case STATE_MODIFYING_CATEGORY =>
@@ -655,7 +657,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 	          val isGeneralizable: Boolean = true // If we can generalize the rule.
 	          
 	          val actionItems = ListBuffer[(String, Drawable, () => Unit)]()
-	          if(isGeneralizable) actionItems += ((Str(R.string.generalize_global, name), bitmaps(R.drawable.menu_ok), { () =>
+	          if(isGeneralizable) actionItems += ((Str(R.string.generalize_global, name), drw(R.drawable.menu_ok), { () =>
 	            // Invoke global
 	            val index = game.getIndexByRule(rule) 
 	            if(index != -1) {
@@ -667,7 +669,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 	          }))
 	          
 	          if(actionItems.length > 0) {
-	            actionItems += ((Str(R.string.cancel), bitmaps(R.drawable.menu_cancel), () => {}));
+	            actionItems += ((Str(R.string.cancel), drw(R.drawable.menu_cancel), () => {}));
 	            showPossibilities(actionItems, codeViewMenuCoords);
 	          }
 	          
@@ -691,7 +693,7 @@ class GameView(val context: Context, attrs: AttributeSet)
 						          Log.d("GameView", "Houston we have a problem. The rule was not found")
 						        } else {
 						          l.foreach(alternative => {
-						            val comment = if(alternative.comment == null) PrettyPrinter.print(alternative).toString else PrettyPrinterExtended.print(alternative).c.toString()
+						            val comment = if(alternative.comment == null) PrettyPrinter.print(alternative).toString else prettyPrinterExtended.print(alternative).c.toString()
 			                  actionItems += ((comment, if(first) drw(R.drawable.event_selected_disambiguate) else drw(R.drawable.event_unselected_disambiguate), { () =>
 							            // Invoke global
 							            val action = if(first) () => {} else { () =>
@@ -885,7 +887,11 @@ class GameView(val context: Context, attrs: AttributeSet)
   def backToBeginning(): Unit = {
     toEditing()
     setProgressBarTime(0)
-    game.clear(from = 0)
+    val language = context.getResources().getConfiguration().locale.getLanguage()
+    if(game != null) {
+      game.language = language
+      game.clear(from = 0)
+    }
     UndoRedo.clearButKeepRules()
     layoutResize()
   }
@@ -1192,10 +1198,13 @@ class GameView(val context: Context, attrs: AttributeSet)
   }
   import ActionType._
   
-  lazy val drw = (i: Int) => res.getDrawable(i)
+  lazy val drw = (i: Int) => {
+    if(bitmaps != null && bitmaps.contains(i)) bitmaps(i)
+    else res.getDrawable(i)
+  }
   lazy val drw2 = (i: Int, j: Int) => {
-    val d1 = res.getDrawable(i)
-    val d2 = res.getDrawable(j)
+    val d1 = drw(i)
+    val d2 = drw(j)
     val big = Bitmap.createBitmap(d1.getIntrinsicWidth(), d1.getIntrinsicHeight(), Bitmap.Config.ARGB_8888)
     val canvas = new Canvas(big);
     d1.setBounds(0, 0, d1.getIntrinsicWidth() - 1, d1.getIntrinsicHeight() - 1)
@@ -1219,9 +1228,6 @@ class GameView(val context: Context, attrs: AttributeSet)
 	      val indexRule = game.findRuleIndex { rule =>
 	        var found = false
 	        TreeOps.preTraversal { e => found ||= (e eq assignStatement) }(rule)
-	        if(found) {
-	          println(rule)
-	        }
 	        found
 	      }
 	      if (indexRule >= 0) {
@@ -1230,23 +1236,26 @@ class GameView(val context: Context, attrs: AttributeSet)
 	        if (trace.size >= 2) {
 	          trace.init.last match {
 	            case parExpr: ParExpr =>
-	              val first = parExpr.exprs.headOption.getOrElse(null)
-	              for (alternative <- parExpr.exprs) {
-	                val comment = if(alternative.comment == null) PrettyPrinter.print(alternative).toString else PrettyPrinterExtended.print(alternative).c.toString()
-	                if (alternative eq first) {
-	                  actionItems += ((comment, drw(R.drawable.event_selected_disambiguate), () => ()))
-	                } else {
-	                  val action = { () =>
-	                    val newParExpr = alternative orElse parExpr
-						          val rule: Expr = game.getRuleByIndex(indexRule)
-						          val newRule: Expr = TreeOps.postMap {
-						            e => if (e eq parExpr) Some(newParExpr) else None
-						          }(rule)
-						          game.setRuleByIndex(newRule, indexRule)
-						          updateCodeViewBasedOnSelection()
-	                  }
-	                  actionItems += ((comment, drw(R.drawable.event_unselected_disambiguate), action))
-	                }
+	              if(!alreadyDone(parExpr)) {
+	                alreadyDone += parExpr
+		              val first = parExpr.exprs.headOption.getOrElse(null)
+		              for (alternative <- parExpr.exprs) {
+		                val comment = if(alternative.comment == null) PrettyPrinter.print(alternative).toString else prettyPrinterExtended.print(alternative).c.toString()
+		                if (alternative eq first) {
+		                  actionItems += ((comment, drw(R.drawable.event_selected_disambiguate), () => ()))
+		                } else {
+		                  val action = { () =>
+		                    val newParExpr = alternative orElse parExpr
+							          val rule: Expr = game.getRuleByIndex(indexRule)
+							          val newRule: Expr = TreeOps.postMap {
+							            e => if (e eq parExpr) Some(newParExpr) else None
+							          }(rule)
+							          game.setRuleByIndex(newRule, indexRule)
+							          updateCodeViewBasedOnSelection()
+		                  }
+		                  actionItems += ((comment, drw(R.drawable.event_unselected_disambiguate), action))
+		                }
+		              }
 	              }
 	            case _ => // Nothing can be done if there is no alternative. Later: Delete rules.
 	          }
@@ -1259,7 +1268,7 @@ class GameView(val context: Context, attrs: AttributeSet)
       val obj_expr = obj.expr
       for(rule <- game.getRulesByObject(obj)) {
         if(TreeOps.exists(_ == obj_expr)(rule)) { // We can generalize this rule.
-          val text = "Generalize from "+obj.name.get+" to all "+obj.category.name+" the rule:\n"+PrettyPrinter.print(rule)
+          val text = Str(R.string.generalize_request, obj.name.get, obj.category.name) + ":\n"+PrettyPrinter.print(rule)
           val drawable = drw(R.drawable.event_unselected_disambiguate)
           val action = { () => 
             val index = game.getIndexByRule(rule) 
@@ -1310,11 +1319,11 @@ class GameView(val context: Context, attrs: AttributeSet)
         case BeginContact(contact, objectA, objectB) =>
           Str(R.string.when_collision, objectA.name.get, objectB.name.get)
         case FingerUp(pos, objs) =>
-          ("" /: (for (obj <- objs) yield {Str(R.string.when_finger_up, obj.name.get)}))(_ + _)
+          ("" /: (for (obj <- objs) yield {Str(R.string.when_finger_up, obj.name.get)}))(_ + ", " + _)
         case FingerMove(from, to, objs) => // Display only the relevant one.
-          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_move, obj.name.get)}))(_ + _)
+          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_move, obj.name.get)}))(_+ ", " + _)
         case FingerDown(pos, objs) =>
-          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_down, obj.name.get)}))(_ + _)
+          ("" /: (for (obj <- objs) yield { Str(R.string.when_finger_down, obj.name.get)}))(_+ ", " + _)
         case _ => // TODO : Add more actions to disambiguate (position, objects)
           "<unknown event>"
       }
@@ -1444,9 +1453,15 @@ class GameView(val context: Context, attrs: AttributeSet)
     if (shapeEditor.selectedShape != null) {
       shapeEditor.selectedShape match {
         case selectedShape: Colorable =>
+          
+          val cutBitmap = selectedShape match {
+            case selectedShape: Positionable => BitmapUtils.cutBitmapProportions(srcBitmap, selectedShape.right.get - selectedShape.left.get, Math.abs(selectedShape.bottom.get - selectedShape.top.get))
+            case _ => srcBitmap
+          }
+          
           val finalBitmap = selectedShape match {
-            case _: Circle => BitmapUtils.toRoundedShape(srcBitmap)
-            case _         => srcBitmap
+            case _: Circle => BitmapUtils.toRoundedShape(cutBitmap)
+            case _         => cutBitmap
           }
           val id = addBitmap(finalBitmap)
           selectedShape.color setPrevNext id
@@ -1533,8 +1548,8 @@ class GameView(val context: Context, attrs: AttributeSet)
       cancelPrevious()
     }
     val (future, cancel) = interruptableFuture[CharSequence] { () =>
-      val header = PrettyPrinterExtended.printGameObjectDef(objects)
-      val all = PrettyPrinterExtended.print(rules, header + "\n")
+      val header = prettyPrinterExtended.printGameObjectDef(objects)
+      val all = prettyPrinterExtended.print(rules, header + "\n")
       var rulesString: CharSequence = all.c
       cv_mapping = all.map
       rulesString = colorCodeView(rulesString, cv_mapping, objects)
@@ -1563,9 +1578,9 @@ class GameView(val context: Context, attrs: AttributeSet)
   def colorCodeView(s: CharSequence, mapping: PrettyPrinterExtendedTypical.Mappings, objects: Iterable[GameObject]) = {
     var rulesString = s
     val mObjects = mapping.mObjects
-    rulesString = SyntaxColoring.setSpanOnKeywords(rulesString, PrettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
+    rulesString = SyntaxColoring.setSpanOnKeywords(rulesString, prettyPrinterExtended.LANGUAGE_SYMBOLS, () => new StyleSpan(Typeface.BOLD), () => new ForegroundColorSpan(0xFF950055))
     objects.foreach { obj =>
-      //expression.PrettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
+      //expression.prettyPrinterExtended.setSpanOnKeywords(rules, List(obj.name.get),  () => new BackgroundColorSpan(0xFF00FFFF))
       mObjects.get(obj.category) match {
         case Some(l) => l foreach {
           case (start, end) =>
@@ -1581,7 +1596,7 @@ class GameView(val context: Context, attrs: AttributeSet)
    * @return the new end of the expression
    */
   def replaceCodeView(start: Int, end: Int, oldConst: Tree, newConst: Tree): Int = {
-    val all = PrettyPrinterExtended.print(newConst)
+    val all = prettyPrinterExtended.print(newConst)
     var text: CharSequence = all.c
     val newLength = text.length
     val oldLength = end - start
@@ -1816,11 +1831,12 @@ class GameView(val context: Context, attrs: AttributeSet)
         case MotionEvent.ACTION_DOWN | MotionEvent.ACTION_POINTER_DOWN =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
+          val pointerId = Math.min(me.getPointerId(pointerIndex), FINGERS - 1)
           if (lastMainPointerId == -1 || state == Running) {
             onFingerDown(point)
-            lastMainPointerId = me.getPointerId(pointerIndex)
+            lastMainPointerId = pointerId
           }
-          last(pointerIndex) = point
+          last(pointerId) = point
 
         // A finger moves
         case MotionEvent.ACTION_MOVE =>
@@ -1831,7 +1847,7 @@ class GameView(val context: Context, attrs: AttributeSet)
               lastMainPointerId = pointerId
 
               val from = last(pointerId)
-              val to = Vec2(me.getX(0), me.getY(0))
+              val to = Vec2(me.getX(i), me.getY(i))
               //Log.d("GameView", s"Moved from ${from.x}, ${from.y} to ${to.x}, ${to.y}")
               onOneFingerMove(from, to)
               last(pointerId) = to
@@ -1839,38 +1855,38 @@ class GameView(val context: Context, attrs: AttributeSet)
             }
           }
           if (me.getPointerCount() == 2 && state == Editing) {
-            val pointerIndex1 = Math.min(me.getPointerId(0), FINGERS - 1)
-            val pointerIndex2 = Math.min(me.getPointerId(1), FINGERS - 1)
-            val from1 = last(pointerIndex1)
-            val from2 = last(pointerIndex2)
+            val pointerId1 = Math.min(me.getPointerId(0), FINGERS - 1)
+            val pointerId2 = Math.min(me.getPointerId(1), FINGERS - 1)
+            val from1 = last(pointerId1)
+            val from2 = last(pointerId2)
             val to1 = Vec2(me.getX(0), me.getY(0))
             val to2 = Vec2(me.getX(1), me.getY(1))
             onTwoFingersMove(from1, to1, from2, to2)
-            last(pointerIndex1) = to1
-            last(pointerIndex2) = to2
+            last(pointerId1) = to1
+            last(pointerId2) = to2
           }
           if (me.getPointerCount() == 3 && state == Editing) { // Experimental: 3 finger editing
-            val pointerIndexes = (0 to 2) map me.getPointerId map (Math.min(_, FINGERS - 1))
-            (0 to 2) find (i => pointerIndexes(i) == lastMainPointerId) match {
+            val pointerIds = (0 to 2) map me.getPointerId map (Math.min(_, FINGERS - 1))
+            (0 to 2) find (i => pointerIds(i) == lastMainPointerId) match {
               case None => // Nothing can be done.
               case Some(i) =>
                 val j = (i + 1) % 3
                 val k = (i + 2) % 3
 
                 // The main one triggers a onOneFingerMove
-                val from = last(pointerIndexes(i))
+                val from = last(pointerIds(i))
                 val to = Vec2(me.getX(i), me.getY(i))
                 onOneFingerMove(from, to)
-                last(pointerIndexes(i)) = to
+                last(pointerIds(i)) = to
 
                 // The second one triggers a onTwoFingerMove
-                val from1 = last(pointerIndexes(j))
-                val from2 = last(pointerIndexes(k))
+                val from1 = last(pointerIds(j))
+                val from2 = last(pointerIds(k))
                 val to1 = Vec2(me.getX(j), me.getY(j))
                 val to2 = Vec2(me.getX(k), me.getY(k))
                 onTwoFingersMove(from1, to1, from2, to2)
-                last(pointerIndexes(j)) = to1
-                last(pointerIndexes(k)) = to2
+                last(pointerIds(j)) = to1
+                last(pointerIds(k)) = to2
             }
 
           }
@@ -1878,14 +1894,15 @@ class GameView(val context: Context, attrs: AttributeSet)
         case MotionEvent.ACTION_UP | MotionEvent.ACTION_POINTER_UP =>
           val pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT
           val point = Vec2(me.getX(pointerIndex), me.getY(pointerIndex))
-          if (state == Running || lastMainPointerId == pointerIndex) {
-            if (last(pointerIndex).x != point.x || last(pointerIndex).y != point.y) {
-              onOneFingerMove(last(pointerIndex), point)
+          val pointerId = Math.min(me.getPointerId(pointerIndex), FINGERS - 1)
+          if (state == Running || lastMainPointerId == pointerId) {
+            if (last(pointerId).x != point.x || last(pointerId).y != point.y) {
+              onOneFingerMove(last(pointerId), point)
             }
             onFingerUp(point)
             lastMainPointerId = -1
           }
-          last(pointerIndex) = point
+          last(pointerId) = point
           if (me.getPointerCount() == 0) { // Might be useless
             lastMainPointerId = -1
           }

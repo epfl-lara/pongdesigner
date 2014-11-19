@@ -14,9 +14,6 @@ import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
 import ch.epfl.lara.synthesis.kingpong.expression.Types._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
 import ch.epfl.lara.synthesis.kingpong.rules.Context
-import scala.Dynamic
-import scala.language.dynamics
-//TODO remove when useless
 import org.jbox2d.dynamics.BodyType
 
 import android.util.Log

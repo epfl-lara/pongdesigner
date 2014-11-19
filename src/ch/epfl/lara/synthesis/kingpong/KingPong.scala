@@ -43,10 +43,12 @@ import ch.epfl.lara.synthesis.kingpong.common.ContextUtils
 import android.provider.MediaStore
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.content.res.Configuration
 
 object KingPong {
   final val TTS_CHECK = 1
   final val IMPORT_PICT = 2
+  final val CHANGE_OPTIONS = 3
   
   
   final val INTERVIEWNAME = "INTERVIEW_NAME"
@@ -66,16 +68,16 @@ object KingPong {
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   final val PONGNAME_TESTGAME = "TestGame"
   final val PONGNAME_EMPTY = "empty game"
-  private val mapGames: Map[String,()=>Game] = Map(
-    PONGNAME_SIMPLEBRICKBREAKER -> (() => new examples.BrickBreaker()),
-    PONGNAME_SUPERMARIO -> (() => new examples.PlatformGame()),
-    PONGNAME_SLIDING -> (() => new examples.SlidingPuzzle()),
-    PONGNAME_THREEINAROW -> (() => new examples.ThreeInARow()),
-    PONGNAME_DRAWINGRECORDER -> (() => new examples.DrawingRecorder()),
-    PONGNAME_ALGORITHMS -> (() => new examples.MatricesAlgorithms()),
-    PONGNAME_BALANCED_PARENTHESES -> (() => new examples.BalancedParentheses()),
-    PONGNAME_TESTGAME -> (() => new examples.ProofConceptGame()),
-    PONGNAME_EMPTY -> (() => new examples.EmptyGame())
+  private val mapGames: Map[String,(String)=>Game] = Map(
+    PONGNAME_SIMPLEBRICKBREAKER -> ((language: String) => new examples.BrickBreaker()),
+    PONGNAME_SUPERMARIO -> ((language: String) => new examples.PlatformGame()),
+    PONGNAME_SLIDING -> ((language: String) => new examples.SlidingPuzzle()),
+    PONGNAME_THREEINAROW -> ((language: String) => new examples.ThreeInARow()),
+    PONGNAME_DRAWINGRECORDER -> ((language: String) => new examples.DrawingRecorder()),
+    PONGNAME_ALGORITHMS -> ((language: String) => new examples.MatricesAlgorithms()),
+    PONGNAME_BALANCED_PARENTHESES -> ((language: String) => new examples.BalancedParentheses()),
+    PONGNAME_TESTGAME -> ((language: String) => new examples.ProofConceptGame(language)),
+    PONGNAME_EMPTY -> ((language: String) => new examples.EmptyGame())
   )
 
   final val PREFS_NAME = "MyPrefsFile"
@@ -86,7 +88,7 @@ object KingPong {
     o.close()
   }
     
-  class LoadSaveGameTask(private var activity: KingPong, var saving: Boolean= true, var exporting: Boolean=false, var game: (Game, List[(Int, Bitmap)]) = null) extends MyAsyncTask[String, (String, Int, Int), (Game, List[(Int, Bitmap)])] with common.AutoShutOff {
+  class LoadSaveGameTask(private var activity: KingPong, var language: String, var saving: Boolean= true, var exporting: Boolean=false, var game: (Game, List[(Int, Bitmap)]) = null) extends MyAsyncTask[String, (String, Int, Int), (Game, List[(Int, Bitmap)])] with common.AutoShutOff {
     var max=100
     var prog =0
     var filename: String = ""
@@ -117,7 +119,7 @@ object KingPong {
         if(mapGames contains filename) {
           mapGames(filename)
           publishProgress(("Loading " + filename, 0, 100))
-          game = (mapGames(filename)(), Nil)
+          game = (mapGames(filename)(language), Nil)
           publishProgress(("Finished", 100, 100))
         } else {
           val file = new java.io.File(activity.getFilesDir(), filename)
@@ -125,7 +127,7 @@ object KingPong {
           game = GameSerializer.loadGame(content,
               (i, j, s) =>
                 publishProgress(("Loading from "+filename + ". " + s, i, j)))
-          
+          game._1.clear(from = 0)
         }
       }
       game
@@ -146,7 +148,6 @@ object KingPong {
          //game.setGameEngine(activity.mGameView)
          var toRemove = activity.mGameView.loadBitmapSet(game._2)
          activity.mGameView.setGame(game._1, toRemove)
-         
          activity.mGameView.initialize()
        }
        if(activity != null) {
@@ -212,6 +213,8 @@ class KingPong extends Activity
 
   private var mDetector: GestureDetectorCompat = null
   
+  def getLanguage() = getSharedPreferences(UserPreferences.PREFERENCES_FILE, 0).getString(UserPreferences.LOCALE_KEY, "en")
+  
   onCreate { savedInstanceState: Bundle =>
     setContentView(R.layout.main)
     //setContentView(R.layout.activity_main)
@@ -223,7 +226,7 @@ class KingPong extends Activity
     task = getLastNonConfigurationInstance().asInstanceOf[LoadSaveGameTask]
     
     if(task == null) {
-      task = new LoadSaveGameTask(this)
+      task = new LoadSaveGameTask(this, getLanguage())
     }
     if(!mGameView.hasGame()) {
       if(task.game == null) {
@@ -470,35 +473,57 @@ class KingPong extends Activity
     if(mTts != null) mTts.shutdown()
   }
 
-  onResume {
-    mGameView.onResume()
-    if(mGameView != null && !mFirstLaunch) mGameView.onResume()
-      mFirstLaunch = false
-      mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
-      if(task == null) {
-        task = new LoadSaveGameTask(self, saving=false, exporting=false, game=null)
-        task.execute(PONGNAME_SIMPLEBRICKBREAKER)
-      } else {
-        // Resume the dialog task if needed.
-        task.attach(this)
-        if(mGameView.getGame() != task.game._1) {
-          mGameView.loadBitmapSet(task.game._2)
-          mGameView.setGame(task.game._1)
-        }
-        
-        
-        /*if(task.record != null) {
-          if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFF0000)
-        } else {
-          if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFFFFFF)
-        }*/ // TODO : recover the fps paint.
+  override def onResume() {
+    val preferences = getSharedPreferences(UserPreferences.PREFERENCES_FILE, 0)
+    val currentlocale = Option(Locale.getDefault()).map(_.getLanguage()).getOrElse("en")
+    val locale = preferences.getString(UserPreferences.LOCALE_KEY, currentlocale)
+    if(locale != currentlocale) { // Restart the activity
+      val l = new Locale(locale)
+      Locale.setDefault(l);
+       val config = new Configuration()
+      config.locale = l;
+      getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
+      refresh();
+      super.onResume();
+    } else {
+      super.onResume();
+      //Log.d("GraphismeBaseActivity", "onResume")
+      if(mGameView != null) {
+        if(!mFirstLaunch) mGameView.onResume()
+	      mFirstLaunch = false
+	      mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+	      if(task == null) {
+	        task = new LoadSaveGameTask(self, locale, saving=false, exporting=false, game=null)
+	        task.execute(PONGNAME_SIMPLEBRICKBREAKER)
+	      } else {
+	        // Resume the dialog task if needed.
+	        task.attach(this)
+	        if(mGameView.getGame() != task.game._1) {
+	          mGameView.loadBitmapSet(task.game._2)
+	          mGameView.setGame(task.game._1)
+	        }
+	        
+	        
+	        /*if(task.record != null) {
+	          if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFF0000)
+	        } else {
+	          if(mGameView != null) mGameView.mFPSPaint.setColor(0xFFFFFFFF)
+	        }*/ // TODO : recover the fps paint.
+	      }
+	      
+	      val settings = getSharedPreferences(PREFS_NAME, 0);
+	      val startTutorial = settings.getBoolean("startTutorial", true);
+	      if(startTutorial) {
+	        (self after 1000) ! Messages.ShowInitialTooltip()
+	      }
       }
-      
-      val settings = getSharedPreferences(PREFS_NAME, 0);
-      val startTutorial = settings.getBoolean("startTutorial", true);
-      if(startTutorial) {
-        (self after 1000) ! Messages.ShowInitialTooltip()
-      }
+    }
+  }
+  
+  def refresh() {
+    finish();
+    val myIntent = new Intent(KingPong.this, classOf[KingPong]);
+    startActivity(myIntent);
   }
 
   private def onBackButtonClick() = {
@@ -681,19 +706,19 @@ class KingPong extends Activity
         case FileLoad(tempName) =>
           //new LoadFileTask().execute(input_msg.getData().getString(FILENAME_TAG))
           this ! ShowProgressDialog()
-          task = new LoadSaveGameTask(self, saving=false, exporting=false,game=(mGameView.getGame, Nil))
+          task = new LoadSaveGameTask(self, getLanguage(), saving=false, exporting=false,game=(mGameView.getGame, Nil))
           task.execute(tempName)
           
         case FileSave(tempName) =>
           this ! ShowProgressDialogSave()
           mGameView.getGame().validateNextToCurrent()
-          task = new LoadSaveGameTask(self, saving=true, exporting=false, game=(mGameView.getGame, mGameView.getBitmaps))
+          task = new LoadSaveGameTask(self, getLanguage(), saving=true, exporting=false, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           
         case FileSaveAndExport(tempName) =>
           this ! ShowProgressDialogSave()
           mGameView.getGame().validateNextToCurrent()
-          task = new LoadSaveGameTask(self, saving=true, exporting=true, game=(mGameView.getGame, mGameView.getBitmaps))
+          task = new LoadSaveGameTask(self, getLanguage(), saving=true, exporting=true, game=(mGameView.getGame, mGameView.getBitmaps))
           task.execute(tempName)
           
         case FileExport(tempName) =>
@@ -779,7 +804,7 @@ class KingPong extends Activity
             installIntent.setAction("android.speech.tts.engine.INSTALL_TTS_DATA" /*TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA*/)
             startActivity(installIntent)
 	        }
-        }
+      }
     }
   
   def context = this

@@ -9,9 +9,10 @@ import ch.epfl.lara.synthesis.kingpong.common.JBox2DInterface._
 import ch.epfl.lara.synthesis.kingpong.common.ColorConstants
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.expression.TreeDSL._
-
+import ch.epfl.lara.synthesis.kingpong.common.Implicits._
+  
 object Category {
-  def apply(name: String)(
+  def apply(name: Expr)(
       angle: Expr = 0,
       width: Expr = 1,
       height: Expr = 1,
@@ -53,7 +54,7 @@ trait Category {
 
 class CategoryObject(
     val game: Game,
-    val name: String,
+    initName: Expr,
     val angle: Expr,
     val width: Expr,
     val height: Expr,
@@ -83,6 +84,8 @@ class CategoryObject(
     val displayName: Expr)
     extends NotNull with Category { self =>
 
+  val name: String = game.interpreter.evaluate(initName).as[String]
+  
   private val _children = MSet.empty[GameObject]
   
   def objects: Traversable[GameObject] = _children
@@ -99,6 +102,6 @@ class CategoryObject(
 }
 
 object DefaultCategory {
-  def apply(o: GameObject): CategoryObject = Category(o.name.get)()(o.game).add(o)
+  def apply(o: GameObject): CategoryObject = Category(o.name.init)()(o.game).add(o)
   def apply(o: String, g: Game): CategoryObject = Category(o)()(g)
 }

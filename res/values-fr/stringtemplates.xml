@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="parexpr_more">" de plus"</string>
+<string name="FOR_SYMBOL">pour</string>
+<string name="IN_SYMBOL">dans</string>
+<string name="FINGER_MOVE_SYMBOL">doigt déplaçant au-dessus de</string>
+<string name="FINGER_DOWN_SYMBOL">doigt pressant</string>
+<string name="FINGER_UP_SYMBOL">doigt relâchant</string>
+<string name="COLLIDES_SYMBOL">heurte</string>
+<string name="COLLIDING_SYMBOL">heurtant</string>
+<string name="OUTOFCOLLISION_SYMBOL">ne heurtant plus</string>
+<string name="IF_SYMBOL">si</string>
+<string name="tree_forall">pourTout</string>
+<string name="tree_find">trouver</string>
+<string name="tree_delete">supprimer</string>
+<string name="tree_contains">contient</string>
+<string name="tree_applyforce">appliquer force</string>
+<string name="tree_choose">choisir</string>
+<string name="tree_copy">copie</string>
+<string name="tree_else">sinon</string>
+
+<string name="tx_relative">Déplacer %1$s de (%2$s, 0)</string>
+<string name="tx_absolute">Bouger %1$s en x = %2$s</string>
+<string name="tx_moveinverteddx">Déplacer %1$s de l\'inverse du mouvement horizontal du doigt</string>
+<string name="tx_movedx_pos">Si le doigt est sur %1$s, déplacer %2$s par le même mouvement du doigt horizontal</string>
+<string name="ty_relative">Déplacer %1$s de (0, %2$s)</string>
+<string name="ty_absolute">Bouger %1$s en y = %2$s</string>
+<string name="ty_moveinverteddy">Déplacer %1$s de l\'inverse du mouvement vertical du doigt</string>
+<string name="ty_movedy_pos">Déplacer %1$s du mouvement vertical du doigt</string>
+<string name="txy_move_force">Accélérer %1$s après le doigt</string>
+<string name="txy_cell_move_relative">Déplacer %1$s sur tableau %2$s par (%3$s, %4$s)</string>
+<string name="txy_cell_move_absolute">Déplacer %1$s à cellule %2$s</string>
+<string name="tanglerelative">Augmentation de la direction de la vitesse de %1$s de %2$s°</string>
+<string name="tangleabsolute">Direction de la vitesse de %1$s à %2$s°</string>
+<string name="tanglecopy">Copier la direction de la vitesse de %1$s à %2$s</string>
+<string name="tvelocityabsolute">Vitesse de %1$s mise à %2$s</string>
+<string name="tcolorabsolute">Couleur de %1$s mise à %2$s</string>
+<string name="tvisibleabsolute">Définir la visibilité de %1$s à %2$s</string>
+<string name="tvisibletoggle">Activer/désactiver la visibilité de %1$s</string>
+<string name="tvalueabsolute">Mettre la valeur de %1$s à %2$s</string>
+<string name="tvaluerelative">Ajouter %2$s à la valeur de %1$s</string>
+<string name="tvaluerelative2">Ajouter %1$s à la valeur de %2$s</string>
+<string name="tvaluediv2">Diviser la valeur de %1$s par %2$s</string>
+<string name="tvaluetimes">Multiplier la valeur de %1$s par %2$s</string>
+<string name="tvaluecombine1_absolute">Copier la valeur de %1$s à %2$s</string>
+<string name="tvaluecombine1_relativemultcopy">Stocker dans %1$s la valeur de %2$s multipliée par %3$s</string>
+<string name="tvaluecombine1_relativemodulo">Stocker dans %1$s sa valeur précédente modulo %2$s</string>
+<string name="tvaluecombine2_plus">Stocker dans %1$s la somme de %2$s et %3$s</string>
+<string name="tvaluecombine2_minus">Stocker dans %1$s la différence entre %2$s et %3$s</string>
+<string name="tvaluecombine2_times">Stocker dans %1$s la multiplication entre %2$s et %3$s</string>
+<string name="tvaluecombine2_div">Stocker dans %1$s la division entre %2$s et %3$s</string>
+<string name="tvaluecombine2_mod">Stocker dans %1$s le reste de la division entre %2$s et %3$s</string>
+<string name="ttextabsolute">Modifier le texte de %1$s à \"%2$s\"</string>
+<string name="ttextcopy">Copiez le texte de %1$s à %2$s</string>
+<string name="ttextconcatenate">Concaténer les textes des %1$s et %2$s dans %3$s</string>
+<string name="ttimeabsolute">Mise du temps de démarrage de %1$s à %2$s</string>
+<string name="ttimerepeat">Augmentation du temps de démarrage de %1$s de %2$s</string>
+<string name="ttimenow">Commence à lire %1$s</string>
+<string name="tradiusrelativeplus">Ajouter %1$s au rayon de %2$s</string>
+<string name="tradiusrelativetimes">Multiplier le rayon de %1$s par %2$s</string>
+<string name="tradiusabsolute">Augmentation du rayon de %1$s de %2$s</string>
+<string name="tradiusmovex">Augmenter le rayon de %1$s lorsque le doigt se déplace vers la droite</string>
+<string name="tradiusmovex_rev">Augmenter le rayon de %1$s lorsque le doigt se déplace vers la gauche</string>
+<string name="tradiusmovey">Augmenter le rayon de %1$s lorsque le doigt se déplace vers le bas</string>
+<string name="tradiusmovey_rev">Augmenter le rayon de %1$s lorsque le doigt se déplace vers le haut</string>
+<string name="tbooleanabsolute">Définir la valeur de %1$s à %2$s</string>
+<string name="tbooleantoggle">Activer/désactiver la valeur booléenne de %1$s</string>
+<string name="tbooleancopy">Copier la valeur booléenne de %1$s vers %2$s</string>
+<string name="tarraysnapwithcoordinates">Aggripper %1$s au centre de la cellule %2$s</string>
+<string name="tarraysnapwithvelocity">Aggripper %1$s au centre de la cellule %2$s en modifiant la vitesse</string>
+<string name="tarraysnapwithforce">Aggripper %1$s au centre de la cellule %2$s en modifiant accélération</string>
+
+</resources>

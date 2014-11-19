@@ -40,6 +40,7 @@ object CodeGenerator extends CodeHandler {
    * @param actionObjects the objects selected manually by the user that will participate in the rule action (or body).
    **/
   def createRule(
+      gameView: GameView,
       game: Game,
       conditionEvent: List[(Event, Int)],
       conditionObjects: Set[GameObject],
@@ -54,7 +55,7 @@ object CodeGenerator extends CodeHandler {
                                            game.aliveObjects.filter(_.properties.exists(p => p.get != p.next))
 
     // Infer the rule body using templates
-    val ruleBody = CodeTemplates.inferStatements(game, conditionEvent, templateObjects)
+    val ruleBody = CodeTemplates.inferStatements(gameView, game, conditionEvent, templateObjects)
 
     // Check if the body is already guarded by a finger move
     val alreadyMoveGuarded = TreeOps.exists(_.isInstanceOf[FingerMoveOver])(ruleBody)

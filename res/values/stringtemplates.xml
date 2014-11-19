@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="parexpr_more">" more"</string>
+	<string name="FOR_SYMBOL">for</string>
+	<string name="IN_SYMBOL">in</string>
+	<string name="FINGER_MOVE_SYMBOL">on movedOn</string>
+	<string name="FINGER_DOWN_SYMBOL">on downOn</string>
+	<string name="FINGER_UP_SYMBOL">on upOn</string>
+	<string name="COLLIDES_SYMBOL">collides</string>
+	<string name="COLLIDING_SYMBOL">colliding</string>
+	<string name="OUTOFCOLLISION_SYMBOL">not colliding anymore</string>
+	<string name="IF_SYMBOL">if</string>
+    <string name="tree_forall">forAll</string>
+    <string name="tree_find">find</string>
+    <string name="tree_delete">delete</string>
+    <string name="tree_contains">contains</string>
+    <string name="tree_applyforce">apply force</string>
+    <string name="tree_choose">choose</string>
+    <string name="tree_copy">copy</string>
+    <string name="tree_else">else</string>
+  
+    <string name="tx_relative">Move %1$s by (%2$s, 0)</string>
+    <string name="tx_absolute">Move %1$s to x = %2$s</string>
+    <string name="tx_moveinverteddx">Move %1$s by the opposite of the horizontal finger movement</string>
+    <string name="tx_movedx_pos">If finger on %1$s, move %2$s by the horizontal finger movement</string>
+    <string name="ty_relative">Move %1$s by (0, %2$s)</string>
+    <string name="ty_absolute">Move %1$s to y = %2$s</string>
+    <string name="ty_moveinverteddy">Move %1$s by the opposite of the vertical finger movement</string>
+    <string name="ty_movedy_pos">Move %1$s by the vertical finger movement</string>
+    <string name="txy_move_force">Accelerate %1$s following the finger</string>
+    <string name="txy_cell_move_relative">Move %1$s on array  %2$s by (%3$s,%4$s)</string>
+    <string name="txy_cell_move_absolute">Move %1$s to cell %2$s</string>
+    <string name="tanglerelative">Change the speed direction of %1$s by %2$s°</string>
+    <string name="tangleabsolute">Change the speed direction of %1$s to %2$s°</string>
+    <string name="tanglecopy">Copy the speed direction of %1$s to %2$s</string>
+    <string name="tvelocityabsolute">Set velocity of %1$s to %2$s</string>
+    <string name="tcolorabsolute">Set the color of %1$s to %2$s</string>
+    <string name="tvisibleabsolute">Set the visibility of %1$s to %2$s</string>
+    <string name="tvisibletoggle">Toggle the visibility of %1$s</string>
+    <string name="tvalueabsolute">Change the value of %1$s to %2$s</string>
+    <string name="tvaluerelative">Change the value of %1$s by %2$s</string>
+    <string name="tvaluerelative2">Adds %1$s to the value of %2$s</string>
+    <string name="tvaluediv2">Divide the value of %1$s by %2$s</string>
+    <string name="tvaluetimes">Multiply the value of %1$s by %2$s</string>
+    <string name="tvaluecombine1_absolute">Copy the value of %1$s to %2$s</string>
+    <string name="tvaluecombine1_relativemultcopy">Store in %1$s the value of %2$s multiplied by %3$s</string>
+    <string name="tvaluecombine1_relativemodulo">Store in %1$s its previous value modulo %2$s</string>
+    <string name="tvaluecombine2_plus">Store in %1$s the sum of %2$s and %3$s</string>
+    <string name="tvaluecombine2_minus">Store in %1$s the difference between %2$s and %3$s</string>
+    <string name="tvaluecombine2_times">Store in %1$s the multiplication between %2$s and %3$s</string>
+    <string name="tvaluecombine2_div">Store in %1$s the division between %2$s and %3$s</string>
+    <string name="tvaluecombine2_mod">Store in %1$s the remainder of the division between %2$s and %3$s</string>
+    <string name="ttextabsolute">Change the text of %1$s to \"%2$s\"</string>
+    <string name="ttextcopy">Copy the text of %1$s to %2$s</string>
+    <string name="ttextconcatenate">Concatenate the texts of %1$s and %2$s to %3$s</string>
+    <string name="ttimeabsolute">Start %1$s at time %2$s</string>
+    <string name="ttimerepeat">Change the time of %1$s by amount of time %2$s</string>
+    <string name="ttimenow">Start to read %1$s</string>
+    <string name="tradiusrelativeplus">Add %1$s to the radius of %2$s</string>
+    <string name="tradiusrelativetimes">Multiply the radius of %1$s by %2$s</string>
+    <string name="tradiusabsolute">Change the radius of %1$s to %2$s</string>
+    <string name="tradiusmovex">Augment the radius of %1$s when the finger moves to the right</string>
+    <string name="tradiusmovex_rev">Augment the radius of %1$s when the finger moves to the left</string>
+    <string name="tradiusmovey">Augment the radius of %1$s when the finger moves to the bottom</string>
+    <string name="tradiusmovey_rev">Augment the radius of %1$s when the finger moves to the top</string>
+    <string name="tbooleanabsolute">Set the value of %1$s to %2$s</string>
+    <string name="tbooleantoggle">Toggle the boolean value of %1$s</string>
+    <string name="tbooleancopy">Copy the boolean value of %1$s to %2$s</string>
+    <string name="tarraysnapwithcoordinates">Snap %1$s to the center of cell %2$s</string>
+    <string name="tarraysnapwithvelocity">Snap %1$s to the center of cell %2$s by modifying velocity</string>
+    <string name="tarraysnapwithforce">Snap %1$s to the center of cell %2$s my modifying acceleration</string>
+
+</resources>

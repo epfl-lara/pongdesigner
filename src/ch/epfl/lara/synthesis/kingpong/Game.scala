@@ -19,6 +19,7 @@ import common._
 trait Game extends RulesManager with Context { self => 
   protected implicit val selfImplicit = self
   protected implicit val startIsPlanned = GameObject.PLANNED_SINCE_BEGINNING
+  
   val world: PhysicalWorld
   var worldgravityangle = 0.0f
   var worldgravityradius = 0.0f

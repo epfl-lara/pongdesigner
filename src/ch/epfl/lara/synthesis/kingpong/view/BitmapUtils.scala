@@ -29,6 +29,21 @@ object BitmapUtils {
       new Rect(0, 0, targetSize, targetSize), null)
     targetBitmap
   }
+  
+  /** Cuts the bitmap so that it shrinks it to the given proportions */
+  def cutBitmapProportions(sourceBitmap: Bitmap, width: Float, height: Float): Bitmap = {
+    val ow = sourceBitmap.getWidth()
+    val oh = sourceBitmap.getHeight()
+    if(width *oh > ow * height ) { //the new is wider
+      val newHeight = ow*height/width
+      cutBitmap(sourceBitmap, 0, ((oh - newHeight)/2).toInt, ow, newHeight.toInt)
+    } else if(width *oh < ow * height) { //the new is taller.
+      val newWidth = oh*width/height
+      cutBitmap(sourceBitmap, ((ow - newWidth)/2).toInt, 0, newWidth.toInt, oh)
+    } else {
+      sourceBitmap
+    }
+  }
 
   def cutBitmap(sourceBitmap: Bitmap, x: Int, y: Int, width: Int, height: Int): Bitmap = {
     Bitmap.createBitmap(sourceBitmap, x, y, width, height)

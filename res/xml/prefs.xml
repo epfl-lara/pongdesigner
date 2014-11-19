@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/prefs_general_title"
+    android:summary="@string/prefs_general_title"
+    >
+    <intent
+        android:action="android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS"
+        android:targetPackage="ch.epfl.lara.synthesis.kingpong"
+        android:targetClass="ch.epfl.lara.synthesis.kingpong.UserPreferences"/>
     <PreferenceCategory 
         android:title="@string/prefs_general_title">
         <CheckBoxPreference android:title="@string/prefs_show_tooltip"
@@ -8,9 +15,9 @@
             android:summaryOff="@string/prefs_show_tooltip_off"
             android:key="tooltips"
             android:defaultValue="true"/>
-        <!--  ListPreference android:title="@string/prefs_locale"
+        <ListPreference android:title="@string/prefs_locale"
             android:key="locale"
             android:summary="@string/pref_select_locale" android:entries="@array/locales"
-            android:entryValues="@array/locales_values" /-->
+            android:entryValues="@array/locales_values" />
     </PreferenceCategory>
 </PreferenceScreen>

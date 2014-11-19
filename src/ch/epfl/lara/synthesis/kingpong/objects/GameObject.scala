@@ -55,7 +55,14 @@ abstract class GameObject(init_name: Expr, _plannedFromBeginning: GameObject.IsP
   def ephemeralProperties: Traversable[EphemeralProperty[_]] = _ephemeralProperties
   /** Get a specific ephemeral property. */
   def getEphemeralProperty(name: String) = _ephemeralPropertiesMap.get(name)
-
+  /** Adds a new ephemeral property */
+  def addEphemeralProperty(e: EphemeralProperty[_]) {
+    if(!_ephemeralPropertiesMap.contains(e.name)) {
+      _ephemeralProperties += e;
+      _ephemeralPropertiesMap(e.name) = e
+    }
+  }
+  
   // --------------------------------------------------------------------------
   // Properties
   // --------------------------------------------------------------------------

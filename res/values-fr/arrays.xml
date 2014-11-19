@@ -71,71 +71,71 @@
     </array>
     
     <string-array name="rename_rectangles">
-        <item>custom&#8230;</item>
-        <item>wall</item>
-        <item>block</item>
-        <item>paddle</item>
-        <item>goal</item>
-        <item>food</item>
-        <item>trigger</item>
-        <item>player</item>
-        <item>ennemy</item>
+        <item>personnalisé&#8230;</item>
+        <item>mur</item>
+        <item>bloc</item>
+        <item>raquette</item>
+        <item>but</item>
+        <item>nourriture</item>
+        <item>déclencheur</item>
+        <item>joueur</item>
+        <item>ennemi</item>
     </string-array>
     <string-array name="rename_circles">
-        <item>custom&#8230;</item>
-        <item>circle</item>
-        <item>player</item>
-        <item>enemy</item>
-        <item>ball</item>
-        <item>deflector</item>
-        <item>food</item>
-        <item>bullet</item>
+        <item>personnalisé&#8230;</item>
+        <item>cercle</item>
+        <item>joueur</item>
+        <item>ennemi</item>
+        <item>balle</item>
+        <item>déflecteur</item>
+        <item>nourriture</item>
+        <item>obus</item>
     </string-array>
     <string-array name="rename_textbox">
-        <item>custom&#8230;</item>
+        <item>personnalisé&#8230;</item>
         <item>textBox</item>
         <item>label</item>
         <item>description</item>
         <item>message</item>
     </string-array>
         <string-array name="rename_integerbox">
-        <item>custom&#8230;</item>
+        <item>personnalisé&#8230;</item>
         <item>score</item>
         <item>total</item>
-        <item>counter</item>
-        <item>finished</item>
-        <item>goal</item>
+        <item>compteur</item>
+        <item>fini</item>
+        <item>but</item>
         <item>quotient</item>
-        <item>number</item>
-        <item>remainder</item>
-        <item>lives</item>
-        <item>zero</item>
+        <item>nombre</item>
+        <item>reste</item>
+        <item>vies</item>
+        <item>zéro</item>
         </string-array>
     <string-array name="string_possibilities">
-        <item>custom&#8230;</item>
-        <item>Victory!</item>
-        <item>Looser</item>
-        <item>Game over</item>
+        <item>personnalisé&#8230;</item>
+        <item>Victoire!</item>
+        <item>Perdu</item>
+        <item>Fin du jeu</item>
         <item>Score:</item>
-        <item>Lives:</item>
-        <item>Start</item>
-        <item>Finish</item>
+        <item>Vies:</item>
+        <item>Démarrer</item>
+        <item>Finir</item>
         <item>\u2190</item>
         <item>\u2191</item>
         <item>\u2192</item>
         <item>\u2193</item>
     </string-array>
     <string-array name="text_possibilities">
-        <item>custom&#8230;</item>
-        <item>Congratulations !</item>
-        <item>Game, over.</item>
-        <item>Welcome to the game !</item>
-        <item>Enemy approaching !</item>
+        <item>personnalisé&#8230;</item>
+        <item>Félicitations !</item>
+        <item>Guèime, ovheure.</item>
+        <item>Bienvenue dans le jeu !</item>
+        <item>Ennemi en approche !</item>
         <item>Wololo</item>
-        <item>Please try again</item>
+        <item>Veuillez réessayer</item>
     </string-array>
     <string-array name="language_possibilities">
-        <item>custom&#8230;</item>
+        <item>personnalisé&#8230;</item>
         <item>fr</item>
         <item>en</item>
     </string-array>
@@ -171,7 +171,7 @@
         <item>fr</item>
     </string-array>
     <string-array name="shredding_values">
-        <item>Custom (Rows x Columns)&#8230;</item>
+        <item>Perso (Lignes x Colonnes)&#8230;</item>
         <item>3 x 3</item>
         <item>8 x 8</item>
         <item>1 x 2 (vertical)</item>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Concepteur de Pong</string>
+    <string name="pick_graphics">Choisir une texture</string>
+    <string name="app_name_interview">Interview Concepteur de Pong</string>
+    <string name="dummy">Factice</string>
+    <string name="title_activity_game_designer">Concepteur de Pong</string>
+    <string name="design_rule">Editeur de règles</string>
+    <string name="select_event">Sélectionnez l\'événement déclenchant</string>
+    <string name="existing_rule">Règle existante...</string>
+    <string name="existing_rule_dialog_title">Choisir une règle pour modifier</string>
+    <string name="select_event_toast">Sélectionnez l\'événement déclenchant, ou recliquez sur le bouton règle pour annuler</string>
+    <string name="select_effects">Modifier le jeu pour montrer les effets</string>
+    <string name="select_effects_toast">Sélectionnez les effets de cette cause</string>
+    <string name="rule_canceled">Règle de conception annulée</string>
+    <string name="modify_state">Modifier état global</string>
+    <string name="rule_created_toast">Règle créée</string>
+    <string name="undo">Annuler</string>
+    <string name="redo">Refaire</string>
+    <string name="save">Enregistrer</string>
+    <string name="load">Charger</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="choose_rule">Choisir une règle</string>
+    <string name="rename_title">Renommer %1$s</string>
+    <string name="delete_title">Supprimer %1$s</string>
+    <string name="confirm_delete">Confirmer suppression?</string>
+    <string name="modify_text_title">Modifier texte de %1$s</string>
+    <string name="delete_line_code">Confirmer la suppression de \'%1$s\'</string>
+    <string name="confirm_reset_title">Réinitialiser le jeu</string>
+    <string name="confirm_reset_message">Créer un jeu vide?</string>
+    <string name="share_audio_via">Partager fichier audio via</string>
+    <string name="choose_trigger">La valeur de %1$s a changé. Choisissez un événement déclencheur :</string>
+    <string name="trigger_integer_1">A chaque fois que %1$s change</string>
+    <string name="trigger_integer_2">Lorsque %1$s == %2$d</string>
+    <string name="trigger_integer_3">Lorsque %1$s > = %2$d</string>
+    <string name="trigger_integer_4">Lorsque %1$s &lt; = %2$d</string>
+    <string name="trigger_integer_5">Lorsque %1$s > 0</string>
+    <string name="trigger_integer_6">Lorsque %1$s &lt; 0</string>
+    <string name="trigger_integer_7">Lorsque %1$s > = 0</string>
+    <string name="trigger_integer_8">Lorsque %1$s &lt; = 0</string>
+    <string name="when_finger_up">Lorsque le doigt relâche %1$s</string>
+    <string name="when_finger_down">Lorsque le doigt appuie sur %1$s</string>
+    <string name="when_finger_move">Lorsque le doigt se déplace sur %1$s</string>
+    <string name="when_collision">Lorsque %1$s et %2$s se heurtent</string>
+    <string name="when_object">Objet %1$s</string>
+    <string name="choose_trigger_outofscreen">Choisir événement déclencheur pour %1$s :</string>
+    <string name="trigger_outscreen_1">Lorsque %1$s sort du jeu</string>
+    <string name="trigger_outscreen_2">Lorsque %1$s traverse cette frontière</string>
+    <string name="choose_collision">Lorsque %1$s heurte %2$s</string>
+    <string name="trigger_collision_1">Je voudrais modifier les effets de la collision</string>
+    <string name="trigger_collision_2">Annuler toute collision. %1$s et %2$s ne doivent pas se heurter.</string>
+    <string name="trigger_collision_3">%1$s et %2$s ne se heurtent pas, mais la collision est enregistrée.</string>
+    <string name="loadExternal">Chargement du jeu externe...</string>
+    <string name="savedGame1">Fibonacci</string>
+    <string name="savedGame2">Syracuse</string>
+    <string name="savedGame3">Pong 2 joueurs</string>
+    <string name="savedGame4">Space Invaders</string>
+    <string name="savedGame5">Pong Escape</string>
+    <string name="savedGame6">PongMan</string>
+    <string name="savedGame7">Labyrinthe incliné</string>
+    <string name="savedGame8">Ballon Pong</string>
+    <string name="savedGame9">Casse-briques à 3-joueurs</string>
+    <string name="brickbreaker">Casse-briques</string>
+    <string name="drawing_game">Enregistreur de dessin</string>
+    <string name="supermario">Super Maria</string>
+    <string name="sliding">Puzzle coulissant</string>
+    <string name="three_in_a_row">3 alignés</string>
+    <string name="algorithms">Algorithmes</string>
+    <string name="balanced_parentheses">Equilibré entre parenthèses</string>
+    <string name="saveFileAs">Nom du jeu à sauvegarder :</string>
+    <string name="exportFileAs">Enregistrer et exporter le jeu avec le nom :</string>
+    <string name="export">Exporter</string>
+    <string name="options">Options</string>
+    <string name="loadFileAs">Charger le jeu :</string>
+    <string name="importFileAs">Importer :</string>
+    <string name="share_game_via">Partager le jeu via :</string>
+    <string name="loading_game">Chargement. Veuillez patienter...</string>
+    <string name="saving_game">Sauvegarde. Veuillez patienter..</string>
+    <string name="tutorial">Tutoriel</string>
+    <string name="tutorial_0">Ne pas montrer cette info-bulle la prochaine fois</string>
+    <string name="tutorial_1">Afficher le tutoriel complet...</string>
+    <string name="tutorial_continue">Suivant</string>
+    <string name="init_help">Pour commencer le jeu, appuyez sur ce bouton</string>
+    <string name="tutorial_2">Cette barre indique le temps qui s\'écoule</string>
+    <string name="tutorial_3">Pour modifier le point de temps édition lors de l\'édition, glissière arrière ou avant</string>
+    <string name="tutorial_4">Revenir au début pour modifier l\'état initial du jeu</string>
+    <string name="tutorial_5">Afficher tous les événements pour créer une règle</string>
+    <string name="tutorial_6">Enregistrer un ensemble d\'instructions chaque fois que les formes se heurtent</string>
+    <string name="tutorial_7">Instructions d\'enregistrement chaque fois que les formes se chevauchent, annulant la collision</string>
+    <string name="tutorial_8">Annuler n\'importe quel type de chevauchement ou collision detection</string>
+    <string name="tutorial_9">Changement de l\'état du jeu selon la règle que vous souhaitez créer</string>
+    <string name="tutorial_10">Acceptez les modifications en appuyant sur OK</string>
+    <string name="tutorial_11">Fusionner les nouveaux changements dans le jeu dans la règle</string>
+    <string name="tutorial_12">Bascule entre l\'édition ou non la règle</string>
+    <string name="tutorial_13">Appliquer la règle une fois</string>
+    <string name="tutorial_14">Vous pouvez également modifier certaines parties du code</string>
+    <string name="tutorial_end">Le tutoriel est terminé. Vous pouvez ouvrir un jeu existant pour faire le test</string>
+
+    <string name="menu_add_shape_hint">Ajoute une forme pour le jeu</string>
+    <string name="menu_add_constraint_hint">Ajouter ou modifier une contrainte/règle du jeu</string>
+    <string name="menu_add_force_hint">Ajouter ou modifier le champ de force</string>
+    <string name="menu_fix_hint">Arranger une règle qui a mal tourné</string>
+
+    <string name="menu_fix_hint_cancel">Fin des arrangements de règles</string>
+
+    <string name="add_rectangle_hint">Ajouter un rectangle dans le jeu</string>
+    <string name="add_circle_hint">Ajouter un cercle au jeu</string>
+    <string name="add_integerbox_hint">Ajouter un entier au jeu</string>
+    <string name="add_textbox_hint">Ajouter un texte pour le jeu</string>
+    <string name="add_boolbox_hint">Ajouter une valeur booléenne pour le jeu</string>
+    <string name="add_arraybox_hint">Ajouter un tableau 2D pour le jeu</string>
+    <string name="add_drawing_object_hint">Ajouter une zone de dessin pour le jeu</string>
+    <string name="add_sound_recorder_hint">Ajouter un enregistreur de sons pour le jeu</string>
+    <string name="add_soundtts_hint">Ajouter une synthèse vocale pour le jeu</string>
+    <string name="add_rule_hint">Ajouter une règle du jeu</string>
+
+    <string name="select_accelerometer_hint">Permet de sélectionner des objets touchés par l\'accéléromètre</string>
+    <string name="select_gravity2d_hint">Permet de sélectionner des objets affectés par la gravité 2D</string>
+    <string name="select_camera_hint">Permet la sélection d\'un objet suivi par la caméra et en modifiant les propriétés de la camera</string>
+    <string name="select_rule_hint">Sélectionner des événements pour créer une règle</string>
+    <string name="select_prevnext_hint">Bascule entre modifier l\'état précédent ou bien le nouveau</string>
+    <string name="change_name_hint">Modifie le nom de la forme</string>
+    <string name="system_property_hint">Modifie les propriétés du système de la forme</string>
+    <string name="change_text_hint">Remplace le texte</string>
+    <string name="change_language_hint">Remplacer le langage de synthèse vocale</string>
+    <string name="change_position_hint">Modifie la position</string>
+    <string name="change_increment_hint">Augmentation du nombre de 1</string>
+    <string name="change_boolean_hint">Active/désactive la valeur booléenne</string>
+    <string name="change_intname_hint">Affiche le nom ou pas avec le numéro</string>
+    <string name="change_decrement_hint">Diminution du nombre de 1</string>
+    <string name="change_speed_hint">Faites glisser pour modifier la vitesse</string>
+    <string name="change_rotate_hint">Faites glisser pour modifier l\'angle</string>
+    <string name="change_size_hint">Faites glisser pour modifier la taille</string>
+    <string name="change_arraysize_hint">Faites glisser pour modifier les dimensions de la matrice</string>
+    <string name="change_paint_hint">Faites glisser pour sélectionner la texture</string>
+    <string name="change_nail_hint">Basculer entre forme statique et dynamique</string>
+    <string name="change_visible_hint">Modifier la visibilité (et l\'interaction physique) de la forme</string>
+    <string name="change_trash_hint">Définit la forme comme maintenant supprimé</string>
+    <string name="change_fresh_hint">Définit la forme comme maintenant créée</string>
+    <string name="event_collide_hint">Condition que les formes se heurtent</string>
+    <string name="event_overlap_hint">Condition que les formes se chevauchent sans collision</string>
+    <string name="event_nocollide_hint">Supprime la détection du chevauchement ou de la collision</string>
+    <string name="event_fingerdown_hint">Lorsque le doigt appuie sur la forme</string>
+    <string name="event_fingerup_hint">Lorsque le doigt relâche la forme</string>
+    <string name="event_fingermove_hint">Lorsque le doigt se déplace sur la forme</string>
+    <string name="change_rule_hint">Ouvre une règle pour l\'édition</string>
+    <string name="change_back_hint">L\'objet sera comme ça dès le début</string>
+    <string name="change_copy_hint">Duplique cet objet</string>
+    <string name="change_time_hint">Changer le début de la lecture à maintenant</string>
+    <string name="change_cut_hint">Couper ce rectangle en morceaux</string>
+
+    <string name="play_rule_hint">Appliquer le contenu de cette règle</string>
+    <string name="trash_rule_hint">Supprimer cette règle</string>
+    <string name="resize_layout_hint">Redimensionner la présentation du jeu</string>
+    <string name="prefs_general_title">Préférences</string>
+    <string name="prefs_show_tooltip">Afficher les info-bulles du menu</string>
+    <string name="prefs_show_tooltip_on">Info-bulles sont activées</string>
+    <string name="prefs_show_tooltip_off">Info-bulles sont désactivées</string>
+    <string name="prefs_locale">Langue</string>
+    <string name="pref_select_locale">Choisissez une langue</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="action_settings">Paramètres</string>
+    <string name="hello_world">Bonjour tout le monde!</string>
+    <string name="addshapegroup">+</string>
+
+    <string name="codeviewhint">Code du jeu</string>
+    <string name="change_image">Changer l\'image</string>
+
+    <string name="editwhilerunningon">Edition activée pendant l\'exécution du jeu</string>
+    <string name="editwhilerunningoff">Edition désactivée pendant l\'exécution du jeu</string>
+
+    <string name="generalize_title">Choisir une façon de généraliser la règle concernant %1$s.</string>
+    <string name="generalize_condition">Tous les %1$s doit être vrais.</string>
+    <string name="generalize_modification">Changement de %1$s pour tous les %1$s.</string>
+    <string name="generalize_global">Appliquer cette règle pour toutes les formes semblables à %1$s.</string>
+
+    <string name="rule_in_progress_title">Règle en cours</string>
+    <string name="rule_in_progress_msg">Vous êtes en train de créer une règle. La conserver et démarrer le jeu?</string>
+    <string name="shredding_title">Coupage de %1$s</string>
+
+    <string name="nothing_to_undo">[aucun]</string>
+    <string name="nothing_to_redo">[aucun]</string>
+
+    <string name="cancel">Annuler</string>
+
+    <string name="letmeedit">Modifier temporairement le jeu à partir de maintenant (par défaut)</string>
+    <string name="letmerestart">Editer le jeu à partir du début</string>
+    <string name="letmecreaterule">Ajouter une règle du jeu</string>
+    <string name="letmefixwrong">Arranger une règle qui a mal tourné</string>
+
+    <string name="eventmenu_demonstraterule">Montrer les effets de %1$s.</string>
+    <string name="eventmenu_addeventobject">Ajouter d\'autres objets et des événements qui participent au déclenchement de la règle (par défaut)</string>
+    <string name="eventmenu_cancel">Annuler la création de la règle</string>
+
+    <string name="select_or_take_picture">Sélectionner ou prendre une nouvelle photo</string>
+    <string name="set_restitution_title">Restitution</string>
+    <string-array name="restitution_possibilities">
+    <item>Personnalisé&#8230;</item>
+    <item>Inerte (0)</item>
+    <item>Petite (0.5)</item>
+    <item>Moyenne (0.5)</item>
+    <item>Élastique (1)</item>
+    </string-array>
+    <string name="set_friction_title">Friction avec objet</string>
+    <string-array name="friction_possibilities">
+    <item>Personnalisé&#8230;</item>
+    <item>Glissant (0)</item>
+    <item>Frottant un peu (0.1)</item>
+    <item>Frottant (0.5)</item>
+    <item>Collant (1)</item>
+    </string-array>
+    <string name="set_linear_damping_title">La valeur d\'amortissement linéaire</string>
+    <string-array name="linear_damping_possibilities">
+    <item>Personnalisé&#8230;</item>
+    <item>Déplace dans l\'espace (0)</item>
+    <item>Déplace dans milieu gazeux (0.5)</item>
+    <item>Déplace dans milieu liquide (1)</item>
+    <item>Déplace dans milieu visqueux (2)</item>
+    </string-array>
+    
+    <string name="gravity_defaultname">Gravité</string>
+    <string name="rectangle_defaultname">Rectangle</string>
+    <string name="circle_defaultname">Cercle</string>
+    <string name="drawingZone_defaultname">Zone de dessin</string>
+    <string name="soundrecorder_defaultname">Magnétophone</string>
+    <string name="array_defaultname">Tableau</string>
+    <string name="boolbox_defaultname">Condition</string>
+    <string name="tts_defaultname">TexteEnVoix</string>
+    <string name="tts_defaulttext">Bonjour</string>
+    <string name="tts_defaultlang">fr</string>
+    <string name="textbox_defaultname">Texte</string>
+    <string name="textbox_defaulttext">Votre texte ici</string>
+    <string name="integerbox_defaultname">Entier</string>
+    
+    <string name="generalize_request">Generaliser depuis %1$s à tous les %2$s la règle</string>
+    <string name="first_custom_choice">Personnaliser...</string>
+</resources>

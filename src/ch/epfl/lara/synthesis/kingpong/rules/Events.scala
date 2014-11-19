@@ -85,7 +85,11 @@ object Events {
 
   case class AccelerometerChanged(vector: Vec2) extends Event with NoObjects
   
-  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event with SelectableEvent with NoObjects
+  case class AssignmentEvent(p: Vec2, a: AssignableProperty[_], assignStatement: Expr) extends Event with SelectableEvent with NoObjects {
+    override def selectableBy(x: Float, y: Float) = {
+      super.selectableBy(x, y) || (if(a != null && a.isInstanceOf[RWProperty[_]] && a.asInstanceOf[RWProperty[_]].parent != null) a.asInstanceOf[RWProperty[_]].parent.selectableBy(p.x, p.y) else false)
+    }
+  }
 
   object ::> {def unapply[A] (l: Seq[A]): Option[(Seq[A],A)] = if(l.nonEmpty) Some( (l.init, l.last) ) else None }
   object <:: {def unapply[A] (l: Seq[A]): Option[(A, Seq[A])] = if(l.nonEmpty) Some( (l.head, l.tail) ) else None }

@@ -3,9 +3,11 @@ package ch.epfl.lara.synthesis.kingpong.rules
 import ch.epfl.lara.synthesis.kingpong.objects._
 import ch.epfl.lara.synthesis.kingpong.expression.Trees._
 import ch.epfl.lara.synthesis.kingpong.rules.Events._
+import ch.epfl.lara.synthesis.kingpong.Localization
+import ch.epfl.lara.synthesis.kingpong.StringLocalization
 
-trait Context extends Any {
-
+trait Context extends StringLocalization {
+  
   def events: Iterable[Event]
   def time: Int  
   def getNewName(s: String): String
