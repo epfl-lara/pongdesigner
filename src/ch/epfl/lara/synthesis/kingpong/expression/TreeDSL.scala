@@ -275,6 +275,12 @@ object TreeDSL {
     FingerDownOver(obj, id, body(ref))
   }
   
+  def fingerUpOver(obj: Expr)(body: Proxy => Expr): Expr = {
+    val id = FreshIdentifier("fing").setType(TVec2)
+    val ref = new IdentifierProxy(id)
+    FingerUpOver(obj, id, body(ref))
+  }
+  
   def isFingerMoveOver(obj: Expr): Expr = {
     val id = FreshIdentifier("move").setType(TTuple(TVec2, TVec2))
     FingerMoveOver(obj, id, UnitLiteral)

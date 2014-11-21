@@ -15,7 +15,7 @@ class ThreeInARow extends Game {
 
   val arrays = Category("Arrays")()
   val pieces = Category("Pieces")(width = 0.9, height = 0.9)
-  val borders = Category("Borders")(tpe = BodyType.STATIC, color = red, friction = 0)
+  val borders = Category("Borders")(tpe = BodyType.STATIC, color = red, friction = 0, restitution = 0)
   val counters = Category("Counters")()
   val randoms = Category("Randoms")()
   
@@ -44,9 +44,14 @@ class ThreeInARow extends Game {
   
   // Moving pieces rule
   val r1 = foreach(pieces) { piece =>
+    Block(
     fingerMoveOver(piece) { move => Seq(
       piece.velocity := Tuple((move._2._1 - move._1._1) * 15, piece.velocity._2)
+    )},
+    fingerUpOver(piece) { fing => Seq(
+      piece.velocity := Tuple(0, piece.velocity._2)
     )}
+    )
   }
    
   // Snapping pieces rule
@@ -63,8 +68,9 @@ class ThreeInARow extends Game {
   
   // Spawning piece rule
   val r3 = let("piece", find(pieces)(_.name =:= "piece")) { piece =>
+    whenever(notNull(piece))(
     let("cell", ContainingCell(gameboard, piece)) { cell =>
-      whenever(notNull(cell) && notNull(piece) &&
+      whenever(notNull(cell) &&
                ((cell.row =:= (gameboard.numRows - 1)) ||
                 (!forall(pieces)(p => !Contains(Apply(gameboard, cell.column, cell.row + 1), p))
                ))) (
@@ -76,28 +82,29 @@ class ThreeInARow extends Game {
             clone.x := gameboard.cell(col, 0).x, 
             clone.y := gameboard.cell(col, 0).y
           )},
-          clone.color := If(random.value % 3 =:= 0, blue, If(random.value % 3 =:= 1, green, purple))
-        )},
-        
-        // Removing pieces rule
-        foreach(pieces) { centerPiece =>
-          let("centerCell", ContainingCell(gameboard, centerPiece)) { centerCell =>
-            let("leftCell", "rightCell", 
-                gameboard.cell(centerCell.column - 1, centerCell.row), gameboard.cell(centerCell.column + 1, centerCell.row)) { (leftCell, rightCell) =>
-              let("leftPiece", "rightPiece", find(pieces)(Contains(leftCell, _)), find(pieces)(Contains(rightCell, _))) { (leftPiece, rightPiece) =>
-                whenever(notNull(leftPiece) && notNull(rightPiece) && 
-                         leftPiece.color =:= centerPiece.color && rightPiece.color =:= centerPiece.color) (
-                  counter.value += 1,
-                  Delete(leftPiece),
-                  Delete(centerPiece),
-                  Delete(rightPiece)
-                )
-              }
-            }
-          }
-        }
+          clone.color := If(random.value % 3 =:= 0, blue, If(random.value % 3 =:= 1, green, purple)),
+          // Removing pieces rule, except for the clone.
+	        foreach(pieces) { centerPiece =>
+	          whenever(centerPiece =!= clone)(
+	          let("centerCell", ContainingCell(gameboard, centerPiece)) { centerCell =>
+	            whenever(notNull(centerCell))(
+	            let("leftCell", "rightCell", 
+	                gameboard.cell(centerCell.column - 1, centerCell.row), gameboard.cell(centerCell.column + 1, centerCell.row)) { (leftCell, rightCell) =>
+	              let("leftPiece", "rightPiece", find(pieces)(e => Contains(leftCell, e) && (e =!= clone)), find(pieces)(e => Contains(rightCell, e) && (e =!= clone))) { (leftPiece, rightPiece) =>
+	                whenever(notNull(leftPiece) && notNull(rightPiece) &&
+	                         leftPiece.color =:= centerPiece.color && rightPiece.color =:= centerPiece.color) (
+	                  counter.value += 1,
+	                  Delete(leftPiece),
+	                  Delete(centerPiece),
+	                  Delete(rightPiece)
+	                )
+	              }
+	            })
+	          })
+	        }
+        )}
       )
-    }
+    })
   }
   
   
