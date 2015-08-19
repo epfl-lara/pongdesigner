@@ -44,6 +44,11 @@ import android.provider.MediaStore
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.content.res.Configuration
+import java.net.URLDecoder
+
+trait GameCreationContext {
+  def bitmap(id: Int): Int
+}
 
 object KingPong {
   final val TTS_CHECK = 1
@@ -68,16 +73,16 @@ object KingPong {
   final val PONGNAME_DRAWINGRECORDER = "DrawingRecorder"
   final val PONGNAME_TESTGAME = "TestGame"
   final val PONGNAME_EMPTY = "empty game"
-  private val mapGames: Map[String,(String)=>Game] = Map(
-    PONGNAME_SIMPLEBRICKBREAKER -> ((language: String) => new examples.BrickBreaker()),
-    PONGNAME_SUPERMARIO -> ((language: String) => new examples.PlatformGame()),
-    PONGNAME_SLIDING -> ((language: String) => new examples.SlidingPuzzle()),
-    PONGNAME_THREEINAROW -> ((language: String) => new examples.ThreeInARow()),
-    PONGNAME_DRAWINGRECORDER -> ((language: String) => new examples.DrawingRecorder()),
-    PONGNAME_ALGORITHMS -> ((language: String) => new examples.MatricesAlgorithms()),
-    PONGNAME_BALANCED_PARENTHESES -> ((language: String) => new examples.BalancedParentheses()),
-    PONGNAME_TESTGAME -> ((language: String) => new examples.ProofConceptGame(language)),
-    PONGNAME_EMPTY -> ((language: String) => new examples.EmptyGame())
+  private val mapGames: Map[String,(String, GameCreationContext)=>Game] = Map(
+    PONGNAME_SIMPLEBRICKBREAKER -> ((language: String, g: GameCreationContext) => new examples.BrickBreaker()),
+    PONGNAME_SUPERMARIO -> ((language: String, g: GameCreationContext) => new examples.PlatformGame()),
+    PONGNAME_SLIDING -> ((language: String, g: GameCreationContext) => new examples.SlidingPuzzle()),
+    PONGNAME_THREEINAROW -> ((language: String, g: GameCreationContext) => new examples.ThreeInARow()),
+    PONGNAME_DRAWINGRECORDER -> ((language: String, g: GameCreationContext) => new examples.DrawingRecorder()),
+    PONGNAME_ALGORITHMS -> ((language: String, g: GameCreationContext) => new examples.MatricesAlgorithms()),
+    PONGNAME_BALANCED_PARENTHESES -> ((language: String, g: GameCreationContext) => new examples.BalancedParentheses()),
+    PONGNAME_TESTGAME -> ((language: String, g: GameCreationContext) => new examples.ProofConceptGame(g, language)),
+    PONGNAME_EMPTY -> ((language: String, g: GameCreationContext) => new examples.EmptyGame())
   )
 
   final val PREFS_NAME = "MyPrefsFile"
@@ -117,9 +122,9 @@ object KingPong {
         }
       } else {
         if(mapGames contains filename) {
-          mapGames(filename)
+          //mapGames(filename)
           publishProgress(("Loading " + filename, 0, 100))
-          game = (mapGames(filename)(language), Nil)
+          game = (mapGames(filename)(language, activity), Nil)
           publishProgress(("Finished", 100, 100))
         } else {
           val file = new java.io.File(activity.getFilesDir(), filename)
@@ -177,7 +182,7 @@ object KingPong {
 }
 
 class KingPong extends Activity 
-               with ActivityUtil with SensorEventListener with ContextUtils { self =>
+               with ActivityUtil with SensorEventListener with ContextUtils with GameCreationContext { self =>
   import R.id._
   import R.layout._
   import R.drawable._
@@ -230,7 +235,7 @@ class KingPong extends Activity
     }
     if(!mGameView.hasGame()) {
       if(task.game == null) {
-        task.game = (new examples.ProofConceptGame(), Nil)
+        task.game = (new examples.ProofConceptGame(self, getLanguage()), Nil)
       }
       mGameView.loadBitmapSet(task.game._2)
       mGameView.setGame(task.game._1)
@@ -244,6 +249,15 @@ class KingPong extends Activity
     
     menus.ColorMenu.createMenuFromColorArray(this, R.array.colors)
     menus.MenuOptions.context = this
+    
+    val intent = getIntent()
+    if(intent != null && intent.getData() != null) {
+      val name = intent.getData().getEncodedPath()
+      if(name != null && name != "" && (intent.getExtras() == null || !intent.getExtras().getBoolean("used", false))) {
+        intent.putExtra("used", true)
+        this.mHandler.sendMessageDelayed(Messages.FileLoad(URLDecoder.decode(name, "UTF-8")), 2000)
+      }
+    }
     
     mDetector = new GestureDetectorCompat(self,new GestureDetector.SimpleOnGestureListener {
       def retrieveTextPosition(x: Float, y: Float): Int = {
@@ -342,6 +356,10 @@ class KingPong extends Activity
     val checkIntent = new Intent()
 		checkIntent.setAction("android.speech.tts.engine.CHECK_TTS_DATA" /*Engine.ACTION_CHECK_TTS_DATA*/);
 		startActivityForResult(checkIntent, TTS_CHECK)
+  }
+  
+  def bitmap(id: Int): Int = {
+    if(mGameView != null) mGameView.addDrawable(id) else 0
   }
   
   def showActionBar() = {
@@ -773,14 +791,18 @@ class KingPong extends Activity
     }
   }
   
-  override  protected def onActivityResult(requestCode: Int, resultCode: Int, imageReturnedIntent: Intent) { 
-        super.onActivityResult(requestCode, resultCode, imageReturnedIntent)
+  override  protected def onActivityResult(requestCode: Int, resultCode: Int, data: Intent) { 
+        super.onActivityResult(requestCode, resultCode, data)
         requestCode match { 
         case IMPORT_PICT =>
             if(resultCode == Activity.RESULT_OK){
                 try {
-                    val imageUri = imageReturnedIntent.getData
-                    if(imageUri != null) {
+                    val imageUri = data.getData
+                    if(imageUri == null) {
+	                    val extras = data.getExtras();
+							        val imageBitmap = extras.get("data").asInstanceOf[Bitmap];
+							        mGameView.setImageSelectedShape(imageBitmap);
+	                  } else {
 	                    val imageStream = getContentResolver.openInputStream(imageUri)
 	                    val selectedImage = BitmapFactory.decodeStream(imageStream)
 	                    mGameView.setImageSelectedShape(selectedImage)

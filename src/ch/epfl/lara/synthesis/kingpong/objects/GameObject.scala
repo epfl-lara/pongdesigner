@@ -30,6 +30,8 @@ object GameObject {
 abstract class GameObject(init_name: Expr, _plannedFromBeginning: GameObject.IsPlanned) extends History with Snap { self =>
   def game: Game
   
+  private[kingpong] var id = UniqueCounter.nextGlobal
+  
   /** All properties mapped from their name. */
   private val _propertiesMap = MMap.empty[String, Property[_]]
   private val _writableProperties = ArrayBuffer.empty[RWProperty[_]]

@@ -28,6 +28,8 @@ object Implicits {
     def toScalaValue(e: Expr) = e match {
       case FloatLiteral(f) if f.isWhole => f.toInt
       case IntegerLiteral(i) => i
+      case StringLiteral("") => 0
+      case StringLiteral(s) => s.toInt
       case _ => throw InterpreterException(s"The value $e is incompatible with Int.")
     }
     def toExpr(v: Int) = IntegerLiteral(v)
@@ -52,6 +54,9 @@ object Implicits {
     def toScalaValue(e: Expr) = e match {
       case FloatLiteral(f) => f
       case IntegerLiteral(i)   => i.toFloat
+      case StringLiteral("") => 0
+      case StringLiteral(s) => s.toFloat
+      case BooleanLiteral(b) => if(b) 1f else 0f
       case _ => throw InterpreterException(s"The value $e is incompatible with Float.")
     }
     def toExpr(v: Float) = FloatLiteral(v)
@@ -63,6 +68,9 @@ object Implicits {
     def getPongType = TBoolean
     def toScalaValue(e: Expr) = e match {
       case BooleanLiteral(b) => b
+      case IntegerLiteral(s) => s != 0
+      case FloatLiteral(s) => s != 0
+      case StringLiteral(s) => s != ""
       case _ => throw InterpreterException(s"The value $e is incompatible with Boolean.")
     }
     def toExpr(v: Boolean) = BooleanLiteral(v)
@@ -74,6 +82,9 @@ object Implicits {
     def getPongType = TBoolean
     def toScalaValue(e: Expr) = e match {
       case StringLiteral(s) => s
+      case IntegerLiteral(s) => s.toString
+      case FloatLiteral(s) => s.toString
+      case BooleanLiteral(s) => s.toString
       case _ => throw InterpreterException(s"The value $e is incompatible with String.")
     }
     def toExpr(v: String) = StringLiteral(v)

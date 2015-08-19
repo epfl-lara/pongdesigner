@@ -24,7 +24,7 @@ case class PrettyPrinterExtended(ctx: Int => String) extends PrettyPrinterExtend
 
 object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
   object Mappings {
-    def apply(): Mappings = Mappings(Map[Category, List[(Int, Int)]](), Map[Int, List[Category]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, (Int, Int)](), Map[Int, String]())
+    def apply(): Mappings = Mappings(Map[CategoryObject, List[(Int, Int)]](), Map[Int, List[CategoryObject]](), Map[Int, List[Tree]](), Map[Property[_], List[(Int, Int)]](), Map[Int, (Int, Int)](), Map[Int, String]())
   }
   /**
    * Recording of different mappings to retrieve the objects and the code.
@@ -33,8 +33,8 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
    * mProperties : Mapping from each property to a set of positions in the code
    * mComment    : Mapping from each position of the code to the corresponding comment
    */
-  case class Mappings(mObjects: Map[Category, List[(Int, Int)]],
-      mPosCategories: Map[Int, List[Category]],
+  case class Mappings(mObjects: Map[CategoryObject, List[(Int, Int)]],
+      mPosCategories: Map[Int, List[CategoryObject]],
       mPos: Map[Int, List[Tree]],
       mProperties: Map[Property[_], List[(Int, Int)]],
       mConstantsPos: Map[Int, (Int, Int)],
@@ -42,7 +42,7 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     def add(obj: GameObject, start: Int, end: Int): Mappings = {
       add(obj.category, start, end)
     }
-    def add(obj: Category, start: Int, end: Int): Mappings = {
+    def add(obj: CategoryObject, start: Int, end: Int): Mappings = {
       this.copy(mObjects=mObjects + (obj -> ((start, end)::mObjects.getOrElse(obj, Nil))), mPosCategories = addPositions(obj, start, end, mPosCategories))
     }
     def add(obj: Property[_], start: Int, end: Int): Mappings = {
@@ -72,7 +72,7 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
     def add(comment: String, start: Int, end: Int): Mappings = {
       this.copy(mComment=addComment(comment, start, end, mComment))
     }
-    def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[Category, List[(Int, Int)]]): Map[Category, List[(Int, Int)]] = {
+    def addIfCategory(s: Tree, start: Int, end: Int, mm: Map[CategoryObject, List[(Int, Int)]]): Map[CategoryObject, List[(Int, Int)]] = {
       s match {
         case ObjectLiteral(o) if o != null => mm + (o.category -> ((start, end)::mm.getOrElse(o.category, List())))
         //TODO Lomig to compile
@@ -174,8 +174,8 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
         res
       } else mPos
       
-      this.copy(mObjects: Map[Category, List[(Int, Int)]],
-      mPosCategories: Map[Int, List[Category]],
+      this.copy(mObjects: Map[CategoryObject, List[(Int, Int)]],
+      mPosCategories: Map[Int, List[CategoryObject]],
       newMPos,
       mProperties: Map[Property[_], List[(Int, Int)]],
       mConstantsPos: Map[Int, (Int, Int)],
@@ -207,13 +207,13 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
 	  /*def +<>(other: String)(implicit s: Tree): StringMaker = {
 	    StringMaker(c append other, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen)
 	  }*/
-	  def +!(other: String, s: Category): StringMaker = {
+	  def +!(other: String, s: CategoryObject): StringMaker = {
 	    StringMaker(c append other, printer, size + other.size, map.add(s, size, size + other.size), mOpen, mCommentOpen, displayComments)
 	  }
 	  def +(other: Tree): StringMaker = { // Don't care about this expression in particular. But sub expressions will be recorded.
 	    printer.print(this, NO_INDENT, other)
 	  }
-	  def +(other: Category): StringMaker = {
+	  def +(other: CategoryObject): StringMaker = {
 	    if(other.name != null) {
 	      +!(other.name, other)
 	    } else this
@@ -287,7 +287,7 @@ object PrettyPrinterExtendedTypical extends CommonPrettyPrintingConstants {
 	            args(d) match {
 	              case o: GameObject => c + ObjectLiteral(o)
 	              case t: Tree => c + t
-	              case ct: Category => c + ct
+	              case ct: CategoryObject => c + ct
 	              case s: String => c + s
 	              case r => c + r.toString()
 	            }

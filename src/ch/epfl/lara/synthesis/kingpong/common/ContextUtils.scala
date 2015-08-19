@@ -58,8 +58,8 @@ trait ContextUtils {
     }
     res
   }
-  def getDrawable(id: Int) = context.getResources().getDrawable(id)
-  def getDrawableArray(id: Int) = getArray(id) map getDrawable
+  def getTheDrawable(id: Int) = context.getResources().getDrawable(id)
+  def getDrawableArray(id: Int) = getArray(id) map getTheDrawable
   
   private var mapDrawable = CMap[String, Drawable]()
   private var mapRetrieved = new MSet[String] with SynchronizedSet[String]
@@ -72,7 +72,7 @@ trait ContextUtils {
         if(mapRetrieved.add(s)) {
           val c: Future[Option[Drawable]] = future {
             Log.d("ContextUtils.scala", s"Starting aquisition of drawable $s")
-            Option(getDrawable(context.getResources().getIdentifier(s, "drawable", context.getPackageName()))) match {
+            Option(getTheDrawable(context.getResources().getIdentifier(s, "drawable", context.getPackageName()))) match {
               case some@Some(d) =>
                 mapDrawable(s) = d
                 some

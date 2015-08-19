@@ -11,7 +11,7 @@ trait Context extends StringLocalization {
   def events: Iterable[Event]
   def time: Int  
   def getNewName(s: String): String
-  def add(c: GameObject, undoable: Boolean = true)
+  def add(c: GameObject, undoable: Boolean = true, setInitTime: Boolean = true)
   
   def addAssignmentHistory(p: Positionable, a: AssignableProperty[_], path: Expr): Unit
   

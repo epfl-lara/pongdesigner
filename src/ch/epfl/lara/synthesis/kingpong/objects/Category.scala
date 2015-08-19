@@ -46,11 +46,12 @@ object Category {
   }
 }
 
-trait Category {
+/*trait Category {
   def game: Game
   def name: String
+  def id: Int
   def objects: Traversable[GameObject]
-}
+}*/
 
 class CategoryObject(
     val game: Game,
@@ -82,10 +83,11 @@ class CategoryObject(
     val text: Expr,
     val time: Expr,
     val displayName: Expr)
-    extends NotNull with Category { self =>
+    extends NotNull /*with Category*/ { self =>
 
   val name: String = game.interpreter.evaluate(initName).as[String]
-  
+  var id: Int = UniqueCounter.nextGlobal
+
   private val _children = MSet.empty[GameObject]
   
   def objects: Traversable[GameObject] = _children

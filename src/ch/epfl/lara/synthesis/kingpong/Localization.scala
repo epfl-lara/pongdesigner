@@ -7,7 +7,9 @@ trait Localization extends AnyRef { self =>
   type Language
   type Key
   type Output
-  
+  private var currentOutputs: Map[Key, Output] = Map()
+  var outputs: Map[Language, Map[Key, Output]] = Map()
+  var fallback: Map[Language, Language] = Map()
   private var mLanguage: Language = _
   def language: Language = mLanguage
   def language_=(newLanguage: Language) = {
@@ -23,9 +25,7 @@ trait Localization extends AnyRef { self =>
   def parentLanguage(language: Language): Option[Language]
   def fallbackOutput(key: Key): Output
   
-  private var currentOutputs: Map[Key, Output] = Map()
-  var outputs: Map[Language, Map[Key, Output]] = Map()
-  var fallback: Map[Language, Language] = Map()
+  
   /** If the language has already been tested before, return the key.
    *  Re-test on fallback languages if available.
    *  Re-test on the country language (e.g. fr_FR => fr) if available

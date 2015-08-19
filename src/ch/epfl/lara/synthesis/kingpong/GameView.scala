@@ -85,7 +85,7 @@ trait ActionBarHandler extends common.ContextUtils {
     if (actionBar != null) {
 
       val menuLabels: IndexedSeq[String] = getStringArray(R.array.menu_arrays_hint)
-      val menuDrawables = getArray(R.array.menu_arrays_drawable) map getDrawable
+      val menuDrawables = getArray(R.array.menu_arrays_drawable) map getTheDrawable
       val submenusDrawables = getArray(R.array.menu_arrays) map getDrawableArray
       submenusLabels = getArray(R.array.menu_arrays_strings) map getStringArray map { u: Array[String] => u: IndexedSeq[String] }
 
@@ -415,6 +415,7 @@ class GameView(val context: Context, attrs: AttributeSet)
         case Some(drawable) => recycleBitmap(drawable)
         case None =>
       }
+      bitmapsContext.clear()
     }
   }
   def getGame() = game
@@ -507,7 +508,7 @@ class GameView(val context: Context, attrs: AttributeSet)
     cv_mapping_consts = (for ((a, b) <- cv_mapping.mPos if b != Nil && b.last.isInstanceOf[Literal[_]] && b.head.isInstanceOf[Expr]) yield a -> (b.last.asInstanceOf[Literal[_]], b.head.asInstanceOf[Expr])).toMap
   }
   def cv_mapping = mCvMapping
-  def cv_mapping_code = if (cv_mapping == null) Map[Int, List[Category]]() else cv_mapping.mPosCategories
+  def cv_mapping_code = if (cv_mapping == null) Map[Int, List[CategoryObject]]() else cv_mapping.mPosCategories
   def cv_mapping_properties = if (cv_mapping == null) Map[Int, Property[_]]() else cv_mapping.mPropertyPos
   
   // The last element of the list is the smallest enclosing the position. The first one is the entire rule.
@@ -912,11 +913,27 @@ class GameView(val context: Context, attrs: AttributeSet)
     bitmaps(id) = res.getDrawable(id)
   }
 
-  private def addBitmap(bitmap: Bitmap): Int = {
-    val id = Stream.from(128).find(i => !(bitmaps contains i)).get
-    bitmaps(id) = new BitmapDrawable(res, bitmap)
-    id
+  private[kingpong] def addBitmap(bitmap: Bitmap): Int = {
+    val index = Stream.from(128).find(i => !(bitmaps contains i)).get
+    bitmaps(index) = new BitmapDrawable(res, bitmap)
+    index
   }
+  val bitmapsContext = new MMap[Int, Int]()
+  private[kingpong] def addDrawable(id: Int): Int = {
+    bitmapsContext.get(id) match {
+      case Some(index) => index
+      case None =>
+		    val index = Stream.from(128).find(i => !(bitmaps contains i)).get
+		    bitmaps(index) = res.getDrawable(id)
+		    bitmapsContext(id) = index
+		    index
+    }
+  }
+  /*private[kingpong] def addDrawable(drawable: Drawable): Int = {
+    val index = Stream.from(128).find(i => !(bitmaps contains i)).get
+    bitmaps(index) = drawable
+    index
+  }*/
   
   /**
    * Recycles the bitmap of the drawable if it contains one.

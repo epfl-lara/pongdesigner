@@ -79,7 +79,7 @@ object Trees {
     }
   }
   
-  private object UniqueCounter {
+  private[kingpong] object UniqueCounter {
     private var globalId = -1
     private var nameIds = Map[String, Int]().withDefaultValue(-1)
 
@@ -116,7 +116,7 @@ object Trees {
     val fixedType = TUnit
   }
   
-  case class Foreach(category: Category, id: Identifier, body: Expr) extends UnitExpr
+  case class Foreach(category: CategoryObject, id: Identifier, body: Expr) extends UnitExpr
   
   case class Assign(prop: (Expr, PropertyId), rhs: Expr) extends UnitExpr
   
@@ -142,9 +142,9 @@ object Trees {
     val fixedType = leastUpperBound(thenn.getType, elze.getType).getOrElse(TAny)
   }
   
-  case class Forall(category: Category, id: Identifier, body: Expr) extends Expr with FixedBooleanType
+  case class Forall(category: CategoryObject, id: Identifier, body: Expr) extends Expr with FixedBooleanType
   
-  case class Find(category: Category, id: Identifier, body: Expr) extends Expr with FixedType {
+  case class Find(category: CategoryObject, id: Identifier, body: Expr) extends Expr with FixedType {
     val fixedType = TObject
   }
   

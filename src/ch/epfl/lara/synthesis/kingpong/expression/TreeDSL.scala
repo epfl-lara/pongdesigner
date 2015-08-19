@@ -312,13 +312,13 @@ object TreeDSL {
     MethodCall(name, args.toList)
   }
   
-  def foreach(category: Category)(body: Proxy => Expr): Expr = {
+  def foreach(category: CategoryObject)(body: Proxy => Expr): Expr = {
     val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Foreach(category, id, body(ref))
   }
 
-  def foreach(category1: Category, category2: Category)(body: (Proxy, Proxy) => Expr): Expr = {
+  def foreach(category1: CategoryObject, category2: CategoryObject)(body: (Proxy, Proxy) => Expr): Expr = {
     val id1 = identifierFromCategory(category1).setType(TObject)
     val id2 = identifierFromCategory(category2).setType(TObject)
     val ref1 = new IdentifierProxy(id1)
@@ -326,7 +326,7 @@ object TreeDSL {
     Foreach(category1, id1, Foreach(category2, id2, body(ref1, ref2)))
   }
   
-  def foreach(category1: Category, category2: Category, category3: Category)(body: (Proxy, Proxy, Proxy) => Expr): Expr = {
+  def foreach(category1: CategoryObject, category2: CategoryObject, category3: CategoryObject)(body: (Proxy, Proxy, Proxy) => Expr): Expr = {
     val id1 = identifierFromCategory(category1).setType(TObject)
     val id2 = identifierFromCategory(category2).setType(TObject)
     val id3 = identifierFromCategory(category3).setType(TObject)
@@ -337,7 +337,7 @@ object TreeDSL {
   }
   
   // Generic foreach
-  def foreach(categories: Seq[Category])(body: Seq[Proxy] => Expr): Expr = {
+  def foreach(categories: Seq[CategoryObject])(body: Seq[Proxy] => Expr): Expr = {
     val ids = categories.map(identifierFromCategory(_).setType(TObject))
     val refs = ids map { id => new IdentifierProxy(id) }
     ((categories zip ids) :\ body(refs)) { case ((category, id), body) => Foreach(category, id, body) }
@@ -353,13 +353,13 @@ object TreeDSL {
     Delete(obj)
   }
   
-  def forall(category: Category)(body: Proxy => Expr): Expr = {
+  def forall(category: CategoryObject)(body: Proxy => Expr): Expr = {
     val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Forall(category, id, body(ref))
   }
   
-  def find(category: Category)(body: Proxy => Expr): Expr = {
+  def find(category: CategoryObject)(body: Proxy => Expr): Expr = {
     val id = identifierFromCategory(category).setType(TObject)
     val ref = new IdentifierProxy(id)
     Find(category, id, body(ref))
@@ -388,7 +388,7 @@ object TreeDSL {
     case e1 :: e2 :: t => and(And(e1, e2) :: t)
   }
   
-  private def identifierFromCategory(cat: Category): Identifier = cat.name match {
+  private def identifierFromCategory(cat: CategoryObject): Identifier = cat.name match {
     case ""   => FreshIdentifier("id", true)
     case name => FreshIdentifier(name.toLowerCase.substring(0, 1), true)
   }
@@ -580,7 +580,7 @@ object TreeDSL {
       y: Expr,
       value: Expr = category.value,
       angle: Expr = category.angle,
-      width: Expr = category.width,
+      width: Expr = category.width * 4,
       height: Expr = category.height,
       visible: Expr = category.visible,
       color: Expr = category.color)(implicit game: Game, planned: GameObject.IsPlanned): Box[String] = {

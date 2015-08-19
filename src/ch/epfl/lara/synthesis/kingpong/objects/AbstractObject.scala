@@ -303,15 +303,11 @@ class Array2D(
  
   private val shape = new PolygonShape()
   
-  val cellsCategory = new Category {
-    def game = self.game
-    def name = self.name.get + " cells"
-    def objects = self.cells.flatten
-  }
+  var cellsCategory = Category(init_name)()(self.game)
+  
+  cellsCategory.id = self.id
     
-  //TODO for the moment the array size is constant
   lazy val cells = ArrayBuffer.tabulate(numColumns.get, numRows.get) { (col, row) =>
-    //TODO set a category to these cells
     Cell(this, col, row)
   }
 
@@ -396,6 +392,7 @@ case class Cell(
       with Rectangular
       with FixedRectangularContains {
 
+  setCategory(array.cellsCategory)
   private val shape = new PolygonShape()
   def noVelocity_=(b: Boolean) = {}
   def game = array.game

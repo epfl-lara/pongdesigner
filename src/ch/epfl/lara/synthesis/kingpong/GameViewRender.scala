@@ -201,7 +201,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
       o match {
 
         // If there is a bitmap, only draw it
-        case e: Positionable with Directionable if bitmaps contains e.color.next =>
+        case e: Positionable with Directionable if (bitmaps contains e.color.next) && e.visible.next =>
           drawBitmapInGame(canvas, matrix, e, bitmaps(e.color.next), 0xFF)
 
         case o: Gravity =>
@@ -397,12 +397,17 @@ class GameViewRender(val context: Context) extends ContextUtils {
 
           canvas.save()
           canvas.rotate(radToDegree(b.angle.next), b.x.next, b.y.next)
+          val intValue = if(b.value.get != b.value.next) {
+            b.value.get + "=>" + b.value.next
+          } else {
+            b.value.next.toString
+          }
           val value = if (!b.displayName.next) {
             paint.setTextAlign(Paint.Align.CENTER)
             paintSelected.setTextAlign(Paint.Align.CENTER)
-            b.value.next.toString
+            intValue
           } else {
-            b.name.next + ":" + b.value.next.toString
+            b.name.next + ":" + intValue
           }
 
           val textHeight = paint.descent - paint.ascent
@@ -876,10 +881,12 @@ class GameViewRender(val context: Context) extends ContextUtils {
 					record.setAudioSource(0 /*MediaRecorder.AudioSource.MIC*/)  // Default = microphone
 					record.setOutputFormat(2/*MediaRecorder.OutputFormat.MPEG_4*/) // mpg4
 					//val sampleDir = Environment.getExternalStorageDirectory();
-	        val filename = soundRecorder.name.get + soundRecorder.numRecords;
-	        val filePath = context.getFilesDir().getPath().toString() + "/" + filename + ".mp4";
+	        /*val filename = soundRecorder.name.get + soundRecorder.numRecords;
+	        val filePath = context.getFilesDir().getPath().toString() + "/" + filename + ".mp4";*/
+					val sampleDir = context.getFilesDir();
+					val audiofile = File.createTempFile(soundRecorder.name.get + soundRecorder.numRecords, ".mp4", sampleDir);
 	        
-			    val audiofile = new File(filePath);
+			    //val audiofile = new File(filePath);
 			    val uri = Uri.fromFile(audiofile)
 					record.setOutputFile(audiofile.getAbsolutePath())
 					record.setAudioEncoder(1/*MediaRecorder.AudioEncoder.AMR_NB*/) // AMR_NB
@@ -897,7 +904,7 @@ class GameViewRender(val context: Context) extends ContextUtils {
     for((soundRecorder, (startTime, record, uri)) <- recorders) {
       val obj = SoundRecorded(soundRecorder, soundRecorder.numRecords, startTime, game.time, uri)
       soundRecorder.recordings += obj
-      game.add(obj)
+      game.add(obj, true, false)
       record.release()
     }
     recorders = Map()

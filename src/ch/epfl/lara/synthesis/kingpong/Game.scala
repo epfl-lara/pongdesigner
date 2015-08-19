@@ -143,8 +143,10 @@ trait Game extends RulesManager with Context { self =>
     }
   }
 
-  def add(o: GameObject, undoable: Boolean = true) = {
-    o.creationTime.setInit(time)
+  def add(o: GameObject, undoable: Boolean = true, setInitTime: Boolean = true) = {
+    if(setInitTime) {
+      o.creationTime.setInit(time)
+    }
     o.reset(interpreter)
     o.flush()
     _objects = _objects append (new DoubleLinkedList(o, DoubleLinkedList.empty[GameObject]))

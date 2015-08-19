@@ -52,7 +52,7 @@ trait RulesManager {
     if(undoable) UndoRedo.recordRuleRemove(this, i, oldRule)
   }
   def insertRule(index: Int, r: Expr, undoable: Boolean = true): Int = {
-    def addToCategory(category: Category) = category.objects foreach { obj =>
+    def addToCategory(category: CategoryObject) = category.objects foreach { obj =>
       _rulesByObject.getOrElseUpdate(obj, MSet.empty) += r
     }
     TreeOps.preTraversal {
