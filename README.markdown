@@ -1,7 +1,11 @@
 Pong Designer
 =============
 
-This is the experimental branch (v2).
+This is the experimental branch (v2) and the current source code of the [Google Play application](https://play.google.com/store/apps/details?id=ch.epfl.lara.synthesis.kingpong)
+
+![Screenshot](https://lh6.ggpht.com/a9zMAt61KEVyc0BrX2dPKFYgZPKNneHeqOeqoPWnht19nAGe81UL6hUayNWks0opxcY=h900-rw)
+
+Watch the video: [Create a Pong Game in less than one minute](https://youtu.be/bErU--8GRsQ?list=PLLIzdB2ffI_ts2WnDJF37RZmAuxRr0Nyg)
 
 Usage with SBT
 --------------
